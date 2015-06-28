@@ -34,4 +34,5 @@ pascal-3.1 2012-xx-xx Gregory Nutt <gnutt@nuttx.org>
 	* nuttx/Makefile: If DIRLINK is defined, then INCDIR was not setup
 	  correctly and the build failed.  The value of INCDIR must be
 	  initialized unconditionally.
-
+	* The pascal/ directory has been removed from the NuttX GIT repository
+	  and now stands alone in its own repository (2015-06-27).
