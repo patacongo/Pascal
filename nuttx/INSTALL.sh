@@ -96,15 +96,39 @@ if [ ! -d ${installdir} ]; then
   exit 1
 fi
 
-if [ -d ${installdir}/pcode ]; then
-  echo "${installdir}/pcode already exists.  Remove it and try again."
-  exit 1
+if [ ! -d ${installdir}/pcode ]; then
+  echo "Creating ${installdir}/pcode."
+  mkdir ${installdir}/pcode || \
+    { echo "mkdir ${installdir}/pcode failed" ; exit 1 ; }
 fi
 
-# Looks good enough.  Create NuttX directories
+# Looks good enough.  Remove any old installation directories.
 
-mkdir ${installdir}/pcode || \
-  { echo "mkdir ${installdir}/pcode failed" ; exit 1 ; }
+if [ -d ${installdir}/pcode/include ]; then
+  echo "Removing old ${installdir}/pcode/include"
+  rm -rf ${installdir}/pcode/include || \
+    { echo "mkdir ${installdir}/pcode/include failed" ; exit 1 ; }
+fi
+
+if [ -d ${installdir}/pcode/insn ]; then
+  echo "Removing old ${installdir}/pcode/insn"
+  rm -rf ${installdir}/pcode/insn || \
+    { echo "mkdir ${installdir}/pcode/insn failed" ; exit 1 ; }
+fi
+
+if [ -d ${installdir}/pcode/libpoff ]; then
+  echo "Removing old ${installdir}/pcode/libpoff"
+  rm -rf ${installdir}/pcode/libpoff || \
+    { echo "mkdir ${installdir}/pcode/libpoff failed" ; exit 1 ; }
+fi
+
+if [ -d ${installdir}/pcode/libpas ]; then
+  echo "Removing old ${installdir}/pcode/libpas"
+  rm -rf ${installdir}/pcode/libpas || \
+    { echo "mkdir ${installdir}/pcode/libpas failed" ; exit 1 ; }
+fi
+
+# Create clean NuttX directories
 
 mkdir ${installdir}/pcode/include || \
   { echo "mkdir ${installdir}/pcode/include failed" ; exit 1 ; }

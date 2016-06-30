@@ -96,7 +96,7 @@ PASDEPPATH  = --dep-path libpas
 VPATH = insn$(DELIM)prun:libpoff:libpas
 
 all: .built
-.PHONY: context depend clean distclean
+.PHONY: context pre_config depend clean distclean
 
 $(AOBJS): %$(OBJEXT): %.S
 	$(call ASSEMBLE, $<, $@)
@@ -115,6 +115,8 @@ $(APPDIR)$(DELIM)include$(DELIM)pcode$(DELIM)insn: $(APPDIR)$(DELIM)include$(DEL
 	@touch .built
 
 context: $(APPDIR)$(DELIM)include$(DELIM)pcode $(APPDIR)$(DELIM)include$(DELIM)pcode$(DELIM)insn
+
+preconfig:
 
 .depend: Makefile $(SRCS)
 	@$(MKDEP) $(ROOTDEPPATH) $(PRUNDEPPATH) $(POFFDEPPATH) $(PASDEPPATH) \
