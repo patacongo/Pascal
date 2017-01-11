@@ -53,7 +53,7 @@ Usage="                                                \n
 
 # readans prompt default
 #
-function readans () {
+readans () {
     echo -n "$1 ($2): "
     IFS='@' read ans || exit 1
     [ -z "$ans" ] && ans=$2
@@ -61,7 +61,7 @@ function readans () {
 
 # readyn prompt default
 #
-function readyn () {
+readyn () {
     while :; do
 	readans "$1 [Y/N]" $2
 	case "$ans" in
@@ -112,7 +112,7 @@ rm -f $TMPCONFIGFILE $TMPMAKECONFIG
 
 # Get information about the configuration settings
 #
-source ./config.info
+. ./config.info
 
 # Set up default values for all configuration settings
 #
@@ -128,7 +128,7 @@ done
 # the defaults that we set up above.
 #
 if [ -e ${CONFIGFILE} ] ; then
-    source ${CONFIGFILE}
+    . ${CONFIGFILE}
 else
     # We can't regenerate the Make.config file if there is no
     # .config file
