@@ -1,3 +1,4 @@
+#!/bin/bash
 ############################################################################
 # nuttx/INSTALL.sh
 # Install the pascaldirl runtime into the NuttX source tree
