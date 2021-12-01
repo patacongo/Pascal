@@ -693,8 +693,6 @@ static void writelnProc(void)         /* WRITELN procedure */
 
 static void valProc(void)         /* VAL procedure */
 {
-  int size;
-
   TRACE(lstFile, "[valProc]");
 
   /* Declaration:
@@ -722,7 +720,7 @@ static void valProc(void)         /* VAL procedure */
 
   /* Setup the actual-parameter-list */
 
-  size = actualParameterList(valSymbol);
+  (void)actualParameterList(valSymbol);
 
   /* Generate the built-in procedure call.  NOTE the procedure call
    * logic will release the parameters from the stack saving us from

@@ -151,7 +151,6 @@ int16_t LoadOptimize(void)
 /**********************************************************************/
 int16_t StoreOptimize (void)
 {
-  uint16_t val;
   int16_t  nchanges = 0;
   register int16_t i;
 
@@ -179,22 +178,15 @@ int16_t StoreOptimize (void)
               nchanges++;
               i += 2;
             } /* end if */
-          else i++;
+          else
+            {
+              i++;
+            }
           break;
 
           /* Convert stores indexed by a constant to unindexed stores */
+
        case oPUSH :
-          /* Get the index value */
-
-          if (pptr[i]->op == oPUSH)
-            {
-              val = pptr[i]->arg2;
-            }
-          else
-            {
-              val = pptr[i]->arg1;
-            }
-
           /* If the following instruction is a store, add the constant
            * index value to the address and switch the opcode to the
            * unindexed form.
@@ -216,7 +208,10 @@ int16_t StoreOptimize (void)
                   deletePcode (i);
                   nchanges++;
                 } /* end if */
-              else i++;
+              else
+                {
+                   i++;
+                }
             } /* end if */
           else i++;
           break;
