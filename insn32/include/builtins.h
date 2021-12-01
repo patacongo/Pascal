@@ -526,6 +526,7 @@
     { "_fpln_i", sREAL_SIZE, 1, { sINT_SIZE }}
 
 /* real _fpexp_r(real v); */
+
 #define fpEXP_R_INIT \
 
     { "_fpexpr_r", sREAL_SIZE, 1, { sREAL_SIZE }}

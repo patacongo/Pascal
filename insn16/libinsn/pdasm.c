@@ -439,7 +439,8 @@ static const struct
 };
 
 static const char invXOp[] = "Invalid SYSIO";
-static const char *xName[MAX_XOP] = { /* SYSIO opcode mnemonics */
+static const char *xName[MAX_XOP] =
+{ /* SYSIO opcode mnemonics */
 /* 0x00 */ invXOp,      "EOF",       "EOLN",       "RESET",
 /* 0x04 */ "REWRITE",   invXOp,      invXOp,       invXOp,
 /* 0x08 */ invXOp,      invXOp,      invXOp,       invXOp,
@@ -449,23 +450,29 @@ static const char *xName[MAX_XOP] = { /* SYSIO opcode mnemonics */
 /* 0x18 */ invXOp,      invXOp,      invXOp,       invXOp,
 /* 0x1c */ invXOp,      invXOp,      invXOp,       invXOp,
 /* 0x20 */ "WRITELN",   "WRITEPG",   "WRITEBIN",   "WRITEINT",
-/* 0x24 */ "WRITECHR",  "WRITESTR",  "WRITERL" };
+/* 0x24 */ "WRITECHR",  "WRITESTR",  "WRITERL"
+};
 
 static const char invLbOp[] = "Invalid runtime code";
-static const char *lbName[MAX_LBOP] = { /* LIB opcode mnemonics */
-/* 0x00 */ "GETENV",     "STR2STR",   "CSTR2STR",  "STR2RSTR",
-/* 0x04 */ "CSTR2RSTR",  "VAL",       "MKSTK",     "MKSTKSTR",
-/* 0x08 */ "MKSTKC",     "STRCAT",    "STRCATC",   "STRCMP" };
+static const char *lbName[MAX_LBOP] =
+{ /* LIB opcode mnemonics */
+/* 0x00 */ "HALT",       "GETENV",     "STR2STR",   "CSTR2STR",
+/* 0x04 */ "STR2RSTR",   "CSTR2RSTR",  "VAL",       "MKSTK",
+/* 0x08 */ "MKSTKSTR",   "MKSTKC",     "STRCAT",    "STRCATC",
+/* 0x0c */ "STRCMP"
+};
 
 static const char invFpOp[] = "Invalid FP Operation";
-static const char *fpName[MAX_FOP] = {
+static const char *fpName[MAX_FOP] =
+{
 /* 0x00 */ invFpOp,    "FLOAT",    "TRUNC",    "ROUND",
 /* 0x04 */ "ADD",      "SUB",      "MUL",      "DIV",
 /* 0x08 */ "MOD",      invFpOp,    "EQU",      "NEQ",
 /* 0x0c */ "LT",       "GTE",      "GT",       "LTE",
 /* 0x10 */ "NEG",      "ABS",      "SQR",      "SQRT",
 /* 0x14 */ "SIN",      "COS",      "ATAN",     "LN",
-/* 0x18 */ "EXP" };
+/* 0x18 */ "EXP"
+};
 
 /***********************************************************************/
 
