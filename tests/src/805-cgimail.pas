@@ -15,9 +15,9 @@ type
 var
    strCGIData : Buffer; //Stores the data from the GET or POST request
    strFrom, strTo, strSubject, strBody : Buffer;
-   strErrorLink, strSuccessLink : filename;
+   strErrorLink, strSuccessLink : string;
    strSuccessMessage : Buffer;
-   SendMail : filename;
+   SendMail : string;
 
    procedure DisplayError(strMsg : string);
    begin //DisplayError
@@ -30,9 +30,9 @@ var
    //NOTES: Used in this particular program to help locate the
    //       configuration file.
    //*************************************************************
-   function AppDir : filename;
+   function AppDir : string;
    var
-      fdir : filename;
+      fdir : string;
    begin
       fsplit(paramstr(0), fdir,,);
       AppDir := fdir
@@ -105,7 +105,7 @@ var
    //****************************************************************
    procedure ReadConfigFile;
    var
-      ConfigFile : filename;
+      ConfigFile : string;
       f : text;
       line : string;
 

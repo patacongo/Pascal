@@ -104,6 +104,7 @@ static const RTYPE rsw[] =                        /* Reserved word list */
   {"GET",            tPROC,           txGET},     /* (3) */
   {"GETENV",         tFUNC,           txGETENV},  /* (5) */
   {"GOTO",           tGOTO,           txNONE},    /* (1) */
+  {"HALT",           tPROC,           txHALT},    /* (3) */
   {"IF",             tIF,             txNONE},    /* (1) */
   {"IMPLEMENTATION", tIMPLEMENTATION, txNONE},    /* (4) */
   {"IN",             tIN,             txNONE},    /* (1) */

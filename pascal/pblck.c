@@ -533,7 +533,10 @@ int16_t formalParameterList(STYPE *procPtr)
               pointerType = 1;
               getToken();
             }
-          else pointerType = 0;
+          else
+            {
+              pointerType = 0;
+            }
 
           /* Process the common part of the variable-parameter-specification
            * and the value-parameter specification.
@@ -542,7 +545,6 @@ int16_t formalParameterList(STYPE *procPtr)
            */
 
           (void)pas_DeclareParameter(pointerType);
-
         }
       while (token == ';');
 
@@ -915,7 +917,7 @@ static void pas_DeclareFile(void)
              files[fileNumber].faddr   = dstack;
              files[fileNumber].fsize   = g_dwVarSize;
              dstack                   += g_dwVarSize;
-         }
+           }
        }
     }
 }
@@ -1090,43 +1092,45 @@ static void pas_FunctionDeclaration(void)
    /* Get function type, return value type/size and offset to return value */
 
    typePtr = pas_TypeIdentifier(0);
-   if (typePtr) {
+   if (typePtr)
+    {
+       /* The offset to the return value is the offset to the last
+        * parameter minus the size of the return value (aligned to
+        * multiples of size of INTEGER).
+        */
 
-     /* The offset to the return value is the offset to the last
-      * parameter minus the size of the return value (aligned to
-      * multiples of size of INTEGER).
-      */
+       parameterOffset        -= g_dwVarSize;
+       parameterOffset         = intAlign(parameterOffset);
 
-     parameterOffset        -= g_dwVarSize;
-     parameterOffset         = intAlign(parameterOffset);
+       /* Save the TYPE for the function return value local variable */
 
-     /* Save the TYPE for the function return value local variable */
+       valPtr->sKind           = typePtr->sParm.t.rtype;
+       valPtr->sParm.v.offset  = parameterOffset;
+       valPtr->sParm.v.size    = g_dwVarSize;
+       valPtr->sParm.v.parent  = typePtr;
 
-     valPtr->sKind           = typePtr->sParm.t.rtype;
-     valPtr->sParm.v.offset  = parameterOffset;
-     valPtr->sParm.v.size    = g_dwVarSize;
-     valPtr->sParm.v.parent  = typePtr;
+       /* Save the TYPE for the function */
 
-     /* Save the TYPE for the function */
+       funcPtr->sParm.p.parent = typePtr;
 
-     funcPtr->sParm.p.parent = typePtr;
+       /* If we are here then we know that we are either in a program file
+        * or the 'implementation' part of a unit file (see punit.c -- At present,
+        * the function declarations of the 'interface' section of a unit file
+        * follow a different path).  In the latter case (only), we should export
+        * every function declared at level zero.
+        */
 
-     /* If we are here then we know that we are either in a program file
-      * or the 'implementation' part of a unit file (see punit.c -- At present,
-      * the function declarations of the 'interface' section of a unit file
-      * follow a different path).  In the latter case (only), we should export
-      * every function declared at level zero.
-      */
+       if ((level == 1) && (FP->kind == eIsUnit))
+         {
+           /* EXPORT the function symbol. */
 
-     if ((level == 1) && (FP->kind == eIsUnit))
-       {
-         /* EXPORT the function symbol. */
-
-         pas_GenerateProcExport(funcPtr);
-       }
-   }
+           pas_GenerateProcExport(funcPtr);
+         }
+     }
    else
-     error(eINVTYPE);
+    {
+       error(eINVTYPE);
+    }
 
    /* Save debug information about the function */
 
@@ -2270,9 +2274,18 @@ static STYPE *pas_DeclareParameter(bool pointerType)
          }
        else
          {
+           /* Check for a type identifier */
+
            if (token != ':') error(eCOLON);
            else getToken();
+
+           /* Get the type-identifier following the colon.  After calling
+            * pas_TypeIdentifier(), token should refer to the ',' or ')' in
+            * the formal parameter list.
+            */
+
            typePtr = pas_TypeIdentifier(0);
+           if (typePtr == NULL) error(eINVTYPE);
          }
 
        if (pointerType)

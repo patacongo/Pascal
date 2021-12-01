@@ -121,7 +121,7 @@
 #define tFUNCTION        0x8c
 #define tGOTO            0x8d
 #define tIF              0x8e
-#define tIMPLEMENTATION 0x08f /* Extended pascal */
+#define tIMPLEMENTATION  0x8f /* Extended pascal */
 #define tIN              0x90
 #define tINTERFACE       0x91 /* Extended pascal */
 #define tLABEL           0x92
@@ -189,17 +189,18 @@
 /* Standard Procedures 0x81-0xbf */
 
 #define txGET            0x80
-#define txNEW            0x81
-#define txPACK           0x82
-#define txPAGE           0x83
-#define txPUT            0x84
-#define txREAD           0x85
-#define txREADLN         0x86
-#define txRESET          0x87
-#define txREWRITE        0x88
-#define txUNPACK         0x89
-#define txWRITE          0x8a
-#define txWRITELN        0x8b
+#define txHALT           0x81
+#define txNEW            0x82
+#define txPACK           0x83
+#define txPAGE           0x84
+#define txPUT            0x85
+#define txREAD           0x86
+#define txREADLN         0x87
+#define txRESET          0x88
+#define txREWRITE        0x89
+#define txUNPACK         0x8a
+#define txWRITE          0x8b
+#define txWRITELN        0x8c
 
 /* "Less than standard" Procedures 0xc0-0xff */
 

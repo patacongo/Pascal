@@ -64,17 +64,18 @@
 
 /* Helpers for standard procedures  */
 
-static int16_t readProc    (void);              /* READ procedure */
-static void   readText    (uint16_t fileNumber); /* READ text file */
-static void   readlnProc  (void);              /* READLN procedure */
-static void   fileProc    (uint16_t opcode);     /* RESET/REWRITE/PAGE procedure */
-static int16_t writeProc   (void);              /* WRITE procedure */
-static void   writeText   (uint16_t fileNumber); /* WRITE text file */
-static void   writelnProc (void);              /* WRITELN procedure */
+static void    haltProc    (void);                /* HALT procedure */
+static int16_t readProc    (void);                /* READ procedure */
+static void    readText    (uint16_t fileNumber); /* READ text file */
+static void    readlnProc  (void);                /* READLN procedure */
+static void    fileProc    (uint16_t opcode);     /* RESET/REWRITE/PAGE procedure */
+static int16_t writeProc   (void);                /* WRITE procedure */
+static void    writeText   (uint16_t fileNumber); /* WRITE text file */
+static void    writelnProc (void);                /* WRITELN procedure */
 
 /* Helpers for less-than-standard procedures */
 
-static void   valProc     (void);              /* VAL procedure */
+static void   valProc      (void);                /* VAL procedure */
 
 /****************************************************************************
  * Private Data
@@ -107,7 +108,6 @@ void builtInProcedure(void)
 
   /* Is the token a procedure? */
 
-
   if (token == tPROC)
     {
       /* Yes, process it procedure according to the extended token type */
@@ -115,6 +115,11 @@ void builtInProcedure(void)
       switch (tknSubType)
         {
           /* Standard Procedures & Functions */
+
+        case txHALT :
+          getToken();
+          haltProc();
+          break;
 
         case txPAGE :
           fileProc(xWRITE_PAGE);
@@ -156,6 +161,7 @@ void builtInProcedure(void)
           break;
 
           /* less-than-standard procedures */
+
         case txVAL :
           valProc();
           break;
@@ -356,6 +362,17 @@ int actualParameterList(STYPE *procPtr)
 
 /***********************************************************************/
 
+static void haltProc (void)
+{
+  /* FORM:
+   *   halt
+   */
+
+  pas_BuiltInFunctionCall(lbHALT);
+}
+
+/***********************************************************************/
+
 static int16_t readProc(void)
 {
   uint16_t fileNumber = 0;
@@ -470,15 +487,17 @@ static void readText (uint16_t fileNumber)
 
 static void readlnProc(void)          /* READLN procedure */
 {
-   int32_t fileNumber;
+  int32_t fileNumber;
 
-   TRACE(lstFile, "[readlnProc]");
+  TRACE(lstFile, "[readlnProc]");
 
-   /* FORM:  Just like READ */
+  /* FORM:  Just like READ */
 
-   getToken();
-   if (token == '(')
-     fileNumber = readProc();
+  getToken();
+  if (token == '(')
+    {
+      fileNumber = readProc();
+    }
 
    /* skip to end-of-line mark in the file (NOTE:  No check is made,
     * but this is meaningful only for a test file).

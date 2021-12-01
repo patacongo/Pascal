@@ -314,6 +314,11 @@ static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
   switch (subfunc)
     {
+      /* Halt processing */
+
+    case lbHALT:
+      return eEXIT;
+
       /* Get the value of an environment string
        *
        * ON INPUT:
@@ -2321,6 +2326,7 @@ int pexec(FAR struct pexec_s *st)
           ret = pexec8(st, opcode);
         }
     }
+
   return ret;
 }
 

@@ -71,6 +71,16 @@
  * range 0x0000 through 0xffff.
  */
 
+/* Halt processing.
+ *   procedure halt;
+ * ON INPUT:
+ *   Takes no inputs
+ * ON RETURN:
+ *   Does not return
+ */
+
+#define lbHALT          (0x0000)
+
 /* Get an environment string.
  *   function getent(name : string) : cstring;
  * ON INPUT:
@@ -80,7 +90,7 @@
  *   TOS(0,1)=32-bit absolute address of string
  */
 
-#define lbGETENV        (0x0000)
+#define lbGETENV        (0x0001)
 
 /* Copy pascal string to a pascal string
  *   procedure str2str(src : string; var dest : string)
@@ -91,7 +101,7 @@
  * ON RETURN: actual parameters released.
  */
 
-#define lbSTR2STR       (0x0001)
+#define lbSTR2STR       (0x0002)
 
 /* Copy C string to a pascal string
  *   procedure cstr2str(src : cstring; var dest : string)
@@ -101,7 +111,7 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbCSTR2STR      (0x0002)
+#define lbCSTR2STR      (0x0003)
 
 /* Copy pascal string to a pascal string reference
  *   procedure str2rstr(src : string; var dest : rstring)
@@ -112,7 +122,7 @@
  * ON RETURN: actual parameters released.
  */
 
-#define lbSTR2RSTR      (0x0003)
+#define lbSTR2RSTR      (0x0004)
 
 /* Copy C string to a pascal string reference
  *   procedure cstr2str(src : cstring; var dest : string)
@@ -123,7 +133,7 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbCSTR2RSTR     (0x0004)
+#define lbCSTR2RSTR     (0x0005)
 
 /* Convert a string to a numeric value
  *   procedure val(const s : string; var v; var code : word);
@@ -151,7 +161,7 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x0005)
+#define lbVAL           (0x0006)
 
 /* Create an empty string
  *   function mkstk : string;
@@ -161,7 +171,7 @@
  *   TOS(1)=pointer to new string
  */
 
-#define lbMKSTK         (0x0006)
+#define lbMKSTK         (0x0007)
 
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
@@ -174,7 +184,7 @@
  *  TOS(1)=pointer to new string
  */
 
-#define lbMKSTKSTR      (0x0007)
+#define lbMKSTKSTR      (0x0008)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -185,7 +195,7 @@
  *   TOS(1)=pointer to new string
  */
 
-#define lbMKSTKC        (0x0008)
+#define lbMKSTKC        (0x0009)
 
 /* Concatenate a string to the end of a string.
  *   function strcat(name : string, c : char) : string;
@@ -199,7 +209,7 @@
  *   TOS(2)=pointer to string
  */
 
-#define lbSTRCAT        (0x0009)
+#define lbSTRCAT        (0x000a)
 
 /* Concatenate a character to the end of a string.
  *   function strcatc(name : string, c : char) : string;
@@ -212,7 +222,7 @@
  *   TOS(2)=pointer to string
  */
 
-#define lbSTRCATC       (0x000a)
+#define lbSTRCATC       (0x000b)
 
 /* Compare two pascal strings
  *   function strcmp(name1 : string, name2 : string) : integer;
@@ -225,8 +235,8 @@
  *   TOS(0)=(-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x000b)
+#define lbSTRCMP        (0x000c)
 
-#define MAX_LBOP        (0x000c)
+#define MAX_LBOP        (0x000d)
 
 #endif /* __PXDEFS_H */
