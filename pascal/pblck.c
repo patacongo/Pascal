@@ -2,7 +2,7 @@
  * pblck.c
  * Process a Pascal Block
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "keywords.h"
 #include "pasdefs.h"
@@ -179,7 +180,7 @@ void block()
 
   if (token != tBEGIN)
     {
-      error (eBEGIN);
+      error(eBEGIN);
     }
 
   /* It may be necessary to jump around some local functions to
@@ -440,7 +441,7 @@ void typeDefinitionGroup(void)
 
           /* Verify that '=' follows the type identifier */
 
-          if (token != '=') error (eEQ);
+          if (token != '=') error(eEQ);
           else getToken();
 
           (void)pas_DeclareType(typeName);
@@ -549,7 +550,7 @@ int16_t formalParameterList(STYPE *procPtr)
        * right parenthesis.
        */
 
-      if (token != ')') error (eRPAREN);
+      if (token != ')') error(eRPAREN);
       else getToken();
 
     }
@@ -595,7 +596,7 @@ static void pas_DeclareLabel(void)
        if ((token == tINT_CONST) && (tknInt >= 0))
          {
            labelname = stringSP;
-           (void)sprintf (labelname, "%ld", tknInt);
+           (void)sprintf(labelname, "%" PRId32, tknInt);
            while (*stringSP++);
            (void)addLabel(labelname, ++label);
            getToken();
@@ -604,7 +605,7 @@ static void pas_DeclareLabel(void)
      }
    while (token == ',');
 
-   if (token != ';') error (eSEMICOLON);
+   if (token != ';') error(eSEMICOLON);
    else getToken();
 }
 
@@ -637,7 +638,7 @@ static void pas_DeclareConst(void)
    */
 
   getToken();
-  if (token != '=') error (eEQ);
+  if (token != '=') error(eEQ);
   else getToken();
 
   /* Handle constant expressions */
@@ -875,45 +876,48 @@ static void pas_DeclareFile(void)
      getToken();
 
      /* Verify that a colon follows the <file identifier> */
-     if (token != ':') error (eCOLON);
+     if (token != ':') error(eCOLON);
      else getToken();
 
      /* Make sure that the data stack is aligned to INTEGER boundaries */
+
      dstack = intAlign(dstack);
 
      /* FORM:  <file identifier> : FILE OF <type> */
-     if (token == sFILE_OF) {
 
-       files[fileNumber].defined = -1;
-       files[fileNumber].flevel  = level;
-       files[fileNumber].ftype   = tknPtr->sParm.t.type;
-       files[fileNumber].faddr   = dstack;
-       files[fileNumber].fsize   = tknPtr->sParm.t.asize;
-       dstack += (tknPtr->sParm.t.asize);
-       getToken();
-
-     }
-
-     /* FORM:  <file identifier> : <FILE OF type identifier> */
-     else {
-       if (token != tFILE) error (eFILE);
-       else getToken();
-       if (token != tOF) error (eOF);
-       else getToken();
-
-       filePtr = pas_TypeIdentifier(1);
-       if (filePtr) {
-
+     if (token == sFILE_OF)
+       {
          files[fileNumber].defined = -1;
          files[fileNumber].flevel  = level;
-         files[fileNumber].ftype   = filePtr->sParm.t.type;
+         files[fileNumber].ftype   = tknPtr->sParm.t.type;
          files[fileNumber].faddr   = dstack;
-         files[fileNumber].fsize   = g_dwVarSize;
-         dstack += g_dwVarSize;
-
+         files[fileNumber].fsize   = tknPtr->sParm.t.asize;
+         dstack                   += (tknPtr->sParm.t.asize);
+         getToken();
        }
-     }
-   }
+
+     /* FORM:  <file identifier> : <FILE OF type identifier> */
+
+     else
+       {
+         if (token != tFILE) error(eFILE);
+         else getToken();
+
+         if (token != tOF) error(eOF);
+         else getToken();
+
+         filePtr = pas_TypeIdentifier(1);
+         if (filePtr)
+           {
+             files[fileNumber].defined = -1;
+             files[fileNumber].flevel  = level;
+             files[fileNumber].ftype   = filePtr->sParm.t.type;
+             files[fileNumber].faddr   = dstack;
+             files[fileNumber].fsize   = g_dwVarSize;
+             dstack                   += g_dwVarSize;
+         }
+       }
+    }
 }
 
 /***************************************************************/
@@ -943,7 +947,7 @@ static void pas_ProcedureDeclaration(void)
 
    if (token != tIDENT)
      {
-       error (eIDENT);
+       error(eIDENT);
        return;
      }
 
@@ -969,7 +973,7 @@ static void pas_ProcedureDeclaration(void)
 
    (void)formalParameterList(procPtr);
 
-   if (token !=  ';') error (eSEMICOLON);
+   if (token !=  ';') error(eSEMICOLON);
    else getToken();
 
    /* If we are here then we know that we are either in a program file
@@ -1011,7 +1015,7 @@ static void pas_ProcedureDeclaration(void)
 
    /* Verify that END terminates with a semicolon */
 
-   if (token !=  ';') error (eSEMICOLON);
+   if (token !=  ';') error(eSEMICOLON);
    else getToken();
 }
 
@@ -1045,7 +1049,7 @@ static void pas_FunctionDeclaration(void)
 
    if (token != tIDENT)
      {
-       error (eIDENT);
+       error(eIDENT);
        return;
      }
 
@@ -1072,7 +1076,7 @@ static void pas_FunctionDeclaration(void)
 
    /* Verify that the parameter list is followed by a colon */
 
-   if (token !=  ':') error (eCOLON);
+   if (token !=  ':') error(eCOLON);
    else getToken();
 
    /* Declare the function return value variable.  This variable has
@@ -1130,7 +1134,7 @@ static void pas_FunctionDeclaration(void)
 
    /* Process block */
 
-   if (token !=  ';') error (eSEMICOLON);
+   if (token !=  ';') error(eSEMICOLON);
    else getToken();
 
    pas_GenerateDataOperation(opLABEL, (int32_t)funcLabel);
@@ -1153,7 +1157,7 @@ static void pas_FunctionDeclaration(void)
 
    /* Verify that END terminates with a semicolon */
 
-   if (token !=  ';') error (eSEMICOLON);
+   if (token !=  ';') error(eSEMICOLON);
    else getToken();
 }
 
@@ -1402,7 +1406,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        /* Verify that the ".." is following by an INTEGER constant */
 
        if ((token != tINT_CONST) || (tknInt < typePtr->sParm.t.minValue))
-         error(eSUBRANGETYPE);
+         {
+           error(eSUBRANGETYPE);
+         }
        else
          {
            typePtr->sParm.t.maxValue = tknInt;
@@ -1430,7 +1436,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        /* Verify that the ".." is following by a CHAR constant */
 
        if ((token != tCHAR_CONST) || (tknInt < typePtr->sParm.t.minValue))
-         error(eSUBRANGETYPE);
+         {
+           error(eSUBRANGETYPE);
+         }
        else
          {
            typePtr->sParm.t.maxValue = tknInt;
@@ -1462,7 +1470,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        if ((token != sSCALAR_OBJECT) ||
            (tknPtr != typePtr->sParm.t.parent) ||
            (tknPtr->sParm.c.val.i < typePtr->sParm.t.minValue))
-         error(eSUBRANGETYPE);
+         {
+           error(eSUBRANGETYPE);
+         }
        else
          {
            typePtr->sParm.t.maxValue = tknPtr->sParm.c.val.i;
@@ -1480,7 +1490,7 @@ static STYPE *pas_NewComplexType(char *typeName)
   STYPE *typePtr = NULL;
   STYPE *typeIdPtr;
 
-  TRACE(lstFile,"[pas_TypeDenoter]");
+  TRACE(lstFile,"[pas_NewComplexType]");
 
   /* FORM: new-complex-type = new-structured-type | new-pointer-type */
 
@@ -1510,7 +1520,7 @@ static STYPE *pas_NewComplexType(char *typeName)
       /* PACKED Types */
 
     case tPACKED :
-      error (eNOTYET);
+      error(eNOTYET);
       getToken();
       if (token != tARRAY) break;
       /* Fall through to process PACKED ARRAY type */
@@ -1551,7 +1561,7 @@ static STYPE *pas_NewComplexType(char *typeName)
       /* Verify that 'set' is followed by 'of' */
 
       getToken();
-      if (token != tOF) error (eOF);
+      if (token != tOF) error(eOF);
       else getToken();
 
       /* Verify that 'set of' is followed by an ordinal-type
@@ -1617,12 +1627,12 @@ static STYPE *pas_NewComplexType(char *typeName)
       /* Make sure that 'file' is followed by 'of' */
 
       getToken();
-      if (token != tOF) error (eOF);
+      if (token != tOF) error(eOF);
       else getToken();
 
       /* Get the type-denoter */
 
-      typeIdPtr = pas_TypeDenoter(NULL,1);
+      typeIdPtr = pas_TypeDenoter(NULL, 1);
       if (typeIdPtr)
         {
           typePtr = addTypeDefine(typeName, sFILE_OF, g_dwVarSize, typeIdPtr);
@@ -1641,7 +1651,7 @@ static STYPE *pas_NewComplexType(char *typeName)
        * FORM: pascal-string-type = 'string' [ max-string-length ]
        */
     case sSTRING :
-      error (eNOTYET);
+      error(eNOTYET);
       getToken();
       break;
 
@@ -1687,6 +1697,7 @@ static STYPE *pas_OrdinalTypeIdentifier(bool allocate)
            */
 
           break;
+
         default :
           /* If not, return NULL */
 
@@ -1702,55 +1713,108 @@ static STYPE *pas_OrdinalTypeIdentifier(bool allocate)
 
 static STYPE *pas_GetArrayType(void)
 {
-   STYPE *typePtr = NULL;
+  STYPE *indexType = NULL;
+  STYPE *typeDenoter = NULL;
 
-   TRACE(lstFile,"[pas_GetArrayType]");
+  TRACE(lstFile,"[pas_GetArrayType]");
 
-   /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter */
-   /* FORM: [PACKED] ARRAY [<integer>] OF type-denoter
-    * NOTE: Bracketed value is the array size!  NONSTANDARD! */
+  /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter */
+  /* FORM: [PACKED] ARRAY [<integer>] OF type-denoter
+   * NOTE: Bracketed value is the array size!  NONSTANDARD!
+   */
 
-   g_dwVarSize = 0;
+  g_dwVarSize = 0;
 
-   /* Verify that the index-type-list is preceded by '[' */
+  /* Verify that the index-type-list is preceded by '[' */
 
-   if (token != '[') error (eLBRACKET);
-   else
-     {
-       /* FORM: index-type-list = index-type { ',' index-type }
-        * FORM: index-type = ordinal-type
-        */
+  if (token != '[') error(eLBRACKET);
+  else
+    {
+      /* FORM: index-type-list = index-type { ',' index-type }
+       * FORM: index-type = ordinal-type
+       *
+       * REVISIT:  At present only integer constants are accepted as
+       * ordinal-type.
+       */
 
-       getToken();
-       if (token != tINT_CONST) error (eINTCONST);
-       else
-         {
-           g_dwVarSize = tknInt;
-           getToken();
+      getToken();
+      if (token != tINT_CONST) error(eINTCONST);
+      else
+        {
+          int32_t saveTknInt = tknInt;
+          int32_t minValue;
+          int32_t maxValue;
 
-           /* Verify that the index-type-list is followed by ']' */
+          /* Check for a sub-range of integer constants */
 
-           if (token != ']') error (eRBRACKET);
-           else getToken();
+          getToken();
+          if (token == tSUBRANGE)
+            {
+              /* Get the upper value of the sub-range */
 
-           /* Verify that 'of' precedes the type-denoter */
+              getToken();
+              if (token != tINT_CONST) error(eINTCONST);
+              else
+                {
+                   if (tknInt <= saveTknInt) error(eSUBRANGETYPE);
+                   else
+                     {
+                       minValue = saveTknInt;
+                       maxValue = tknInt;
+                       getToken();
+                     }
+                }
+            }
+          else
+            {
+              g_dwVarSize = tknInt;
+              getToken();
+            }
 
-           if (token != tOF) error (eOF);
-           else getToken();
+          /* Verify that the index-type-list is followed by ']' */
 
-           /* We have the array size in elements, not get the type and convert
-            * the size for the type found
-            */
+          if (token != ']') error(eRBRACKET);
+          else getToken();
 
-           typePtr = pas_DeclareType(NULL);
-           if (typePtr)
-             {
-               g_dwVarSize *= typePtr->sParm.t.asize;
-             }
-         }
-     }
+          /* Verify that 'of' precedes the type-denoter */
 
-   return typePtr;
+          if (token != tOF) error(eOF);
+          else getToken();
+
+          /* OF should be followed by the type-denoter base type.
+           * This may be an the name of a previously defined type or a
+           * new, unnamed type definition.
+           */
+
+          typeDenoter = pas_TypeDenoter(NULL, false);
+          if (typeDenoter == NULL) error(eINVTYPE);
+
+           /* And the whole thing must be terminated with a semi-colon */
+
+          if (token != ';') error(eSEMICOLON);
+          else getToken();
+
+          /* We have the array size in elements and the base type, now
+           * create the unnamed index-type and convert the size for the
+           * type found
+           *
+           * REVISIT:  This needs to be extended when additional logic is
+           * added to deal with ordinal type names as index-type.
+           */
+
+          indexType = addTypeDefine(NULL, sSUBRANGE, sINT_SIZE, NULL);
+          if (indexType)
+            {
+              indexType->sParm.t.subType  = sINT;
+              indexType->sParm.t.minValue = minValue;
+              indexType->sParm.t.maxValue = maxValue;
+
+              g_dwVarSize = (maxValue - minValue + 1) * sINT_SIZE;
+            }
+        }
+    }
+
+  return indexType;
 }
 
 /***************************************************************/
@@ -2193,7 +2257,7 @@ static STYPE *pas_DeclareParameter(bool pointerType)
     * <identifier>[,<identifier>[,<identifier>[...]]] : <type identifier>
     */
 
-   if (token != tIDENT) error (eIDENT);
+   if (token != tIDENT) error(eIDENT);
    else
      {
        varPtr = addVariable(tkn_strt, sINT, 0, sINT_SIZE, NULL);
@@ -2206,7 +2270,7 @@ static STYPE *pas_DeclareParameter(bool pointerType)
          }
        else
          {
-           if (token != ':') error (eCOLON);
+           if (token != ':') error(eCOLON);
            else getToken();
            typePtr = pas_TypeIdentifier(0);
          }

@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <ctype.h>
 
 #include "keywords.h"
@@ -122,7 +123,7 @@ int16_t rePrimeTokenizer(void)
 
   /* Read the next line from the input stream */
 
-  if (!fgets(FP->cp, LINE_SIZE, FP->stream))
+  if (!fgets((char *)FP->cp, LINE_SIZE, FP->stream))
     {
       /* EOF.. close file */
 
@@ -223,17 +224,23 @@ void getToken(void)
   /* Process Identifier, Symbol, or Reserved Word */
 
   if ((isalpha(inChar)) || (inChar == '_'))
-    identifier();
+    {
+      identifier();
+    }
 
   /* Process Numeric */
 
   else if (isdigit(inChar))
-    unsignedNumber();
+    {
+      unsignedNumber();
+    }
 
   /* Process string */
 
   else if (inChar == SQUOTE)
-    string();                         /* process string type */
+    {
+      string();                       /* process string type */
+    }
 
   /* Process ':' or assignment */
 
@@ -368,12 +375,16 @@ void getToken(void)
   /* Check for $XXXX (hex) */
 
   else if (inChar == '%')
-    unsignedHexadecimal();
+    {
+      unsignedHexadecimal();
+    }
 
   /* Check for $BBBB (binary) */
 
   else if (inChar == '%')
-    unsignedBinary();
+    {
+      unsignedBinary();
+    }
 
   /* if inChar is an ASCII character then return token = character */
 
@@ -441,15 +452,21 @@ static void identifier(void)
            */
 
           if (token == tREAL_CONST)
-            tknReal = tknPtr->sParm.c.val.f;
+            {
+              tknReal = tknPtr->sParm.c.val.f;
+            }
           else
-            tknInt  = tknPtr->sParm.c.val.i;
+            {
+              tknInt  = tknPtr->sParm.c.val.i;
+            }
         } /* End if */
 
       /* Otherwise, the token is an identifier */
-      else
-        token = tIDENT;
 
+      else
+        {
+          token = tIDENT;
+        }
     } /* end else */
 
 } /* End identifier */
@@ -536,7 +553,7 @@ static bool getLine(void)
 
   /* Read the next line from the currently active file */
 
-  if (!fgets(FP->cp, LINE_SIZE, FP->stream))
+  if (!fgets((char *)FP->cp, LINE_SIZE, FP->stream))
     {
       /* We are at an EOF for this file.  Check if we are processing an
        * included file
@@ -569,7 +586,8 @@ static bool getLine(void)
         */
 
        (FP->line)++;
-       fprintf(lstFile, "%d:%04ld %s", FP->include, FP->line, FP->buffer);
+       fprintf(lstFile, "%d:%04" PRId32 " %s",
+               FP->include, FP->line, FP->buffer);
      } /* end else */
 
    return endOfFile;
@@ -629,7 +647,7 @@ static void unsignedNumber(void)
       /* Terminate the integer string and convert it using sscanf */
 
       *stringSP++ = '\0';
-      (void)sscanf(tkn_strt, "%ld", &tknInt);
+      (void)sscanf(tkn_strt, "%" PRId32, &tknInt);
 
       /* Remove the integer string from the character identifer stack */
 
@@ -837,7 +855,7 @@ static void unsignedHexadecimal(void)
   /* Terminate the hex string and convert to binary using sscanf */
 
   *stringSP++ = '\0';
-  (void)sscanf(tkn_strt, "%lx", &tknInt);
+  (void)sscanf(tkn_strt, "%" PRIx32, &tknInt);
 
   /* Remove the hex string from the character identifer stack */
 
@@ -889,7 +907,7 @@ static void unsignedBinary(void)
       else break;
     }
 
-  /* I don't there there is an sscanf conversion for binary, that's
+  /* I don't think there is an sscanf conversion for binary, that's
    * why we did it above.
    */
 

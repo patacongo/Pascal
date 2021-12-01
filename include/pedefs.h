@@ -109,7 +109,7 @@
  * eUNDEFLABEL          A declared label was not defined.
  * eUNDEFSYM            Undefined symbol
  * eUNTIL               Expected 'UNTIL'
- * eEXPRTYPE	        Illegal expression type for this operation
+ * eEXPRTYPE            Illegal expression type for this operation
  * eTERMTYPE            Illegal term type for this operation
  * eFACTORTYPE          Illegal factor type for this operation
  * eREADPARM            Illegal parameter in READ statement
@@ -118,9 +118,9 @@
  * ePOINTERTYPE         Illegal pointer type
  * eVARPARMTYPE         Illegal VAR parameter type
  * eSUBRANGE            Expected ".."
- * eSUBRANGETYPE	Illegal subrange type
+ * eSUBRANGETYPE        Illegal subrange type
  * eSET                 Expected valid/consistent type for SET OF
- * sSETRANGE		Value out of range for SET OF
+ * sSETRANGE            Value out of range for SET OF
  * eSCALARTYPE          Illegal scalar type
  * eBADSHORTINT         Short integer is out of range
  * eSYMTABINTERNAL      Internal error in symbol table
@@ -142,16 +142,17 @@
  * eRCVDSIGNAL          Received SIGSEGV (or other) signal.
  *
  * RUN TIME ERRORS
- * eBADPC		Program Counter is out-of-range
- * eBADSP		Stack reference is out-of-range
+ * eBADPC               Program Counter is out-of-range
+ * eBADSP               Stack reference is out-of-range
  * eSTRSTKOVERFLOW      String stack overflow
- * eILLEGALOPCODE	Non-executable instruction found
- * eEXIT		oEND P-Code encountered
- * eBADSYSIOFUNC	Illegal SYSIO sub-function
- * eBADSYSLIBCALL	Illegal runtime library call
- * eBADFPOPCODE		Illegal FLOAT POINT op-code
+ * eILLEGALOPCODE       Non-executable instruction found
+ * eEXIT                oEND P-Code encountered
+ * eBADSYSIOFUNC        Illegal SYSIO sub-function
+ * eBADSYSLIBCALL       Illegal runtime library call
+ * eBADFPOPCODE         Illegal FLOAT POINT op-code
  * eFAILEDLIBCALL       Runtime library call returned failure
  * eINTEGEROVERFLOW     Integer overflow
+ *
  **********************************************************************/
 
 /* This is the error code that indicates that no error has occurred */
