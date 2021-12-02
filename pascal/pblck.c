@@ -1771,8 +1771,13 @@ static STYPE *pas_GetArrayType(void)
             }
           else
             {
-              g_dwVarSize = tknInt;
-              getToken();
+              if (tknInt < 0) error(eINVCONST);
+              else
+                {
+                  minValue = 0;
+                  maxValue = saveTknInt - 1;
+                  getToken();
+                }
             }
 
           /* Verify that the index-type-list is followed by ']' */
