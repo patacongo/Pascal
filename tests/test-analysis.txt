@@ -1,0 +1,190 @@
+testall.sh compiles all (most) of the pascal source files in the src/ sub-directory.  The src/ sub-directory contains various pascal programs found by scouring the internet (most not attributed here.. sorry).  As of this writing, the following errors are reported when testall.sh is ran:
+
+1. Several test cases fail because the involve use of non-standard Pascal types
+   (filename and list) and undefined procedures (fsplit).
+   According to freepascal.org, fsplit is a procedure in a unit called DOS.
+   test cases using the list type probably should be removed.
+2. Currently a set is limited to 32-bits to so that they can be represented internally
+   as a 32-bit bit set.
+3. There is an issue with the scoping of the names of the formal parameters of nested
+   functions.  They need to eclipse any other names declared at broader scope.
+4. Unit files with data declarations, but no implementation.
+5. General usage of units.  Most of these are not skipped by testall.sh.
+
+Successful test results are not shown.
+
+########src/104-primes.pas########
+Line 0:0012 Error 47 Token 3b
+
+Line (in var section):
+ 12   sieve, primes : array[0..w] of set of 0..maxbit;
+
+Where (in const section)
+  8   maxbit = 58;
+
+Error:
+244 #define eSETRANGE        ((uint16_t) 0x47)
+
+Analysis:
+This is a consequence of the fact that sets are currently limited to 32-bits:
+
+########src/106-bubblesort.pas########
+Line 0:0021 Error 0e Token 46
+
+Line:
+ 15         i, j, tmp, size: integer;
+ 21     PROCEDURE ReadArr(VAR size: Integer; VAR a: IntArrType);
+
+Error:
+183 #define eIDENT           ((uint16_t) 0x0e)
+
+Token:
+ 76 #define sINT             0x46
+
+Analysis:
+The error occurs in pas_DeclareParameter():
+
+2248 static STYPE *pas_DeclareParameter(bool pointerType)
+2249 {
+2260    if (token != tIDENT) error(eIDENT);
+2261    else
+
+The value of token at the failure is sINT.
+
+I believe that the problem here is that the formal parameters size is treated as type integer and not as an identifier because of the preceding definition of size at line 15.  See also 107-quicksort.pas and 803-redirect.pas
+
+########src/107-quicksort.pas########
+Line 0:0020 Error 0e Token 46
+
+Line:
+ 14       i, j, tmp, size: integer;
+ 20   PROCEDURE ReadArr(VAR size: Integer; VAR a: IntArrType);
+
+Error:
+183 #define eIDENT           ((uint16_t) 0x0e)
+
+Token:
+ 76 #define sINT             0x46
+
+Analysis:
+The error occurs in pas_DeclareParameter():
+
+2248 static STYPE *pas_DeclareParameter(bool pointerType)
+2249 {
+2260    if (token != tIDENT) error(eIDENT);
+2261    else
+
+The value of token at the failure is sINT.
+
+I believe that the problem here is that the formal parameters size is treated as type integer and not as an identifier because of the preceding definition of size at line 14.  See also 106-bubblesort.pas and 803-redirect.pas
+
+########src/803-redirect.pas########
+Line 0:0063 Error 0e Token 4b
+
+Line:
+ 63       procedure ProcessNameValuePair(var name, value : string);
+ 
+Error:
+183 #define eIDENT           ((uint16_t) 0x0e)
+
+Token:
+ 81 #define sSTRING          0x4b /* String storage type */
+
+Analysis:
+The error occurs in pas_DeclareParameter():
+
+2248 static STYPE *pas_DeclareParameter(bool pointerType)
+2249 {
+2260    if (token != tIDENT) error(eIDENT);
+2261    else
+
+The value of token at the failure is sSTRING.
+
+I believe that the problem here is that the formal parameters name and value are treated as type string and not as identifiers because of the preceding definition:
+
+ 61       EncodedVariable, DecodedVariable, name, value : string;
+ 62
+ 63       procedure ProcessNameValuePair(var name, value : string);
+
+So there is an issue with the scope of formal parameters!
+See also 803-redirect.pas and 107-quicksort.pas.
+
+########src/804-cgiform.pas########
+Line 0:0054 Error 1e Token 01 (LIST)
+
+Line:
+ 54         NameValuePairs : list of NameValuePair;
+
+Where:
+ 48         NameValuePair = record
+ 49                 Name : string[MAX_NAME];
+ 50                 Value : string[MAX_VALUE]
+
+Error:
+200 #define eINVTYPE         ((uint16_t) 0x1e)
+
+Token:
+ 43 #define tIDENT           0x01
+
+Analysis:
+I think that list types are not supported
+
+########src/805-cgimail.pas########
+Line 0:0037 Error 09 Token 01 (FSPLIT)
+
+Line:
+ 33    function AppDir : string;
+ 34    var
+ 35       fdir : string;
+ 36    begin
+ 37       fsplit(paramstr(0), fdir,,);
+ 38       AppDir := fdir
+ 39    end;
+
+Error:
+183 #define eIDENT           ((uint16_t) 0x01)
+
+Token:
+178 #define eEND             ((uint16_t) 0x09)
+
+Analysis:
+There is no builin fsplit procedure.
+
+########src/806-cgicook.pas########
+Line 0:0088 Error 1e Token 01 (LIST)
+
+Line:
+ 88         CookieList = list of Cookie;
+ 
+Error:
+200 #define eINVTYPE         ((uint16_t) 0x1e)
+
+Token:
+ 43 #define tIDENT           0x01
+
+Analysis:
+I think that list types are not supported
+
+########src/901-pageutils.pas########
+Line 0:0654 Error 0f Token 45
+
+Line:
+ 654 input = 1;
+
+Error:
+184 #define eIMPLEMENTATION  ((uint16_t) 0x0f)
+
+Token:
+ 75 #define sFILE            0x45
+
+Analysis:
+This is a unit with constant/variable/procedure definitions.  It has no implementation section at the end as does a normal program file.
+
+########src/501-uses.pex########
+Fatal Error 41 -- Aborting
+
+Error:
+238 #define eARRAYTYPE       ((uint16_t) 0x41)
+
+Analysis:
+This is an issue with using units.  They appear not to work.
