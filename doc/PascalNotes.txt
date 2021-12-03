@@ -52,12 +52,13 @@ STANDARD PROCEDURES and FUNCTIONS
 
 Extended Pascal Features
 - Type STRING is partially implemented.
-- PACKED ARRAY[..] OF CHAR is not a a string.
+- PACKED ARRAY[..] OF CHAR is not a string.
 
 NON-standard Pascal extensions/differences
 
 TYPES
-- ARRAY index type is integer constant specifying size of array
+- ARRAY index type is integer constant specifying size of array or
+  a range of integer constants.
 - Hexadecimal constants.
 - INPUT and OUTPUT parameters in PROGRAM statement are
   predeclared and optional.
@@ -90,11 +91,25 @@ o BUGS
 - Need logic to release string stack used by actual parameters after
   function/procedure call.
 - Can't declare new parameters / variables with same name as another
-  variable at higher stock.  Tokenizer does not return tIDENT.
+  variable at higher stack.  Tokenizer does not return tIDENT, it
+  returns the previous symbol.  This has been fixed for the formal
+  parameters of functions and procedures only:  getToken() know
+  excepts a boolean argument that suppresses the symbol lookup.  When
+  getting the formal parameter name, the lookup is suppressed allowing
+  for duplicate symbols (unverified).
 - There are lots of cases where the string stack is not being managed
   correctly (e.g., usesSection()).
 - Redirection of input and output is not supported (e.g. see setting of
   input and output in CONST section of pageutils.pas).
+- Input procedures in writeln() take the file number as an optional first
+  parameter. If the optional file parameter is not supplied then the file
+  associated with the built-in variable INPUT is tested.  Similarly,
+  outout procedures would default to the built-in OUTPUT.  This has been
+  fixed for some functions (like eof and eoln) but not all cases have been
+  verified.
+- Operations on type 'string' are no yet supported
+- Unit files with data declarations, but no implementation fenerate an
+  error.
 
 o IMPROVEMENTS
 - In PTKN, verify that string stack does not overflow when

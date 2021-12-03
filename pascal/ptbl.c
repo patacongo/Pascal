@@ -2,7 +2,7 @@
  * ptbl.c
  * Table Management Package
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -524,8 +524,8 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard files to the symbol table */
 
-  (void)addFile("INPUT",   0);
-  (void)addFile("OUTPUT",  0);
+  (void)addFile("INPUT",   INPUT_FILE_NUMBER);
+  (void)addFile("OUTPUT",  OUTPUT_FILE_NUMBER);
 
   /* Initialize files table */
 

@@ -1861,7 +1861,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
    * FORM: identifier-list = identifier { ',' identifier }
    */
 
-  for (;;)
+  for (; ; )
     {
       /* Terminate parsing of the fixed-part when we encounter
        * 'case' indicating the beginning of the variant part of

@@ -410,7 +410,7 @@ static void fileFunc(uint16_t opcode)
    * If the optional parameter is supplied then the eof function tests the
    * file associated with the parameter. If the optional parameter is not
    * supplied then the file associated with the built-in variable input is
-   * tested.
+   * used.
    */
 
   getToken(false);     /* Skip over function name */
@@ -432,20 +432,8 @@ static void fileFunc(uint16_t opcode)
     }
   else
     {
-      /* Use the standard input by default */
-
-      STYPE *symPtr = findSymbol("INPUT");
-      if (symPtr)
-        {
-          pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-          pas_GenerateIoOperation(opcode, symPtr->sParm.fileNumber);
-        }
-      else
-        {
-          /* What?  input not defined as a symbol? */
-
-          fatal(eHUH);
-        }
+      pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
+      pas_GenerateIoOperation(opcode, INPUT_FILE_NUMBER);
     }
 }
 
