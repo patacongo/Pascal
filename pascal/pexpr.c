@@ -2,7 +2,7 @@
  * pexpr.c
  * Integer Expression
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1788,8 +1788,9 @@ static exprType complexPtrFactor(void)
 }
 
 /***********************************************************************/
-/* Process a complex factor (recursively) until it becomes a */
-/* simple simple */
+/* Process a complex factor (recursively) until it becomes a simple
+ * factor.
+ */
 
 static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
 {

@@ -54,6 +54,7 @@
 #include "pfunc.h"
 #include "pgen.h"  /* for pas_Generate*() */
 #include "ptkn.h"
+#include "ptbl.h"
 #include "pinsn.h"
 #include "perr.h"
 
@@ -216,7 +217,7 @@ exprType builtInFunction(void)
 
 void checkLParen(void)
 {
-   getToken(false);                          /* Skip over function name */
+   getToken(false);                     /* Skip over function name */
    if (token != '(') error(eLPAREN);    /* Check for '(' */
    else getToken(false);
 }
@@ -316,6 +317,7 @@ static exprType sqrFunc(void)
 }
 
 /**********************************************************************/
+
 static void realFunc (uint8_t fpOpCode)
 {
    exprType realType;
@@ -411,17 +413,39 @@ static void fileFunc(uint16_t opcode)
    * tested.
    */
 
-  checkLParen();
-  if (token != sFILE)
+  getToken(false);     /* Skip over function name */
+  if (token == '(')    /* Check for '(' */
     {
-      error(eFILE);
+      /* Get the file number argument */
+
+      getToken(false);
+      if (token != sFILE) error(eFILE);
+      else
+        {
+          /* Generate the I/O operation */
+
+          pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
+          pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
+        }
+
+      checkRParen();
     }
   else
     {
-      pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-      pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
-      getToken(false);
-      checkRParen();
+      /* Use the standard input by default */
+
+      STYPE *symPtr = findSymbol("INPUT");
+      if (symPtr)
+        {
+          pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
+          pas_GenerateIoOperation(opcode, symPtr->sParm.fileNumber);
+        }
+      else
+        {
+          /* What?  input not defined as a symbol? */
+
+          fatal(eHUH);
+        }
     }
 }
 

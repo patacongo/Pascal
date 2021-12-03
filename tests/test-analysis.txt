@@ -8,16 +8,15 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
    not sure how standard that unit is.
 2. Currently a set is limited to 32-bits to so that they can be represented internally
    as a 32-bit bit set.
-3. The eof and eoln take an optional parameter that is a reference to a file variable.
-   If the optional parameter is supplied then the eof function tests the file associated
-   with the parameter. If the optional parameter is not supplied then the file
-   associated with the built-in variable input is tested.
-
-   Logic in fileFunc() in pffunc.c always expects a file number to be present and does
-   not handle the builtin input variable.
+3. Input procedures in writeln() take the file number as an optional first parameter.
+   If the optional file parameter is not supplied then the file associated with the
+   built-in variable input is tested.  Similarly, ouoptout procedures would default to
+   the built-in output.
+   This has been fixed for some functions (like eof and eoln) but not all cases have been verified.
 4. Operations on type 'string' are no yet supported
 5. Unit files with data declarations, but no implementation.
 6. General usage of units.  Most of these are not skipped by testall.sh.
+7. Additional issue with src/107-quicksort.pas that has not yet been analyzed.
 
 Successful test results are not shown.
 
@@ -37,22 +36,36 @@ Analysis:
 This is a consequence of the fact that sets are currently limited to 32-bits:
 
 ########src/107-quicksort.pas########
-Line 0:0023 Error 21 Token 86
+Line 0:0024 Error 41 Token 5b
 
 Line:
- 23             WHILE NOT eof DO BEGIN
+ 24                readln(a[size]);
+
+Where a is a formal parameter of type 'VAR a: IntArrType' and where
+
+    CONST
+        MaxElts = 50;
+    TYPE
+        IntArrType = ARRAY [1..MaxElts] OF Integer;
 
 Error:
-204 #define eLPAREN          ((uint16_t) 0x21)
-
+238 #define eARRAYTYPE       ((uint16_t) 0x41)
 
 Token:
-115 #define tDO              0x86
+ 95 /* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens */
+ (5b -> '[')
 
 Analysis:
-The eof takes an optional parameter that is a reference to a file variable. If the optional parameter is supplied then the eof function tests the file associated with the parameter. If the optional parameter is not supplied then the file associated with the built-in variable input is tested.
+2110        case sARRAY :
+2111          if (factorFlags != 0) error(eARRAYTYPE);
+2112          if (token == '[')
+2113            {
+2114              factorFlags         |= INDEXED_FACTOR;
 
-Logic in fileFunc() in pffunc.c always expects a file number to be present and does not handle the builtin input variable.
+(gdb) p /x factorFlags
+$1 = 0x1
+
+69 #define ADDRESS_DEREFERENCE 0x01
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d

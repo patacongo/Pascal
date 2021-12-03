@@ -58,18 +58,18 @@
 
 #define MAX_SYM           (4096)
 #define MAX_STRINGS       (65536)
-#define MAX_INCL           3      /* Max number of nested include files */
-#define MAX_FILES          8      /* Max number of opened files */
-#define FNAME_SIZE         40     /* Max size file name */
-#define MAX_INCPATHES      8      /* Max number of include pathes */
+#define MAX_INCL           3        /* Max number of nested include files */
+#define MAX_FILES          8        /* Max number of opened files */
+#define FNAME_SIZE         40       /* Max size file name */
+#define MAX_INCPATHES      8        /* Max number of include pathes */
 
 /* Bit values for the 'flags' field of the symType_t, symProc_t, and
  * symVar_t (see below)
  */
 
-#define STYPE_VARSIZE      0x01   /* Type has variable size */
-#define SPROC_EXTERNAL     0x01   /* Proc/func. is defined externally */
-#define SVAR_EXTERNAL      0x01   /* Variable is defined externally */
+#define STYPE_VARSIZE      (1 << 0) /* Type has variable size */
+#define SPROC_EXTERNAL     (1 << 1) /* Proc/func. is defined externally */
+#define SVAR_EXTERNAL      (1 << 2) /* Variable is defined externally */
 
 /***********************************************************************
  * Public Enumeration Types
