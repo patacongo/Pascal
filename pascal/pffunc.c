@@ -2,7 +2,7 @@
  * pfunc.c
  * Standard Functions
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -108,12 +108,15 @@ exprType builtInFunction(void)
         case txABS :
           funcType = absFunc();
           break;
+
         case txSQR :
           funcType = sqrFunc();
           break;
+
         case txPRED :
           funcType = predFunc();
           break;
+
         case txSUCC :
           funcType = succFunc();
           break;
@@ -125,13 +128,14 @@ exprType builtInFunction(void)
           /* Functions returning INTEGER with REAL arguments */
 
         case txROUND :
-          getToken();                          /* Skip over 'round' */
+          getToken(false);                          /* Skip over 'round' */
           expression(exprReal, NULL);
           pas_GenerateFpOperation(fpROUND);
           funcType = exprInteger;
           break;
+
         case txTRUNC :
-          getToken();                          /* Skip over 'trunc' */
+          getToken(false);                          /* Skip over 'trunc' */
           expression(exprReal, NULL);
           pas_GenerateFpOperation(fpTRUNC);
           funcType = exprInteger;
@@ -152,14 +156,17 @@ exprType builtInFunction(void)
           break;
 
           /* Functions returning BOOLEAN */
+
         case txODD :
           oddFunc();
           funcType = exprBoolean;
           break;
+
         case txEOF :
           fileFunc(xEOF);
           funcType = exprBoolean;
           break;
+
         case txEOLN :
           fileFunc(xEOLN);
           funcType = exprBoolean;
@@ -171,22 +178,27 @@ exprType builtInFunction(void)
           realFunc(fpSQRT);
           funcType = exprReal;
           break;
+
         case txSIN :
           realFunc(fpSIN);
           funcType = exprReal;
           break;
+
         case txCOS :
           realFunc(fpCOS);
           funcType = exprReal;
           break;
+
         case txARCTAN :
           realFunc(fpATAN);
           funcType = exprReal;
           break;
+
         case txLN :
           realFunc(fpLN);
           funcType = exprReal;
           break;
+
         case txEXP :
           realFunc(fpEXP);
           funcType = exprReal;
@@ -195,24 +207,24 @@ exprType builtInFunction(void)
         default :
           error(eINVALIDPROC);
           break;
-        } /* end switch */
-    } /* end if */
+
+        }
+    }
 
   return funcType;
-
-} /* end builtInFunction */
+}
 
 void checkLParen(void)
 {
-   getToken();                          /* Skip over function name */
+   getToken(false);                          /* Skip over function name */
    if (token != '(') error(eLPAREN);    /* Check for '(' */
-   else getToken();
+   else getToken(false);
 }
 
 void checkRParen(void)
 {
    if (token != ')') error(eRPAREN);    /* Check for ')') */
-   else getToken();
+   else getToken(false);
 }
 
 /***************************************************************
@@ -239,8 +251,7 @@ static exprType absFunc(void)
 
    checkRParen();
    return absType;
-
-} /* end absFunc */
+}
 
 /**********************************************************************/
 
@@ -253,8 +264,7 @@ static void ordFunc(void)
    checkLParen();
    expression(exprAnyOrdinal, NULL);     /* Get any ordinal type */
    checkRParen();
-
-} /* end ordFunc */
+}
 
 /**********************************************************************/
 
@@ -274,8 +284,7 @@ static exprType predFunc(void)
    checkRParen();
    pas_GenerateSimple(opDEC);
    return predType;
-
-} /* end predFunc */
+}
 
 /**********************************************************************/
 
@@ -295,7 +304,7 @@ static exprType sqrFunc(void)
      pas_GenerateSimple(opDUP);
      pas_GenerateSimple(opMUL);
 
-   } /* end if */
+   }
    else if (sqrType == exprReal)
      pas_GenerateFpOperation(fpSQR);
 
@@ -304,8 +313,7 @@ static exprType sqrFunc(void)
 
    checkRParen();
    return sqrType;
-
-} /* end sqrFunc */
+}
 
 /**********************************************************************/
 static void realFunc (uint8_t fpOpCode)
@@ -327,8 +335,7 @@ static void realFunc (uint8_t fpOpCode)
      error(eINVARG);
 
    checkRParen();
-
-} /* end realFunc */
+}
 
 /**********************************************************************/
 
@@ -349,8 +356,7 @@ static exprType succFunc(void)
    checkRParen();
    pas_GenerateSimple(opINC);
    return succType;
-
-} /* end succFunc */
+}
 
 /***********************************************************************/
 
@@ -369,8 +375,7 @@ static void oddFunc(void)
    pas_GenerateDataOperation(opPUSH, 1);
    pas_GenerateSimple(opAND);
    pas_GenerateSimple(opNEQZ);
-
-} /* end oddFunc */
+}
 
 /***********************************************************************/
 /* Process the standard chr function */
@@ -388,32 +393,37 @@ static void chrFunc(void)
    checkLParen();
    expression(exprInteger, NULL);
    checkRParen();
-
-} /* end chrFunc */
+}
 
 /****************************************************************************/
 /* EOF/EOLN function */
 
 static void fileFunc(uint16_t opcode)
 {
-   TRACE(lstFile,"[fileFunc]");
+  TRACE(lstFile,"[fileFunc]");
 
-   /* FORM: EOF|EOLN (<file number>) */
+  /* FORM: EOF|EOLN (<file number>)
+   *
+   * The optional <file number> parameter is a reference to a file variable.
+   * If the optional parameter is supplied then the eof function tests the
+   * file associated with the parameter. If the optional parameter is not
+   * supplied then the file associated with the built-in variable input is
+   * tested.
+   */
 
-   checkLParen();
-   if (token !=  sFILE)
-     {
-       error(eFILE);
-     }
-   else
-     {
-       pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-       pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
-       getToken();
-       checkRParen();
-     } /* end else */
-
-} /* end fileFunc */
+  checkLParen();
+  if (token != sFILE)
+    {
+      error(eFILE);
+    }
+  else
+    {
+      pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
+      pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
+      getToken(false);
+      checkRParen();
+    }
+}
 
 /**********************************************************************/
 /* C library getenv interface */

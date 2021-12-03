@@ -60,7 +60,7 @@
 static void getCharacter        (void);
 static void skipLine            (void);
 static bool getLine             (void);
-static void identifier          (void);
+static void identifier          (bool nosym);
 static void string              (void);
 static void unsignedNumber      (void);
 static void unsignedRealNumber  (void);
@@ -167,15 +167,15 @@ char getNextCharacter(bool skipWhiteSpace)
           /* Uh-oh, we are out of data!  Just return some bogus value. */
           inChar = '?';
 
-        } /* end if */
+        }
       else
         {
           /* Otherwise, recurse to try again. */
 
           return getNextCharacter(skipWhiteSpace);
 
-        } /* end else */
-    } /* end if */
+        }
+    }
 
   /* If it is a space and we have been told to skip spaces then consume
    * the input line until a non-space or the EOL is encountered.
@@ -193,7 +193,7 @@ char getNextCharacter(bool skipWhiteSpace)
 
           inChar = *(FP->cp);
 
-        } /* end while */
+        }
 
       /* If we hit the EOL while searching for the next non-space, then
        * recurse to try again on the next line
@@ -203,15 +203,14 @@ char getNextCharacter(bool skipWhiteSpace)
         {
           return getNextCharacter(skipWhiteSpace);
         }
-    } /* end else if */
+    }
 
   return inChar;
-
-} /* end getNextCharacter */
+}
 
 /***************************************************************/
 
-void getToken(void)
+void getToken(bool nosym)
 {
   /* Skip over leading spaces and comments */
 
@@ -225,7 +224,7 @@ void getToken(void)
 
   if ((isalpha(inChar)) || (inChar == '_'))
     {
-      identifier();
+      identifier(nosym);
     }
 
   /* Process Numeric */
@@ -249,7 +248,7 @@ void getToken(void)
       getCharacter();
       if (inChar == '=') {token = tASSIGN; getCharacter();}
       else token = ':';
-    } /* end else if */
+    }
 
   /* Process '.' or subrange or real-number */
 
@@ -275,7 +274,7 @@ void getToken(void)
       /* Otherwise, it is just a '.' */
 
       else token = '.';
-    } /* end else if */
+    }
 
   /* Process '<' or '<=' or '<>' or '<<' */
 
@@ -286,7 +285,7 @@ void getToken(void)
       else if (inChar == '=') {token = tLE; getCharacter();}
       else if (inChar == '<') {token = tSHL; getCharacter();}
       else token = tLT;
-    } /* end else if */
+    }
 
   /* Process '>' or '>=' or '><' or '>>' */
 
@@ -297,7 +296,7 @@ void getToken(void)
       else if (inChar == '=') {token = tGE; getCharacter();}
       else if (inChar == '>') {token = tSHR; getCharacter();}
       else token = tGT;
-    } /* end else if */
+    }
 
   /* Get Comment -- form { .. } */
 
@@ -306,8 +305,8 @@ void getToken(void)
       do getCharacter();                 /* get the next character */
       while (inChar != '}');             /* loop until end of comment */
       getCharacter();                    /* skip over end of comment */
-      getToken();                        /* get the next real token */
-    } /* end else if */
+      getToken(false);                        /* get the next real token */
+    }
 
   /* Get comment -- form (* .. *) */
 
@@ -330,13 +329,14 @@ void getToken(void)
                 {
                   break;                 /* Yes... break out */
                 }
+
               lastChar = inChar;         /* save the last character */
-            } /* end for */
+            }
 
           getCharacter();                /* skip over the comment end char */
-          getToken();                    /* and get the next real token */
-      } /* end else */
-    } /* end else if */
+          getToken(false);                    /* and get the next real token */
+      }
+    }
 
   /* NONSTANDARD:  All C/C++-style comments */
 
@@ -346,7 +346,7 @@ void getToken(void)
       if (inChar == '/')                 /* C++ style comment? */
         {
           skipLine();                    /* Yes, skip rest of line */
-          getToken();                    /* and get the next real token */
+          getToken(false);                    /* and get the next real token */
         }
       else if (inChar != '*')            /* is this a C-style comment? */
         {
@@ -364,13 +364,14 @@ void getToken(void)
                 {
                   break;                 /* Yes... break out */
                 }
+
               lastChar = inChar;         /* save the last character */
-            } /* end for */
+            }
 
           getCharacter();                /* skip over the comment end char */
-          getToken();                    /* and get the next real token */
-      } /* end else */
-    } /* end else if */
+          getToken(false);                    /* and get the next real token */
+      }
+    }
 
   /* Check for $XXXX (hex) */
 
@@ -392,25 +393,24 @@ void getToken(void)
     {
       token = inChar;
       getCharacter();
-    } /* end else if */
+    }
 
   /* Otherwise, discard the character and try again */
 
   else
     {
       getCharacter();
-      getToken();
-    } /* end else */
+      getToken(false);
+    }
 
   DEBUG(lstFile,"[%02x]", token);
-
-} /* End getToken */
+}
 
 /***************************************************************
  * Private Functions
  ***************************************************************/
 
-static void identifier(void)
+static void identifier(bool nosym)
 {
   const  RTYPE *rptr;                         /* Pointer to reserved word */
 
@@ -434,11 +434,15 @@ static void identifier(void)
       token      = rptr->rtype;               /* get type from rsw table */
       tknSubType = rptr->subtype;             /* get subtype from rsw table */
       stringSP      = tkn_strt;               /* pop token from stack */
-    } /* End if */
+    }
 
-  /* Check if the identifier is a symbol */
+  /* Check if the identifier is a symbol.  If nosym is 'true' then this
+   * check is skipped.  nosym is 'true' in situations where is is acceptable
+   * to redefine a previous defined name (such as the name of a formal
+   * parameter.
+   */
 
-  else
+  else if (!nosym)
     {
       tknPtr = findSymbol(tkn_strt);
       if (tknPtr)
@@ -459,7 +463,7 @@ static void identifier(void)
             {
               tknInt  = tknPtr->sParm.c.val.i;
             }
-        } /* End if */
+        }
 
       /* Otherwise, the token is an identifier */
 
@@ -467,9 +471,13 @@ static void identifier(void)
         {
           token = tIDENT;
         }
-    } /* end else */
+    }
+  else
+    {
+      token = tIDENT;
+    }
 
-} /* End identifier */
+}
 
 /***************************************************************/
 /* Process string */
@@ -487,14 +495,14 @@ static void string(void)
         {
           error(eNOSQUOTE);          /* ERROR, terminate string */
           break;
-        } /* end if */
+        }
       else
         {
           *stringSP++ = inChar;      /* concatenate character */
           count++;                   /* bump count of chars */
-        } /* end else */
+        }
       getCharacter();                /* get the next character */
-    } /* end while */
+    }
   *stringSP++ = '\0';                /* terminate ASCIIZ string */
 
   getCharacter();                    /* skip over last single quote */
@@ -503,8 +511,8 @@ static void string(void)
       token = tCHAR_CONST;           /* indicate char constant type */
       tknInt = *tkn_strt;            /* (integer) value = single char */
       stringSP = tkn_strt;           /* "pop" from string stack */
-    } /* end if */
-} /* end string */
+    }
+}
 
 /***************************************************************/
 
@@ -532,7 +540,7 @@ static void skipLine(void)
       /* Uh-oh, we are out of data!  Just return some bogus value. */
 
       inChar = '?';
-    } /* end if */
+    }
   else
     {
       /* Otherwise, get the first character from the line */
@@ -571,14 +579,14 @@ static bool getLine(void)
            */
 
           FP->buffer[0] = '\0';
-        } /* end if */
+        }
        else
          {
            /* No.  We are completely out of data.  Return true in this case. */
 
            endOfFile = true;
-         } /* end else */
-     } /* end if */
+         }
+     }
    else
      {
        /* We have a new line of data.  Increment the line number, then echo
@@ -588,11 +596,10 @@ static bool getLine(void)
        (FP->line)++;
        fprintf(lstFile, "%d:%04" PRId32 " %s",
                FP->include, FP->line, FP->buffer);
-     } /* end else */
+     }
 
    return endOfFile;
-
-} /* end getLine */
+}
 
 /***************************************************************/
 
@@ -652,7 +659,7 @@ static void unsignedNumber(void)
       /* Remove the integer string from the character identifer stack */
 
       stringSP = tkn_strt;
-    } /* end if */
+    }
   else
     {
       /* Its a real value!  Now really get the next character and
@@ -662,7 +669,7 @@ static void unsignedNumber(void)
 
       getCharacter();
       unsignedRealNumber();
-    } /* end if */
+    }
 }
 
 /***************************************************************/
@@ -721,7 +728,7 @@ static void unsignedRealNumber(void)
 
       *stringSP++ = '\0';
       (void) sscanf(tkn_strt, "%lf", &tknReal);
-    } /* end if */
+    }
 
   /* Remove the number string from the character identifer stack */
 

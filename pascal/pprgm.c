@@ -55,7 +55,7 @@
 #include "pas.h"       /* for globals + openNestedFile */
 #include "pblck.h"     /* for block() */
 #include "pgen.h"      /* for pas_Generate*() */
-#include "ptkn.h"      /* for getToken() */
+#include "ptkn.h"      /* for getToken(false) */
 #include "ptbl.h"      /* for addFile() */
 #include "pofflib.h"   /* For poff*() functions*/
 #include "paslib.h"    /* for extension() */
@@ -104,7 +104,7 @@ void program(void)
   else
     {
       pgmname = tkn_strt;                  /* Save program name */
-      getToken();
+      getToken(false);
     } /* end else */
 
   /* Process optional file list (allow re-declaration of INPUT & OUTPUT) */
@@ -113,28 +113,28 @@ void program(void)
     {
       do
         {
-          getToken();
+          getToken(false);
           if (token == tIDENT)
             {
               if ((++nfiles) > MAX_FILES) fatal(eOVF);
               (void)addFile(tkn_strt, nfiles);
               stringSP = tkn_strt;
-              getToken();
+              getToken(false);
             } /* end if */
           else if ((token == sFILE) && !(tknPtr->sParm.fileNumber))
-            getToken();
+            getToken(false);
           else
             error(eIDENT);
         }
       while (token == ',');
       if (token != ')') error(eRPAREN);
-      else getToken();
+      else getToken(false);
     } /* End if */
 
   /* Make sure that a semicolon follows the program-heading */
 
   if (token != ';') error(eSEMICOLON);
-  else getToken();
+  else getToken(false);
 
   /* Set the POFF file header type */
 
@@ -151,7 +151,7 @@ void program(void)
 
   if (token == tUSES)
     {
-      getToken();
+      getToken(false);
       usesSection();
     }
 
@@ -187,7 +187,7 @@ void usesSection(void)
       /* Save the unit name identifier and skip over the identifier */
 
       unitName = tkn_strt;
-      getToken();
+      getToken(false);
 
       /* Check for the optional 'in' */
 
@@ -198,7 +198,7 @@ void usesSection(void)
            * the file name follows.
            */
 
-          getToken();
+          getToken(false);
           if (token != tSTRING_CONST) error(eSTRING);
           else
             {
@@ -208,7 +208,7 @@ void usesSection(void)
 
               unitFileName = tkn_strt;
               saveTknStrt = tkn_strt;
-              getToken();
+              getToken(false);
             }
         }
 
@@ -234,7 +234,7 @@ void usesSection(void)
       /* Verify that this is a unit file */
 
       if (token != tUNIT) error(eUNIT);
-      else getToken();
+      else getToken(false);
 
       /* Release the file name from the string stack */
 
@@ -258,7 +258,7 @@ void usesSection(void)
 
       token = saveToken;
       if (token !=  ';') error(eSEMICOLON);
-      else getToken();
+      else getToken(false);
     }
 }
 

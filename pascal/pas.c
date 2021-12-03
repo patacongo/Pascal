@@ -385,14 +385,14 @@ int main(int argc, char *argv[])
    * FORM: unit-heading = 'unit' identifer
    */
 
-  getToken();
+  getToken(false);
   if (token == tPROGRAM)
     {
       /* Compile a pascal program */
 
       FP->kind    = eIsProgram;
       FP->section = eIsProgramSection;
-      getToken();
+      getToken(false);
       program();
     }
   else if (token == tUNIT)
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
 
       FP->kind    = eIsUnit;
       FP->section = eIsOtherSection;
-      getToken();
+      getToken(false);
       unitImplementation();
     }
   else
@@ -520,7 +520,7 @@ void openNestedFile(const char *fileName)
 
       /* Get the first token from the file */
 
-      getToken();
+      getToken(false);
     } /* end else */
 }
 

@@ -258,7 +258,7 @@ static void constantSimpleExpression(void)
   if ((token == '+') || (token == '-'))
     {
       unary = token;
-      getToken();
+      getToken(false);
     }
 
   /* Process first (non-optional) term and apply unary operation */
@@ -297,7 +297,7 @@ static void constantSimpleExpression(void)
 
       /* Get the 2nd term */
 
-      getToken();
+      getToken(false);
       constantTerm();
 
       /* Before generating the operation, verify that the types match.
@@ -424,7 +424,7 @@ void constantTerm(void)
 
     /* Get the next factor */
 
-    getToken();
+    getToken(false);
     constantFactor();
 
     /* Before generating the operation, verify that the types match.
@@ -536,25 +536,25 @@ static void constantFactor(void)
     case tCHAR_CONST :
       constantToken = token;
       constantInt   = tknInt;
-      getToken();
+      getToken(false);
       break;
 
     case tREAL_CONST     :
       constantToken = token;
       constantReal  = tknReal;
-      getToken();
+      getToken(false);
       break;
 
     case tSTRING_CONST :
       constantToken = token;
       constantStart = tkn_strt;
-      getToken();
+      getToken(false);
       break;
 
       /* Highest Priority Operators */
 
     case tNOT:
-      getToken();
+      getToken(false);
       constantFactor();
       if ((constantToken != tINT_CONST) && (constantToken != tBOOLEAN_CONST))
         error(eFACTORTYPE);

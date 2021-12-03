@@ -268,7 +268,7 @@ void declarationGroup(int32_t beginLabel)
   if (token == tCONST)
     {
       const_strt = saveNConst;        /* Limit search to present level */
-      getToken();                     /* Get identifier */
+      getToken(false);                     /* Get identifier */
       const_strt = 0;
 
       /* Process constant-definition.
@@ -287,7 +287,7 @@ void declarationGroup(int32_t beginLabel)
     {
       const_strt = saveNConst;        /* Limit search to present level */
       sym_strt   = saveNSym;
-      getToken();                     /* Get identifier */
+      getToken(false);                     /* Get identifier */
       const_strt = 0;
       sym_strt   = 0;
 
@@ -307,7 +307,7 @@ void declarationGroup(int32_t beginLabel)
     {
       const_strt = saveNConst;        /* Limit search to present level */
       sym_strt   = saveNSym;
-      getToken();                     /* Get identifier */
+      getToken(false);                     /* Get identifier */
       const_strt = 0;
       sym_strt   = 0;
 
@@ -350,7 +350,7 @@ void declarationGroup(int32_t beginLabel)
 
           const_strt = saveNConst;    /* Limit search to present level */
           sym_strt   = saveNSym;
-          getToken();                 /* Get identifier */
+          getToken(false);                 /* Get identifier */
           const_strt = 0;
           sym_strt   = 0;
 
@@ -377,7 +377,7 @@ void declarationGroup(int32_t beginLabel)
 
           const_strt = saveNConst;    /* Limit search to present level */
           sym_strt   = saveNSym;
-          getToken();                 /* Get identifier */
+          getToken(false);                 /* Get identifier */
           const_strt = 0;
           sym_strt   = 0;
 
@@ -409,7 +409,7 @@ void constantDefinitionGroup(void)
         {
           pas_DeclareConst();
           if (token != ';') break;
-          else getToken();
+          else getToken(false);
         }
       else break;
     }
@@ -437,16 +437,16 @@ void typeDefinitionGroup(void)
           /* Save the type identifier */
 
           typeName = tkn_strt;
-          getToken();
+          getToken(false);
 
           /* Verify that '=' follows the type identifier */
 
           if (token != '=') error(eEQ);
-          else getToken();
+          else getToken(false);
 
           (void)pas_DeclareType(typeName);
           if (token != ';') break;
-          else getToken();
+          else getToken(false);
 
         }
       else break;
@@ -473,13 +473,13 @@ void variableDeclarationGroup(void)
         {
           (void)pas_DeclareVar();
           if (token != ';') break;
-          else getToken();
+          else getToken(false);
         }
       else if (token == sFILE)
         {
           pas_DeclareFile();
           if (token != ';') break;
-          else getToken();
+          else getToken(false);
         }
       else break;
     }
@@ -524,14 +524,19 @@ int16_t formalParameterList(STYPE *procPtr)
 
       do
         {
-          getToken();
+          /* Get the formal parameter name.  The argument 'true' will
+           * suppress conversion of type of name if it happens to match
+           * a symbol declared at a higher scope.
+           */
+
+          getToken(true);
 
           /* Check for variable-parameter-specification */
 
           if (token == tVAR)
             {
               pointerType = 1;
-              getToken();
+              getToken(true);
             }
           else
             {
@@ -553,7 +558,7 @@ int16_t formalParameterList(STYPE *procPtr)
        */
 
       if (token != ')') error(eRPAREN);
-      else getToken();
+      else getToken(false);
 
     }
 
@@ -594,21 +599,21 @@ static void pas_DeclareLabel(void)
 
    do
      {
-       getToken();
+       getToken(false);
        if ((token == tINT_CONST) && (tknInt >= 0))
          {
            labelname = stringSP;
            (void)sprintf(labelname, "%" PRId32, tknInt);
            while (*stringSP++);
            (void)addLabel(labelname, ++label);
-           getToken();
+           getToken(false);
          }
        else error(eINTCONST);
      }
    while (token == ',');
 
    if (token != ';') error(eSEMICOLON);
-   else getToken();
+   else getToken(false);
 }
 
 /***************************************************************/
@@ -639,9 +644,9 @@ static void pas_DeclareConst(void)
    * following constant value.
    */
 
-  getToken();
+  getToken(false);
   if (token != '=') error(eEQ);
-  else getToken();
+  else getToken(false);
 
   /* Handle constant expressions */
 
@@ -759,7 +764,7 @@ static STYPE *pas_DeclareVar(void)
   /* Save the current identifier */
 
   varName = tkn_strt;
-  getToken();
+  getToken(false);
 
   /* A comma indicates that there is another indentifier int the
    * identifier-list
@@ -771,7 +776,7 @@ static STYPE *pas_DeclareVar(void)
        * via recursion
        */
 
-      getToken();
+      getToken(false);
       if (token != tIDENT) error(eIDENT);
       else typePtr = pas_DeclareVar();
     }
@@ -780,7 +785,7 @@ static STYPE *pas_DeclareVar(void)
       /* No.. verify that the identifer-list is followed by ';' */
 
       if (token != ':') error(eCOLON);
-      else getToken();
+      else getToken(false);
 
       /* Process the type-denoter */
 
@@ -875,11 +880,11 @@ static void pas_DeclareFile(void)
    else {
 
      /* Skip over the <file identifier> */
-     getToken();
+     getToken(false);
 
      /* Verify that a colon follows the <file identifier> */
      if (token != ':') error(eCOLON);
-     else getToken();
+     else getToken(false);
 
      /* Make sure that the data stack is aligned to INTEGER boundaries */
 
@@ -895,7 +900,7 @@ static void pas_DeclareFile(void)
          files[fileNumber].faddr   = dstack;
          files[fileNumber].fsize   = tknPtr->sParm.t.asize;
          dstack                   += (tknPtr->sParm.t.asize);
-         getToken();
+         getToken(false);
        }
 
      /* FORM:  <file identifier> : <FILE OF type identifier> */
@@ -903,10 +908,10 @@ static void pas_DeclareFile(void)
      else
        {
          if (token != tFILE) error(eFILE);
-         else getToken();
+         else getToken(false);
 
          if (token != tOF) error(eOF);
-         else getToken();
+         else getToken(false);
 
          filePtr = pas_TypeIdentifier(1);
          if (filePtr)
@@ -962,7 +967,7 @@ static void pas_ProcedureDeclaration(void)
     */
 
    saveStringSP = stringSP;
-   getToken();
+   getToken(false);
 
    /* NOTE:  The level associated with the PROCEDURE symbol is the level
     * At which the procedure was declared.  Everything declare within the
@@ -976,7 +981,7 @@ static void pas_ProcedureDeclaration(void)
    (void)formalParameterList(procPtr);
 
    if (token !=  ';') error(eSEMICOLON);
-   else getToken();
+   else getToken(false);
 
    /* If we are here then we know that we are either in a program file
     * or the 'implementation' part of a unit file (see punit.c -- At present,
@@ -1018,7 +1023,7 @@ static void pas_ProcedureDeclaration(void)
    /* Verify that END terminates with a semicolon */
 
    if (token !=  ';') error(eSEMICOLON);
-   else getToken();
+   else getToken(false);
 }
 
 /***************************************************************/
@@ -1070,7 +1075,7 @@ static void pas_FunctionDeclaration(void)
 
    funcName = tkn_strt;
    saveStringSP = stringSP;
-   getToken();
+   getToken(false);
 
    /* Process parameter list */
 
@@ -1079,7 +1084,7 @@ static void pas_FunctionDeclaration(void)
    /* Verify that the parameter list is followed by a colon */
 
    if (token !=  ':') error(eCOLON);
-   else getToken();
+   else getToken(false);
 
    /* Declare the function return value variable.  This variable has
     * the same name as the function itself.  We fill the variable
@@ -1139,7 +1144,7 @@ static void pas_FunctionDeclaration(void)
    /* Process block */
 
    if (token !=  ';') error(eSEMICOLON);
-   else getToken();
+   else getToken(false);
 
    pas_GenerateDataOperation(opLABEL, (int32_t)funcLabel);
    block();
@@ -1162,7 +1167,7 @@ static void pas_FunctionDeclaration(void)
    /* Verify that END terminates with a semicolon */
 
    if (token !=  ';') error(eSEMICOLON);
-   else getToken();
+   else getToken(false);
 }
 
 /***************************************************************/
@@ -1220,7 +1225,7 @@ static void pas_SetTypeSize(STYPE *typePtr, bool allocate)
                * has not yet been implemented.
                */
 
-              getToken();
+              getToken(false);
               if (token != tINT_CONST) error(eINTCONST);
               /* else if (tknInt <= 0) error(eINVCONST); see below */
               else if (tknInt <= 2) error(eINVCONST);
@@ -1240,9 +1245,9 @@ static void pas_SetTypeSize(STYPE *typePtr, bool allocate)
                * specification.  This could be either ')' or ']'
                */
 
-              getToken();
+              getToken(false);
               if (token != term_token) error(errcode);
-              else getToken();
+              else getToken(false);
             }
           else
             {
@@ -1289,7 +1294,7 @@ static STYPE *pas_TypeIdentifier(bool allocate)
       /* Return a reference to the type token. */
 
       typePtr = tknPtr;
-      getToken();
+      getToken(false);
 
       /* Return the size value associated with this type */
 
@@ -1363,13 +1368,13 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        /* Now declare each instance of the scalar */
 
        do {
-         getToken();
+         getToken(false);
          if (token != tIDENT) error(eIDENT);
          else
            {
              (void)addConstant(tkn_strt, sSCALAR_OBJECT, &nObjects, typePtr);
              nObjects++;
-             getToken();
+             getToken(false);
            }
        } while (token == ',');
 
@@ -1379,7 +1384,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        typePtr->sParm.t.maxValue = nObjects - 1;
 
        if (token != ')') error(eRPAREN);
-       else getToken();
+       else getToken(false);
 
      }
 
@@ -1403,9 +1408,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
 
        /* Verify that ".." separates the two constants */
 
-       getToken();
+       getToken(false);
        if (token != tSUBRANGE) error(eSUBRANGE);
-       else getToken();
+       else getToken(false);
 
        /* Verify that the ".." is following by an INTEGER constant */
 
@@ -1416,7 +1421,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        else
          {
            typePtr->sParm.t.maxValue = tknInt;
-           getToken();
+           getToken(false);
          }
      }
 
@@ -1433,9 +1438,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
 
        /* Verify that ".." separates the two constants */
 
-       getToken();
+       getToken(false);
        if (token != tSUBRANGE) error(eSUBRANGE);
-       else getToken();
+       else getToken(false);
 
        /* Verify that the ".." is following by a CHAR constant */
 
@@ -1446,7 +1451,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        else
          {
            typePtr->sParm.t.maxValue = tknInt;
-           getToken();
+           getToken(false);
          }
      }
 
@@ -1463,9 +1468,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
 
        /* Verify that ".." separates the two constants */
 
-       getToken();
+       getToken(false);
        if (token != tSUBRANGE) error(eSUBRANGE);
-       else getToken();
+       else getToken(false);
 
        /* Verify that the ".." is following by a SCALAR constant of the same
         * type as the one which preceded it
@@ -1480,7 +1485,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        else
          {
            typePtr->sParm.t.maxValue = tknPtr->sParm.c.val.i;
-           getToken();
+           getToken(false);
          }
      }
 
@@ -1503,7 +1508,7 @@ static STYPE *pas_NewComplexType(char *typeName)
       /* FORM: new-pointer-type = '^' domain-type | '@' domain-type */
 
     case '^'      :
-      getToken();
+      getToken(false);
       typeIdPtr = pas_TypeIdentifier(1);
       if (typeIdPtr)
         {
@@ -1525,7 +1530,7 @@ static STYPE *pas_NewComplexType(char *typeName)
 
     case tPACKED :
       error(eNOTYET);
-      getToken();
+      getToken(false);
       if (token != tARRAY) break;
       /* Fall through to process PACKED ARRAY type */
 
@@ -1534,7 +1539,7 @@ static STYPE *pas_NewComplexType(char *typeName)
        */
 
     case tARRAY :
-      getToken();
+      getToken(false);
       typeIdPtr = pas_GetArrayType();
       if (typeIdPtr)
         {
@@ -1551,7 +1556,7 @@ static STYPE *pas_NewComplexType(char *typeName)
        */
 
     case tRECORD :
-      getToken();
+      getToken(false);
       typePtr = pas_DeclareRecord(typeName);
       break;
 
@@ -1564,9 +1569,9 @@ static STYPE *pas_NewComplexType(char *typeName)
 
       /* Verify that 'set' is followed by 'of' */
 
-      getToken();
+      getToken(false);
       if (token != tOF) error(eOF);
-      else getToken();
+      else getToken(false);
 
       /* Verify that 'set of' is followed by an ordinal-type
        * If not, then declare a new one with no name
@@ -1574,7 +1579,7 @@ static STYPE *pas_NewComplexType(char *typeName)
 
       typeIdPtr = pas_OrdinalTypeIdentifier(1);
       if (typeIdPtr)
-        getToken();
+        getToken(false);
       else
         typeIdPtr = pas_DeclareOrdinalType(NULL);
 
@@ -1630,9 +1635,9 @@ static STYPE *pas_NewComplexType(char *typeName)
 
       /* Make sure that 'file' is followed by 'of' */
 
-      getToken();
+      getToken(false);
       if (token != tOF) error(eOF);
-      else getToken();
+      else getToken(false);
 
       /* Get the type-denoter */
 
@@ -1656,7 +1661,7 @@ static STYPE *pas_NewComplexType(char *typeName)
        */
     case sSTRING :
       error(eNOTYET);
-      getToken();
+      getToken(false);
       break;
 
       /* FORM: list-type = 'list' 'of' type-denoter */
@@ -1741,7 +1746,7 @@ static STYPE *pas_GetArrayType(void)
        * ordinal-type.
        */
 
-      getToken();
+      getToken(false);
       if (token != tINT_CONST) error(eINTCONST);
       else
         {
@@ -1751,12 +1756,12 @@ static STYPE *pas_GetArrayType(void)
 
           /* Check for a sub-range of integer constants */
 
-          getToken();
+          getToken(false);
           if (token == tSUBRANGE)
             {
               /* Get the upper value of the sub-range */
 
-              getToken();
+              getToken(false);
               if (token != tINT_CONST) error(eINTCONST);
               else
                 {
@@ -1765,7 +1770,7 @@ static STYPE *pas_GetArrayType(void)
                      {
                        minValue = saveTknInt;
                        maxValue = tknInt;
-                       getToken();
+                       getToken(false);
                      }
                 }
             }
@@ -1776,19 +1781,19 @@ static STYPE *pas_GetArrayType(void)
                 {
                   minValue = 0;
                   maxValue = saveTknInt - 1;
-                  getToken();
+                  getToken(false);
                 }
             }
 
           /* Verify that the index-type-list is followed by ']' */
 
           if (token != ']') error(eRBRACKET);
-          else getToken();
+          else getToken(false);
 
           /* Verify that 'of' precedes the type-denoter */
 
           if (token != tOF) error(eOF);
-          else getToken();
+          else getToken(false);
 
           /* OF should be followed by the type-denoter base type.
            * This may be an the name of a previously defined type or a
@@ -1801,7 +1806,7 @@ static STYPE *pas_GetArrayType(void)
            /* And the whole thing must be terminated with a semi-colon */
 
           if (token != ';') error(eSEMICOLON);
-          else getToken();
+          else getToken(false);
 
           /* We have the array size in elements and the base type, now
            * create the unnamed index-type and convert the size for the
@@ -1883,7 +1888,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
            * field declaration.
            */
 
-          getToken();
+          getToken(false);
 
           /* We will treat this semi colon as optional.  If we
            * hit 'end' or 'case' after the semicolon, then we
@@ -1948,7 +1953,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
       /* Skip over the 'case' */
 
-      getToken();
+      getToken(false);
 
       /* Check for variant-selector
        * FORM: variant-selector = [ identifier ':' ] ordinal-type-identifer
@@ -1966,12 +1971,12 @@ static STYPE *pas_DeclareRecord(char *recordName)
           /* Save the field name */
 
           fieldName = tkn_strt;
-          getToken();
+          getToken(false);
 
           /* Verify that the identifier is followed by a colon */
 
           if (token != ':') error(eCOLON);
-          else getToken();
+          else getToken(false);
 
           /* Get the ordinal-type-identifier */
 
@@ -2023,7 +2028,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
       /* Skip over the 'of' following the variant selector */
 
       if (token != tOF) error(eOF);
-      else getToken();
+      else getToken(false);
 
       /* Loop to process the variant-body
        * FORM: variant-body =
@@ -2058,8 +2063,8 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
           do
             {
-              getToken();
-              if (token == ',') getToken();
+              getToken(false);
+              if (token == ',') getToken(false);
             }
           while (isConstant(token));
 
@@ -2067,12 +2072,12 @@ static STYPE *pas_DeclareRecord(char *recordName)
            * field-list
            */
 
-          if (token == ':') getToken();
+          if (token == ':') getToken(false);
           else error(eCOLON);
 
           /* The field-list must be enclosed in parentheses */
 
-          if (token == '(') getToken();
+          if (token == '(') getToken(false);
           else error(eLPAREN);
 
           /* Special case the empty variant <field list> */
@@ -2109,7 +2114,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
                        * variable field declaration.
                        */
 
-                      getToken();
+                      getToken(false);
 
                       /* We will treat this semi colon as optional.  If we
                        * hit 'end' after the semicolon, then we will
@@ -2165,7 +2170,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
           /* Verify that the <field list> is enclosed in parentheses */
 
-          if (token == ')') getToken();
+          if (token == ')') getToken(false);
           else error(eRPAREN);
 
           /* A semicolon at this position means that another <variant>
@@ -2173,7 +2178,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
            * processed (i.e., no semi-colon)
            */
 
-          if (token == ';') getToken();
+          if (token == ';') getToken(false);
           else break;
         }
 
@@ -2185,7 +2190,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
   /* Verify that the RECORD declaration terminates with END */
 
   if (token != tEND) error(eRECORDDECLARE);
-  else getToken();
+  else getToken(false);
 
   return recordPtr;
 }
@@ -2210,20 +2215,20 @@ static STYPE *pas_DeclareField(STYPE *recordPtr)
      /* Declare a <field> with this <identifier> as its name */
 
      fieldPtr = addField(tkn_strt, recordPtr);
-     getToken();
+     getToken(false);
 
      /* Check for multiple fields of this <type> */
 
      if (token == ',') {
 
-       getToken();
+       getToken(false);
        typePtr = pas_DeclareField(recordPtr);
 
      }
      else {
 
        if (token != ':') error(eCOLON);
-       else getToken();
+       else getToken(false);
 
        /* Use the existing type or declare a new type with no name */
 
@@ -2269,12 +2274,22 @@ static STYPE *pas_DeclareParameter(bool pointerType)
    if (token != tIDENT) error(eIDENT);
    else
      {
+       /* Set up for this formal parameter */
+
        varPtr = addVariable(tkn_strt, sINT, 0, sINT_SIZE, NULL);
-       getToken();
+
+       /* The parameter name may be followed by either ',' or ':' */
+
+       getToken(false);
 
        if (token == ',')
          {
-           getToken();
+           /* Get the next formal parameter name.  The arguement 'true' will
+            * suppress conversion of the parameter name identifier to a previously
+            * defined symbol.
+            */
+
+           getToken(true);
            typePtr = pas_DeclareParameter(pointerType);
          }
        else
@@ -2282,7 +2297,7 @@ static STYPE *pas_DeclareParameter(bool pointerType)
            /* Check for a type identifier */
 
            if (token != ':') error(eCOLON);
-           else getToken();
+           else getToken(false);
 
            /* Get the type-identifier following the colon.  After calling
             * pas_TypeIdentifier(), token should refer to the ',' or ')' in

@@ -57,7 +57,7 @@ extern char   *stringSP;               /* Top of string stack */
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void    getToken         (void);
+extern void    getToken         (bool nosym);
 extern char    getNextCharacter (bool skipWhiteSpace);
 extern int16_t primeTokenizer   (unsigned long stringStackSize);
 extern int16_t rePrimeTokenizer (void);

@@ -117,7 +117,7 @@ void builtInProcedure(void)
           /* Standard Procedures & Functions */
 
         case txHALT :
-          getToken();
+          getToken(false);
           haltProc();
           break;
 
@@ -126,7 +126,7 @@ void builtInProcedure(void)
           break;
 
         case txREAD :
-          getToken();
+          getToken(false);
           (void)readProc();
           break;
 
@@ -143,7 +143,7 @@ void builtInProcedure(void)
           break;
 
         case txWRITE :
-          getToken();
+          getToken(false);
           (void)writeProc();
           break;
 
@@ -157,7 +157,7 @@ void builtInProcedure(void)
         case txPUT :
         case txUNPACK :
           error(eNOTYET);
-          getToken();
+          getToken(false);
           break;
 
           /* less-than-standard procedures */
@@ -253,7 +253,7 @@ int actualParameterList(STYPE *procPtr)
        */
 
       if (token != '(') error (eLPAREN);
-      else getToken();
+      else getToken(false);
 
       /* Loop to process the expected number of parameters.  The formal
        * argument descriptions follow the procedure/function description
@@ -347,12 +347,12 @@ int actualParameterList(STYPE *procPtr)
           if (nParms < procPtr->sParm.p.nParms)
             {
               if (token != ',') error (eCOMMA);
-              else getToken();
+              else getToken(false);
             } /* end if */
         } /* end for */
 
       if (token != ')') error (eRPAREN);
-      else getToken();
+      else getToken(false);
 
     } /* end if */
 
@@ -387,16 +387,16 @@ static int16_t readProc(void)
    */
 
   if (token != '(') error (eLPAREN);   /* Skip over '(' */
-  else getToken();
+  else getToken(false);
 
   /* Get file number */
 
    if (token == sFILE)
      {
        fileNumber = tknPtr->sParm.fileNumber;
-       getToken();
+       getToken(false);
      } /* end if */
-   if (token == ',') getToken();
+   if (token == ',') getToken(false);
 
    /* Determine if this is a text or binary file */
 
@@ -413,7 +413,7 @@ static int16_t readProc(void)
      } /* end else */
 
    if (token != ')') error (eRPAREN);
-   else getToken();
+   else getToken(false);
 
    return (fileNumber);
 } /* end readProc */
@@ -476,7 +476,7 @@ static void readText (uint16_t fileNumber)
 
         } /* end switch */
 
-      if (token == ',') getToken();
+      if (token == ',') getToken(false);
       else return;
 
     } /* end for */
@@ -493,7 +493,7 @@ static void readlnProc(void)          /* READLN procedure */
 
   /* FORM:  Just like READ */
 
-  getToken();
+  getToken(false);
   if (token == '(')
     {
       fileNumber = readProc();
@@ -520,15 +520,15 @@ static void fileProc (uint16_t opcode)
 
    /* FORM: RESET|REWRITE(<file number>) */
 
-   getToken();
+   getToken(false);
    if (token != '(') error(eLPAREN);
-   else getToken();
+   else getToken(false);
    if (token !=  sFILE) error(eFILE);
    else {
      pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
-     getToken();
+     getToken(false);
      if (token != ')') error(eRPAREN);
-     else getToken();
+     else getToken(false);
    } /* end else */
 
 } /* End fileProc */
@@ -545,15 +545,15 @@ static int16_t writeProc(void)
     *       (2) Test   WRITE:  WRITE([<fileNumber>], arg1 [,arg2 [...]]) */
 
    if (token != '(') error(eLPAREN);   /* Skip over '(' */
-   else getToken();
+   else getToken(false);
 
    /* Get file number */
 
    if (token == sFILE) {
      fileNumber = tknPtr->sParm.fileNumber;
-     getToken();
+     getToken(false);
    } /* end if */
-   if (token == ',') getToken();
+   if (token == ',') getToken(false);
 
    /* Determine if this is a text or binary file */
 
@@ -567,7 +567,7 @@ static int16_t writeProc(void)
    } /* end else */
 
    if (token != ')') error(eRPAREN);
-   else getToken();
+   else getToken(false);
    return(fileNumber);
 } /* end writeProc */
 
@@ -609,7 +609,7 @@ static void writeText (uint16_t fileNumber)
             pas_GenerateIoOperation(xWRITE_STRING, fileNumber);
             pas_GenerateDataOperation(opINDS, -(sPTR_SIZE + sINT_SIZE));
             stringSP = tkn_strt;
-            getToken();
+            getToken(false);
           }
           break;
 
@@ -618,7 +618,7 @@ static void writeText (uint16_t fileNumber)
           pas_GenerateDataOperation(opPUSH, (uint16_t)tknPtr->sParm.s.size);
           pas_GenerateIoOperation(xWRITE_STRING, fileNumber);
           pas_GenerateDataOperation(opINDS, -(sPTR_SIZE + sINT_SIZE));
-          getToken();
+          getToken(false);
           break;
 
           /* Array of type CHAR without indexing */
@@ -677,7 +677,7 @@ static void writeText (uint16_t fileNumber)
 
         } /* end switch */
 
-      if (token == ',') getToken();
+      if (token == ',') getToken(false);
       else return;
 
     } /* end for */
@@ -694,7 +694,7 @@ static void writelnProc(void)         /* WRITELN procedure */
 
    /* FORM:  Just like WRITE */
 
-   getToken();
+   getToken(false);
    if (token == '(')
      {
        fileNumber = writeProc();
@@ -735,7 +735,7 @@ static void valProc(void)         /* VAL procedure */
 
   /* Skip over the 'val' identifer */
 
-  getToken();
+  getToken(false);
 
   /* Setup the actual-parameter-list */
 

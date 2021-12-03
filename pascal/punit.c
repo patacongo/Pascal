@@ -55,7 +55,7 @@
 #include "pas.h"       /* for globals */
 #include "pblck.h"     /* for block(), constantDefinitionGroup(), etc. */
 #include "pgen.h"      /* for pas_Generate*() */
-#include "ptkn.h"      /* for getToken() */
+#include "ptkn.h"      /* for getToken(false) */
 #include "ptbl.h"      /* for addFile() */
 #include "pofflib.h"   /* For poff*() functions*/
 #include "perr.h"      /* for error() */
@@ -121,14 +121,14 @@ void unitImplementation(void)
   /* Discard the unit name and get the next token */
 
   stringSP = saveTknStart;
-  getToken();
+  getToken(false);
 
   /* Skip over the semicolon separating the unit-heading from the
    * interface-section.
    */
 
   if (token != ';') error(eSEMICOLON);
-  else getToken();
+  else getToken(false);
 
   /* Verify that the interface-section is present
    * FORM: interface-section =
@@ -143,7 +143,7 @@ void unitImplementation(void)
    */
 
   if (token != tIMPLEMENTATION) error(eIMPLEMENTATION);
-  else getToken();
+  else getToken(false);
 
   FP->section = eIsImplementationSection;
 
@@ -153,7 +153,7 @@ void unitImplementation(void)
     {
       /* Process the uses-section */
 
-      getToken();
+      getToken(false);
       usesSection();
     }
 
@@ -180,7 +180,7 @@ void unitImplementation(void)
 
   FP->section = eIsInitializationSection;
   if (token != tEND) error(eEND);
-  else getToken();
+  else getToken(false);
 
   FP->section = eIsOtherSection;
 
@@ -214,14 +214,14 @@ void unitInterface(void)
    */
 
   if (token != tIDENT) error(eIDENT);
-  else getToken();
+  else getToken(false);
 
   /* Skip over the semicolon separating the unit-heading from the
    * interface-section.
    */
 
   if (token != ';') error(eSEMICOLON);
-  else getToken();
+  else getToken(false);
 
   /* Process the interface-section
    * FORM: interface-section =
@@ -272,7 +272,7 @@ static void interfaceSection(void)
    */
 
   if (token != tINTERFACE) error(eINTERFACE);
-  else getToken();
+  else getToken(false);
 
   FP->section = eIsInterfaceSection;
 
@@ -282,7 +282,7 @@ static void interfaceSection(void)
     {
       /* Process the uses-section */
 
-      getToken();
+      getToken(false);
       usesSection();
     }
 
@@ -301,7 +301,7 @@ static void interfaceSection(void)
    if (token == tCONST)
      {
        const_strt = saveNConst;        /* Limit search to present level */
-       getToken();                     /* Get identifier */
+       getToken(false);                     /* Get identifier */
        const_strt = 0;
 
        /* Process constant-definition.
@@ -321,7 +321,7 @@ static void interfaceSection(void)
      {
        const_strt = saveNConst;        /* Limit search to present level */
        sym_strt   = saveNSym;
-       getToken();                     /* Get identifier */
+       getToken(false);                     /* Get identifier */
        const_strt = 0;
        sym_strt   = 0;
 
@@ -341,7 +341,7 @@ static void interfaceSection(void)
      {
        const_strt = saveNConst;        /* Limit search to present level */
        sym_strt   = saveNSym;
-       getToken();                     /* Get identifier */
+       getToken(false);                     /* Get identifier */
        const_strt = 0;
        sym_strt   = 0;
 
@@ -371,7 +371,7 @@ static void interfaceSection(void)
          {
            const_strt = saveNConst;    /* Limit search to present level */
            sym_strt   = saveNSym;
-           getToken();                 /* Get identifier */
+           getToken(false);                 /* Get identifier */
            const_strt = 0;
            sym_strt   = 0;
 
@@ -388,7 +388,7 @@ static void interfaceSection(void)
          {
            const_strt = saveNConst;    /* Limit search to present level */
            sym_strt   = saveNSym;
-           getToken();                 /* Get identifier */
+           getToken(false);                 /* Get identifier */
            const_strt = 0;
            sym_strt   = 0;
 
@@ -442,7 +442,7 @@ static void exportedProcedureHeading(void)
     */
 
    saveChSp = stringSP;
-   getToken();
+   getToken(false);
 
    /* NOTE:  The level associated with the PROCEDURE symbol is the level
     * At which the procedure was declared.  Everything declare within the
@@ -456,7 +456,7 @@ static void exportedProcedureHeading(void)
    (void)formalParameterList(procPtr);
 
    if (token !=  ';') error (eSEMICOLON);
-   else getToken();
+   else getToken(false);
 
    /* If we are compiling a program or unit that "imports" the
     * procedure then generate the appropriate symbol table entries
@@ -532,7 +532,7 @@ static void exportedFunctionHeading(void)
     */
 
    saveChSp = stringSP;
-   getToken();
+   getToken(false);
 
    /* Process parameter list */
 
@@ -541,7 +541,7 @@ static void exportedFunctionHeading(void)
    /* Verify that the parameter list is followed by a colon */
 
    if (token !=  ':') error (eCOLON);
-   else getToken();
+   else getToken(false);
 
    /* Get function type, return value type/size and offset to return value */
 
@@ -561,7 +561,7 @@ static void exportedFunctionHeading(void)
 
        /* Skip over the result-type token */
 
-       getToken();
+       getToken(false);
      } /* end if */
    else
      {
@@ -571,7 +571,7 @@ static void exportedFunctionHeading(void)
    /* Verify the final semicolon */
 
    if (token !=  ';') error (eSEMICOLON);
-   else getToken();
+   else getToken(false);
 
    /* If we are compiling a program or unit that "imports" the
     * function then generate the appropriate symbol table entries
