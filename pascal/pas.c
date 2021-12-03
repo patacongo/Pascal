@@ -110,7 +110,7 @@ int16_t     nconst       = 0;        /* Number constant table entries */
 int16_t     sym_strt     = 0;        /* Symbol search start index */
 int16_t     const_strt   = 0;        /* Constant search start index */
 int16_t     err_count    = 0;        /* Error counter */
-int16_t     nfiles       = 0;        /* Program file counter */
+int16_t     nfiles       = 1;        /* Program file counter */
 int32_t     warn_count   = 0;        /* Warning counter */
 int32_t     dstack       = 0;        /* data stack size */
 

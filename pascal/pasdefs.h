@@ -63,10 +63,14 @@
 #define FNAME_SIZE         40       /* Max size file name */
 #define MAX_INCPATHES      8        /* Max number of include pathes */
 
-/* INPUT and OUtput file numbers */
+/* INPUT and OUtput file numbers.  input and output have file numbers of
+ * zero and one, respectively.  Other user files defined in PROGRAM
+ * arguments begin at 2.
+ */
 
 #define INPUT_FILE_NUMBER  0        /* Input file number */
-#define OUTPUT_FILE_NUMBER 0        /* Output file number */
+#define OUTPUT_FILE_NUMBER 1        /* Output file number */
+#define FIRST_USER_FILE    2        /* First user defined file */
 
 /* Bit values for the 'flags' field of the symType_t, symProc_t, and
  * symVar_t (see below)

@@ -2,7 +2,7 @@
  * pas.c
  * main - process PROGRAM
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -105,7 +105,7 @@ void program(void)
     {
       pgmname = tkn_strt;                  /* Save program name */
       getToken(false);
-    } /* end else */
+    }
 
   /* Process optional file list (allow re-declaration of INPUT & OUTPUT) */
 
@@ -113,6 +113,10 @@ void program(void)
     {
       do
         {
+          /* Each file should appear as an identifier and will be assiged
+           * file numbers beginning at FIRST_USER_FILE.
+           */
+
           getToken(false);
           if (token == tIDENT)
             {
@@ -120,16 +124,27 @@ void program(void)
               (void)addFile(tkn_strt, nfiles);
               stringSP = tkn_strt;
               getToken(false);
-            } /* end if */
-          else if ((token == sFILE) && !(tknPtr->sParm.fileNumber))
-            getToken(false);
+            }
+
+          /* INPUT and OUTPUT will appear as symbols since they were pre-defined
+           * (non-standard) and will have file numbers 0 and 1, respectively.
+           */
+
+          else if ((token == sFILE) &&
+                   (tknPtr->sParm.fileNumber < FIRST_USER_FILE))
+            {
+              getToken(false);
+            }
           else
-            error(eIDENT);
+            {
+              error(eIDENT);
+            }
         }
       while (token == ',');
+
       if (token != ')') error(eRPAREN);
       else getToken(false);
-    } /* End if */
+    }
 
   /* Make sure that a semicolon follows the program-heading */
 
@@ -160,7 +175,7 @@ void program(void)
   block();
   if (token !=  '.') error(ePERIOD);
   pas_GenerateSimple(opEND);
-} /* end program */
+}
 
 /***********************************************************************/
 
