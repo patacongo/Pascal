@@ -66,6 +66,8 @@
  * Private Definitions
  ***************************************************************/
 
+/* REVIST: duplicated in pstm.c and pcexpr.c */
+
 #define ADDRESS_DEREFERENCE 0x01
 #define ADDRESS_FACTOR      0x02
 #define INDEXED_FACTOR      0x04
@@ -77,12 +79,13 @@
  * Private Type Declarations
  ***************************************************************/
 
-typedef struct {
-   uint8_t setType;
-   bool typeFound;
-   int16_t minValue;
-   int16_t maxValue;
-   STYPE  *typePtr;
+typedef struct
+{
+  uint8_t setType;
+  bool typeFound;
+  int16_t minValue;
+  int16_t maxValue;
+  STYPE  *typePtr;
 } setTypeStruct;
 
 /***************************************************************
@@ -109,234 +112,242 @@ static bool     isStringReference (exprType testExprType);
  * Private Variables
  ***************************************************************/
 
- /* The abstract types - SETs, RECORDS, etc - require an exact */
- /* match in type.  This variable points to the symbol table   */
- /* sTYPE entry associated with the expression. */
+/* The abstract types - SETs, RECORDS, etc - require an exact
+ * match in type.  This variable points to the symbol table
+ * sTYPE entry associated with the expression.
+ */
 
- static STYPE *abstractType;
+static STYPE *abstractType;
 
 /***************************************************************/
 /* Evaluate (boolean) Expression */
 
 exprType expression(exprType findExprType, STYPE *typePtr)
 {
-   uint8_t operation;
-   uint16_t intOpCode;
-   uint16_t fpOpCode;
-   uint16_t strOpCode;
-   exprType simple1Type;
-   exprType simple2Type;
+  uint8_t operation;
+  uint16_t intOpCode;
+  uint16_t fpOpCode;
+  uint16_t strOpCode;
+  exprType simple1Type;
+  exprType simple2Type;
 
-   TRACE(lstFile,"[expression]");
+  TRACE(lstFile,"[expression]");
 
-   /* The abstract types - SETs, RECORDS, etc - require an exact */
-   /* match in type.  Save the symbol table sTYPE entry associated */
-   /* with the expression. */
+  /* The abstract types - SETs, RECORDS, etc - require an exact */
+  /* match in type.  Save the symbol table sTYPE entry associated */
+  /* with the expression. */
 
-   if ((typePtr) && (typePtr->sKind != sTYPE)) error(eINVTYPE);
-   abstractType = typePtr;
+  if ((typePtr) && (typePtr->sKind != sTYPE)) error(eINVTYPE);
+  abstractType = typePtr;
 
-   /* FORM <simple expression> [<relational operator> <simple expression>] */
-   /* Get the first <simple expression> */
+  /* FORM <simple expression> [<relational operator> <simple expression>] */
+  /* Get the first <simple expression> */
 
-   simple1Type = simpleExpression(findExprType);
+  simple1Type = simpleExpression(findExprType);
 
-   /* Get the optional <relational operator> which may follow */
+  /* Get the optional <relational operator> which may follow */
 
-   operation = token;
-   switch (operation)
-     {
-     case tEQ :
-       intOpCode = opEQU;
-       fpOpCode  = fpEQU;
-       strOpCode = opEQUZ;
-       break;
-     case tNE :
-       intOpCode = opNEQ;
-       fpOpCode  = fpNEQ;
-       strOpCode = opNEQZ;
-       break;
-     case tLT :
-       intOpCode = opLT;
-       fpOpCode  = fpLT;
-       strOpCode = opLTZ;
-       break;
-     case tLE :
-       intOpCode = opLTE;
-       fpOpCode  = fpLTE;
-       strOpCode = opLTEZ;
-       break;
-     case tGT :
-       intOpCode = opGT;
-       fpOpCode  = fpGT;
-       strOpCode = opGTZ;
-       break;
-     case tGE :
-       intOpCode = opGTE;
-       fpOpCode  = fpGTE;
-       strOpCode = opGTEZ;
-       break;
-     case tIN :
-       if ((!abstractType) ||
-           ((abstractType->sParm.t.type != sSCALAR) &&
-            (abstractType->sParm.t.type != sSUBRANGE)))
-         error(eEXPRTYPE);
-       else if (abstractType->sParm.t.minValue)
-         {
-           pas_GenerateDataOperation(opPUSH, abstractType->sParm.t.minValue);
-           pas_GenerateSimple(opSUB);
-         }
-       intOpCode = opBIT;
-       fpOpCode  = fpINVLD;
-       strOpCode = opNOP;
-       break;
-     default  :
-       intOpCode = opNOP;
-       fpOpCode  = fpINVLD;
-       strOpCode = opNOP;
-       break;
-     }
+  operation = token;
+  switch (operation)
+    {
+    case tEQ :
+      intOpCode = opEQU;
+      fpOpCode  = fpEQU;
+      strOpCode = opEQUZ;
+      break;
 
-   /* Check if there is a 2nd simple expression needed */
+    case tNE :
+      intOpCode = opNEQ;
+      fpOpCode  = fpNEQ;
+      strOpCode = opNEQZ;
+      break;
 
-   if (intOpCode != opNOP)
-     {
-       /* Get the second simple expression */
+    case tLT :
+      intOpCode = opLT;
+      fpOpCode  = fpLT;
+      strOpCode = opLTZ;
+      break;
 
-       getToken(false);
-       simple2Type = simpleExpression(findExprType);
+    case tLE :
+      intOpCode = opLTE;
+      fpOpCode  = fpLTE;
+      strOpCode = opLTEZ;
+      break;
 
-       /* Perform automatic type conversion from INTEGER to REAL
-        * for integer vs. real comparisons.
-        */
+    case tGT :
+      intOpCode = opGT;
+      fpOpCode  = fpGT;
+      strOpCode = opGTZ;
+      break;
 
-       if (simple1Type != simple2Type)
-         {
-           /* Handle the case where the 1st argument is REAL and the
-            * second is INTEGER. */
+    case tGE :
+      intOpCode = opGTE;
+      fpOpCode  = fpGTE;
+      strOpCode = opGTEZ;
+      break;
 
-           if ((simple1Type == exprReal) &&
-               (simple2Type == exprInteger) &&
-               (fpOpCode != fpINVLD))
-             {
-               fpOpCode   |= fpARG2;
-               simple2Type = exprReal;
-             }
+    case tIN :
+      if ((!abstractType) ||
+          ((abstractType->sParm.t.type != sSCALAR) &&
+           (abstractType->sParm.t.type != sSUBRANGE)))
+        {
+          error(eEXPRTYPE);
+        }
+      else if (abstractType->sParm.t.minValue)
+        {
+          pas_GenerateDataOperation(opPUSH, abstractType->sParm.t.minValue);
+          pas_GenerateSimple(opSUB);
+        }
 
-           /* Handle the case where the 1st argument is Integer and the
-            * second is REAL. */
+      intOpCode = opBIT;
+      fpOpCode  = fpINVLD;
+      strOpCode = opNOP;
+      break;
 
-           else if ((simple1Type == exprInteger) &&
-                    (simple2Type == exprReal) &&
-                    (fpOpCode != fpINVLD))
-             {
-               fpOpCode   |= fpARG1;
-               simple1Type = exprReal;
-             }
+    default  :
+      intOpCode = opNOP;
+      fpOpCode  = fpINVLD;
+      strOpCode = opNOP;
+      break;
+    }
 
-           /* Allow the case of <scalar type> IN <set type> */
-           /* Otherwise, the two terms must agree in type */
+  /* Check if there is a 2nd simple expression needed */
 
-           else if ((operation != tIN) || (simple2Type != exprSet))
-             {
-               error(eEXPRTYPE);
-             }
-         }
+  if (intOpCode != opNOP)
+    {
+      /* Get the second simple expression */
 
-       /* Generate the comparison */
+      getToken(false);
+      simple2Type = simpleExpression(findExprType);
 
-       if (simple1Type == exprReal)
-         {
-           if (fpOpCode == fpINVLD)
-             error(eEXPRTYPE);
-           else
-             pas_GenerateFpOperation(fpOpCode);
-         }
-       else if ((simple1Type == exprString) || (simple1Type == exprString))
-         {
-           if (strOpCode != opNOP)
-             {
-               pas_BuiltInFunctionCall(lbSTRCMP);
-               pas_GenerateSimple(strOpCode);
-             }
-           else
-             {
-               error(eEXPRTYPE);
-             }
-         }
-       else
-         {
-           pas_GenerateSimple(intOpCode);
-         }
+      /* Perform automatic type conversion from INTEGER to REAL
+       * for integer vs. real comparisons.
+       */
 
-       /* The type resulting from these operations becomes BOOLEAN */
+      if (simple1Type != simple2Type)
+        {
+          /* Handle the case where the 1st argument is REAL and the
+           * second is INTEGER.
+           */
 
-       simple1Type = exprBoolean;
+          if ((simple1Type == exprReal) &&
+              (simple2Type == exprInteger) &&
+              (fpOpCode != fpINVLD))
+            {
+              fpOpCode   |= fpARG2;
+              simple2Type = exprReal;
+            }
 
-     }
+          /* Handle the case where the 1st argument is Integer and the
+           * second is REAL.
+           */
 
-   /* Verify that the expression is of the requested type.
-    * The following are okay:
-    *
-    * 1. We were told to find any kind of expression
-    *
-    * 2. We were told to find a specific kind of expression and
-    *    we found just that type.
-    *
-    * 3. We were told to find any kind of ordinal expression and
-    *    we found a ordinal expression.  This is what is needed, for
-    *    example, as an argument to ord(), pred(), succ(), or odd().
-    *    This is the kind of expression we need in a CASE statement
-    *    as well.
-    *
-    * 4. We were told to find any kind of string expression and
-    *    we found a string expression. This is a hack to handle
-    *    calls to system functions that return exprCString pointers
-    *    that must be converted to exprString records upon assignment.
-    *
-    * 5. We have a hack in the name space.  You use a bogus name
-    *    to represent a string reference that has string stack
-    *    allocated with it.  For expression processing purposes,
-    *    exprString and exprStkString are the same thing.  The
-    *    difference is that we have to clean up the string stack
-    *    for the latter.
-    *
-    * Special case:
-    *
-    *    We will perform automatic conversions to real from integer
-    *    if the requested type is a real expression.
-    */
+          else if ((simple1Type == exprInteger) &&
+                   (simple2Type == exprReal) &&
+                   (fpOpCode != fpINVLD))
+            {
+              fpOpCode   |= fpARG1;
+              simple1Type = exprReal;
+            }
 
-   if ((findExprType != exprUnknown) &&     /* 1)NOT Any expression */
+          /* Allow the case of <scalar type> IN <set type> */
+          /* Otherwise, the two terms must agree in type */
 
-       (findExprType != simple1Type) &&     /* 2)NOT Matched expression */
+          else if ((operation != tIN) || (simple2Type != exprSet))
+            {
+              error(eEXPRTYPE);
+            }
+        }
 
-       ((findExprType != exprAnyOrdinal) || /* 3)NOT any ordinal type */
-        (!isOrdinalType(simple1Type))) &&   /*   OR type is not ordinal */
+      /* Generate the comparison */
 
-       ((findExprType != exprAnyString) ||  /* 4)NOT any string type */
-        (!isAnyStringType(simple1Type))) && /*   OR type is not string */
+      if (simple1Type == exprReal)
+        {
+          if (fpOpCode == fpINVLD)
+            error(eEXPRTYPE);
+          else
+            pas_GenerateFpOperation(fpOpCode);
+        }
+      else if ((simple1Type == exprString) || (simple1Type == exprString))
+        {
+          if (strOpCode != opNOP)
+            {
+              pas_BuiltInFunctionCall(lbSTRCMP);
+              pas_GenerateSimple(strOpCode);
+            }
+          else
+            {
+              error(eEXPRTYPE);
+            }
+        }
+      else
+        {
+          pas_GenerateSimple(intOpCode);
+        }
 
-       ((findExprType != exprString) ||     /* 5)Not looking for string ref */
-        (!isStringReference(simple1Type)))) /*   OR type is not string ref */
-     {
-       /* Automatic conversions from INTEGER to REAL will be performed */
+      /* The type resulting from these operations becomes BOOLEAN */
 
-       if ((findExprType == exprReal) && (simple1Type == exprInteger))
-         {
-           pas_GenerateFpOperation(fpFLOAT);
-           simple1Type = exprReal;
-         }
+      simple1Type = exprBoolean;
+    }
 
-       /* Any other type mismatch is an error */
+  /* Verify that the expression is of the requested type.
+   * The following are okay:
+   *
+   * 1. We were told to find any kind of expression
+   *
+   * 2. We were told to find a specific kind of expression and
+   *    we found just that type.
+   *
+   * 3. We were told to find any kind of ordinal expression and
+   *    we found a ordinal expression.  This is what is needed, for
+   *    example, as an argument to ord(), pred(), succ(), or odd().
+   *    This is the kind of expression we need in a CASE statement
+   *    as well.
+   *
+   * 4. We were told to find any kind of string expression and
+   *    we found a string expression. This is a hack to handle
+   *    calls to system functions that return exprCString pointers
+   *    that must be converted to exprString records upon assignment.
+   *
+   * 5. We have a hack in the name space.  You use a bogus name
+   *    to represent a string reference that has string stack
+   *    allocated with it.  For expression processing purposes,
+   *    exprString and exprStkString are the same thing.  The
+   *    difference is that we have to clean up the string stack
+   *    for the latter.
+   *
+   * Special case:
+   *
+   *    We will perform automatic conversions to real from integer
+   *    if the requested type is a real expression.
+   */
 
-       else
-         {
-           error(eEXPRTYPE);
-         }
-   }
+  if ((findExprType != exprUnknown) &&     /* 1)NOT Any expression */
+      (findExprType != simple1Type) &&     /* 2)NOT Matched expression */
+      ((findExprType != exprAnyOrdinal) || /* 3)NOT any ordinal type */
+       (!isOrdinalType(simple1Type))) &&   /*   OR type is not ordinal */
+      ((findExprType != exprAnyString) ||  /* 4)NOT any string type */
+       (!isAnyStringType(simple1Type))) && /*   OR type is not string */
+      ((findExprType != exprString) ||     /* 5)Not looking for string ref */
+       (!isStringReference(simple1Type)))) /*   OR type is not string ref */
+    {
+      /* Automatic conversions from INTEGER to REAL will be performed */
 
-   return simple1Type;
+      if ((findExprType == exprReal) && (simple1Type == exprInteger))
+        {
+          pas_GenerateFpOperation(fpFLOAT);
+          simple1Type = exprReal;
+        }
+
+      /* Any other type mismatch is an error */
+
+      else
+        {
+          error(eEXPRTYPE);
+        }
+    }
+
+  return simple1Type;
 }
 
 /***************************************************************/
@@ -344,39 +355,40 @@ exprType expression(exprType findExprType, STYPE *typePtr)
 
 exprType varParm (exprType varExprType, STYPE *typePtr)
 {
-   exprType factorType;
+  exprType factorType;
 
-   /* The abstract types - SETs, RECORDS, etc - require an exact
-    * match in type.  Save the symbol table sTYPE entry associated
-    * with the expression.
-    */
+  /* The abstract types - SETs, RECORDS, etc - require an exact
+   * match in type.  Save the symbol table sTYPE entry associated
+   * with the expression.
+   */
 
-   if ((typePtr) && (typePtr->sKind != sTYPE)) error(eINVTYPE);
-   abstractType = typePtr;
+  if ((typePtr) && (typePtr->sKind != sTYPE)) error(eINVTYPE);
+  abstractType = typePtr;
 
-   /* This function is really just an interface to the
-    * static function ptrFactor with some extra error
-    * checking.
-    */
+  /* This function is really just an interface to the
+   * static function ptrFactor with some extra error
+   * checking.
+   */
 
-   factorType = ptrFactor();
-   if ((varExprType != exprUnknown) && (factorType != varExprType))
-      error(eINVVARPARM);
+  factorType = ptrFactor();
+  if ((varExprType != exprUnknown) && (factorType != varExprType))
+     error(eINVVARPARM);
 
-   return factorType;
+  return factorType;
 }
 
 /**********************************************************************/
 /* Process Array Index */
 
-void arrayIndex (int32_t size)
+void arrayIndex(int32_t size, int32_t offset)
 {
   TRACE(lstFile,"[arrayIndex]");
 
-  /* FORM:  [<integer expression>] */
+  /* FORM:  [<integer expression>].
+   * On entry 'token' should refer to the ']' token.
+   */
 
-  getToken(false);
-  if (token != '[') error (eLBRACKET);
+  if (token != '[') error(eLBRACKET);
   else
     {
       /* Evaluate index expression */
@@ -390,12 +402,19 @@ void arrayIndex (int32_t size)
       if (size > 1)
         {
           pas_GenerateDataOperation(opPUSH, size);
+
+          if (offset != 0)
+            {
+              pas_GenerateDataOperation(opPUSH, offset);
+              pas_GenerateSimple(opSUB);
+            }
+
           pas_GenerateSimple(opMUL);
         }
 
       /* Verify right bracket */
 
-      if (token !=  ']') error (eRBRACKET);
+      if (token !=  ']') error(eRBRACKET);
       else getToken(false);
     }
 }
@@ -491,234 +510,233 @@ exprType getExprType(STYPE *sType)
 
 static exprType simpleExpression(exprType findExprType)
 {
-   int16_t  operation = '+';
-   uint16_t arg8FpBits;
-   exprType term1Type;
-   exprType term2Type;
+  int16_t  operation = '+';
+  uint16_t arg8FpBits;
+  exprType term1Type;
+  exprType term2Type;
 
-   TRACE(lstFile,"[simpleExpression]");
+  TRACE(lstFile,"[simpleExpression]");
 
-   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]] */
-   /* get +/- unary operation */
+  /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]] */
+  /* get +/- unary operation */
 
-   if ((token == '+') || (token == '-'))
-     {
-       operation = token;
-       getToken(false);
-     }
+  if ((token == '+') || (token == '-'))
+    {
+      operation = token;
+      getToken(false);
+    }
 
-   /* Process first (non-optional) term and apply unary operation */
+  /* Process first (non-optional) term and apply unary operation */
 
-   term1Type = term(findExprType);
-   if (operation == '-')
-     {
-       if (term1Type == exprInteger)
-         pas_GenerateSimple(opNEG);
-       else if (term1Type == exprReal)
-         pas_GenerateFpOperation(fpNEG);
-       else
-         error(eTERMTYPE);
-     }
+  term1Type = term(findExprType);
+  if (operation == '-')
+    {
+      if (term1Type == exprInteger)
+        pas_GenerateSimple(opNEG);
+      else if (term1Type == exprReal)
+        pas_GenerateFpOperation(fpNEG);
+      else
+        error(eTERMTYPE);
+    }
 
-   /* Process subsequent (optional) terms and binary operations */
+  /* Process subsequent (optional) terms and binary operations */
 
-   for (;;)
-     {
-       /* Check for binary operator */
+  for (; ; )
+    {
+      /* Check for binary operator */
 
-       if ((token == '+') || (token == '-') || (token == tOR))
-         operation = token;
-       else
-         break;
+      if ((token == '+') || (token == '-') || (token == tOR))
+        operation = token;
+      else
+        break;
 
-       /* Special case for string types.  So far, we have parsed
-        * '<string> +'  At this point, it is safe to assume we
-        * going to modified string.  So, if the string has not
-        * been copied to the string stack, we will have to do that
-        * now.
-        */
+      /* Special case for string types.  So far, we have parsed
+       * '<string> +'  At this point, it is safe to assume we
+       * going to modified string.  So, if the string has not
+       * been copied to the string stack, we will have to do that
+       * now.
+       */
 
-       if ((term1Type == exprString) && (operation == '+'))
-         {
-           /* Duplicate the string on the string stack.  And
-            * change the expression type to reflect this.
-            */
+      if ((term1Type == exprString) && (operation == '+'))
+        {
+          /* Duplicate the string on the string stack.  And
+           * change the expression type to reflect this.
+           */
 
-           pas_BuiltInFunctionCall(lbMKSTKSTR);
-           term1Type = exprStkString;
-         }
+          pas_BuiltInFunctionCall(lbMKSTKSTR);
+          term1Type = exprStkString;
+        }
 
-       /* If we are going to add something to a char, then the
-        * result must be a string.  We will similarly have to
-        * convert the character to a string.
-        */
+      /* If we are going to add something to a char, then the
+       * result must be a string.  We will similarly have to
+       * convert the character to a string.
+       */
 
-       else if ((term1Type == exprChar) && (operation == '+'))
-         {
-           /* Duplicate the string on the string stack.  And
-            * change the expression type to reflect this.
-            */
+      else if ((term1Type == exprChar) && (operation == '+'))
+        {
+          /* Duplicate the string on the string stack.  And
+           * change the expression type to reflect this.
+           */
 
-           pas_BuiltInFunctionCall(lbMKSTKC);
-           term1Type = exprStkString;
-         }
+          pas_BuiltInFunctionCall(lbMKSTKC);
+          term1Type = exprStkString;
+        }
 
-       /* Get the 2nd term */
+      /* Get the 2nd term */
 
-       getToken(false);
-       term2Type = term(findExprType);
+      getToken(false);
+      term2Type = term(findExprType);
 
-       /* Before generating the operation, verify that the types match.
-        * Perform automatic type conversion from INTEGER to REAL as
-        * necessary.
-        */
+      /* Before generating the operation, verify that the types match.
+       * Perform automatic type conversion from INTEGER to REAL as
+       * necessary.
+       */
 
-       arg8FpBits = 0;
+      arg8FpBits = 0;
 
-       /* Skip over string types.  These will be handled below */
+      /* Skip over string types.  These will be handled below */
 
-       if (!isStringReference(term1Type))
-         {
-           /* Handle the case where the type of the terms differ. */
+      if (!isStringReference(term1Type))
+        {
+          /* Handle the case where the type of the terms differ. */
 
-           if (term1Type != term2Type)
-             {
-               /* Handle the case where the 1st argument is REAL and the
-                * second is INTEGER. */
+          if (term1Type != term2Type)
+            {
+              /* Handle the case where the 1st argument is REAL and the
+               * second is INTEGER. */
 
-               if ((term1Type == exprReal) && (term2Type == exprInteger))
-                 {
-                   arg8FpBits = fpARG2;
-                   term2Type = exprReal;
-                 }
+              if ((term1Type == exprReal) && (term2Type == exprInteger))
+                {
+                  arg8FpBits = fpARG2;
+                  term2Type = exprReal;
+                }
 
-               /* Handle the case where the 1st argument is Integer and the
-                * second is REAL. */
+              /* Handle the case where the 1st argument is Integer and the
+               * second is REAL. */
 
-               else if ((term1Type == exprInteger) && (term2Type == exprReal))
-                 {
-                   arg8FpBits = fpARG1;
-                   term1Type = exprReal;
-                 }
+              else if ((term1Type == exprInteger) && (term2Type == exprReal))
+                {
+                  arg8FpBits = fpARG1;
+                  term1Type = exprReal;
+                }
 
                /* Otherwise, the two terms must agree in type */
 
-               else
-                 {
-                   error(eTERMTYPE);
-                 }
-             }
+              else
+                {
+                  error(eTERMTYPE);
+                }
+            }
 
-           /* We do not perform conversions for the cases where the two
-            * terms agree in type. There is only one interesting case:
-            * When the expected expression is real and both arguments are
-            * integer.  Since addition an subtraction are exact, it would,
-            * in general, be more efficient to perform the conversion
-            * AFTER the operation (at the the risk of possible overflow
-            * conditions due to the limited range of integers).
-            */
-         }
+          /* We do not perform conversions for the cases where the two
+           * terms agree in type. There is only one interesting case:
+           * When the expected expression is real and both arguments are
+           * integer.  Since addition an subtraction are exact, it would,
+           * in general, be more efficient to perform the conversion
+           * AFTER the operation (at the the risk of possible overflow
+           * conditions due to the limited range of integers).
+           */
+        }
 
-       /* Generate code to perform the selected binary operation */
+      /* Generate code to perform the selected binary operation */
 
-       switch (operation)
-         {
-         case '+' :
-           switch (term1Type)
-             {
-               /* Integer addition */
+      switch (operation)
+        {
+        case '+' :
+          switch (term1Type)
+            {
+              /* Integer addition */
 
              case exprInteger :
-               pas_GenerateSimple(opADD);
-               break;
+              pas_GenerateSimple(opADD);
+              break;
 
-               /* Floating point addition */
+              /* Floating point addition */
 
-             case exprReal :
-               pas_GenerateFpOperation(fpADD | arg8FpBits);
-               break;
+            case exprReal :
+              pas_GenerateFpOperation(fpADD | arg8FpBits);
+              break;
 
-               /* Set 'addition' */
+              /* Set 'addition' */
 
-             case exprSet :
-               pas_GenerateSimple(opOR);
-               break;
+            case exprSet :
+              pas_GenerateSimple(opOR);
+              break;
 
-               /* Handle the special cases where '+' indicates that we are
-                * concatenating a string or a character to the end of a
-                * string.  Note that these operations can only be performed
-                * on stack copies of the strings.  Logic above should have
-                * made the conversion for the case of exprString.
-                */
+              /* Handle the special cases where '+' indicates that we are
+               * concatenating a string or a character to the end of a
+               * string.  Note that these operations can only be performed
+               * on stack copies of the strings.  Logic above should have
+               * made the conversion for the case of exprString.
+               */
 
-             case exprStkString :
-               if ((term2Type == exprString) || (term2Type == exprStkString))
-                 {
-                   /* We are concatenating one string with another.*/
+            case exprStkString :
+              if ((term2Type == exprString) || (term2Type == exprStkString))
+                {
+                  /* We are concatenating one string with another.*/
 
-                   pas_BuiltInFunctionCall(lbSTRCAT);
-                 }
-               else if (term2Type == exprChar)
-                 {
-                   /* We are concatenating a character to the end of a string */
+                  pas_BuiltInFunctionCall(lbSTRCAT);
+                }
+              else if (term2Type == exprChar)
+                {
+                  /* We are concatenating a character to the end of a string */
 
-                   pas_BuiltInFunctionCall(lbSTRCATC);
-                 }
-               else
-                 {
-                   error(eTERMTYPE);
-                 }
-               break;
+                  pas_BuiltInFunctionCall(lbSTRCATC);
+                }
+              else
+                {
+                  error(eTERMTYPE);
+                }
+              break;
 
-               /* Otherwise, the '+' operation is not permitted */
+              /* Otherwise, the '+' operation is not permitted */
 
-             default :
-               error(eTERMTYPE);
-               break;
-             }
-           break;
+            default :
+              error(eTERMTYPE);
+              break;
+            }
+          break;
 
-         case '-' :
-           /* Integer subtraction */
+        case '-' :
+          /* Integer subtraction */
 
-           if (term1Type == exprInteger)
-             pas_GenerateSimple(opSUB);
+          if (term1Type == exprInteger)
+            pas_GenerateSimple(opSUB);
 
            /* Floating point subtraction */
 
-           else if (term1Type == exprReal)
-             pas_GenerateFpOperation(fpSUB | arg8FpBits);
+          else if (term1Type == exprReal)
+            pas_GenerateFpOperation(fpSUB | arg8FpBits);
 
-           /* Set 'subtraction' */
+          /* Set 'subtraction' */
 
-           else if (term1Type == exprSet)
-             {
-               pas_GenerateSimple(opNOT);
-               pas_GenerateSimple(opAND);
-             }
+          else if (term1Type == exprSet)
+            {
+              pas_GenerateSimple(opNOT);
+              pas_GenerateSimple(opAND);
+            }
 
-           /* Otherwise, the '-' operation is not permitted */
+          /* Otherwise, the '-' operation is not permitted */
 
-           else
-             error(eTERMTYPE);
-           break;
+          else
+            error(eTERMTYPE);
+          break;
 
-         case tOR :
-           /* Integer/boolean 'OR' */
+        case tOR :
+          /* Integer/boolean 'OR' */
 
-           if ((term1Type == exprInteger) || (term1Type == exprBoolean))
-             pas_GenerateSimple(opOR);
+          if ((term1Type == exprInteger) || (term1Type == exprBoolean))
+            pas_GenerateSimple(opOR);
 
-           /* Otherwise, the 'OR' operation is not permitted */
+          /* Otherwise, the 'OR' operation is not permitted */
 
-           else
-             error(eTERMTYPE);
-           break;
+          else
+            error(eTERMTYPE);
+          break;
+        }
+    }
 
-         }
-     }
-
-   return term1Type;
+  return term1Type;
 }
 
 /***************************************************************/
@@ -726,171 +744,171 @@ static exprType simpleExpression(exprType findExprType)
 
 static exprType term(exprType findExprType)
 {
-   uint8_t  operation;
-   uint16_t arg8FpBits;
-   exprType factor1Type;
-   exprType factor2Type;
+  uint8_t  operation;
+  uint16_t arg8FpBits;
+  exprType factor1Type;
+  exprType factor2Type;
 
-   TRACE(lstFile,"[term]");
+  TRACE(lstFile,"[term]");
 
-   /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
+  /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
 
-   factor1Type = factor(findExprType);
-   for (;;) {
+  factor1Type = factor(findExprType);
+  for (; ; )
+    {
+      /* Check for binary operator */
 
-     /* Check for binary operator */
+      if ((token == tMUL)  || (token == tDIV)  ||
+          (token == tFDIV) || (token == tMOD)  ||
+          (token == tAND)  || (token == tSHL)  ||
+          (token == tSHR))
+        operation = token;
+      else
+        break;
 
-     if ((token == tMUL)  || (token == tDIV)  ||
-         (token == tFDIV) || (token == tMOD)  ||
-         (token == tAND)  || (token == tSHL)  ||
-         (token == tSHR))
-       operation = token;
-     else
-       break;
+      /* Get the next factor */
 
-     /* Get the next factor */
+      getToken(false);
+      factor2Type = factor(findExprType);
 
-     getToken(false);
-     factor2Type = factor(findExprType);
+      /* Before generating the operation, verify that the types match.
+       * Perform automatic type conversion from INTEGER to REAL as
+       * necessary.
+       */
 
-     /* Before generating the operation, verify that the types match.
-      * Perform automatic type conversion from INTEGER to REAL as
-      * necessary.
-      */
+      arg8FpBits = 0;
 
-     arg8FpBits = 0;
+      /* Handle the case where the type of the terms differ. */
 
-     /* Handle the case where the type of the terms differ. */
+      if (factor1Type != factor2Type)
+        {
+          /* Handle the case where the 1st argument is REAL and the
+           * second is INTEGER.
+           */
 
-     if (factor1Type != factor2Type)
-       {
-         /* Handle the case where the 1st argument is REAL and the
-          * second is INTEGER. */
+          if ((factor1Type == exprReal) && (factor2Type == exprInteger))
+            {
+              arg8FpBits = fpARG2;
+            }
 
-         if ((factor1Type == exprReal) && (factor2Type == exprInteger))
-           {
-             arg8FpBits = fpARG2;
-           }
+          /* Handle the case where the 1st argument is Integer and the
+           * second is REAL.
+           */
 
-         /* Handle the case where the 1st argument is Integer and the
-          * second is REAL. */
+          else if ((factor1Type == exprInteger) && (factor2Type == exprReal))
+            {
+              arg8FpBits = fpARG1;
+              factor1Type = exprReal;
+            }
 
-         else if ((factor1Type == exprInteger) && (factor2Type == exprReal))
-           {
-             arg8FpBits = fpARG1;
-             factor1Type = exprReal;
-           }
+          /* Otherwise, the two factors must agree in type */
 
-         /* Otherwise, the two factors must agree in type */
+          else
+            {
+              error(eFACTORTYPE);
+            }
+        }
 
-         else
-           {
-             error(eFACTORTYPE);
-           }
-       }
+    /* Handle the cases for conversions when the two string
+     * type are the same type.
+     */
 
-     /* Handle the cases for conversions when the two string
-      * type are the same type.
-      */
+      else
+        {
+          /* There is only one interesting case:  When the
+           * expected expression is real and both arguments are
+           * integer.  In this case, for example, 1/2 must yield
+           * 0.5, not 0.
+           */
 
-     else
-       {
-         /* There is only one interesting case:  When the
-          * expected expression is real and both arguments are
-          * integer.  In this case, for example, 1/2 must yield
-          * 0.5, not 0.
-          */
+          if ((factor1Type == exprInteger) && (findExprType == exprReal))
+            {
+              /* However, we will perform this conversin only for the
+               * arithmetic operations: tMUL, tDIV/tFDIV, and tMOD.
+               * The logical operations must be performed on integer
+               * types with the result converted to a real type afterward.
+               */
 
-         if ((factor1Type == exprInteger) && (findExprType == exprReal))
-           {
-             /* However, we will perform this conversin only for the
-              * arithmetic operations: tMUL, tDIV/tFDIV, and tMOD.
-              * The logical operations must be performed on integer
-              * types with the result converted to a real type afterward.
-              */
+              if ((operation == tMUL)  || (operation == tDIV)  ||
+                  (operation == tFDIV) || (operation == tMOD))
+                {
+                  /* Perform the conversion of both terms */
 
-             if ((operation == tMUL)  || (operation == tDIV)  ||
-                 (operation == tFDIV) || (operation == tMOD))
-               {
-                 /* Perform the conversion of both terms */
+                  arg8FpBits = fpARG1 | fpARG2;
+                  factor1Type = exprReal;
 
-                 arg8FpBits = fpARG1 | fpARG2;
-                 factor1Type = exprReal;
+                  /* We will also have to switch the operation in
+                   * the case of tDIV:  We'll have to used tFDIV.
+                   */
 
-                 /* We will also have to switch the operation in
-                  * the case of tDIV:  We'll have to used tFDIV.
-                  */
+                  if (operation == tDIV) operation = tFDIV;
+                }
+            }
+        }
 
-                 if (operation == tDIV) operation = tFDIV;
-               }
-           }
-       }
+      /* Generate code to perform the selected binary operation */
 
-     /* Generate code to perform the selected binary operation */
+      switch (operation)
+        {
+        case tMUL :
+          if (factor1Type == exprInteger)
+            pas_GenerateSimple(opMUL);
+          else if (factor1Type == exprReal)
+            pas_GenerateFpOperation(fpMUL | arg8FpBits);
+          else if (factor1Type == exprSet)
+            pas_GenerateSimple(opAND);
+          else
+            error(eFACTORTYPE);
+          break;
 
-     switch (operation)
-       {
-       case tMUL :
-         if (factor1Type == exprInteger)
-           pas_GenerateSimple(opMUL);
-         else if (factor1Type == exprReal)
-           pas_GenerateFpOperation(fpMUL | arg8FpBits);
-         else if (factor1Type == exprSet)
-           pas_GenerateSimple(opAND);
-         else
-           error(eFACTORTYPE);
-         break;
+        case tDIV :
+          if (factor1Type == exprInteger)
+            pas_GenerateSimple(opDIV);
+          else
+            error(eFACTORTYPE);
+          break;
 
-       case tDIV :
-         if (factor1Type == exprInteger)
-           pas_GenerateSimple(opDIV);
-         else
-           error(eFACTORTYPE);
-         break;
+        case tFDIV :
+          if (factor1Type == exprReal)
+            pas_GenerateFpOperation(fpDIV | arg8FpBits);
+          else
+            error(eFACTORTYPE);
+          break;
 
-       case tFDIV :
-         if (factor1Type == exprReal)
-           pas_GenerateFpOperation(fpDIV | arg8FpBits);
-         else
-           error(eFACTORTYPE);
-         break;
+        case tMOD :
+          if (factor1Type == exprInteger)
+            pas_GenerateSimple(opMOD);
+          else if (factor1Type == exprReal)
+            pas_GenerateFpOperation(fpMOD | arg8FpBits);
+          else
+            error(eFACTORTYPE);
+          break;
 
-       case tMOD :
-         if (factor1Type == exprInteger)
-           pas_GenerateSimple(opMOD);
-         else if (factor1Type == exprReal)
-           pas_GenerateFpOperation(fpMOD | arg8FpBits);
-         else
-           error(eFACTORTYPE);
-         break;
+        case tAND :
+          if ((factor1Type == exprInteger) || (factor1Type == exprBoolean))
+            pas_GenerateSimple(opAND);
+          else
+            error(eFACTORTYPE);
+          break;
 
-       case tAND :
-         if ((factor1Type == exprInteger) || (factor1Type == exprBoolean))
-           pas_GenerateSimple(opAND);
-         else
-           error(eFACTORTYPE);
-         break;
+        case tSHL :
+          if (factor1Type == exprInteger)
+            pas_GenerateSimple(opSLL);
+          else
+            error(eFACTORTYPE);
+          break;
 
-       case tSHL :
-         if (factor1Type == exprInteger)
-           pas_GenerateSimple(opSLL);
-         else
-           error(eFACTORTYPE);
-         break;
+        case tSHR :
+          if (factor1Type == exprInteger)
+            pas_GenerateSimple(opSRA);
+          else
+            error(eFACTORTYPE);
+          break;
+        }
+    }
 
-       case tSHR :
-         if (factor1Type == exprInteger)
-           pas_GenerateSimple(opSRA);
-         else
-           error(eFACTORTYPE);
-         break;
-
-       }
-   }
-
-   return factor1Type;
-
-} /* end term */
+  return factor1Type;
+}
 
 /***************************************************************/
 /* Process a FACTOR */
@@ -1147,8 +1165,7 @@ static exprType factor(exprType findExprType)
     }
 
   return factorType;
-
-} /* end factor */
+}
 
 /***********************************************************************/
 /* Process a complex factor */
@@ -1169,8 +1186,7 @@ static exprType complexFactor(void)
    /* factor (like int, char, etc.) */
 
    return simpleFactor(&symbolSave, 0);
-
-} /* end complexFactor */
+}
 
 /***********************************************************************/
 /* Process a complex factor (recursively) until it becomes a */
@@ -1178,7 +1194,7 @@ static exprType complexFactor(void)
 
 static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
 {
-  STYPE *typePtr;
+  struct S *typePtr;
   exprType factorType;
 
   TRACE(lstFile,"[simpleFactor]");
@@ -1360,9 +1376,13 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
 
     case sSCALAR :
       if (!abstractType)
-        abstractType = typePtr;
+        {
+          abstractType = typePtr;
+        }
       else if (typePtr != abstractType)
-        error(eSCALARTYPE);
+        {
+          error(eSCALARTYPE);
+        }
 
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1406,10 +1426,14 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
 
     case sSET_OF :
       if (!abstractType)
-        abstractType = typePtr;
+        {
+          abstractType = typePtr;
+        }
       else if ((typePtr != abstractType) &&
                (typePtr->sParm.v.parent != abstractType))
-        error(eSCALARTYPE);
+        {
+          error(eSCALARTYPE);
+        }
 
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1582,9 +1606,14 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
               /* rules will apply */
 
               if (withRecord.varParm)
-                factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
+                {
+                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
+                                  VAR_PARM_FACTOR);
+                }
               else
-                factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
+                {
+                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
+                }
 
               pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + withRecord.index));
               tempOffset   = withRecord.offset;
@@ -1620,7 +1649,9 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
           factorFlags |= ADDRESS_DEREFERENCE;
         }
       else
-        factorFlags |= ADDRESS_FACTOR;
+        {
+          factorFlags |= ADDRESS_FACTOR;
+        }
 
       varPtr->sKind  = typePtr->sParm.t.type;
       factorType     = simpleFactor(varPtr, factorFlags);
@@ -1639,15 +1670,33 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
 
       if (token == '[')
         {
-          factorFlags         |= INDEXED_FACTOR;
-          arrayIndex(typePtr->sParm.t.asize);
-          varPtr->sKind        = typePtr->sParm.t.type;
-          varPtr->sParm.v.size = typePtr->sParm.t.asize;
-          factorType           = simpleFactor(varPtr, factorFlags);
+          /* Get the type of the index.  We will need minimum value of
+           * if the index type in order to offset the array index
+           * calcaultion
+           */
+
+          STYPE *indexTypePtr = typePtr->sParm.t.index;
+          if (indexTypePtr == NULL) error(eHUH);
+          else
+            {
+              factorFlags         |= INDEXED_FACTOR;
+
+              /* Generate the array offset calculation */
+
+              arrayIndex(typePtr->sParm.t.asize,
+                         indexTypePtr->sParm.t.minValue);
+
+              /* Return the parent type */
+
+              varPtr->sKind        = typePtr->sParm.t.type;
+              varPtr->sParm.v.size = typePtr->sParm.t.asize;
+              factorType           = exprArray;
+            }
         }
 
-      /* An ARRAY name name be a valid factor -- only as the input */
-      /* parameter of a function */
+      /* An ARRAY name name may be a valid factor as the input parameter of
+       * a function.
+       */
 
       else if (abstractType == varPtr)
         {
@@ -1771,20 +1820,22 @@ static exprType ptrFactor(void)
 
 static exprType complexPtrFactor(void)
 {
-   STYPE symbolSave;
+  STYPE symbolSave;
 
-   TRACE(lstFile,"[complexPtrFactor]");
+  TRACE(lstFile,"[complexPtrFactor]");
 
-   /* First, make a copy of the symbol table entry because the call to */
-   /* simplePtrFactor() will modify it. */
+  /* First, make a copy of the symbol table entry because the call to
+   * simplePtrFactor() will modify it.
+   */
 
-   symbolSave = *tknPtr;
-   getToken(false);
+  symbolSave = *tknPtr;
+  getToken(false);
 
-   /* Then process the complex factor until it is reduced to a simple */
-   /* factor (like int, char, etc.) */
+  /* Then process the complex factor until it is reduced to a simple
+   * factor (like int, char, etc.)
+   */
 
-   return simplePtrFactor(&symbolSave, 0);
+  return simplePtrFactor(&symbolSave, 0);
 }
 
 /***********************************************************************/
@@ -1794,7 +1845,7 @@ static exprType complexPtrFactor(void)
 
 static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
 {
-  STYPE *typePtr;
+  struct S *typePtr;
   exprType factorType;
 
   TRACE(lstFile,"[simplePtrFactor]");
@@ -1805,6 +1856,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
   switch (varPtr->sKind)
     {
       /* Check if we have reduced the complex factor to a simple factor */
+
     case sINT :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1816,6 +1868,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
+
           factorType = exprIntegerPtr;
         }
       else
@@ -1828,9 +1881,11 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
+
           factorType = exprIntegerPtr;
         }
       break;
+
     case sCHAR :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1842,6 +1897,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
+
           factorType = exprCharPtr;
         }
       else
@@ -1854,9 +1910,11 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
+
           factorType = exprCharPtr;
         }
       break;
+
     case sBOOLEAN :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1868,6 +1926,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
+
           factorType = exprBooleanPtr;
         }
       else
@@ -1880,9 +1939,11 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
+
           factorType = exprBooleanPtr;
         }
       break;
+
     case sREAL         :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1894,6 +1955,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
+
           factorType = exprRealPtr;
         }
       else
@@ -1906,14 +1968,20 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
+
           factorType = exprRealPtr;
         }
       break;
+
     case sSCALAR :
       if (!abstractType)
-        abstractType = typePtr;
+        {
+          abstractType = typePtr;
+        }
       else if (typePtr != abstractType)
-        error(eSCALARTYPE);
+        {
+          error(eSCALARTYPE);
+        }
 
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1925,6 +1993,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
+
           factorType = exprScalarPtr;
         }
       else
@@ -1937,15 +2006,21 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
+
           factorType = exprScalarPtr;
         }
       break;
+
     case sSET_OF :
       if (!abstractType)
-        abstractType = typePtr;
+        {
+          abstractType = typePtr;
+        }
       else if ((typePtr != abstractType) &&
                (typePtr->sParm.v.parent != abstractType))
-        error(eSCALARTYPE);
+        {
+          error(eSCALARTYPE);
+        }
 
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
@@ -1957,6 +2032,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
+
           factorType = exprSetPtr;
         }
       else
@@ -1969,6 +2045,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
+
           factorType = exprSetPtr;
         }
       break;
@@ -1990,9 +2067,13 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
             error(ePOINTERTYPE);
 
           if ((factorFlags & INDEXED_FACTOR) != 0)
-            pas_GenerateStackReference(opLASX, varPtr);
+            {
+              pas_GenerateStackReference(opLASX, varPtr);
+            }
           else
-            pas_GenerateStackReference(opLAS, varPtr);
+            {
+              pas_GenerateStackReference(opLAS, varPtr);
+            }
 
           factorType = exprRecordPtr;
         }
@@ -2029,7 +2110,6 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
 
               getToken(false);
               factorType = simplePtrFactor(varPtr, factorFlags);
-
             }
         }
       break;
@@ -2040,18 +2120,26 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
        */
 
       if (!withRecord.parent)
-        error(eINVTYPE);
+        {
+          error(eINVTYPE);
+        }
       else if ((factorFlags && ADDRESS_DEREFERENCE) != 0)
-        error(ePOINTERTYPE);
+        {
+          error(ePOINTERTYPE);
+        }
       else if ((factorFlags && INDEXED_FACTOR) != 0)
-        error(eARRAYTYPE);
+        {
+          error(eARRAYTYPE);
+        }
 
       /* Verify that a field identifier is associated with the RECORD
        * specified by the WITH statement.
        */
 
       else if (varPtr->sParm.r.record != withRecord.parent)
-        error(eRECORDOBJECT);
+        {
+          error(eRECORDOBJECT);
+        }
       else
         {
           int16_t tempOffset;
@@ -2109,20 +2197,37 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
       break;
 
     case sARRAY :
-      if (factorFlags != 0) error(eARRAYTYPE);
+      if ((factorFlags & ~ADDRESS_DEREFERENCE) != 0)
+        {
+          error(eARRAYTYPE);
+        }
+
       if (token == '[')
         {
-          factorFlags         |= INDEXED_FACTOR;
+          /* Get the type of the index.  We will need minimum value of
+           * if the index type in order to offset the array index
+           * calcaultion
+           */
 
-          arrayIndex(typePtr->sParm.t.asize);
-          varPtr->sKind        = typePtr->sParm.t.type;
-          varPtr->sParm.v.size = typePtr->sParm.t.asize;
-          factorType           = simplePtrFactor(varPtr, factorFlags);
-        }
-      else
-        {
-          pas_GenerateStackReference(opLAS, varPtr);
-          factorType = exprArrayPtr;
+          STYPE *indexTypePtr = typePtr->sParm.t.index;
+          if (indexTypePtr == NULL) error(eHUH);
+          else
+            {
+              factorFlags         |= INDEXED_FACTOR;
+
+              /* Generate the array offset calculation */
+
+              arrayIndex(typePtr->sParm.t.asize,
+                         indexTypePtr->sParm.t.minValue);
+
+              /* Return the parent type */
+
+              varPtr->sKind        = typePtr->sParm.t.type;
+              varPtr->sParm.v.size = typePtr->sParm.t.asize;
+
+              pas_GenerateStackReference(opLAS, varPtr);
+              factorType = exprArrayPtr;
+            }
         }
       break;
 
@@ -2130,7 +2235,6 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
       error(eINVTYPE);
       factorType = exprInteger;
       break;
-
     }
 
   return factorType;
@@ -2508,7 +2612,7 @@ static void getSetElement(setTypeStruct *s)
 
              /* Generate run-time logic to get all bits from firstValue */
              /* through last value, i.e., need to generate logic to get: */
-             /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue-minValue)) */
+             /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue - minValue)) */
 
              pas_GenerateDataOperation(opPUSH, 0xffff);
              pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER-1) + s->minValue));
@@ -2633,7 +2737,7 @@ static void getSetElement(setTypeStruct *s)
              setValue  = (0xffff >> ((BITS_IN_INTEGER-1) - (lastValue - s->minValue)));
 
              /* Now, generate P-Code to push the set value onto the stack */
-             /* First generate: 0xffff << (firstValue-minValue) */
+             /* First generate: 0xffff << (firstValue - minValue) */
 
              pas_GenerateDataOperation(opPUSH, 0xffff);
              pas_GenerateStackReference(opLDS, setPtr);
@@ -2672,7 +2776,7 @@ static void getSetElement(setTypeStruct *s)
 
              /* Generate run-time logic to get all bits from firstValue */
              /* through lastValue */
-             /* First generate: 0xffff << (firstValue-minValue) */
+             /* First generate: 0xffff << (firstValue - minValue) */
 
              pas_GenerateDataOperation(opPUSH, 0xffff);
              pas_GenerateStackReference(opLDS, setPtr);
@@ -2683,7 +2787,7 @@ static void getSetElement(setTypeStruct *s)
              pas_GenerateSimple(opSLL);
 
              /* Generate logic to get: */
-             /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue-minValue)) */
+             /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue - minValue)) */
 
              pas_GenerateDataOperation(opPUSH, 0xffff);
              pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER-1) + s->minValue));

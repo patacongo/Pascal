@@ -2,7 +2,7 @@
  * perr.c
  * Error Handlers
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 #include "config.h"
 #include "keywords.h"
@@ -70,9 +71,9 @@
  **********************************************************************/
 
 static const char fmtErrNoToken[] =
-   "Line %d:%04ld Error %02x Token %02x\n";
+   "Line %d:%04" PRIu32 " Error %02x Token %02x\n";
 static const char fmtErrWithToken[] =
-   "Line %d:%04ld Error %02x Token %02x (%s)\n";
+   "Line %d:%04" PRIu32 " Error %02x Token %02x (%s)\n";
 static const char fmtErrAbort[] =
    "Fatal Error %d -- Compilation aborted\n";
 

@@ -171,10 +171,9 @@ void builtInProcedure(void)
         default :
           error(eINVALIDPROC);
           break;
-
-        } /* end switch */
-    } /* end if */
-} /* end builtInProcedure */
+        }
+    }
+}
 
 /***********************************************************************/
 
@@ -335,30 +334,28 @@ int actualParameterList(STYPE *procPtr)
                     default :
                       error(eVARPARMTYPE);
                       break;
-                    } /* end switch */
-                } /* end if */
+                    }
+                }
               else
                 error(eVARPARMTYPE);
               break;
             default             :
               error (eNPARMS);
-            } /* end switch */
+            }
 
           if (nParms < procPtr->sParm.p.nParms)
             {
               if (token != ',') error (eCOMMA);
               else getToken(false);
-            } /* end if */
-        } /* end for */
+            }
+        }
 
       if (token != ')') error (eRPAREN);
       else getToken(false);
-
-    } /* end if */
+    }
 
   return size;
-
-} /* end actualParameterList */
+}
 
 /***********************************************************************/
 
@@ -395,7 +392,8 @@ static int16_t readProc(void)
      {
        fileNumber = tknPtr->sParm.fileNumber;
        getToken(false);
-     } /* end if */
+     }
+
    if (token == ',') getToken(false);
 
    /* Determine if this is a text or binary file */
@@ -410,13 +408,13 @@ static int16_t readProc(void)
        pas_GenerateLevelReference(opLAS, files[fileNumber].flevel, files [fileNumber].faddr);
        pas_GenerateDataOperation(opPUSH, files[fileNumber].fsize);
        pas_GenerateIoOperation(xREAD_BINARY, fileNumber);
-     } /* end else */
+     }
 
    if (token != ')') error (eRPAREN);
    else getToken(false);
 
    return (fileNumber);
-} /* end readProc */
+}
 
 /***********************************************************************/
 
@@ -428,7 +426,7 @@ static void readText (uint16_t fileNumber)
 
   /* The general form is <VAR parm>, <VAR parm>,... */
 
-  for (;;)
+  for (; ; )
     {
       switch (token)
         {
@@ -444,7 +442,7 @@ static void readText (uint16_t fileNumber)
               pas_GenerateDataOperation(opPUSH, rPtr->sParm.v.size);
               pas_GenerateIoOperation(xREAD_STRING, fileNumber);
               pas_GenerateDataOperation(opINDS, -(sPTR_SIZE+sINT_SIZE));
-            } /* end if */
+            }
 
           /* Otherwise, we fall through to process the ARRAY like any */
           /* expression */
@@ -471,17 +469,14 @@ static void readText (uint16_t fileNumber)
             default :
               error(eINVARG);
               break;
-            } /* end switch */
+            }
           break;
-
-        } /* end switch */
+        }
 
       if (token == ',') getToken(false);
       else return;
-
-    } /* end for */
-
-} /* end readText */
+    }
+}
 
 /****************************************************************************/
 
@@ -504,8 +499,7 @@ static void readlnProc(void)          /* READLN procedure */
     */
 
    pas_GenerateIoOperation(xREADLN, fileNumber);
-
-} /* end readlnProc */
+}
 
 /****************************************************************************/
 /* REWRITE/RESET/PAGE procedure call -- REWRITE sets the file pointer to the
@@ -524,14 +518,14 @@ static void fileProc (uint16_t opcode)
    if (token != '(') error(eLPAREN);
    else getToken(false);
    if (token !=  sFILE) error(eFILE);
-   else {
-     pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
-     getToken(false);
-     if (token != ')') error(eRPAREN);
-     else getToken(false);
-   } /* end else */
-
-} /* End fileProc */
+   else
+     {
+       pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
+       getToken(false);
+       if (token != ')') error(eRPAREN);
+       else getToken(false);
+     }
+}
 
 /***********************************************************************/
 
@@ -549,10 +543,12 @@ static int16_t writeProc(void)
 
    /* Get file number */
 
-   if (token == sFILE) {
-     fileNumber = tknPtr->sParm.fileNumber;
-     getToken(false);
-   } /* end if */
+   if (token == sFILE)
+     {
+       fileNumber = tknPtr->sParm.fileNumber;
+       getToken(false);
+     }
+
    if (token == ',') getToken(false);
 
    /* Determine if this is a text or binary file */
@@ -560,16 +556,17 @@ static int16_t writeProc(void)
    if (!(files [fileNumber].defined)) error(eUNDEFILE);
    else if (files [fileNumber].ftype == sCHAR)
      writeText(fileNumber);
-   else {
-     pas_GenerateLevelReference(opLAS, files[fileNumber].flevel, files [fileNumber].faddr);
-     pas_GenerateDataOperation(opPUSH, files[fileNumber].fsize);
-     pas_GenerateIoOperation(xWRITE_BINARY, fileNumber);
-   } /* end else */
+   else
+     {
+       pas_GenerateLevelReference(opLAS, files[fileNumber].flevel, files [fileNumber].faddr);
+       pas_GenerateDataOperation(opPUSH, files[fileNumber].fsize);
+       pas_GenerateIoOperation(xWRITE_BINARY, fileNumber);
+     }
 
    if (token != ')') error(eRPAREN);
    else getToken(false);
    return(fileNumber);
-} /* end writeProc */
+}
 
 /***********************************************************************/
 
@@ -634,7 +631,7 @@ static void writeText (uint16_t fileNumber)
               pas_GenerateIoOperation(xWRITE_STRING, fileNumber);
               pas_GenerateDataOperation(opINDS, -(sPTR_SIZE + sINT_SIZE));
               break;
-            } /* end if */
+            }
 
           /* Otherwise, we fall through to process the ARRAY like any */
           /* expression */
@@ -672,17 +669,15 @@ static void writeText (uint16_t fileNumber)
               error(eWRITEPARM);
               break;
 
-            } /* end switch */
+            }
           break;
 
-        } /* end switch */
+        }
 
       if (token == ',') getToken(false);
       else return;
-
-    } /* end for */
-
-} /* end writeText */
+    }
+}
 
 /****************************************************************************/
 
@@ -705,8 +700,7 @@ static void writelnProc(void)         /* WRITELN procedure */
     */
 
    pas_GenerateIoOperation(xWRITELN, fileNumber);
-
-} /* end writelnProc */
+}
 
 /****************************************************************************/
 
@@ -747,7 +741,6 @@ static void valProc(void)         /* VAL procedure */
    */
 
   pas_BuiltInFunctionCall(lbVAL);
-
-} /* end writelnProc */
+}
 
 /***********************************************************************/

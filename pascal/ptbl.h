@@ -58,7 +58,7 @@ extern STYPE *parentString;
 extern const RTYPE *findReservedWord (char *name);
 extern STYPE *findSymbol       (char *inName);
 extern STYPE *addTypeDefine    (char *name, uint8_t type, uint16_t size,
-                                STYPE *parent);
+                                STYPE *parent, STYPE *index);
 extern STYPE *addConstant      (char *name, uint8_t type, int32_t *value,
                                 STYPE *parent);
 extern STYPE *addStringConst   (char *name, uint32_t offset, uint32_t size);

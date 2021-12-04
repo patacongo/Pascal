@@ -223,7 +223,8 @@ static STYPE *addSymbol(char *name, int16_t type)
 
 /***************************************************************/
 
-STYPE *addTypeDefine(char *name, uint8_t type, uint16_t size, STYPE *parent)
+STYPE *addTypeDefine(char *name, uint8_t type, uint16_t size,
+                     STYPE *parent, STYPE *index)
 {
    STYPE *typePtr;
 
@@ -251,6 +252,7 @@ STYPE *addTypeDefine(char *name, uint8_t type, uint16_t size, STYPE *parent)
        typePtr->sParm.t.asize    = size;
        typePtr->sParm.t.rsize    = size;
        typePtr->sParm.t.parent   = parent;
+       typePtr->sParm.t.index    = index;
 
      } /* end if */
 
@@ -471,7 +473,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard types to the symbol table */
 
-  typePtr = addTypeDefine("INTEGER", sINT, sINT_SIZE, NULL);
+  typePtr = addTypeDefine("INTEGER", sINT, sINT_SIZE, NULL, NULL);
   if (typePtr)
     {
       parentInteger             = typePtr;
@@ -479,23 +481,23 @@ void primeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.maxValue = MAXINT;
     } /* end if */
 
-  typePtr = addTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL);
+  typePtr = addTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.minValue = falseValue;
       typePtr->sParm.t.maxValue = trueValue;
     } /* end if */
 
-  typePtr = addTypeDefine("REAL", sREAL, sREAL_SIZE, NULL);
+  typePtr = addTypeDefine("REAL", sREAL, sREAL_SIZE, NULL, NULL);
 
-  typePtr = addTypeDefine("CHAR", sCHAR, sCHAR_SIZE, NULL);
+  typePtr = addTypeDefine("CHAR", sCHAR, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.minValue = MINCHAR;
       typePtr->sParm.t.maxValue = MAXCHAR;
     } /* end if */
 
-  typePtr = addTypeDefine("TEXT", sFILE_OF, sCHAR_SIZE, NULL);
+  typePtr = addTypeDefine("TEXT", sFILE_OF, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.subType  = sCHAR;
@@ -510,7 +512,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
    * storage
    */
 
-  typePtr = addTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL);
+  typePtr = addTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL, NULL);
   if (typePtr)
     {
       parentString              = typePtr;

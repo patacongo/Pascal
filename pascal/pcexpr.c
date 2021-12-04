@@ -61,6 +61,8 @@
  * Pre-processor Definitions
  ***************************************************************/
 
+/* REVIST: duplicated in pstm.c and pexpr.c */
+
 #define ADDRESS_DEREFERENCE 0x01
 #define ADDRESS_FACTOR      0x02
 #define INDEXED_FACTOR      0x04
@@ -557,7 +559,10 @@ static void constantFactor(void)
       getToken(false);
       constantFactor();
       if ((constantToken != tINT_CONST) && (constantToken != tBOOLEAN_CONST))
-        error(eFACTORTYPE);
+        {
+          error(eFACTORTYPE);
+        }
+
       constantInt = ~constantInt;
       break;
 

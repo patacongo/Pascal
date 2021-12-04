@@ -2,7 +2,7 @@
  * pexpr.h
  * External Declarations associated with pexpr.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -88,11 +88,11 @@ extern char   *constantStart;
  * Global Function Protypes
  ***********************************************************************/
 
-extern exprType expression ( exprType findExprType, STYPE *typePtr );
-extern exprType varParm    ( exprType varExprType, STYPE *typePtr );
-extern void     arrayIndex ( int32_t size );
-extern exprType getExprType( STYPE *sType );
+exprType expression(exprType findExprType, STYPE *typePtr);
+exprType varParm(exprType varExprType, STYPE *typePtr);
+void     arrayIndex(int32_t size, int offset);
+exprType getExprType(STYPE *sType);
 
-extern void constantExpression(void);
+void constantExpression(void);
 
 #endif /* __PEXPR_H */

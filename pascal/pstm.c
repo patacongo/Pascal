@@ -2,7 +2,7 @@
  * pstm.c
  * Pascal Statements
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "keywords.h"
 #include "pasdefs.h"
@@ -62,6 +63,8 @@
 /****************************************************************************
  * Private Definitions
  ****************************************************************************/
+
+/* REVIST: duplicated in pexpr.c and pcexpr.c */
 
 #define ADDRESS_DEREFERENCE  0x01
 #define ADDRESS_ASSIGNMENT   0x02
@@ -603,7 +606,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
       if (assignFlags != 0) error(eARRAYTYPE);
       assignFlags |= INDEXED_ASSIGNMENT;
 
-      arrayIndex(typePtr->sParm.t.asize);
+      arrayIndex(typePtr->sParm.t.asize, typePtr->sParm.t.minValue);
       varPtr->sKind        = typePtr->sParm.t.type;
       varPtr->sParm.v.size = typePtr->sParm.t.asize;
       pas_SimpleAssignment(varPtr, assignFlags);
@@ -783,7 +786,7 @@ static void pas_GotoStatement(void)
          {
            /* Find and verify the symbol associated with the label */
 
-           (void)sprintf (labelname, "%ld", tknInt);
+           (void)sprintf (labelname, "%" PRId32, tknInt);
            if (!(label_ptr = findSymbol(labelname)))
              {
                error(eUNDECLABEL);
@@ -819,7 +822,7 @@ static void pas_LabelStatement(void)
 
    /* Verify that the integer is a label name */
 
-   (void)sprintf (labelName, "%ld", tknInt);
+   (void)sprintf (labelName, "%" PRId32, tknInt);
    if (!(labelPtr = findSymbol(labelName)))
      {
        error(eUNDECLABEL);

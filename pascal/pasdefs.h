@@ -137,6 +137,7 @@ struct symType_s         /* for sKind = sTYPE */
   int32_t   minValue;    /* minimum value taken subrange */
   int32_t   maxValue;    /* maximum value taken by subrange or scalar */
   struct S *parent;      /* pointer to parent type */
+  struct S *index;       /* pointer to index subrange type (arrays)*/
 };
 typedef struct symType_s symType_t;
 

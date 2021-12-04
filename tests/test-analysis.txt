@@ -36,7 +36,7 @@ Analysis:
 This is a consequence of the fact that sets are currently limited to 32-bits:
 
 ########src/107-quicksort.pas########
-Line 0:0024 Error 41 Token 5b
+Line 0:0024 Error 41 Token 29
 
 Line:
  24                readln(a[size]);
@@ -52,20 +52,41 @@ Error:
 238 #define eARRAYTYPE       ((uint16_t) 0x41)
 
 Token:
- 95 /* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens */
- (5b -> '[')
+')'
 
 Analysis:
-2110        case sARRAY :
-2111          if (factorFlags != 0) error(eARRAYTYPE);
-2112          if (token == '[')
-2113            {
-2114              factorFlags         |= INDEXED_FACTOR;
 
-(gdb) p /x factorFlags
-$1 = 0x1
+I see a different error when from GDB:
 
-69 #define ADDRESS_DEREFERENCE 0x01
+Fatal Error 23 -- Compilation aborted
+
+Line:
+#0  error (errcode=23) at perr.c:129
+#1  0x000000010040bbba in readText (fileNumber=0) at pproc.c:470
+
+          /* Otherwise, we fall through to process the ARRAY like any */
+          /* expression */
+
+        default :
+
+          switch (varParm(exprUnknown, NULL))
+            {
+            ...
+            default :
+              error(eINVARG);  <<< HERE
+              break;
+            }
+          break;
+
+Error:
+193 #define eINVARG          ((uint16_t) 0x17)
+
+Token:
+(gdb) p /x token
+$1 = 0x29
+
+Analysis:
+Not sure.  This appears to be a limitation in the implementation for printing arrays.
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d
@@ -100,27 +121,6 @@ On the second time through simpleFactor
 ...
 
 The problem is that operations on the 'string' are not yet implemented.
-
-########src/805-cgimail.pas########
-Line 0:0037 Error 09 Token 01 (FSPLIT)
-
-Line:
- 33    function AppDir : string;
- 34    var
- 35       fdir : string;
- 36    begin
- 37       fsplit(paramstr(0), fdir,,);
- 38       AppDir := fdir
- 39    end;
-
-Error:
-183 #define eIDENT           ((uint16_t) 0x01)
-
-Token:
-178 #define eEND             ((uint16_t) 0x09)
-
-Analysis:
-There is no builin fsplit procedure.
 
 ########src/901-pageutils.pas########
 Line 0:0654 Error 0f Token 45

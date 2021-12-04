@@ -97,7 +97,8 @@ static STYPE *pas_TypeDenoter           (char *typeName, bool allocate);
 static STYPE *pas_NewComplexType        (char *typeName);
 static STYPE *pas_NewOrdinalType        (char *typeName);
 static STYPE *pas_OrdinalTypeIdentifier (bool allocate);
-static STYPE *pas_GetArrayType          (void);
+static STYPE *pas_GetArrayIndexType     (void);
+static STYPE *pas_GetArrayBaseType      (STYPE *indexTypePtr);
 static STYPE *pas_DeclareRecord         (char *recordName);
 static STYPE *pas_DeclareField          (STYPE *recordPtr);
 static STYPE *pas_DeclareParameter      (bool pointerType);
@@ -467,7 +468,7 @@ void variableDeclarationGroup(void)
     * variable-declaration list.
     */
 
-  for (;;)
+  for (; ; )
     {
       if (token == tIDENT)
         {
@@ -481,7 +482,10 @@ void variableDeclarationGroup(void)
           if (token != ';') break;
           else getToken(false);
         }
-      else break;
+      else
+        {
+          break;
+        }
     }
 }
 
@@ -737,7 +741,7 @@ static STYPE *pas_DeclareOrdinalType(char *typeName)
        if (typeIdPtr)
          {
            typePtr = addTypeDefine(typeName, typeIdPtr->sParm.t.type,
-                                    g_dwVarSize, typeIdPtr);
+                                    g_dwVarSize, typeIdPtr, NULL);
          }
      }
 
@@ -1363,7 +1367,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
      {
        int32_t nObjects;
        nObjects = 0;
-       typePtr = addTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL);
+       typePtr = addTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL, NULL);
 
        /* Now declare each instance of the scalar */
 
@@ -1401,7 +1405,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
      {
        /* Create the new INTEGER subrange type */
 
-       typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL);
+       typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL, NULL);
        typePtr->sParm.t.subType  = sINT;
        typePtr->sParm.t.minValue = tknInt;
        typePtr->sParm.t.maxValue = MAXINT;
@@ -1431,7 +1435,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
      {
        /* Create the new CHAR subrange type */
 
-       typePtr = addTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL);
+       typePtr = addTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL, NULL);
        typePtr->sParm.t.subType  = sCHAR;
        typePtr->sParm.t.minValue = tknInt;
        typePtr->sParm.t.maxValue = MAXCHAR;
@@ -1461,7 +1465,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
      {
        /* Create the new SCALAR subrange type */
 
-       typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, tknPtr);
+       typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, tknPtr, NULL);
        typePtr->sParm.t.subType  = token;
        typePtr->sParm.t.minValue = tknInt;
        typePtr->sParm.t.maxValue = MAXINT;
@@ -1498,6 +1502,7 @@ static STYPE *pas_NewComplexType(char *typeName)
 {
   STYPE *typePtr = NULL;
   STYPE *typeIdPtr;
+  STYPE *indexTypePtr;
 
   TRACE(lstFile,"[pas_NewComplexType]");
 
@@ -1512,7 +1517,8 @@ static STYPE *pas_NewComplexType(char *typeName)
       typeIdPtr = pas_TypeIdentifier(1);
       if (typeIdPtr)
         {
-          typePtr = addTypeDefine(typeName, sPOINTER, g_dwVarSize, typeIdPtr);
+          typePtr = addTypeDefine(typeName, sPOINTER, g_dwVarSize,
+                                  typeIdPtr, NULL);
         }
       else
         {
@@ -1539,15 +1545,22 @@ static STYPE *pas_NewComplexType(char *typeName)
        */
 
     case tARRAY :
+      /* On entry, 'token' refers to the 'array' reserved word */
+
       getToken(false);
-      typeIdPtr = pas_GetArrayType();
-      if (typeIdPtr)
+      g_dwVarSize = 0;
+
+      /* On successful return, 'token' will refer to the 'of' keyword. */
+
+      indexTypePtr = pas_GetArrayIndexType();
+      if (indexTypePtr)
         {
-          typePtr = addTypeDefine(typeName, sARRAY, g_dwVarSize, typeIdPtr);
-        }
-      else
-        {
-          error(eINVTYPE);
+          typeIdPtr = pas_GetArrayBaseType(indexTypePtr);
+          if (typeIdPtr)
+            {
+              typePtr = addTypeDefine(typeName, sARRAY, g_dwVarSize,
+                                      typeIdPtr, indexTypePtr);
+            }
         }
       break;
 
@@ -1579,9 +1592,13 @@ static STYPE *pas_NewComplexType(char *typeName)
 
       typeIdPtr = pas_OrdinalTypeIdentifier(1);
       if (typeIdPtr)
-        getToken(false);
+        {
+          getToken(false);
+        }
       else
-        typeIdPtr = pas_DeclareOrdinalType(NULL);
+        {
+          typeIdPtr = pas_DeclareOrdinalType(NULL);
+        }
 
       /* Verify that the ordinal-type is either a scalar or a
        * subrange type.  These are the only valid types for 'set of'
@@ -1594,7 +1611,8 @@ static STYPE *pas_NewComplexType(char *typeName)
           /* Declare the SET type */
 
           typePtr = addTypeDefine(typeName, sSET_OF,
-                                  typeIdPtr->sParm.t.asize, typeIdPtr);
+                                  typeIdPtr->sParm.t.asize, typeIdPtr,
+                                  NULL);
 
           if (typePtr)
             {
@@ -1622,7 +1640,9 @@ static STYPE *pas_NewComplexType(char *typeName)
             }
         }
       else
-        error(eSET);
+        {
+          error(eSET);
+        }
       break;
 
       /* File Types
@@ -1644,7 +1664,8 @@ static STYPE *pas_NewComplexType(char *typeName)
       typeIdPtr = pas_TypeDenoter(NULL, 1);
       if (typeIdPtr)
         {
-          typePtr = addTypeDefine(typeName, sFILE_OF, g_dwVarSize, typeIdPtr);
+          typePtr = addTypeDefine(typeName, sFILE_OF, g_dwVarSize,
+                                  typeIdPtr, NULL);
           if (typePtr)
             {
               typePtr->sParm.t.subType = typeIdPtr->sParm.t.type;
@@ -1718,21 +1739,19 @@ static STYPE *pas_OrdinalTypeIdentifier(bool allocate)
 }
 
 /***************************************************************/
-/* get array type argument for TYPE block or variable declaration */
+/* get index and array type for TYPE block or variable declaration */
 
-static STYPE *pas_GetArrayType(void)
+static STYPE *pas_GetArrayIndexType(void)
 {
   STYPE *indexType = NULL;
-  STYPE *typeDenoter = NULL;
 
-  TRACE(lstFile,"[pas_GetArrayType]");
+  TRACE(lstFile,"[pas_GetArrayIndexType]");
 
-  /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter */
-  /* FORM: [PACKED] ARRAY [<integer>] OF type-denoter
-   * NOTE: Bracketed value is the array size!  NONSTANDARD!
+  /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
+   * FORM: [PACKED] ARRAY [<integer>] OF type-denoter
+   *
+   * 'token' should refer to '[' on entry.
    */
-
-  g_dwVarSize = 0;
 
   /* Verify that the index-type-list is preceded by '[' */
 
@@ -1790,24 +1809,6 @@ static STYPE *pas_GetArrayType(void)
           if (token != ']') error(eRBRACKET);
           else getToken(false);
 
-          /* Verify that 'of' precedes the type-denoter */
-
-          if (token != tOF) error(eOF);
-          else getToken(false);
-
-          /* OF should be followed by the type-denoter base type.
-           * This may be an the name of a previously defined type or a
-           * new, unnamed type definition.
-           */
-
-          typeDenoter = pas_TypeDenoter(NULL, false);
-          if (typeDenoter == NULL) error(eINVTYPE);
-
-           /* And the whole thing must be terminated with a semi-colon */
-
-          if (token != ';') error(eSEMICOLON);
-          else getToken(false);
-
           /* We have the array size in elements and the base type, now
            * create the unnamed index-type and convert the size for the
            * type found
@@ -1816,19 +1817,51 @@ static STYPE *pas_GetArrayType(void)
            * added to deal with ordinal type names as index-type.
            */
 
-          indexType = addTypeDefine(NULL, sSUBRANGE, sINT_SIZE, NULL);
+          indexType = addTypeDefine(NULL, sSUBRANGE, sINT_SIZE, NULL, NULL);
           if (indexType)
             {
               indexType->sParm.t.subType  = sINT;
               indexType->sParm.t.minValue = minValue;
               indexType->sParm.t.maxValue = maxValue;
-
-              g_dwVarSize = (maxValue - minValue + 1) * sINT_SIZE;
             }
         }
     }
 
   return indexType;
+}
+
+static STYPE *pas_GetArrayBaseType(STYPE *indexTypePtr)
+{
+  STYPE *typeDenoter = NULL;
+
+  TRACE(lstFile,"[pas_GetArrayBaseType]");
+
+  /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
+   * FORM: [PACKED] ARRAY [<integer>] OF type-denoter
+   *
+   * 'token' should refer to 'OF' on entry.
+   */
+
+  /* Verify that 'of' precedes the type-denoter */
+
+  if (token != tOF) error(eOF);
+  else getToken(false);
+
+  /* OF should be followed by the type-denoter base type.
+   * This may be an the name of a previously defined type or a
+   * new, unnamed type definition.
+   */
+
+  typeDenoter = pas_TypeDenoter(NULL, false);
+  if (typeDenoter == NULL) error(eINVTYPE);
+
+  /* Get the size of the entire array */
+
+  g_dwVarSize = (indexTypePtr->sParm.t.maxValue -
+                 indexTypePtr->sParm.t.minValue + 1) *
+                 sINT_SIZE;
+
+  return typeDenoter;
 }
 
 /***************************************************************/
@@ -1845,7 +1878,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
   /* Declare the new RECORD type */
 
-  recordPtr = addTypeDefine(recordName, sRECORD, 0, NULL);
+  recordPtr = addTypeDefine(recordName, sRECORD, 0, NULL, NULL);
 
   /* Then declare the field-list associated with the RECORD
    * FORM: field-list =
