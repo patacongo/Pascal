@@ -348,8 +348,8 @@ static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Save the returned pointer in the stack */
 
-      TOS(st, 0) = (ustack_t)((uint32_t)src >> 16);
-      TOS(st, 1) = (ustack_t)((uint32_t)src & 0x0000ffff);
+      TOS(st, 0) = (ustack_t)((uintptr_t)src >> 16);
+      TOS(st, 1) = (ustack_t)((uintptr_t)src & 0x0000ffff);
       break;
 
       /* Copy pascal string to a pascal string

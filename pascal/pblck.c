@@ -777,10 +777,13 @@ static STYPE *pas_DeclareVar(void)
   if (token == ',')
     {
       /* Yes ..Process the next identifer in the indentifier list
-       * via recursion
+       * via recursion (suppressing symbol conversion).
+       *
+       * REVISIT:  This is a bad change because it will permitted
+       * duplicate symbol definitions!
        */
 
-      getToken(false);
+      getToken(true);
       if (token != tIDENT) error(eIDENT);
       else typePtr = pas_DeclareVar();
     }

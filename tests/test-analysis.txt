@@ -1,22 +1,35 @@
 testall.sh compiles all (most) of the pascal source files in the src/ sub-directory.  The src/ sub-directory contains various pascal programs found by scouring the internet (most not attributed here.. sorry).  As of this writing, the following errors are reported when testall.sh is ran:
 
-1. Several test cases fail because the involve use of non-standard Pascal types
-   (filename and list) and undefined procedures (fsplit).
-   test cases using the list type probably have been removed; For testing purposes,
-   the filename type has been changed to the string type.
-   According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
-   not sure how standard that unit is.
-2. Currently a set is limited to 32-bits to so that they can be represented internally
-   as a 32-bit bit set.
-3. Input procedures in writeln() take the file number as an optional first parameter.
-   If the optional file parameter is not supplied then the file associated with the
-   built-in variable input is tested.  Similarly, ouoptout procedures would default to
-   the built-in output.
-   This has been fixed for some functions (like eof and eoln) but not all cases have been verified.
-4. Operations on type 'string' are no yet supported
-5. Unit files with data declarations, but no implementation.
-6. General usage of units.  Most of these are not skipped by testall.sh.
-7. Additional issue with src/107-quicksort.pas that has not yet been analyzed.
+ 1. Several test cases fail because the involve use of non-standard Pascal types
+    (filename, list, word) and undefined procedures (fsplit, addr).
+    test cases using the list type probably have been removed; For testing purposes,
+    the filename type has been changed to the string type.
+    According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
+    not sure how standard that unit is.
+ 2. Currently a set is limited to 32-bits to so that they can be represented internally
+    as a 32-bit bit set.
+ 3. Input procedures in writeln() take the file number as an optional first parameter.
+    If the optional file parameter is not supplied then the file associated with the
+    built-in variable input is tested.  Similarly, ouoptout procedures would default to
+    the built-in output.
+    This has been fixed for some functions (like eof and eoln) but not all cases have been
+    verified.
+ 4. Operations on type 'string' are not yet supported
+ 5. I/O operations on most types of arrays and VAR arrays are not fully
+    implemented.  See rc/107-quicksort.pas
+ 6. Forward references to variables before the are defined to not work.  See
+    src/108-pointerrecode.pas
+ 7. The are a bunch of scoping issues.  There is a kludge in place that allows nested formal
+    parameters to have the same name as variables declared with wider cop e.  Basically it
+    just suppresses symbol table lookup.  But this is a bad solution since it then permits
+    formal parameters to have the same name.
+ 8. More scoping problems with local variables as seen in src/112-localscope.pas.  The
+    kludge used for formal parmeters (above) cannot be used with local variables.  I think
+    that we need to extend the symbol lookup so that it can look at the current local scope
+    or at the the entire scope based on the current staic nesting level.  This would have
+    to be a backward search from the current nesting level down.
+ 9. Unit files with data declarations, but no implementation.
+10. General usage of units.  Most of these are not skipped by testall.sh.
 
 Successful test results are not shown.
 
@@ -56,7 +69,7 @@ Token:
 
 Analysis:
 
-I see a different error when from GDB:
+I see a different error when running from GDB:
 
 Fatal Error 23 -- Compilation aborted
 
@@ -85,8 +98,109 @@ Token:
 (gdb) p /x token
 $1 = 0x29
 
+This error occurs because varParm() returns expArrayPtr but there is no code generation logic in the switch statement for that case.
+
+########src/108-pointerrecode.pas########
+Line 0:0004 Error 1e Token 01 (RECDATA)
+
+Line:
+type
+  rptr = ^recdata; <<< HERE
+  recdata = record 
+    number : integer; 
+    code : string; 
+    nextrecord : rptr 
+  end;
+
+Error:
+#define eINVTYPE         ((uint16_t) 0x1e)
+
+Token:
+#define tIDENT           0x01
+
 Analysis:
-Not sure.  This appears to be a limitation in the implementation for printing arrays.
+Fails becuase recdata is not defined yet and the forward reference is not supported.
+
+########src/109-findwords.pas########
+Line 0:0018 Error 1e Token 01 (LIST)
+
+After commenting out re-definition of boolean constants:
+
+const
+    { TRUE = 1;
+      FALSE = 0; }
+
+Line:
+type
+     listptr = ^list;  <<< HERE
+     list = record
+              line : integer;       { line number of occurrence     }
+              nextline : listptr;   { link to next line number      }
+              prevline : listptr    { link to previous line number  }
+     end;
+
+Error:
+#define eINVTYPE         ((uint16_t) 0x1e)
+
+
+Token:
+#define tIDENT           0x01
+
+
+Analysis:
+Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
+
+########src/112-localscope.pas########
+NOTE:  This test currently passes with this kludge in place:
+
+--- a/pascal/pblck.c
++++ b/pascal/pblck.c
+@@ -777,10 +777,10 @@ static STYPE *pas_DeclareVar(void)
+   if (token == ',')
+     {
+       /* Yes ..Process the next identifer in the indentifier list
+-       * via recursion
++       * via recursion (suppressing symbol conversion so that).
+        */
+
+-      getToken(false);
++      getToken(true);
+       if (token != tIDENT) error(eIDENT);
+       else typePtr = pas_DeclareVar();
+     }
+
+But that is a bad change as described in the introcution.  If that change is backed out, then I see this problem:
+
+Line 0:0006 Error 0e Token 46
+
+Line:
+static STYPE *pas_DeclareVar(void)
+{
+  typePtr  = NULL;
+
+  varName = tkn_strt;
+  getToken(false);
+
+  if (token == ',')
+    {
+      getToken(false);
+      if (token != tIDENT) error(eIDENT); <<< here
+      else typePtr = pas_DeclareVar();
+    }
+
+Error:
+#define eIDENT           ((uint16_t) 0x0e)
+
+Token:
+#define sINT             0x46
+
+Analysis:
+Fails parsing this line:
+ 
+var 
+   a, b, c: integer; (second occurrence)
+
+Basically an indentier is expected but instead we get the variables or the same name defined at wider scope.
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d

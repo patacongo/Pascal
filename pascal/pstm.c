@@ -137,31 +137,37 @@ void statement(void)
       getToken(false);
       pas_Assignment(opSTS, exprInteger, symPtr, symPtr->sParm.v.parent);
       break;
+
     case sCHAR :
       symPtr = tknPtr;
       getToken(false);
       pas_Assignment(opSTSB, exprChar, symPtr, symPtr->sParm.v.parent);
       break;
+
     case sBOOLEAN :
       symPtr = tknPtr;
       getToken(false);
       pas_Assignment(opSTSB, exprBoolean, symPtr, NULL);
       break;
+
     case sREAL :
       symPtr = tknPtr;
       getToken(false);
       pas_LargeAssignment(opSTSM, exprReal, symPtr, symPtr->sParm.v.parent);
       break;
+
     case sSCALAR :
       symPtr = tknPtr;
       getToken(false);
       pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.parent);
       break;
+
     case sSET_OF :
       symPtr = tknPtr;
       getToken(false);
       pas_Assignment(opSTS, exprSet, symPtr, symPtr->sParm.v.parent);
       break;
+
     case sSTRING :
     case sRSTRING :
       symPtr = tknPtr;
@@ -204,8 +210,7 @@ void statement(void)
 
       /* None of the above, try standard procedures */
     default            : builtInProcedure(); break;
-
-  } /* end switch */
+  }
 
   /* Generate the POPS that matches the PUSHS generated at the begining
    * of this function (see comments above).
@@ -214,8 +219,7 @@ void statement(void)
   pas_GenerateSimple(opPOPS);
 
   TRACE(lstFile,"]");
-
-} /* end statement */
+}
 
 /***********************************************************************/
 /* Process a complex assignment statement */
@@ -266,24 +270,24 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprInteger, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTSX, exprIntegerPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTSX, exprInteger, varPtr, typePtr);
-        } /* end if */
+        }
       else
         {
           if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprInteger, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTS, exprIntegerPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTS, exprInteger, varPtr, typePtr);
-        } /* end else */
+        }
       break;
     case sCHAR :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
@@ -292,24 +296,24 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTIB, exprChar, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTSX, exprCharPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTSXB, exprChar, varPtr, typePtr);
-        } /* end if */
+        }
       else
         {
           if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTIB, exprChar, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTS, exprCharPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTSB, exprChar, varPtr, typePtr);
-        } /* end else */
+        }
       break;
     case sBOOLEAN :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
@@ -318,24 +322,24 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprBoolean, varPtr, NULL);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTSX, exprBooleanPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTSX, exprBoolean, varPtr, NULL);
-        } /* end if */
+        }
       else
         {
           if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprBoolean, varPtr, NULL);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTS, exprBooleanPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTS, exprBoolean, varPtr, NULL);
-        } /* end else */
+        }
       break;
     case sREAL         :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
@@ -344,24 +348,24 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTSX, exprRealPtr, varPtr, typePtr);
           else
             pas_LargeAssignment(opSTSXM, exprReal, varPtr, typePtr);
-        } /* end if */
+        }
       else
         {
           if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTS, exprRealPtr, varPtr, typePtr);
           else
             pas_LargeAssignment(opSTSM, exprReal, varPtr, typePtr);
-        } /* end else */
+        }
       break;
     case sSCALAR :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
@@ -370,24 +374,24 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprScalar, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTSX, exprScalarPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTSX, exprScalar, varPtr, typePtr);
-        } /* end if */
+        }
       else
         {
           if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprScalar, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTS, exprScalarPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTS, exprScalar, varPtr, typePtr);
-        } /* end else */
+        }
       break;
     case sSET_OF :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
@@ -396,24 +400,24 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprSet, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTSX, exprSetPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTSX, exprSet, varPtr, typePtr);
-        } /* end if */
+        }
       else
         {
           if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprSet, varPtr, typePtr);
-            } /* end if */
+            }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
             pas_Assignment(opSTS, exprSetPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTS, exprSet, varPtr, typePtr);
-        } /* end else */
+        }
       break;
 
       /* NOPE... recurse until it becomes a simple assignment */
@@ -438,7 +442,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
           else
             pas_Assignment(opSTS, exprRecordPtr, varPtr, typePtr);
-        } /* end if */
+        }
       else if (((assignFlags & ADDRESS_DEREFERENCE) != 0) &&
                ((assignFlags & VAR_PARM_ASSIGNMENT) == 0))
         error(ePOINTERTYPE);
@@ -476,15 +480,14 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
                 {
                   pas_GenerateDataOperation(opPUSH, tknPtr->sParm.r.offset);
                   pas_GenerateSimple(opADD);
-                } /* end if */
+                }
               else
                 varPtr->sParm.v.offset += tknPtr->sParm.r.offset;
 
               getToken(false);
               pas_SimpleAssignment(varPtr, assignFlags);
-
-            } /* end else if */
-        } /* end else */
+            }
+        }
 
       /* It must be a RECORD assignment */
 
@@ -497,10 +500,10 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opADD);
               pas_LargeAssignment(opSTIM, exprRecord, varPtr, typePtr);
-            } /* end if */
+            }
           else
             pas_LargeAssignment(opSTSM, exprRecord, varPtr, typePtr);
-        } /* end else */
+        }
       break;
 
     case sRECORD_OBJECT :
@@ -544,11 +547,11 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 
               pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + withRecord.index));
               tempOffset     = withRecord.offset;
-            } /* end if */
+            }
           else
             {
               tempOffset   = varPtr->sParm.r.offset + withRecord.offset;
-            } /* end else */
+            }
 
           /* Modify the variable so that it has the characteristics of the
            * the field but with level and offset associated with the record
@@ -567,7 +570,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 
           pas_SimpleAssignment(varPtr, assignFlags);
 
-        } /* end else */
+        }
       break;
 
     case sPOINTER :
@@ -579,7 +582,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
         {
           getToken(false);
           assignFlags |= ADDRESS_DEREFERENCE;
-        } /* end if */
+        }
       else
         assignFlags |= ADDRESS_ASSIGNMENT;
 
@@ -1020,6 +1023,7 @@ void compoundStatement(void)
    TRACE(lstFile,"[compoundStatement]");
 
    /* Process statements until END encountered */
+
    do
      {
        getToken(false);
@@ -1681,6 +1685,3 @@ static void pas_WithStatement(void)
 
    withRecord = saveWithRecord;
 }
-
-/***********************************************************************/
-

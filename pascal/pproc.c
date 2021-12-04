@@ -219,6 +219,7 @@ int actualParameterList(STYPE *procPtr)
 {
   STYPE *typePtr;
   register int nParms = 0;
+  bool lparen = false;
   int size = 0;
 
   TRACE(lstFile,"[actualParameterList]");
@@ -241,6 +242,12 @@ int actualParameterList(STYPE *procPtr)
    *       procedure-identifier | function-identifier
    */
 
+  if (token == '(')
+    {
+      lparen = true;
+      getToken(false);
+    }
+
   /* If this procedure requires parameters, get them and make sure that
    * they match in type and number
    */
@@ -251,9 +258,8 @@ int actualParameterList(STYPE *procPtr)
        * be present and must begin with '('
        */
 
-      if (token != '(') error (eLPAREN);
-      else getToken(false);
-
+      if (!lparen) error (eLPAREN);
+      
       /* Loop to process the expected number of parameters.  The formal
        * argument descriptions follow the procedure/function description
        * as an array of variable declarations. (These sizes below must
@@ -269,39 +275,48 @@ int actualParameterList(STYPE *procPtr)
               expression(exprInteger, typePtr);
               size += sINT_SIZE;
               break;
+
             case sCHAR :
               expression(exprChar, typePtr);
               size += sCHAR_SIZE;
               break;
+
             case sREAL :
               expression(exprReal, typePtr);
               size += sREAL_SIZE;
               break;
+
             case sSTRING :
             case sRSTRING :
               expression(exprString, typePtr);
               size += sRSTRING_SIZE;
               break;
+
             case sSUBRANGE :
               expression(exprInteger, typePtr);
               size += sINT_SIZE;
               break;
+
             case sSCALAR :
               expression(exprScalar, typePtr);
               size += sINT_SIZE;
               break;
+
             case sSET_OF :
               expression(exprSet, typePtr);
               size += sINT_SIZE;
               break;
+
             case sARRAY :
               expression(exprArray, typePtr);
               size += typePtr->sParm.t.asize;
               break;
+
             case sRECORD :
               expression(exprRecord, typePtr);
               size += typePtr->sParm.t.asize;
               break;
+
             case sVAR_PARM :
               if (typePtr)
                 {
@@ -311,35 +326,44 @@ int actualParameterList(STYPE *procPtr)
                       varParm(exprIntegerPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
+
                     case sBOOLEAN :
                       varParm(exprBooleanPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
+
                     case sCHAR :
                       varParm(exprCharPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
+
                     case sREAL :
                       varParm(exprRealPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
+
                     case sARRAY :
                       varParm(exprArrayPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
+
                     case sRECORD :
                       varParm(exprRecordPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
+
                     default :
                       error(eVARPARMTYPE);
                       break;
                     }
                 }
               else
-                error(eVARPARMTYPE);
+                {
+                  error(eVARPARMTYPE);
+                }
               break;
-            default             :
+
+            default :
               error (eNPARMS);
             }
 
@@ -349,7 +373,10 @@ int actualParameterList(STYPE *procPtr)
               else getToken(false);
             }
         }
+    }
 
+  if (lparen == true)
+    {
       if (token != ')') error (eRPAREN);
       else getToken(false);
     }
@@ -398,10 +425,10 @@ static int16_t readProc(void)
 
    /* Determine if this is a text or binary file */
 
-   if (!(files [fileNumber].defined)) error (eUNDEFILE);
-   else if (files [fileNumber].ftype == sCHAR)
+   if (!(files[fileNumber].defined)) error (eUNDEFILE);
+   else if (files[fileNumber].ftype == sCHAR)
      {
-       readText (fileNumber);
+       readText(fileNumber);
      }
    else
      {
@@ -418,7 +445,7 @@ static int16_t readProc(void)
 
 /***********************************************************************/
 
-static void readText (uint16_t fileNumber)
+static void readText(uint16_t fileNumber)
 {
   STYPE *rPtr;
 
@@ -441,11 +468,12 @@ static void readText (uint16_t fileNumber)
               pas_GenerateStackReference(opLAS, rPtr);
               pas_GenerateDataOperation(opPUSH, rPtr->sParm.v.size);
               pas_GenerateIoOperation(xREAD_STRING, fileNumber);
-              pas_GenerateDataOperation(opINDS, -(sPTR_SIZE+sINT_SIZE));
+              pas_GenerateDataOperation(opINDS, -(sPTR_SIZE + sINT_SIZE));
             }
 
-          /* Otherwise, we fall through to process the ARRAY like any */
-          /* expression */
+          /* Otherwise, we fall through to process the ARRAY like any
+           * expression.
+           */
 
         default :
 

@@ -50,7 +50,7 @@
 #define tLE              0x07
 #define tGE              0x08
 #define tASSIGN          0x09
-#define tSUBRANGE        0x0A
+#define tSUBRANGE        0x0a
 
 /* Token Values 0x21-0x2F (except 0x24) are for ASCII character tokens */
 
