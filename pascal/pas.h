@@ -2,7 +2,7 @@
  * pas.h
  * External Declarations associated with pas.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -93,7 +93,7 @@ extern FILE       *errFile;                /* Error file pointer */
 extern FILE       *lstFile;                /* List file pointer */
 
 extern WTYPE       withRecord;             /* RECORD of WITH statement */
-extern int16_t     level;                  /* Static nesting level */
+extern int16_t     g_level;                /* Static nesting level */
 extern int16_t     includeIndex;           /* Include file index */
 extern int16_t     nIncPathes;             /* Number pathes in includePath[] */
 extern uint16_t    label;                  /* Last label number */

@@ -93,11 +93,11 @@ void primeBuiltInProcedures(void)
 
   valSymbol[0].sParm.p.nParms = 3;
   valSymbol[1].sKind          = sSTRING;
-  valSymbol[1].sParm.p.parent = parentString;
+  valSymbol[1].sParm.p.parent = g_parentString;
   valSymbol[2].sKind          = sVAR_PARM;
-  valSymbol[2].sParm.p.parent = parentInteger;
+  valSymbol[2].sParm.p.parent = g_parentInteger;
   valSymbol[3].sKind          = sVAR_PARM;
-  valSymbol[3].sParm.p.parent = parentInteger;
+  valSymbol[3].sParm.p.parent = g_parentInteger;
 }
 
 /***********************************************************************/

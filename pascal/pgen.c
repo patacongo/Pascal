@@ -2,7 +2,7 @@
  * pgen.c
  * P-Code generation logic
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,10 +82,6 @@ static uint32_t g_nStackLevelReferenceChanges = 0;
 
 /***********************************************************************
  * Private Function Prototypes
- ***********************************************************************/
-
-/***********************************************************************
- * Private Functions
  ***********************************************************************/
 
 /***********************************************************************/
@@ -354,7 +350,7 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, STYPE *pVar)
    * an LSP)
    */
 
-  insn_GenerateLevelReference(eOpCode, (level - pVar->sLevel),
+  insn_GenerateLevelReference(eOpCode, (g_level - pVar->sLevel),
                               pVar->sParm.v.offset);
 }
 
@@ -363,8 +359,7 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, STYPE *pVar)
  * called procedure is external.
  */
 
-void
-pas_GenerateProcedureCall(STYPE *pProc)
+void pas_GenerateProcedureCall(STYPE *pProc)
 {
   /* sLevel is the level at which the procedure was declared.  We need
    * to set the SLP to this value prior to the call (on some architectures

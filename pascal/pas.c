@@ -43,6 +43,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <ctype.h>
 #include <string.h>
 #include <signal.h>
@@ -101,7 +102,7 @@ FILE       *errFile;                 /* Error file pointer */
 
 /* Initialized Global Data */
 
-int16_t     level        = 0;        /* Static nesting level */
+int16_t     g_level      = 0;        /* Static nesting level */
 int16_t     includeIndex = 0;        /* Include file index */
 int16_t     nIncPathes   = 0;        /* Number pathes in includePath[] */
 uint16_t    label        = 0;        /* Last label number */
@@ -362,7 +363,7 @@ int main(int argc, char *argv[])
   /* Define standard input/output file characteristics */
 
   files[0].defined = -1;
-  files[0].flevel  = level;
+  files[0].flevel  = g_level;
   files[0].ftype   = sCHAR;
   files[0].faddr   = dstack;
   files[0].fsize   = sCHAR_SIZE;
@@ -430,12 +431,12 @@ int main(int argc, char *argv[])
 
   if (warn_count > 0)
     {
-      printf("  %ld Warnings Issued\n", warn_count);
+      printf("  %" PRId32 " Warnings Issued\n", warn_count);
     } /* end if */
 
   if (err_count > 0)
     {
-      printf("  %d Errors Detected\n\n", err_count);
+      printf("  %" PRId32 " Errors Detected\n\n", err_count);
       return -1;
     } /* end if */
 

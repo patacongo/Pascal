@@ -2,7 +2,7 @@
  * punit.c
  * Parse a pascal unit file
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -301,7 +301,7 @@ static void interfaceSection(void)
    if (token == tCONST)
      {
        const_strt = saveNConst;        /* Limit search to present level */
-       getToken(false);                     /* Get identifier */
+       getToken(false);                /* Get identifier */
        const_strt = 0;
 
        /* Process constant-definition.
@@ -321,7 +321,7 @@ static void interfaceSection(void)
      {
        const_strt = saveNConst;        /* Limit search to present level */
        sym_strt   = saveNSym;
-       getToken(false);                     /* Get identifier */
+       getToken(false);                /* Get identifier */
        const_strt = 0;
        sym_strt   = 0;
 
@@ -341,7 +341,7 @@ static void interfaceSection(void)
      {
        const_strt = saveNConst;        /* Limit search to present level */
        sym_strt   = saveNSym;
-       getToken(false);                     /* Get identifier */
+       getToken(false);                /* Get identifier */
        const_strt = 0;
        sym_strt   = 0;
 
@@ -371,7 +371,7 @@ static void interfaceSection(void)
          {
            const_strt = saveNConst;    /* Limit search to present level */
            sym_strt   = saveNSym;
-           getToken(false);                 /* Get identifier */
+           getToken(false);            /* Get identifier */
            const_strt = 0;
            sym_strt   = 0;
 
@@ -388,7 +388,7 @@ static void interfaceSection(void)
          {
            const_strt = saveNConst;    /* Limit search to present level */
            sym_strt   = saveNSym;
-           getToken(false);                 /* Get identifier */
+           getToken(false);            /* Get identifier */
            const_strt = 0;
            sym_strt   = 0;
 
@@ -449,7 +449,7 @@ static void exportedProcedureHeading(void)
     * PROCEDURE is at the next level
     */
 
-   level++;
+   g_level++;
 
    /* Process parameter list */
 
@@ -479,7 +479,7 @@ static void exportedProcedureHeading(void)
 
    /* Drop the level back to where it was */
 
-   level--;
+   g_level--;
 
 } /* end exportedProcedureHeading */
 
@@ -525,7 +525,7 @@ static void exportedFunctionHeading(void)
     * PROCEDURE is at the next level
     */
 
-   level++;
+   g_level++;
 
    /* Save the string stack pointer so that we can release all
     * formal parameter strings later.  Then get the next token.
@@ -590,10 +590,10 @@ static void exportedFunctionHeading(void)
      {
        funcPtr[i].sName = ((char *) NULL);
      }
+
    stringSP = saveChSp;
 
    /* Restore the original level */
 
-   level--;
-
-} /* end exportedFunctionHeading */
+   g_level--;
+}

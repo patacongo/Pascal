@@ -42,6 +42,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include "config.h"
@@ -64,12 +65,13 @@ static STYPE *addSymbol(char *name, int16_t type);
  * Public Variables
  ***************************************************************/
 
-STYPE *parentInteger = NULL;
-STYPE *parentString  = NULL;
+STYPE *g_parentInteger = NULL;
+STYPE *g_parentString  = NULL;
 
 /***************************************************************
  * Private Variables
  ***************************************************************/
+
 /* NOTES in the following:
  * (1) Standard Pascal reserved word
  * (2) Standard Pascal Function
@@ -79,7 +81,7 @@ STYPE *parentString  = NULL;
  * (6) Extended (or non-standard) Pascal procedure
  */
 
-static const RTYPE rsw[] =                        /* Reserved word list */
+static const RTYPE g_rsw[] =                      /* Reserved word list */
 {
   {"ABS",            tFUNC,           txABS},     /* (2) */
   {"AND",            tAND,            txNONE},    /* (1) */
@@ -156,25 +158,25 @@ static const RTYPE rsw[] =                        /* Reserved word list */
   {NULL,             0,               txNONE}     /* List terminator */
 };
 
-static STYPE *symbolTable;             /* Symbol Table */
+static STYPE *g_symbolTable;                      /* Symbol Table */
 
 /**************************************************************/
 
 const RTYPE *findReservedWord (char *name)
 {
-  register const RTYPE *ptr;           /* Point into reserved word list */
-  register int16_t cmp;                 /* 0=equal; >0=past it */
+  const RTYPE *ptr;                      /* Point into reserved word list */
+  int16_t cmp;                           /* 0=equal; >0=past it */
 
-  for (ptr = rsw; (ptr->rname); ptr++) /* Try each each reserved word */
+  for (ptr = g_rsw; (ptr->rname); ptr++) /* Try each each reserved word */
     {
-      cmp = strcmp(ptr->rname, name);  /* Check if names match */
-      if (!cmp)                        /* Check if names match */
-        return ptr;                    /* Return pointer to entry if match */
-      else if (cmp > 0)                /* Exit early if we are past it */
+      cmp = strcmp(ptr->rname, name);    /* Check if names match */
+      if (!cmp)                          /* Check if names match */
+        return ptr;                      /* Return pointer to entry if match */
+      else if (cmp > 0)                  /* Exit early if we are past it */
         break;
-    } /* end for */
+    }
 
-  return (RTYPE*)NULL;                 /* return NULL pointer if no match */
+  return (RTYPE*)NULL;                   /* return NULL pointer if no match */
 
 } /* fnd findReservedWord */
 
@@ -182,15 +184,21 @@ const RTYPE *findReservedWord (char *name)
 
 STYPE *findSymbol (char *inName)
 {
-   register int16_t i;                /* loop index */
+  int16_t i;                /* loop index */
 
-   for (i=nsym-1; i>=sym_strt; i--)
-     if (symbolTable[i].sName)
-       if (!strcmp(symbolTable[i].sName, inName))
-         return &symbolTable[i];
-   return (STYPE*)NULL;
+  for (i=nsym-1; i>=sym_strt; i--)
+    {
+      if (g_symbolTable[i].sName)
+        {
+          if (!strcmp(g_symbolTable[i].sName, inName))
+            {
+              return &g_symbolTable[i];
+            }
+        }
+    }
 
-} /* end findSymbol */
+  return (STYPE*)NULL;
+}
 
 /***************************************************************/
 
@@ -199,27 +207,27 @@ static STYPE *addSymbol(char *name, int16_t type)
    TRACE(lstFile,"[addSymbol]");
 
    /* Check for Symbol Table overflow */
-   if (nsym >= MAX_SYM) {
 
-     fatal(eOVF);
-     return (STYPE *)NULL;
-
-   } /* end if */
-   else {
-
+   if (nsym >= MAX_SYM)
+     {
+      fatal(eOVF);
+       return (STYPE *)NULL;
+     }
+   else
+     {
      /* Clear all elements of the symbol table entry */
-     memset(&symbolTable[nsym], 0, sizeof(STYPE));
+
+     memset(&g_symbolTable[nsym], 0, sizeof(STYPE));
 
      /* Set the elements which are independent of sKind */
-     symbolTable[nsym].sName  = name;
-     symbolTable[nsym].sKind  = type;
-     symbolTable[nsym].sLevel = level;
 
-     return &symbolTable[nsym++];
+     g_symbolTable[nsym].sName  = name;
+     g_symbolTable[nsym].sKind  = type;
+     g_symbolTable[nsym].sLevel = g_level;
 
-   } /* end else */
-
-} /* end addSymbol */
+     return &g_symbolTable[nsym++];
+   }
+}
 
 /***************************************************************/
 
@@ -253,14 +261,12 @@ STYPE *addTypeDefine(char *name, uint8_t type, uint16_t size,
        typePtr->sParm.t.rsize    = size;
        typePtr->sParm.t.parent   = parent;
        typePtr->sParm.t.index    = index;
-
-     } /* end if */
+     }
 
    /* Return a pointer to the new constant symbol */
 
    return typePtr;
-
-} /* end addTypeDefine */
+}
 
 /***************************************************************/
 
@@ -279,15 +285,14 @@ STYPE *addConstant(char *name, uint8_t type, int32_t *value, STYPE *parent)
        constPtr->sParm.c.val.f = *((double*) value);
      else
        constPtr->sParm.c.val.i = *value;
-     constPtr->sParm.c.parent = parent;
 
-   } /* end if */
+     constPtr->sParm.c.parent = parent;
+   }
 
    /* Return a pointer to the new constant symbol */
 
    return constPtr;
-
-} /* end addConstant */
+}
 
 /***************************************************************/
 
@@ -306,13 +311,12 @@ STYPE *addStringConst(char *name, uint32_t offset, uint32_t size)
 
       stringPtr->sParm.s.offset = offset;
       stringPtr->sParm.s.size   = size;
-    } /* end if */
+    }
 
   /* Return a pointer to the new string symbol */
 
   return stringPtr;
-
-} /* end addString */
+}
 
 /***************************************************************/
 
@@ -327,15 +331,14 @@ STYPE *addFile(char *name, uint16_t fileNumber)
    if (filePtr) {
 
      /* Add the fileNumber to the symbol table */
-     filePtr->sParm.fileNumber = fileNumber;
 
-   } /* end if */
+     filePtr->sParm.fileNumber = fileNumber;
+   }
 
    /* Return a pointer to the new file symbol */
 
    return filePtr;
-
-} /* end addFile */
+}
 
 /***************************************************************/
 
@@ -357,13 +360,12 @@ STYPE *addProcedure(char *name, uint8_t type, uint16_t label,
        procPtr->sParm.p.flags    = 0;
        procPtr->sParm.p.symIndex = 0;
        procPtr->sParm.p.parent   = parent;
-     } /* end if */
+     }
 
    /* Return a pointer to the new procedure/function symbol */
 
    return procPtr;
-
-} /* end addProcedure */
+}
 
 /***************************************************************/
 
@@ -386,13 +388,12 @@ STYPE *addVariable(char *name, uint8_t type, uint16_t offset,
       varPtr->sParm.v.flags    = 0;
       varPtr->sParm.v.symIndex = 0;
       varPtr->sParm.v.parent   = parent;
-    } /* end if */
+    }
 
   /* Return a pointer to the new variable symbol */
 
   return varPtr;
-
-} /* end addFile */
+}
 
 /***************************************************************/
 
@@ -411,13 +412,12 @@ STYPE *addLabel(char *name, uint16_t label)
 
       labelPtr->sParm.l.label = label;
       labelPtr->sParm.l.unDefined = true;
-    } /* end if */
+    }
 
   /* Return a pointer to the new label symbol */
 
   return labelPtr;
-
-} /* end addFile */
+}
 
 /***************************************************************/
 
@@ -434,13 +434,12 @@ STYPE *addField(char *name, STYPE *record)
      /* Add the field to the symbol table */
      fieldPtr->sParm.r.record = record;
 
-   } /* end if */
+   }
 
    /* Return a pointer to the new variable symbol */
 
    return fieldPtr;
-
-} /* end addField */
+}
 
 /***************************************************************/
 
@@ -450,14 +449,14 @@ void primeSymbolTable(unsigned long symbolTableSize)
   int32_t falseValue  =  0;
   int32_t maxintValue = MAXINT;
   STYPE *typePtr;
-  register int16_t i;
+  int16_t i;
 
   TRACE(lstFile,"[primeSymbolTable]");
 
   /* Allocate and initialize symbol table */
 
-  symbolTable = malloc(symbolTableSize * sizeof(STYPE));
-  if (!symbolTable)
+  g_symbolTable = malloc(symbolTableSize * sizeof(STYPE));
+  if (!g_symbolTable)
     {
       fatal(eNOMEMORY);
     }
@@ -476,17 +475,17 @@ void primeSymbolTable(unsigned long symbolTableSize)
   typePtr = addTypeDefine("INTEGER", sINT, sINT_SIZE, NULL, NULL);
   if (typePtr)
     {
-      parentInteger             = typePtr;
+      g_parentInteger           = typePtr;
       typePtr->sParm.t.minValue = MININT;
       typePtr->sParm.t.maxValue = MAXINT;
-    } /* end if */
+    }
 
   typePtr = addTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.minValue = falseValue;
       typePtr->sParm.t.maxValue = trueValue;
-    } /* end if */
+    }
 
   typePtr = addTypeDefine("REAL", sREAL, sREAL_SIZE, NULL, NULL);
 
@@ -495,7 +494,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
     {
       typePtr->sParm.t.minValue = MINCHAR;
       typePtr->sParm.t.maxValue = MAXCHAR;
-    } /* end if */
+    }
 
   typePtr = addTypeDefine("TEXT", sFILE_OF, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
@@ -503,7 +502,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.subType  = sCHAR;
       typePtr->sParm.t.minValue = MINCHAR;
       typePtr->sParm.t.maxValue = MAXCHAR;
-    } /* end if */
+    }
 
   /* Add some enhanced Pascal standard" types to the symbol table
    *
@@ -515,14 +514,14 @@ void primeSymbolTable(unsigned long symbolTableSize)
   typePtr = addTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL, NULL);
   if (typePtr)
     {
-      parentString              = typePtr;
+      g_parentString            = typePtr;
       typePtr->sParm.t.rtype    = sRSTRING;
       typePtr->sParm.t.subType  = sCHAR;
       typePtr->sParm.t.rsize    = sRSTRING_SIZE;
       typePtr->sParm.t.flags    = STYPE_VARSIZE;
       typePtr->sParm.t.minValue = MINCHAR;
       typePtr->sParm.t.maxValue = MAXCHAR;
-    } /* end if */
+    }
 
   /* Add the standard files to the symbol table */
 
@@ -533,25 +532,27 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   for (i = 0; i <= MAX_FILES; i++)
     {
-      files [i].defined = 0;
-      files [i].flevel  = 0;
-      files [i].ftype   = 0;
-      files [i].faddr   = 0;
-      files [i].fsize   = 0;
-    } /* end for */
-} /* end primeSymbolTable */
+      files[i].defined = 0;
+      files[i].flevel  = 0;
+      files[i].ftype   = 0;
+      files[i].faddr   = 0;
+      files[i].fsize   = 0;
+    }
+}
 
 /***************************************************************/
 
 void verifyLabels(int32_t symIndex)
 {
-   register int16_t i;                 /* loop index */
+   int16_t i;                 /* loop index */
 
    for (i=symIndex; i < nsym; i++)
-     if ((symbolTable[i].sKind == sLABEL)
-     &&  (symbolTable[i].sParm.l.unDefined))
+     if ((g_symbolTable[i].sKind == sLABEL)
+     &&  (g_symbolTable[i].sParm.l.unDefined))
+     {
        error (eUNDEFLABEL);
-} /* end verifyLabels */
+     }
+}
 
 /***************************************************************/
 
@@ -559,25 +560,29 @@ void verifyLabels(int32_t symIndex)
 const char noName[] = "********";
 void dumpTables(void)
 {
-  register int16_t i;
+  int16_t i;
 
   fprintf(lstFile,"\nSYMBOL TABLE:\n");
   fprintf(lstFile,"[  Addr  ]     NAME KIND LEVL\n");
 
   for (i = 0; i < nsym; i++)
     {
-      fprintf(lstFile,"[%08lx] ", (uint32_t)&symbolTable[i]);
+      fprintf(lstFile,"[%p] ", &g_symbolTable[i]);
 
-      if (symbolTable[i].sName)
-        fprintf(lstFile, "%8s", symbolTable[i].sName);
+      if (g_symbolTable[i].sName)
+        {
+          fprintf(lstFile, "%8s", g_symbolTable[i].sName);
+        }
       else
-        fprintf(lstFile, "%8s", noName);
+        {
+          fprintf(lstFile, "%8s", noName);
+        }
 
       fprintf(lstFile," %04x %04x ",
-              symbolTable[i].sKind,
-              symbolTable[i].sLevel);
+              g_symbolTable[i].sKind,
+              g_symbolTable[i].sLevel);
 
-      switch (symbolTable[i].sKind)
+      switch (g_symbolTable[i].sKind)
         {
           /* Constants */
 
@@ -586,14 +591,14 @@ void dumpTables(void)
         case tBOOLEAN_CONST :
         case tNIL :
         case sSCALAR :
-          fprintf(lstFile, "val=%ld parent=[%08lx]\n",
-                  symbolTable[i].sParm.c.val.i,
-                  (unsigned long)symbolTable[i].sParm.c.parent);
+          fprintf(lstFile, "val=%" PRId32 " parent=[%p]\n",
+                  g_symbolTable[i].sParm.c.val.i,
+                  g_symbolTable[i].sParm.c.parent);
           break;
         case tREAL_CONST :
-          fprintf(lstFile, "val=%f parent=[%08lx]\n",
-                  symbolTable[i].sParm.c.val.f,
-                  (unsigned long)symbolTable[i].sParm.c.parent);
+          fprintf(lstFile, "val=%f parent=[%p]\n",
+                  g_symbolTable[i].sParm.c.val.f,
+                  g_symbolTable[i].sParm.c.parent);
           break;
 
           /* Types */
@@ -601,17 +606,17 @@ void dumpTables(void)
         case sTYPE  :
           fprintf(lstFile,
                   "type=%02x rtype=%02x subType=%02x flags=%02x "
-                  "asize=%ld rsize=%ld minValue=%ld maxValue=%ld "
-                  "parent=[%08lx]\n",
-                  symbolTable[i].sParm.t.type,
-                  symbolTable[i].sParm.t.rtype,
-                  symbolTable[i].sParm.t.subType,
-                  symbolTable[i].sParm.t.flags,
-                  symbolTable[i].sParm.t.asize,
-                  symbolTable[i].sParm.t.rsize,
-                  symbolTable[i].sParm.t.minValue,
-                  symbolTable[i].sParm.t.maxValue,
-                  (unsigned long)symbolTable[i].sParm.t.parent);
+                  "asize=%" PRId32 " rsize=%" PRId32 " minValue=%" PRId32
+                  " maxValue=%" PRId32 " parent=[%p]\n",
+                  g_symbolTable[i].sParm.t.type,
+                  g_symbolTable[i].sParm.t.rtype,
+                  g_symbolTable[i].sParm.t.subType,
+                  g_symbolTable[i].sParm.t.flags,
+                  g_symbolTable[i].sParm.t.asize,
+                  g_symbolTable[i].sParm.t.rsize,
+                  g_symbolTable[i].sParm.t.minValue,
+                  g_symbolTable[i].sParm.t.maxValue,
+                  g_symbolTable[i].sParm.t.parent);
           break;
 
           /* Procedures/Functions */
@@ -621,26 +626,26 @@ void dumpTables(void)
         case sPROC :
         case sFUNC :
           fprintf(lstFile,
-                  "label=L%04x nParms=%d flags=%02x parent=[%08lx]\n",
-                  symbolTable[i].sParm.p.label,
-                  symbolTable[i].sParm.p.nParms,
-                  symbolTable[i].sParm.p.flags,
-                  (unsigned long)symbolTable[i].sParm.p.parent);
+                  "label=L%04x nParms=%d flags=%02x parent=[%p]\n",
+                  g_symbolTable[i].sParm.p.label,
+                  g_symbolTable[i].sParm.p.nParms,
+                  g_symbolTable[i].sParm.p.flags,
+                  g_symbolTable[i].sParm.p.parent);
           break;
 
           /* Labels */
 
         case sLABEL :
           fprintf(lstFile, "label=L%04x unDefined=%d\n",
-                  symbolTable[i].sParm.l.label,
-                  symbolTable[i].sParm.l.unDefined);
+                  g_symbolTable[i].sParm.l.label,
+                  g_symbolTable[i].sParm.l.unDefined);
           break;
 
           /* Files */
 
         case sFILE :
           fprintf(lstFile, "fileNumber=%d\n",
-                  symbolTable[i].sParm.fileNumber);
+                  g_symbolTable[i].sParm.fileNumber);
           break;
 
           /* Variables */
@@ -655,41 +660,38 @@ void dumpTables(void)
         case sVAR_PARM :
         case sRECORD :
         case sFILE_OF :
-          fprintf(lstFile, "offset=%ld size=%ld flags=%02x parent=[%08lx]\n",
-                  symbolTable[i].sParm.v.offset,
-                  symbolTable[i].sParm.v.size,
-                  symbolTable[i].sParm.v.flags,
-                  (unsigned long)symbolTable[i].sParm.v.parent);
+          fprintf(lstFile, "offset=%" PRId32 " size=%" PRId32 " flags=%02x "
+                  "parent=[%p]\n",
+                  g_symbolTable[i].sParm.v.offset,
+                  g_symbolTable[i].sParm.v.size,
+                  g_symbolTable[i].sParm.v.flags,
+                  g_symbolTable[i].sParm.v.parent);
           break;
 
           /* Record objects */
 
         case sRECORD_OBJECT :
           fprintf(lstFile,
-                  "offset=%ld size=%ld record=[%08lx] parent=[%08lx]\n",
-                  symbolTable[i].sParm.r.offset,
-                  symbolTable[i].sParm.r.size,
-                  (unsigned long)symbolTable[i].sParm.r.record,
-                  (unsigned long)symbolTable[i].sParm.r.parent);
+                  "offset=%" PRId32 " size=%" PRId32 " record=[%p] "
+                  "parent=[%p]\n",
+                  g_symbolTable[i].sParm.r.offset,
+                  g_symbolTable[i].sParm.r.size,
+                  g_symbolTable[i].sParm.r.record,
+                  g_symbolTable[i].sParm.r.parent);
           break;
 
           /* Constant strings */
 
         case sSTRING_CONST :
-          fprintf(lstFile, "offset=%04lx size=%ld\n",
-                  symbolTable[i].sParm.s.offset,
-                  symbolTable[i].sParm.s.size);
+          fprintf(lstFile, "offset=%04" PRIx32 " size=%" PRId32 "\n",
+                  g_symbolTable[i].sParm.s.offset,
+                  g_symbolTable[i].sParm.s.size);
           break;
 
         default :
           fprintf(lstFile, "Unknown sKind\n");
           break;
-
-        } /* end switch */
-    } /* end for */
-
-} /* end dumpTables */
+        }
+    }
+}
 #endif
-
-/***************************************************************/
-

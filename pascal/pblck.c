@@ -149,7 +149,7 @@ void block()
    * in the POFF file.
    */
 
-  if ((level == 0) && (FP0->kind == eIsProgram))
+  if ((g_level == 0) && (FP0->kind == eIsProgram))
     {
       poffSetEntryPoint(poffHandle, label);
     }
@@ -220,7 +220,7 @@ void block()
 
   for (i = 0; i <= MAX_FILES; i++)
     {
-      if ((files [i].defined) && (files [i].flevel >= level)) {
+      if ((files [i].defined) && (files [i].flevel >= g_level)) {
         files [i].defined = 0;
         files [i].flevel  = 0;
         files [i].ftype   = 0;
@@ -269,7 +269,7 @@ void declarationGroup(int32_t beginLabel)
   if (token == tCONST)
     {
       const_strt = saveNConst;        /* Limit search to present level */
-      getToken(false);                     /* Get identifier */
+      getToken(false);                /* Get identifier */
       const_strt = 0;
 
       /* Process constant-definition.
@@ -288,7 +288,7 @@ void declarationGroup(int32_t beginLabel)
     {
       const_strt = saveNConst;        /* Limit search to present level */
       sym_strt   = saveNSym;
-      getToken(false);                     /* Get identifier */
+      getToken(false);                /* Get identifier */
       const_strt = 0;
       sym_strt   = 0;
 
@@ -308,7 +308,7 @@ void declarationGroup(int32_t beginLabel)
     {
       const_strt = saveNConst;        /* Limit search to present level */
       sym_strt   = saveNSym;
-      getToken(false);                     /* Get identifier */
+      getToken(false);                /* Get identifier */
       const_strt = 0;
       sym_strt   = 0;
 
@@ -342,7 +342,7 @@ void declarationGroup(int32_t beginLabel)
         {
           /* Check if we need to put a jump around the function */
 
-          if ((beginLabel > 0) && !(notFirst) && (level > 0))
+          if ((beginLabel > 0) && !(notFirst) && (g_level > 0))
             {
               pas_GenerateDataOperation(opJMP, (int32_t)beginLabel);
             }
@@ -351,7 +351,7 @@ void declarationGroup(int32_t beginLabel)
 
           const_strt = saveNConst;    /* Limit search to present level */
           sym_strt   = saveNSym;
-          getToken(false);                 /* Get identifier */
+          getToken(false);            /* Get identifier */
           const_strt = 0;
           sym_strt   = 0;
 
@@ -369,7 +369,7 @@ void declarationGroup(int32_t beginLabel)
         {
           /* Check if we need to put a jump around the function */
 
-          if ((beginLabel > 0) && !(notFirst) && (level > 0))
+          if ((beginLabel > 0) && !(notFirst) && (g_level > 0))
             {
               pas_GenerateDataOperation(opJMP, (int32_t)beginLabel);
             }
@@ -378,7 +378,7 @@ void declarationGroup(int32_t beginLabel)
 
           const_strt = saveNConst;    /* Limit search to present level */
           sym_strt   = saveNSym;
-          getToken(false);                 /* Get identifier */
+          getToken(false);            /* Get identifier */
           const_strt = 0;
           sym_strt   = 0;
 
@@ -820,7 +820,7 @@ static STYPE *pas_DeclareVar(void)
        * then it is a candidate to imported or exported.
        */
 
-      if ((!level) && (FP->section == eIsInterfaceSection))
+      if ((!g_level) && (FP->section == eIsInterfaceSection))
         {
           /* Are we importing or exporting the interface?
            *
@@ -902,7 +902,7 @@ static void pas_DeclareFile(void)
      if (token == sFILE_OF)
        {
          files[fileNumber].defined = -1;
-         files[fileNumber].flevel  = level;
+         files[fileNumber].flevel  = g_level;
          files[fileNumber].ftype   = tknPtr->sParm.t.type;
          files[fileNumber].faddr   = dstack;
          files[fileNumber].fsize   = tknPtr->sParm.t.asize;
@@ -924,7 +924,7 @@ static void pas_DeclareFile(void)
          if (filePtr)
            {
              files[fileNumber].defined = -1;
-             files[fileNumber].flevel  = level;
+             files[fileNumber].flevel  = g_level;
              files[fileNumber].ftype   = filePtr->sParm.t.type;
              files[fileNumber].faddr   = dstack;
              files[fileNumber].fsize   = g_dwVarSize;
@@ -981,7 +981,7 @@ static void pas_ProcedureDeclaration(void)
     * PROCEDURE is at the next level
     */
 
-   level++;
+   g_level++;
 
    /* Process parameter list */
 
@@ -997,7 +997,7 @@ static void pas_ProcedureDeclaration(void)
     * every procedure declared at level zero.
     */
 
-   if ((level == 1) && (FP->kind == eIsUnit))
+   if ((g_level == 1) && (FP->kind == eIsUnit))
      {
        /* EXPORT the procedure symbol. */
 
@@ -1025,7 +1025,7 @@ static void pas_ProcedureDeclaration(void)
    /* Generate exit from procedure */
 
    pas_GenerateSimple(opRET);
-   level--;
+   g_level--;
 
    /* Verify that END terminates with a semicolon */
 
@@ -1074,7 +1074,7 @@ static void pas_FunctionDeclaration(void)
     * PROCEDURE is at the next level
     */
 
-   level++;
+   g_level++;
 
    /* Save the string stack pointer so that we can release all
     * formal parameter strings later.  Then get the next token.
@@ -1132,7 +1132,7 @@ static void pas_FunctionDeclaration(void)
         * every function declared at level zero.
         */
 
-       if ((level == 1) && (FP->kind == eIsUnit))
+       if ((g_level == 1) && (FP->kind == eIsUnit))
          {
            /* EXPORT the function symbol. */
 
@@ -1169,7 +1169,7 @@ static void pas_FunctionDeclaration(void)
    /* Generate exit from procedure/function */
 
    pas_GenerateSimple(opRET);
-   level--;
+   g_level--;
 
    /* Verify that END terminates with a semicolon */
 

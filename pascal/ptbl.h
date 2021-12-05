@@ -48,29 +48,29 @@
  * Global Variables
  ***************************************************************************/
 
-extern STYPE *parentInteger;
-extern STYPE *parentString;
+extern STYPE *g_parentInteger;
+extern STYPE *g_parentString;
 
 /***************************************************************************
  * Global Function Prototypes
  ***************************************************************************/
 
-extern const RTYPE *findReservedWord (char *name);
-extern STYPE *findSymbol       (char *inName);
-extern STYPE *addTypeDefine    (char *name, uint8_t type, uint16_t size,
-                                STYPE *parent, STYPE *index);
-extern STYPE *addConstant      (char *name, uint8_t type, int32_t *value,
-                                STYPE *parent);
-extern STYPE *addStringConst   (char *name, uint32_t offset, uint32_t size);
-extern STYPE *addFile          (char *name, uint16_t fileNumber);
-extern STYPE *addLabel         (char *name, uint16_t label);
-extern STYPE *addProcedure     (char *name, uint8_t type, uint16_t label,
-                                uint16_t nParms, STYPE *parent);
-extern STYPE *addVariable      (char *name, uint8_t type, uint16_t offset,
-                                uint16_t size, STYPE *parent);
-extern STYPE *addField         (char *name, STYPE *record);
-extern void   primeSymbolTable (unsigned long symbolTableSize);
-extern void   verifyLabels     (int32_t symIndex);
+const RTYPE *findReservedWord (char *name);
+STYPE *findSymbol       (char *inName);
+STYPE *addTypeDefine    (char *name, uint8_t type, uint16_t size,
+                         STYPE *parent, STYPE *index);
+STYPE *addConstant      (char *name, uint8_t type, int32_t *value,
+                         STYPE *parent);
+STYPE *addStringConst   (char *name, uint32_t offset, uint32_t size);
+STYPE *addFile          (char *name, uint16_t fileNumber);
+STYPE *addLabel         (char *name, uint16_t label);
+STYPE *addProcedure     (char *name, uint8_t type, uint16_t label,
+                         uint16_t nParms, STYPE *parent);
+STYPE *addVariable      (char *name, uint8_t type, uint16_t offset,
+                         uint16_t size, STYPE *parent);
+STYPE *addField         (char *name, STYPE *record);
+void   primeSymbolTable (unsigned long symbolTableSize);
+void   verifyLabels     (int32_t symIndex);
 
 #if CONFIG_DEBUG
 extern void   dumpTables       (void);
