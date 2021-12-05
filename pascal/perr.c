@@ -171,13 +171,13 @@ static void printError(uint16_t errcode)
 {
    /* Write error record to the error and list files */
 
-   if ((tkn_strt) && (tkn_strt < stringSP))
+   if ((g_tokenString) && (g_tokenString < g_stringSP))
      {
        fprintf (errFile, fmtErrWithToken,
-                FP->include, FP->line, errcode, token, tkn_strt);
+                FP->include, FP->line, errcode, token, g_tokenString);
        fprintf (lstFile, fmtErrWithToken,
-                FP->include, FP->line, errcode, token, tkn_strt);
-       stringSP = tkn_strt; /* Clean up string stack */
+                FP->include, FP->line, errcode, token, g_tokenString);
+       g_stringSP = g_tokenString; /* Clean up string stack */
      } /* end if */
    else
      {

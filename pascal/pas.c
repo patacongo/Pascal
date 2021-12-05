@@ -106,10 +106,6 @@ int16_t     g_level      = 0;        /* Static nesting level */
 int16_t     includeIndex = 0;        /* Include file index */
 int16_t     nIncPathes   = 0;        /* Number pathes in includePath[] */
 uint16_t    label        = 0;        /* Last label number */
-int16_t     nsym         = 0;        /* Number symbol table entries */
-int16_t     nconst       = 0;        /* Number constant table entries */
-int16_t     sym_strt     = 0;        /* Symbol search start index */
-int16_t     const_strt   = 0;        /* Constant search start index */
 int16_t     err_count    = 0;        /* Error counter */
 int16_t     nfiles       = 1;        /* Program file counter */
 int32_t     warn_count   = 0;        /* Warning counter */
@@ -386,14 +382,14 @@ int main(int argc, char *argv[])
    * FORM: unit-heading = 'unit' identifer
    */
 
-  getToken(false);
+  getToken();
   if (token == tPROGRAM)
     {
       /* Compile a pascal program */
 
       FP->kind    = eIsProgram;
       FP->section = eIsProgramSection;
-      getToken(false);
+      getToken();
       program();
     }
   else if (token == tUNIT)
@@ -402,7 +398,7 @@ int main(int argc, char *argv[])
 
       FP->kind    = eIsUnit;
       FP->section = eIsOtherSection;
-      getToken(false);
+      getToken();
       unitImplementation();
     }
   else
@@ -521,7 +517,7 @@ void openNestedFile(const char *fileName)
 
       /* Get the first token from the file */
 
-      getToken(false);
+      getToken();
     } /* end else */
 }
 

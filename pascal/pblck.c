@@ -135,14 +135,21 @@ static int32_t g_dwVarSize;
 
 void block()
 {
-  uint16_t beginLabel   = ++label;     /* BEGIN label */
-  int32_t saveDStack   = dstack;      /* Save DSEG size */
-  char   *saveStringSP = stringSP;    /* Save top of string stack */
-  int16_t saveNSym     = nsym;        /* Save top of symbol table */
-  int16_t saveNConst   = nconst;      /* Save top of constant table */
+  uint16_t beginLabel          = ++label;            /* BEGIN label */
+  int32_t saveDStack           = dstack;             /* Save DSEG size */
+  char   *saveStringSP         = g_stringSP;         /* Save top of string stack */
+  unsigned int saveNSym        = g_nSym;             /* Save top of symbol table */
+  unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
+  unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
+  unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
   register int16_t i;
 
   TRACE(lstFile,"[block]");
+
+  /* Set the current symbol/constant table offsets for this level */
+
+  g_levelSymOffset             = saveNSym;
+  g_levelConstOffset           = saveNConst;
 
   /* When we enter block at level zero, then we must be at the
    * entry point to the program.  Save the entry point label
@@ -231,10 +238,18 @@ void block()
 
   /* "Pop" declarations local to this block */
 
-  dstack   = saveDStack;               /* Restore old DSEG size */
-  stringSP = saveStringSP;             /* Restore top of string stack */
-  nsym     = saveNSym;                 /* Restore top of symbol table */
-  nconst   = saveNConst;               /* Restore top of constant table */
+  dstack             = saveDStack;    /* Restore old DSEG size */
+  g_stringSP         = saveStringSP;  /* Restore top of string stack */
+
+  /* Restore the symbol/constant table offsets for the previous level */
+
+  g_levelSymOffset   = saveSymOffset;
+  g_levelConstOffset = saveConstOffset;
+
+  /* Release the symbols/constants used by this level */
+
+  g_nSym             = saveNSym;      /* Restore top of symbol table */
+  g_nConst           = saveNConst;    /* Restore top of constant table */
 }
 
 /***************************************************************/
@@ -242,11 +257,18 @@ void block()
 
 void declarationGroup(int32_t beginLabel)
 {
-  int16_t notFirst   = 0;             /* Init count of nested procs */
-  int16_t saveNSym   = nsym;          /* Save top of symbol table */
-  int16_t saveNConst = nconst;        /* Save top of constant table */
+  unsigned int notFirst        = 0;                  /* Init count of nested procs */
+  unsigned int saveNSym        = g_nSym;             /* Save top of symbol table */
+  unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
+  unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
+  unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
 
   TRACE(lstFile,"[declarationGroup]");
+
+  /* Set the current symbol/constant table offsets for this level */
+
+  g_levelSymOffset             = saveNSym;
+  g_levelConstOffset           = saveNConst;
 
   /* FORM: declarative-part = { declaration-group }
    * FORM: declaration-group =
@@ -268,9 +290,9 @@ void declarationGroup(int32_t beginLabel)
 
   if (token == tCONST)
     {
-      const_strt = saveNConst;        /* Limit search to present level */
-      getToken(false);                /* Get identifier */
-      const_strt = 0;
+      /* Limit search to present level */
+
+      getLevelToken();
 
       /* Process constant-definition.
        * FORM: constant-definition = identifier '=' constant
@@ -286,11 +308,9 @@ void declarationGroup(int32_t beginLabel)
 
   if (token == tTYPE)
     {
-      const_strt = saveNConst;        /* Limit search to present level */
-      sym_strt   = saveNSym;
-      getToken(false);                /* Get identifier */
-      const_strt = 0;
-      sym_strt   = 0;
+      /* Limit search to present level */
+
+      getLevelToken();
 
       /* Process the type-definitions in the type-definition-group
        * FORM: type-definition = identifier '=' type-denoter
@@ -306,11 +326,9 @@ void declarationGroup(int32_t beginLabel)
 
   if (token == tVAR)
     {
-      const_strt = saveNConst;        /* Limit search to present level */
-      sym_strt   = saveNSym;
-      getToken(false);                /* Get identifier */
-      const_strt = 0;
-      sym_strt   = 0;
+      /* Limit search to present level */
+
+      getLevelToken();
 
       /* Process the variable declarations
        * FORM: variable-declaration = identifier-list ':' type-denoter
@@ -332,7 +350,7 @@ void declarationGroup(int32_t beginLabel)
    * if there are nested procedures and this is not level=0
    */
 
-  for (;;)
+  for (; ; )
     {
       /* FORM: function-heading =
        *       'function' identifier [ formal-parameter-list ] ':' result-type
@@ -348,12 +366,9 @@ void declarationGroup(int32_t beginLabel)
             }
 
           /* Get the procedure-identifier */
+          /* Limit search to present level */
 
-          const_strt = saveNConst;    /* Limit search to present level */
-          sym_strt   = saveNSym;
-          getToken(false);            /* Get identifier */
-          const_strt = 0;
-          sym_strt   = 0;
+          getLevelToken();
 
           /* Define the function */
 
@@ -375,12 +390,9 @@ void declarationGroup(int32_t beginLabel)
             }
 
           /* Get the procedure-identifier */
+          /* Limit search to present level */
 
-          const_strt = saveNConst;    /* Limit search to present level */
-          sym_strt   = saveNSym;
-          getToken(false);            /* Get identifier */
-          const_strt = 0;
-          sym_strt   = 0;
+          getLevelToken();
 
           /* Define the procedure */
 
@@ -389,6 +401,11 @@ void declarationGroup(int32_t beginLabel)
         }
       else break;
     }
+
+  /* Restore the symbol/constant table offsets for the previous level */
+
+  g_levelSymOffset   = saveSymOffset;
+  g_levelConstOffset = saveConstOffset;
 }
 
 /***************************************************************/
@@ -410,7 +427,7 @@ void constantDefinitionGroup(void)
         {
           pas_DeclareConst();
           if (token != ';') break;
-          else getToken(false);
+          else getToken();
         }
       else break;
     }
@@ -437,17 +454,17 @@ void typeDefinitionGroup(void)
         {
           /* Save the type identifier */
 
-          typeName = tkn_strt;
-          getToken(false);
+          typeName = g_tokenString;
+          getToken();
 
           /* Verify that '=' follows the type identifier */
 
           if (token != '=') error(eEQ);
-          else getToken(false);
+          else getToken();
 
           (void)pas_DeclareType(typeName);
           if (token != ';') break;
-          else getToken(false);
+          else getToken();
 
         }
       else break;
@@ -474,13 +491,13 @@ void variableDeclarationGroup(void)
         {
           (void)pas_DeclareVar();
           if (token != ';') break;
-          else getToken(false);
+          else getToken();
         }
       else if (token == sFILE)
         {
           pas_DeclareFile();
           if (token != ';') break;
-          else getToken(false);
+          else getToken();
         }
       else
         {
@@ -528,19 +545,18 @@ int16_t formalParameterList(STYPE *procPtr)
 
       do
         {
-          /* Get the formal parameter name.  The argument 'true' will
-           * suppress conversion of type of name if it happens to match
-           * a symbol declared at a higher scope.
+          /* Get the formal parameter name.  Symbol search is restricted
+           * to the current level.
            */
 
-          getToken(true);
+          getLevelToken();
 
           /* Check for variable-parameter-specification */
 
           if (token == tVAR)
             {
               pointerType = 1;
-              getToken(true);
+              getLevelToken();
             }
           else
             {
@@ -562,8 +578,7 @@ int16_t formalParameterList(STYPE *procPtr)
        */
 
       if (token != ')') error(eRPAREN);
-      else getToken(false);
-
+      else getToken();
     }
 
   /* Save the number of parameters found in sPROC/sFUNC symbol table entry */
@@ -603,21 +618,21 @@ static void pas_DeclareLabel(void)
 
    do
      {
-       getToken(false);
+       getToken();
        if ((token == tINT_CONST) && (tknInt >= 0))
          {
-           labelname = stringSP;
+           labelname = g_stringSP;
            (void)sprintf(labelname, "%" PRId32, tknInt);
-           while (*stringSP++);
+           while (*g_stringSP++);
            (void)addLabel(labelname, ++label);
-           getToken(false);
+           getToken();
          }
        else error(eINTCONST);
      }
    while (token == ',');
 
    if (token != ';') error(eSEMICOLON);
-   else getToken(false);
+   else getToken();
 }
 
 /***************************************************************/
@@ -642,15 +657,15 @@ static void pas_DeclareConst(void)
 
   /* Save the name of the constant */
 
-  const_name = tkn_strt;
+  const_name = g_tokenString;
 
   /* Verify that the name is followed by '=' and get the
    * following constant value.
    */
 
-  getToken(false);
+  getToken();
   if (token != '=') error(eEQ);
-  else getToken(false);
+  else getToken();
 
   /* Handle constant expressions */
 
@@ -767,8 +782,8 @@ static STYPE *pas_DeclareVar(void)
 
   /* Save the current identifier */
 
-  varName = tkn_strt;
-  getToken(false);
+  varName = g_tokenString;
+  getToken();
 
   /* A comma indicates that there is another indentifier int the
    * identifier-list
@@ -777,13 +792,10 @@ static STYPE *pas_DeclareVar(void)
   if (token == ',')
     {
       /* Yes ..Process the next identifer in the indentifier list
-       * via recursion (suppressing symbol conversion).
-       *
-       * REVISIT:  This is a bad change because it will permitted
-       * duplicate symbol definitions!
+       * via recursion (limiting the search to the current level).
        */
 
-      getToken(true);
+      getLevelToken();
       if (token != tIDENT) error(eIDENT);
       else typePtr = pas_DeclareVar();
     }
@@ -792,7 +804,7 @@ static STYPE *pas_DeclareVar(void)
       /* No.. verify that the identifer-list is followed by ';' */
 
       if (token != ':') error(eCOLON);
-      else getToken(false);
+      else getToken();
 
       /* Process the type-denoter */
 
@@ -887,11 +899,11 @@ static void pas_DeclareFile(void)
    else {
 
      /* Skip over the <file identifier> */
-     getToken(false);
+     getToken();
 
      /* Verify that a colon follows the <file identifier> */
      if (token != ':') error(eCOLON);
-     else getToken(false);
+     else getToken();
 
      /* Make sure that the data stack is aligned to INTEGER boundaries */
 
@@ -907,7 +919,7 @@ static void pas_DeclareFile(void)
          files[fileNumber].faddr   = dstack;
          files[fileNumber].fsize   = tknPtr->sParm.t.asize;
          dstack                   += (tknPtr->sParm.t.asize);
-         getToken(false);
+         getToken();
        }
 
      /* FORM:  <file identifier> : <FILE OF type identifier> */
@@ -915,10 +927,10 @@ static void pas_DeclareFile(void)
      else
        {
          if (token != tFILE) error(eFILE);
-         else getToken(false);
+         else getToken();
 
          if (token != tOF) error(eOF);
-         else getToken(false);
+         else getToken();
 
          filePtr = pas_TypeIdentifier(1);
          if (filePtr)
@@ -939,98 +951,113 @@ static void pas_DeclareFile(void)
 
 static void pas_ProcedureDeclaration(void)
 {
-   uint16_t procLabel = ++label;
-   char    *saveStringSP;
-   STYPE   *procPtr;
-   register int i;
+  uint16_t     procLabel = ++label;
+  char        *saveStringSP;
+  STYPE       *procPtr;
+  unsigned int saveSymOffset;    /* Save previous level symbol offset */
+  unsigned int saveConstOffset;  /* Save previous level constant offset */
+  int          i;
 
-   TRACE(lstFile,"[pas_ProcedureDeclaration]");
+  TRACE(lstFile,"[pas_ProcedureDeclaration]");
 
-   /* FORM: procedure-declaration =
-    *       procedure-heading ';' directive |
-    *       procedure-heading ';' procedure-block
-    * FORM: procedure-heading =
-    *       'procedure' identifier [ formal-parameter-list ]
-    * FORM: procedure-identifier = identifier
-    *
-    * On entry, token refers to token AFTER the 'procedure' reserved
-    * word.
-    */
+  /* FORM: procedure-declaration =
+   *       procedure-heading ';' directive |
+   *       procedure-heading ';' procedure-block
+   * FORM: procedure-heading =
+   *       'procedure' identifier [ formal-parameter-list ]
+   * FORM: procedure-identifier = identifier
+   *
+   * On entry, token refers to token AFTER the 'procedure' reserved
+   * word.
+   */
 
-   /* Process the procedure-heading */
+  /* Process the procedure-heading */
 
-   if (token != tIDENT)
-     {
-       error(eIDENT);
-       return;
-     }
+  if (token != tIDENT)
+    {
+      error(eIDENT);
+      return;
+    }
 
-   /* Add the procedure to the symbol table */
+  /* Add the procedure to the symbol table */
 
-   procPtr = addProcedure(tkn_strt, sPROC, procLabel, 0, NULL);
+  procPtr = addProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
 
-   /* Save the string stack pointer so that we can release all
-    * formal parameter strings later.  Then get the next token.
-    */
+  /* Save the string stack pointer so that we can release all
+   * formal parameter strings later.  Then get the next token.
+   */
 
-   saveStringSP = stringSP;
-   getToken(false);
+  saveStringSP       = g_stringSP;
 
-   /* NOTE:  The level associated with the PROCEDURE symbol is the level
-    * At which the procedure was declared.  Everything declare within the
-    * PROCEDURE is at the next level
-    */
+  /* Set the current symbol/constant table offsets for this level */
 
-   g_level++;
+  saveSymOffset      = g_levelSymOffset;
+  saveConstOffset    = g_levelConstOffset;
 
-   /* Process parameter list */
+  g_levelSymOffset   = g_nSym;
+  g_levelConstOffset = g_nConst;
 
-   (void)formalParameterList(procPtr);
+  /* NOTE:  The level associated with the PROCEDURE symbol is the level
+   * At which the procedure was declared.  Everything declare within the
+   * PROCEDURE is at the next level
+   */
 
-   if (token !=  ';') error(eSEMICOLON);
-   else getToken(false);
+  g_level++;
 
-   /* If we are here then we know that we are either in a program file
-    * or the 'implementation' part of a unit file (see punit.c -- At present,
-    * the procedure declarations of the 'interface' section of a unit file
-    * follow a different path).  In the latter case (only), we should export
-    * every procedure declared at level zero.
-    */
+  /* Process parameter list */
 
-   if ((g_level == 1) && (FP->kind == eIsUnit))
-     {
-       /* EXPORT the procedure symbol. */
+  getToken();
+  (void)formalParameterList(procPtr);
 
-       pas_GenerateProcExport(procPtr);
-     }
+  if (token !=  ';') error(eSEMICOLON);
+  else getToken();
 
-   /* Save debug information about the procedure */
+  /* If we are here then we know that we are either in a program file
+   * or the 'implementation' part of a unit file (see punit.c -- At present,
+   * the procedure declarations of the 'interface' section of a unit file
+   * follow a different path).  In the latter case (only), we should export
+   * every procedure declared at level zero.
+   */
 
-   pas_GenerateDebugInfo(procPtr, 0);
+  if ((g_level == 1) && (FP->kind == eIsUnit))
+    {
+      /* EXPORT the procedure symbol. */
 
-   /* Process block */
+      pas_GenerateProcExport(procPtr);
+    }
 
-   pas_GenerateDataOperation(opLABEL, (int32_t)procLabel);
-   block();
+  /* Save debug information about the procedure */
 
-   /* Destroy formal parameter names */
+  pas_GenerateDebugInfo(procPtr, 0);
 
-   for (i = 1; i <= procPtr->sParm.p.nParms; i++)
-     {
-       procPtr[i].sName = NULL;
-     }
+  /* Process block */
 
-   stringSP = saveStringSP;
+  pas_GenerateDataOperation(opLABEL, (int32_t)procLabel);
+  block();
 
-   /* Generate exit from procedure */
+  /* Destroy formal parameter names */
 
-   pas_GenerateSimple(opRET);
-   g_level--;
+  for (i = 1; i <= procPtr->sParm.p.nParms; i++)
+    {
+      procPtr[i].sName = NULL;
+    }
 
-   /* Verify that END terminates with a semicolon */
+  g_stringSP = saveStringSP;
 
-   if (token !=  ';') error(eSEMICOLON);
-   else getToken(false);
+  /* Generate exit from procedure */
+
+  pas_GenerateSimple(opRET);
+  g_level--;
+
+  /* Restore the symbol/constant table offsets for the previous level */
+
+  g_levelSymOffset   = saveSymOffset;
+  g_levelConstOffset = saveConstOffset;
+
+  /* Verify that END terminates with a semicolon */
+
+  if (token !=  ';') error(eSEMICOLON);
+  else getToken();
 }
 
 /***************************************************************/
@@ -1038,143 +1065,158 @@ static void pas_ProcedureDeclaration(void)
 
 static void pas_FunctionDeclaration(void)
 {
-   uint16_t funcLabel = ++label;
-   int16_t parameterOffset;
-   char    *saveStringSP;
-   STYPE   *funcPtr;
-   STYPE   *valPtr;
-   STYPE   *typePtr;
-   char    *funcName;
-   register int i;
+  uint16_t    funcLabel = ++label;
+  int16_t     parameterOffset;
+  char        *saveStringSP;
+  STYPE       *funcPtr;
+  STYPE       *valPtr;
+  STYPE       *typePtr;
+  char        *funcName;
+  unsigned int saveSymOffset;   /* Save previous level symbol offset */
+  unsigned int saveConstOffset; /* Save previous level constant offset */
+  int          i;
 
-   TRACE(lstFile,"[pas_FunctionDeclaration]");
+  TRACE(lstFile,"[pas_FunctionDeclaration]");
 
-   /* FORM: function-declaration =
-    *       function-heading ';' directive |
-    *       function-heading ';' function-block
-    * FORM: function-heading =
-    *       'function' function-identifier [ formal-parameter-list ]
-    *       ':' result-type
-    *
-    * On entry token should lrefer to the function-identifier.
-    */
+  /* FORM: function-declaration =
+   *       function-heading ';' directive |
+   *       function-heading ';' function-block
+   * FORM: function-heading =
+   *       'function' function-identifier [ formal-parameter-list ]
+   *       ':' result-type
+   *
+   * On entry token should lrefer to the function-identifier.
+   */
 
-   /* Verify function-identifier */
+  /* Verify function-identifier */
 
-   if (token != tIDENT)
-     {
-       error(eIDENT);
-       return;
-     }
-
-   funcPtr = addProcedure(tkn_strt, sFUNC, funcLabel, 0, NULL);
-
-   /* NOTE:  The level associated with the FUNCTION symbol is the level
-    * At which the procedure was declared.  Everything declare within the
-    * PROCEDURE is at the next level
-    */
-
-   g_level++;
-
-   /* Save the string stack pointer so that we can release all
-    * formal parameter strings later.  Then get the next token.
-    */
-
-   funcName = tkn_strt;
-   saveStringSP = stringSP;
-   getToken(false);
-
-   /* Process parameter list */
-
-   parameterOffset = formalParameterList(funcPtr);
-
-   /* Verify that the parameter list is followed by a colon */
-
-   if (token !=  ':') error(eCOLON);
-   else getToken(false);
-
-   /* Declare the function return value variable.  This variable has
-    * the same name as the function itself.  We fill the variable
-    * symbol descriptor with bogus information now (but we fix it
-    * below).
-    */
-
-   valPtr  = addVariable(funcName, sINT, 0, sINT_SIZE, NULL);
-
-   /* Get function type, return value type/size and offset to return value */
-
-   typePtr = pas_TypeIdentifier(0);
-   if (typePtr)
+  if (token != tIDENT)
     {
-       /* The offset to the return value is the offset to the last
-        * parameter minus the size of the return value (aligned to
-        * multiples of size of INTEGER).
-        */
-
-       parameterOffset        -= g_dwVarSize;
-       parameterOffset         = intAlign(parameterOffset);
-
-       /* Save the TYPE for the function return value local variable */
-
-       valPtr->sKind           = typePtr->sParm.t.rtype;
-       valPtr->sParm.v.offset  = parameterOffset;
-       valPtr->sParm.v.size    = g_dwVarSize;
-       valPtr->sParm.v.parent  = typePtr;
-
-       /* Save the TYPE for the function */
-
-       funcPtr->sParm.p.parent = typePtr;
-
-       /* If we are here then we know that we are either in a program file
-        * or the 'implementation' part of a unit file (see punit.c -- At present,
-        * the function declarations of the 'interface' section of a unit file
-        * follow a different path).  In the latter case (only), we should export
-        * every function declared at level zero.
-        */
-
-       if ((g_level == 1) && (FP->kind == eIsUnit))
-         {
-           /* EXPORT the function symbol. */
-
-           pas_GenerateProcExport(funcPtr);
-         }
-     }
-   else
-    {
-       error(eINVTYPE);
+      error(eIDENT);
+      return;
     }
 
-   /* Save debug information about the function */
+  funcPtr = addProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
 
-   pas_GenerateDebugInfo(funcPtr, g_dwVarSize);
+  /* NOTE:  The level associated with the FUNCTION symbol is the level
+   * At which the procedure was declared.  Everything declare within the
+   * PROCEDURE is at the next level
+   */
 
-   /* Process block */
+  g_level++;
 
-   if (token !=  ';') error(eSEMICOLON);
-   else getToken(false);
+  /* Save the string stack pointer so that we can release all
+   * formal parameter strings later.
+   */
 
-   pas_GenerateDataOperation(opLABEL, (int32_t)funcLabel);
-   block();
+  funcName           = g_tokenString;
+  saveStringSP       = g_stringSP;
 
-   /* Destroy formal parameter names and the function return value name */
+  /* Set the current symbol/constant table offsets for this level */
 
-   for (i = 1; i <= funcPtr->sParm.p.nParms; i++)
-     {
-       funcPtr[i].sName = ((char *) NULL);
-     }
+  saveSymOffset      = g_levelSymOffset;
+  saveConstOffset    = g_levelConstOffset;
 
-   valPtr->sName = ((char *) NULL);
-   stringSP = saveStringSP;
+  g_levelSymOffset   = g_nSym;
+  g_levelConstOffset = g_nConst;
 
-   /* Generate exit from procedure/function */
+  /* Process parameter list */
 
-   pas_GenerateSimple(opRET);
-   g_level--;
+  getToken();
+  parameterOffset    = formalParameterList(funcPtr);
 
-   /* Verify that END terminates with a semicolon */
+  /* Verify that the parameter list is followed by a colon */
 
-   if (token !=  ';') error(eSEMICOLON);
-   else getToken(false);
+  if (token !=  ':') error(eCOLON);
+  else getToken();
+
+  /* Declare the function return value variable.  This variable has
+   * the same name as the function itself.  We fill the variable
+   * symbol descriptor with bogus information now (but we fix it
+   * below).
+   */
+
+  valPtr  = addVariable(funcName, sINT, 0, sINT_SIZE, NULL);
+
+  /* Get function type, return value type/size and offset to return value */
+
+  typePtr = pas_TypeIdentifier(0);
+  if (typePtr)
+   {
+      /* The offset to the return value is the offset to the last
+       * parameter minus the size of the return value (aligned to
+       * multiples of size of INTEGER).
+       */
+
+      parameterOffset        -= g_dwVarSize;
+      parameterOffset         = intAlign(parameterOffset);
+
+      /* Save the TYPE for the function return value local variable */
+
+      valPtr->sKind           = typePtr->sParm.t.rtype;
+      valPtr->sParm.v.offset  = parameterOffset;
+      valPtr->sParm.v.size    = g_dwVarSize;
+      valPtr->sParm.v.parent  = typePtr;
+
+      /* Save the TYPE for the function */
+
+      funcPtr->sParm.p.parent = typePtr;
+
+      /* If we are here then we know that we are either in a program file
+       * or the 'implementation' part of a unit file (see punit.c -- At present,
+       * the function declarations of the 'interface' section of a unit file
+       * follow a different path).  In the latter case (only), we should export
+       * every function declared at level zero.
+       */
+
+      if ((g_level == 1) && (FP->kind == eIsUnit))
+        {
+          /* EXPORT the function symbol. */
+
+          pas_GenerateProcExport(funcPtr);
+        }
+    }
+  else
+   {
+      error(eINVTYPE);
+   }
+
+  /* Save debug information about the function */
+
+  pas_GenerateDebugInfo(funcPtr, g_dwVarSize);
+
+  /* Process block */
+
+  if (token !=  ';') error(eSEMICOLON);
+  else getToken();
+
+  pas_GenerateDataOperation(opLABEL, (int32_t)funcLabel);
+  block();
+
+  /* Destroy formal parameter names and the function return value name */
+
+  for (i = 1; i <= funcPtr->sParm.p.nParms; i++)
+    {
+      funcPtr[i].sName = ((char *) NULL);
+    }
+
+  valPtr->sName = ((char *) NULL);
+  g_stringSP    = saveStringSP;
+
+  /* Generate exit from procedure/function */
+
+  pas_GenerateSimple(opRET);
+  g_level--;
+
+  /* Restore the symbol/constant table offsets for the previous level */
+
+  g_levelSymOffset   = saveSymOffset;
+  g_levelConstOffset = saveConstOffset;
+
+  /* Verify that END terminates with a semicolon */
+
+  if (token !=  ';') error(eSEMICOLON);
+  else getToken();
 }
 
 /***************************************************************/
@@ -1232,7 +1274,7 @@ static void pas_SetTypeSize(STYPE *typePtr, bool allocate)
                * has not yet been implemented.
                */
 
-              getToken(false);
+              getToken();
               if (token != tINT_CONST) error(eINTCONST);
               /* else if (tknInt <= 0) error(eINVCONST); see below */
               else if (tknInt <= 2) error(eINVCONST);
@@ -1252,9 +1294,9 @@ static void pas_SetTypeSize(STYPE *typePtr, bool allocate)
                * specification.  This could be either ')' or ']'
                */
 
-              getToken(false);
+              getToken();
               if (token != term_token) error(errcode);
-              else getToken(false);
+              else getToken();
             }
           else
             {
@@ -1301,7 +1343,7 @@ static STYPE *pas_TypeIdentifier(bool allocate)
       /* Return a reference to the type token. */
 
       typePtr = tknPtr;
-      getToken(false);
+      getToken();
 
       /* Return the size value associated with this type */
 
@@ -1375,13 +1417,13 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        /* Now declare each instance of the scalar */
 
        do {
-         getToken(false);
+         getToken();
          if (token != tIDENT) error(eIDENT);
          else
            {
-             (void)addConstant(tkn_strt, sSCALAR_OBJECT, &nObjects, typePtr);
+             (void)addConstant(g_tokenString, sSCALAR_OBJECT, &nObjects, typePtr);
              nObjects++;
-             getToken(false);
+             getToken();
            }
        } while (token == ',');
 
@@ -1391,7 +1433,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        typePtr->sParm.t.maxValue = nObjects - 1;
 
        if (token != ')') error(eRPAREN);
-       else getToken(false);
+       else getToken();
 
      }
 
@@ -1415,9 +1457,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
 
        /* Verify that ".." separates the two constants */
 
-       getToken(false);
+       getToken();
        if (token != tSUBRANGE) error(eSUBRANGE);
-       else getToken(false);
+       else getToken();
 
        /* Verify that the ".." is following by an INTEGER constant */
 
@@ -1428,7 +1470,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        else
          {
            typePtr->sParm.t.maxValue = tknInt;
-           getToken(false);
+           getToken();
          }
      }
 
@@ -1445,9 +1487,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
 
        /* Verify that ".." separates the two constants */
 
-       getToken(false);
+       getToken();
        if (token != tSUBRANGE) error(eSUBRANGE);
-       else getToken(false);
+       else getToken();
 
        /* Verify that the ".." is following by a CHAR constant */
 
@@ -1458,7 +1500,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        else
          {
            typePtr->sParm.t.maxValue = tknInt;
-           getToken(false);
+           getToken();
          }
      }
 
@@ -1475,9 +1517,9 @@ static STYPE *pas_NewOrdinalType(char *typeName)
 
        /* Verify that ".." separates the two constants */
 
-       getToken(false);
+       getToken();
        if (token != tSUBRANGE) error(eSUBRANGE);
-       else getToken(false);
+       else getToken();
 
        /* Verify that the ".." is following by a SCALAR constant of the same
         * type as the one which preceded it
@@ -1492,7 +1534,7 @@ static STYPE *pas_NewOrdinalType(char *typeName)
        else
          {
            typePtr->sParm.t.maxValue = tknPtr->sParm.c.val.i;
-           getToken(false);
+           getToken();
          }
      }
 
@@ -1516,7 +1558,7 @@ static STYPE *pas_NewComplexType(char *typeName)
       /* FORM: new-pointer-type = '^' domain-type | '@' domain-type */
 
     case '^'      :
-      getToken(false);
+      getToken();
       typeIdPtr = pas_TypeIdentifier(1);
       if (typeIdPtr)
         {
@@ -1539,7 +1581,7 @@ static STYPE *pas_NewComplexType(char *typeName)
 
     case tPACKED :
       error(eNOTYET);
-      getToken(false);
+      getToken();
       if (token != tARRAY) break;
       /* Fall through to process PACKED ARRAY type */
 
@@ -1550,7 +1592,7 @@ static STYPE *pas_NewComplexType(char *typeName)
     case tARRAY :
       /* On entry, 'token' refers to the 'array' reserved word */
 
-      getToken(false);
+      getToken();
       g_dwVarSize = 0;
 
       /* On successful return, 'token' will refer to the 'of' keyword. */
@@ -1572,7 +1614,7 @@ static STYPE *pas_NewComplexType(char *typeName)
        */
 
     case tRECORD :
-      getToken(false);
+      getToken();
       typePtr = pas_DeclareRecord(typeName);
       break;
 
@@ -1585,9 +1627,9 @@ static STYPE *pas_NewComplexType(char *typeName)
 
       /* Verify that 'set' is followed by 'of' */
 
-      getToken(false);
+      getToken();
       if (token != tOF) error(eOF);
-      else getToken(false);
+      else getToken();
 
       /* Verify that 'set of' is followed by an ordinal-type
        * If not, then declare a new one with no name
@@ -1596,7 +1638,7 @@ static STYPE *pas_NewComplexType(char *typeName)
       typeIdPtr = pas_OrdinalTypeIdentifier(1);
       if (typeIdPtr)
         {
-          getToken(false);
+          getToken();
         }
       else
         {
@@ -1658,9 +1700,9 @@ static STYPE *pas_NewComplexType(char *typeName)
 
       /* Make sure that 'file' is followed by 'of' */
 
-      getToken(false);
+      getToken();
       if (token != tOF) error(eOF);
-      else getToken(false);
+      else getToken();
 
       /* Get the type-denoter */
 
@@ -1685,7 +1727,7 @@ static STYPE *pas_NewComplexType(char *typeName)
        */
     case sSTRING :
       error(eNOTYET);
-      getToken(false);
+      getToken();
       break;
 
       /* FORM: list-type = 'list' 'of' type-denoter */
@@ -1768,7 +1810,7 @@ static STYPE *pas_GetArrayIndexType(void)
        * ordinal-type.
        */
 
-      getToken(false);
+      getToken();
       if (token != tINT_CONST) error(eINTCONST);
       else
         {
@@ -1778,12 +1820,12 @@ static STYPE *pas_GetArrayIndexType(void)
 
           /* Check for a sub-range of integer constants */
 
-          getToken(false);
+          getToken();
           if (token == tSUBRANGE)
             {
               /* Get the upper value of the sub-range */
 
-              getToken(false);
+              getToken();
               if (token != tINT_CONST) error(eINTCONST);
               else
                 {
@@ -1792,7 +1834,7 @@ static STYPE *pas_GetArrayIndexType(void)
                      {
                        minValue = saveTknInt;
                        maxValue = tknInt;
-                       getToken(false);
+                       getToken();
                      }
                 }
             }
@@ -1803,14 +1845,14 @@ static STYPE *pas_GetArrayIndexType(void)
                 {
                   minValue = 0;
                   maxValue = saveTknInt - 1;
-                  getToken(false);
+                  getToken();
                 }
             }
 
           /* Verify that the index-type-list is followed by ']' */
 
           if (token != ']') error(eRBRACKET);
-          else getToken(false);
+          else getToken();
 
           /* We have the array size in elements and the base type, now
            * create the unnamed index-type and convert the size for the
@@ -1848,7 +1890,7 @@ static STYPE *pas_GetArrayBaseType(STYPE *indexTypePtr)
   /* Verify that 'of' precedes the type-denoter */
 
   if (token != tOF) error(eOF);
-  else getToken(false);
+  else getToken();
 
   /* OF should be followed by the type-denoter base type.
    * This may be an the name of a previously defined type or a
@@ -1924,7 +1966,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
            * field declaration.
            */
 
-          getToken(false);
+          getToken();
 
           /* We will treat this semi colon as optional.  If we
            * hit 'end' or 'case' after the semicolon, then we
@@ -1989,7 +2031,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
       /* Skip over the 'case' */
 
-      getToken(false);
+      getToken();
 
       /* Check for variant-selector
        * FORM: variant-selector = [ identifier ':' ] ordinal-type-identifer
@@ -2006,13 +2048,13 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
           /* Save the field name */
 
-          fieldName = tkn_strt;
-          getToken(false);
+          fieldName = g_tokenString;
+          getToken();
 
           /* Verify that the identifier is followed by a colon */
 
           if (token != ':') error(eCOLON);
-          else getToken(false);
+          else getToken();
 
           /* Get the ordinal-type-identifier */
 
@@ -2064,7 +2106,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
       /* Skip over the 'of' following the variant selector */
 
       if (token != tOF) error(eOF);
-      else getToken(false);
+      else getToken();
 
       /* Loop to process the variant-body
        * FORM: variant-body =
@@ -2099,8 +2141,8 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
           do
             {
-              getToken(false);
-              if (token == ',') getToken(false);
+              getToken();
+              if (token == ',') getToken();
             }
           while (isConstant(token));
 
@@ -2108,12 +2150,12 @@ static STYPE *pas_DeclareRecord(char *recordName)
            * field-list
            */
 
-          if (token == ':') getToken(false);
+          if (token == ':') getToken();
           else error(eCOLON);
 
           /* The field-list must be enclosed in parentheses */
 
-          if (token == '(') getToken(false);
+          if (token == '(') getToken();
           else error(eLPAREN);
 
           /* Special case the empty variant <field list> */
@@ -2150,7 +2192,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
                        * variable field declaration.
                        */
 
-                      getToken(false);
+                      getToken();
 
                       /* We will treat this semi colon as optional.  If we
                        * hit 'end' after the semicolon, then we will
@@ -2206,7 +2248,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
           /* Verify that the <field list> is enclosed in parentheses */
 
-          if (token == ')') getToken(false);
+          if (token == ')') getToken();
           else error(eRPAREN);
 
           /* A semicolon at this position means that another <variant>
@@ -2214,7 +2256,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
            * processed (i.e., no semi-colon)
            */
 
-          if (token == ';') getToken(false);
+          if (token == ';') getToken();
           else break;
         }
 
@@ -2226,7 +2268,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
   /* Verify that the RECORD declaration terminates with END */
 
   if (token != tEND) error(eRECORDDECLARE);
-  else getToken(false);
+  else getToken();
 
   return recordPtr;
 }
@@ -2250,21 +2292,21 @@ static STYPE *pas_DeclareField(STYPE *recordPtr)
 
      /* Declare a <field> with this <identifier> as its name */
 
-     fieldPtr = addField(tkn_strt, recordPtr);
-     getToken(false);
+     fieldPtr = addField(g_tokenString, recordPtr);
+     getToken();
 
      /* Check for multiple fields of this <type> */
 
      if (token == ',') {
 
-       getToken(false);
+       getToken();
        typePtr = pas_DeclareField(recordPtr);
 
      }
      else {
 
        if (token != ':') error(eCOLON);
-       else getToken(false);
+       else getToken();
 
        /* Use the existing type or declare a new type with no name */
 
@@ -2312,20 +2354,19 @@ static STYPE *pas_DeclareParameter(bool pointerType)
      {
        /* Set up for this formal parameter */
 
-       varPtr = addVariable(tkn_strt, sINT, 0, sINT_SIZE, NULL);
+       varPtr = addVariable(g_tokenString, sINT, 0, sINT_SIZE, NULL);
 
        /* The parameter name may be followed by either ',' or ':' */
 
-       getToken(false);
+       getToken();
 
        if (token == ',')
          {
-           /* Get the next formal parameter name.  The arguement 'true' will
-            * suppress conversion of the parameter name identifier to a previously
-            * defined symbol.
+           /* Get the next formal parameter name.  The search is
+            * limited to the current level.
             */
 
-           getToken(true);
+           getLevelToken();
            typePtr = pas_DeclareParameter(pointerType);
          }
        else
@@ -2333,7 +2374,7 @@ static STYPE *pas_DeclareParameter(bool pointerType)
            /* Check for a type identifier */
 
            if (token != ':') error(eCOLON);
-           else getToken(false);
+           else getToken();
 
            /* Get the type-identifier following the colon.  After calling
             * pas_TypeIdentifier(), token should refer to the ',' or ')' in

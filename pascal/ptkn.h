@@ -50,16 +50,22 @@
 
 /* String stack access variables */
 
-extern char   *tkn_strt;               /* Start of token in string stack */
-extern char   *stringSP;               /* Top of string stack */
+extern char   *g_tokenString;          /* Start of token in string stack */
+extern char   *g_stringSP;             /* Top of string stack */
+
+/* Level-related data */
+
+extern int     g_levelSymOffset;       /* Index to symbols for this level */
+extern int     g_levelConstOffset;     /* Index to constants for this level */
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void    getToken         (bool nosym);
-extern char    getNextCharacter (bool skipWhiteSpace);
-extern int16_t primeTokenizer   (unsigned long stringStackSize);
-extern int16_t rePrimeTokenizer (void);
+void    getToken         (void);
+void    getLevelToken    (void);
+char    getNextCharacter (bool skipWhiteSpace);
+int16_t primeTokenizer   (unsigned long stringStackSize);
+int16_t rePrimeTokenizer (void);
 
 #endif /* __PTKN_H */

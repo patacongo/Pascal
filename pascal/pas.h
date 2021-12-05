@@ -97,10 +97,6 @@ extern int16_t     g_level;                /* Static nesting level */
 extern int16_t     includeIndex;           /* Include file index */
 extern int16_t     nIncPathes;             /* Number pathes in includePath[] */
 extern uint16_t    label;                  /* Last label number */
-extern int16_t     nsym;                   /* Number symbol table entries */
-extern int16_t     nconst;                 /* Number constant table entries */
-extern int16_t     sym_strt;               /* Symbol search start index */
-extern int16_t     const_strt;             /* Constant search start index */
 extern int16_t     err_count;              /* Error counter */
 extern int16_t     nfiles;                 /* Program file counter */
 extern int32_t     warn_count;             /* Warning counter */

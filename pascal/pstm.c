@@ -134,44 +134,44 @@ void statement(void)
 
     case sINT :
       symPtr = tknPtr;
-      getToken(false);
+      getToken();
       pas_Assignment(opSTS, exprInteger, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sCHAR :
       symPtr = tknPtr;
-      getToken(false);
+      getToken();
       pas_Assignment(opSTSB, exprChar, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sBOOLEAN :
       symPtr = tknPtr;
-      getToken(false);
+      getToken();
       pas_Assignment(opSTSB, exprBoolean, symPtr, NULL);
       break;
 
     case sREAL :
       symPtr = tknPtr;
-      getToken(false);
+      getToken();
       pas_LargeAssignment(opSTSM, exprReal, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sSCALAR :
       symPtr = tknPtr;
-      getToken(false);
+      getToken();
       pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sSET_OF :
       symPtr = tknPtr;
-      getToken(false);
+      getToken();
       pas_Assignment(opSTS, exprSet, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sSTRING :
     case sRSTRING :
       symPtr = tknPtr;
-      getToken(false);
+      getToken();
       pas_StringAssignment(symPtr, symPtr->sParm.v.parent);
       break;
 
@@ -235,7 +235,7 @@ static void pas_ComplexAssignment(void)
     */
 
    symbolSave = *tknPtr;
-   getToken(false);
+   getToken();
 
    /* Then process the complex assignment until it is reduced to a simple
     * assignment (like int, char, etc.)
@@ -455,7 +455,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
         {
           /* Skip over the period */
 
-          getToken(false);
+          getToken();
 
           /* Verify that a field identifier associated with this record
            * follows the period.
@@ -484,7 +484,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               else
                 varPtr->sParm.v.offset += tknPtr->sParm.r.offset;
 
-              getToken(false);
+              getToken();
               pas_SimpleAssignment(varPtr, assignFlags);
             }
         }
@@ -580,7 +580,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 
       if (token == '^') /* value assignment? */
         {
-          getToken(false);
+          getToken();
           assignFlags |= ADDRESS_DEREFERENCE;
         }
       else
@@ -633,7 +633,7 @@ static void pas_Assignment(uint16_t storeOp, exprType assignType,
    /* FORM:  <variable OR function identifer> := <expression> */
 
    if (token != tASSIGN) error (eASSIGN);
-   else getToken(false);
+   else getToken();
 
    expression(assignType, typePtr);
    pas_GenerateStackReference(storeOp, varPtr);
@@ -653,7 +653,7 @@ static void pas_StringAssignment(STYPE *varPtr, STYPE *typePtr)
    /* Verify that the assignment token follows the indentifier */
 
    if (token != tASSIGN) error (eASSIGN);
-   else getToken(false);
+   else getToken();
 
    /* Get the expression after assignment token. We'll take any kind
     * of string expression.  This is a hack to handle calls to system
@@ -750,7 +750,7 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType assignType,
    /* FORM:  <variable OR function identifer> := <expression> */
 
    if (token != tASSIGN) error (eASSIGN);
-   else getToken(false);
+   else getToken();
 
    expression(assignType, typePtr);
    pas_GenerateDataSize(varPtr->sParm.v.size);
@@ -770,7 +770,7 @@ static void pas_GotoStatement(void)
 
    /* Get the token after the goto reserved word. It should be an <integer> */
 
-   getToken(false);
+   getToken();
    if (token != tINT_CONST)
      {
        /* Token following the goto is not an integer */
@@ -790,7 +790,7 @@ static void pas_GotoStatement(void)
            /* Find and verify the symbol associated with the label */
 
            (void)sprintf (labelname, "%" PRId32, tknInt);
-           if (!(label_ptr = findSymbol(labelname)))
+           if (!(label_ptr = findSymbol(labelname, 0)))
              {
                error(eUNDECLABEL);
              }
@@ -808,7 +808,7 @@ static void pas_GotoStatement(void)
 
        /* Get the token after the <integer> value */
 
-       getToken(false);
+       getToken();
      }
 }
 
@@ -826,7 +826,7 @@ static void pas_LabelStatement(void)
    /* Verify that the integer is a label name */
 
    (void)sprintf (labelName, "%" PRId32, tknInt);
-   if (!(labelPtr = findSymbol(labelName)))
+   if (!(labelPtr = findSymbol(labelName, 0)))
      {
        error(eUNDECLABEL);
      }
@@ -861,12 +861,12 @@ static void pas_LabelStatement(void)
 
    /* Skip over the label integer */
 
-   getToken(false);
+   getToken();
 
    /* Make sure that the label is followed by a colon */
 
    if (token != ':') error (eCOLON);
-   else getToken(false);
+   else getToken();
 }
 
 /***********************************************************************/
@@ -884,7 +884,7 @@ static void pas_ProcStatement(void)
    * Skip over the procedure-method-statement
    */
 
-  getToken(false);
+  getToken();
 
   /* Get the actual parameters (if any) associated with the procedure
    * call.
@@ -920,7 +920,7 @@ static void pas_IfStatement(void)
 
   /* Skip over the IF token */
 
-  getToken(false);
+  getToken();
 
   /* Evaluate the boolean expression */
 
@@ -934,7 +934,7 @@ static void pas_IfStatement(void)
     {
       /* Skip over the THEN token */
 
-      getToken(false);
+      getToken();
 
       /* Generate a conditional branch to the "else_label."  This will be a
        * branch to either the ENDIF or to the ELSE location (if present).
@@ -972,7 +972,7 @@ static void pas_IfStatement(void)
 
           /* Skip over the ELSE token */
 
-          getToken(false);
+          getToken();
 
           /* Generate Jump to ENDIF label after the  THEN <statement> */
 
@@ -1026,7 +1026,7 @@ void compoundStatement(void)
 
    do
      {
-       getToken(false);
+       getToken();
        statement();
      }
    while (token == ';');
@@ -1034,7 +1034,7 @@ void compoundStatement(void)
    /* Verify that it really was END */
 
    if (token != tEND) error (eEND);
-   else getToken(false);
+   else getToken();
 }
 
 /***********************************************************************/
@@ -1052,7 +1052,7 @@ void pas_RepeatStatement ()
    pas_GenerateDataOperation(opLABEL, rpt_label);
    do
      {
-       getToken(false);
+       getToken();
 
        /* Process <statement> */
 
@@ -1063,7 +1063,7 @@ void pas_RepeatStatement ()
    /* Verify UNTIL follows */
 
    if (token !=  tUNTIL) error (eUNTIL);
-   else getToken(false);
+   else getToken();
 
    /* Generate UNTIL <expression> */
 
@@ -1095,7 +1095,7 @@ static void pas_WhileStatement(void)
 
    /* Skip over WHILE token */
 
-   getToken(false);
+   getToken();
 
    /* Set top of loop label */
 
@@ -1135,7 +1135,7 @@ static void pas_WhileStatement(void)
    /* Verify that the DO token follows the expression */
 
    if (token !=  tDO) error(eDO);
-   else getToken(false);
+   else getToken();
 
    /* Generate the <statement> following the DO token */
 
@@ -1239,7 +1239,7 @@ static void pas_CaseStatement(void)
 
    /* Skip over the CASE token */
 
-   getToken(false);
+   getToken();
 
    /* Evaluate the CASE <expression> */
 
@@ -1248,7 +1248,7 @@ static void pas_CaseStatement(void)
    /* Verify that CASE <expression> is followed with the OF token */
 
    if (token !=  tOF) error (eOF);
-   else getToken(false);
+   else getToken();
 
    /* Loop to process each case until END encountered */
 
@@ -1261,7 +1261,7 @@ static void pas_CaseStatement(void)
 
        if (token == tELSE)
          {
-           getToken(false);
+           getToken();
 
            /* Set ELSE statement label */
 
@@ -1286,7 +1286,7 @@ static void pas_CaseStatement(void)
            /* Verify that END follows the ELSE <statement> */
 
            if (token != tEND) error(eEND);
-           else getToken(false);
+           else getToken();
 
            /* Terminate FOR loop */
 
@@ -1329,7 +1329,7 @@ static void pas_CaseStatement(void)
 
                /* Skip over the constant */
 
-               getToken(false);
+               getToken();
 
                /* If there are multiple constants, they will be separated with
                 * commas.
@@ -1343,7 +1343,7 @@ static void pas_CaseStatement(void)
 
                    /* Skip over comma */
 
-                   getToken(false);
+                   getToken();
                  }
                else
                  {
@@ -1359,7 +1359,7 @@ static void pas_CaseStatement(void)
            /* Verify colon presence */
 
            if (token != ':') error(eCOLON);
-           else getToken(false);
+           else getToken();
 
            /* Set CASE label */
 
@@ -1390,11 +1390,11 @@ static void pas_CaseStatement(void)
 
        if (token == ';')
          {
-           getToken(false);
+           getToken();
          }
        else if (token == tEND)
          {
-           getToken(false);
+           getToken();
            break;
          }
        else
@@ -1437,7 +1437,7 @@ static void pas_ForStatement(void)
 
    /* Skip over the FOR token */
 
-   getToken(false);
+   getToken();
 
    /* Get and verify the left side of the assignment. */
    if ((token != sINT) && (token != sSUBRANGE))
@@ -1449,7 +1449,7 @@ static void pas_ForStatement(void)
         */
 
        varPtr = tknPtr;
-       getToken(false);
+       getToken();
 
        /* Generate the assignment to the integer variable */
 
@@ -1463,13 +1463,13 @@ static void pas_ForStatement(void)
          {
            jmpOp = opJGT;
            modOp = opDEC;
-           getToken(false);
+           getToken();
          }
        else if (token == tTO)
          {
            jmpOp = opJLT;
            modOp = opINC;
-           getToken(false);
+           getToken();
          }
        else
          error (eTOorDOWNTO);
@@ -1481,7 +1481,7 @@ static void pas_ForStatement(void)
        /* Verify that the <expression> is followed by the DO token */
 
        if (token != tDO) error (eDO);
-       else getToken(false);
+       else getToken();
 
        /* Generate top of loop label */
 
@@ -1566,7 +1566,7 @@ static void pas_WithStatement(void)
 
    /* Process each RECORD or RECORD OBJECT in the <variable> list */
 
-   getToken(false);
+   getToken();
    for(;;)
      {
        /* A RECORD type variable may be used in the WITH statement only if
@@ -1585,7 +1585,7 @@ static void pas_WithStatement(void)
 
            /* Skip over the RECORD variable */
 
-           getToken(false);
+           getToken();
          }
 
        /* A RECORD VAR parameter may also be used in the WITH statement
@@ -1606,7 +1606,7 @@ static void pas_WithStatement(void)
 
            /* Skip over the RECORD VAR parameter */
 
-           getToken(false);
+           getToken();
          }
 
        /* A pointer to a RECORD may also be used in the WITH statement
@@ -1627,12 +1627,12 @@ static void pas_WithStatement(void)
 
            /* Skip over the RECORD pointer */
 
-           getToken(false);
+           getToken();
 
            /* Verify that deferencing is specified! */
 
            if (token != '^') error(eRECORDVAR);
-           else getToken(false);
+           else getToken();
          }
 
        /* A RECORD_OBJECT may be used in the WITH statement if the field
@@ -1654,7 +1654,7 @@ static void pas_WithStatement(void)
 
            /* Skip over the sRECORD_OBJECT */
 
-           getToken(false);
+           getToken();
      }
 
      /* Anything else is an error */
@@ -1668,14 +1668,14 @@ static void pas_WithStatement(void)
 
        /* Check if there are multiple variables in the WITH statement */
 
-       if (token == ',') getToken(false);
+       if (token == ',') getToken();
        else break;
      }
 
    /* Verify that the RECORD list is terminated with DO */
 
    if (token != tDO) error (eDO);
-   else getToken(false);
+   else getToken();
 
    /* Then process the statement following the WITH */
 

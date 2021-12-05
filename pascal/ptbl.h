@@ -48,15 +48,17 @@
  * Global Variables
  ***************************************************************************/
 
-extern STYPE *g_parentInteger;
-extern STYPE *g_parentString;
+extern STYPE       *g_parentInteger;
+extern STYPE       *g_parentString;
+extern unsigned int g_nSym;          /* Number symbol table entries */
+extern unsigned int g_nConst;        /* Number constant table entries */
 
 /***************************************************************************
  * Global Function Prototypes
  ***************************************************************************/
 
 const RTYPE *findReservedWord (char *name);
-STYPE *findSymbol       (char *inName);
+STYPE *findSymbol       (char *inName, int tableOffset);
 STYPE *addTypeDefine    (char *name, uint8_t type, uint16_t size,
                          STYPE *parent, STYPE *index);
 STYPE *addConstant      (char *name, uint8_t type, int32_t *value,

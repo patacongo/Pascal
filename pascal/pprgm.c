@@ -55,7 +55,7 @@
 #include "pas.h"       /* for globals + openNestedFile */
 #include "pblck.h"     /* for block() */
 #include "pgen.h"      /* for pas_Generate*() */
-#include "ptkn.h"      /* for getToken(false) */
+#include "ptkn.h"      /* for getToken() */
 #include "ptbl.h"      /* for addFile() */
 #include "pofflib.h"   /* For poff*() functions*/
 #include "paslib.h"    /* for extension() */
@@ -103,8 +103,8 @@ void program(void)
   if (token != tIDENT) error(eIDENT);      /* Verify <program name> */
   else
     {
-      pgmname = tkn_strt;                  /* Save program name */
-      getToken(false);
+      pgmname = g_tokenString;             /* Save program name */
+      getToken();
     }
 
   /* Process optional file list (allow re-declaration of INPUT & OUTPUT) */
@@ -117,13 +117,13 @@ void program(void)
            * file numbers beginning at FIRST_USER_FILE.
            */
 
-          getToken(false);
+          getToken();
           if (token == tIDENT)
             {
               if ((++nfiles) > MAX_FILES) fatal(eOVF);
-              (void)addFile(tkn_strt, nfiles);
-              stringSP = tkn_strt;
-              getToken(false);
+              (void)addFile(g_tokenString, nfiles);
+              g_stringSP = g_tokenString;
+              getToken();
             }
 
           /* INPUT and OUTPUT will appear as symbols since they were pre-defined
@@ -133,7 +133,7 @@ void program(void)
           else if ((token == sFILE) &&
                    (tknPtr->sParm.fileNumber < FIRST_USER_FILE))
             {
-              getToken(false);
+              getToken();
             }
           else
             {
@@ -143,13 +143,13 @@ void program(void)
       while (token == ',');
 
       if (token != ')') error(eRPAREN);
-      else getToken(false);
+      else getToken();
     }
 
   /* Make sure that a semicolon follows the program-heading */
 
   if (token != ';') error(eSEMICOLON);
-  else getToken(false);
+  else getToken();
 
   /* Set the POFF file header type */
 
@@ -158,7 +158,7 @@ void program(void)
 
   /* Discard the program name string */
 
-  stringSP = pgmname;
+  g_stringSP = pgmname;
 
   /* Process the optional 'uses-section'
    * FORM: uses-section = 'uses' [ uses-unit-list ] ';'
@@ -166,7 +166,7 @@ void program(void)
 
   if (token == tUSES)
     {
-      getToken(false);
+      getToken();
       usesSection();
     }
 
@@ -201,19 +201,19 @@ void usesSection(void)
     {
       /* Save the unit name identifier and skip over the identifier */
 
-      unitName = tkn_strt;
-      getToken(false);
+      unitName = g_tokenString;
+      getToken();
 
       /* Check for the optional 'in' */
 
-      saveTknStrt = tkn_strt;
+      saveTknStrt = g_tokenString;
       if (token == tIN)
         {
           /* Skip over 'in' and verify that a string constant representing
            * the file name follows.
            */
 
-          getToken(false);
+          getToken();
           if (token != tSTRING_CONST) error(eSTRING);
           else
             {
@@ -221,9 +221,9 @@ void usesSection(void)
                * next token.
                */
 
-              unitFileName = tkn_strt;
-              saveTknStrt = tkn_strt;
-              getToken(false);
+              unitFileName = g_tokenString;
+              saveTknStrt  = g_tokenString;
+              getToken();
             }
         }
 
@@ -249,18 +249,18 @@ void usesSection(void)
       /* Verify that this is a unit file */
 
       if (token != tUNIT) error(eUNIT);
-      else getToken(false);
+      else getToken();
 
       /* Release the file name from the string stack */
 
-      stringSP = saveTknStrt;
+      g_stringSP = saveTknStrt;
 
       /* Verify that the file provides the unit that we are looking
        * for (only one unit per file is supported)
        */
 
       if (token != tIDENT) error(eIDENT);
-      else if (strcmp(unitName, tkn_strt) != 0) error(eUNITNAME);
+      else if (strcmp(unitName, g_tokenString) != 0) error(eUNITNAME);
 
       /* Parse the interface from the unit file (token must refer
        * to the unit name on entry into unit().
@@ -273,7 +273,7 @@ void usesSection(void)
 
       token = saveToken;
       if (token !=  ';') error(eSEMICOLON);
-      else getToken(false);
+      else getToken();
     }
 }
 

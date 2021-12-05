@@ -129,14 +129,14 @@ exprType builtInFunction(void)
           /* Functions returning INTEGER with REAL arguments */
 
         case txROUND :
-          getToken(false);                          /* Skip over 'round' */
+          getToken();                          /* Skip over 'round' */
           expression(exprReal, NULL);
           pas_GenerateFpOperation(fpROUND);
           funcType = exprInteger;
           break;
 
         case txTRUNC :
-          getToken(false);                          /* Skip over 'trunc' */
+          getToken();                          /* Skip over 'trunc' */
           expression(exprReal, NULL);
           pas_GenerateFpOperation(fpTRUNC);
           funcType = exprInteger;
@@ -217,15 +217,15 @@ exprType builtInFunction(void)
 
 void checkLParen(void)
 {
-   getToken(false);                     /* Skip over function name */
-   if (token != '(') error(eLPAREN);    /* Check for '(' */
-   else getToken(false);
+   getToken();                        /* Skip over function name */
+   if (token != '(') error(eLPAREN);  /* Check for '(' */
+   else getToken();
 }
 
 void checkRParen(void)
 {
-   if (token != ')') error(eRPAREN);    /* Check for ')') */
-   else getToken(false);
+   if (token != ')') error(eRPAREN);  /* Check for ')') */
+   else getToken();
 }
 
 /***************************************************************
@@ -413,12 +413,12 @@ static void fileFunc(uint16_t opcode)
    * used.
    */
 
-  getToken(false);     /* Skip over function name */
-  if (token == '(')    /* Check for '(' */
+  getToken();        /* Skip over function name */
+  if (token == '(')  /* Check for '(' */
     {
       /* Get the file number argument */
 
-      getToken(false);
+      getToken();
       if (token != sFILE) error(eFILE);
       else
         {

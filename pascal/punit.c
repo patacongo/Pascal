@@ -55,7 +55,7 @@
 #include "pas.h"       /* for globals */
 #include "pblck.h"     /* for block(), constantDefinitionGroup(), etc. */
 #include "pgen.h"      /* for pas_Generate*() */
-#include "ptkn.h"      /* for getToken(false) */
+#include "ptkn.h"      /* for getToken() */
 #include "ptbl.h"      /* for addFile() */
 #include "pofflib.h"   /* For poff*() functions*/
 #include "perr.h"      /* for error() */
@@ -86,7 +86,7 @@ static void exportedFunctionHeading   (void);
 
 void unitImplementation(void)
 {
-  char   *saveTknStart = tkn_strt;
+  char   *saveTknStart = g_tokenString;
 
   TRACE(lstFile, "[unitImplementation]");
 
@@ -115,20 +115,20 @@ void unitImplementation(void)
 
   /* Set a UNIT indication in the output poff file header */
 
-  poffSetFileType(poffHandle, FHT_UNIT, 0, tkn_strt);
+  poffSetFileType(poffHandle, FHT_UNIT, 0, g_tokenString);
   poffSetArchitecture(poffHandle, FHA_PCODE);
 
   /* Discard the unit name and get the next token */
 
-  stringSP = saveTknStart;
-  getToken(false);
+  g_stringSP = saveTknStart;
+  getToken();
 
   /* Skip over the semicolon separating the unit-heading from the
    * interface-section.
    */
 
   if (token != ';') error(eSEMICOLON);
-  else getToken(false);
+  else getToken();
 
   /* Verify that the interface-section is present
    * FORM: interface-section =
@@ -143,7 +143,7 @@ void unitImplementation(void)
    */
 
   if (token != tIMPLEMENTATION) error(eIMPLEMENTATION);
-  else getToken(false);
+  else getToken();
 
   FP->section = eIsImplementationSection;
 
@@ -153,7 +153,7 @@ void unitImplementation(void)
     {
       /* Process the uses-section */
 
-      getToken(false);
+      getToken();
       usesSection();
     }
 
@@ -180,7 +180,7 @@ void unitImplementation(void)
 
   FP->section = eIsInitializationSection;
   if (token != tEND) error(eEND);
-  else getToken(false);
+  else getToken();
 
   FP->section = eIsOtherSection;
 
@@ -214,14 +214,14 @@ void unitInterface(void)
    */
 
   if (token != tIDENT) error(eIDENT);
-  else getToken(false);
+  else getToken();
 
   /* Skip over the semicolon separating the unit-heading from the
    * interface-section.
    */
 
   if (token != ';') error(eSEMICOLON);
-  else getToken(false);
+  else getToken();
 
   /* Process the interface-section
    * FORM: interface-section =
@@ -259,10 +259,17 @@ void unitInterface(void)
 
 static void interfaceSection(void)
 {
-  int16_t saveNSym   = nsym;          /* Save top of symbol table */
-  int16_t saveNConst = nconst;        /* Save top of constant table */
+  unsigned int saveNSym        = g_nSym;             /* Save top of symbol table */
+  unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
+  unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
+  unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
 
   TRACE(lstFile, "[interfaceSection]");
+
+  /* Set the current symbol/constant table offsets for this level */
+
+  g_levelSymOffset             = saveNSym;
+  g_levelConstOffset           = saveNConst;
 
   /*  FORM: interface-section =
    *       'interface' [ uses-section ] interface-declaration
@@ -272,7 +279,7 @@ static void interfaceSection(void)
    */
 
   if (token != tINTERFACE) error(eINTERFACE);
-  else getToken(false);
+  else getToken();
 
   FP->section = eIsInterfaceSection;
 
@@ -282,7 +289,7 @@ static void interfaceSection(void)
     {
       /* Process the uses-section */
 
-      getToken(false);
+      getToken();
       usesSection();
     }
 
@@ -300,9 +307,9 @@ static void interfaceSection(void)
 
    if (token == tCONST)
      {
-       const_strt = saveNConst;        /* Limit search to present level */
-       getToken(false);                /* Get identifier */
-       const_strt = 0;
+       /* Limit search to present level */
+
+       getLevelToken();
 
        /* Process constant-definition.
         * FORM: constant-definition = identifier '=' constant
@@ -310,7 +317,7 @@ static void interfaceSection(void)
 
        constantDefinitionGroup();
 
-     } /* end if */
+     }
 
    /* Process type-definition-group
     * FORM: type-definition-group =
@@ -319,18 +326,16 @@ static void interfaceSection(void)
 
    if (token == tTYPE)
      {
-       const_strt = saveNConst;        /* Limit search to present level */
-       sym_strt   = saveNSym;
-       getToken(false);                /* Get identifier */
-       const_strt = 0;
-       sym_strt   = 0;
+       /* Limit search to present level */
+
+       getLevelToken();
 
        /* Process the type-definitions in the type-definition-group
         * FORM: type-definition = identifier '=' type-denoter
         */
 
        typeDefinitionGroup();
-     } /* end if */
+     }
 
    /* Process the optional variable-declaration-group
     * FORM: variable-declaration-group =
@@ -339,11 +344,9 @@ static void interfaceSection(void)
 
    if (token == tVAR)
      {
-       const_strt = saveNConst;        /* Limit search to present level */
-       sym_strt   = saveNSym;
-       getToken(false);                /* Get identifier */
-       const_strt = 0;
-       sym_strt   = 0;
+       /* Limit search to present level */
+
+       getLevelToken();
 
        /* Process the variable declarations
         * FORM: variable-declaration = identifier-list ':' type-denoter
@@ -351,7 +354,7 @@ static void interfaceSection(void)
         */
 
        variableDeclarationGroup();
-     } /* end if */
+     }
 
    /* Process the exported-heading
     *
@@ -360,7 +363,7 @@ static void interfaceSection(void)
     *       function-heading ';' [ directive ]
     */
 
-   for (;;)
+   for (; ; )
      {
        /* FORM: function-heading =
         *       'function' function-identifier [ formal-parameter-list ]
@@ -369,16 +372,14 @@ static void interfaceSection(void)
 
        if (token == tFUNCTION)
          {
-           const_strt = saveNConst;    /* Limit search to present level */
-           sym_strt   = saveNSym;
-           getToken(false);            /* Get identifier */
-           const_strt = 0;
-           sym_strt   = 0;
+           /* Limit search to present level */
+
+           getLevelToken();
 
            /* Process the interface declaration */
 
            exportedFunctionHeading();
-         } /* end if */
+         }
 
        /* FORM: procedure-heading =
         *       'procedure' procedure-identifier [ formal-parameter-list ]
@@ -386,22 +387,25 @@ static void interfaceSection(void)
 
        else if (token == tPROCEDURE)
          {
-           const_strt = saveNConst;    /* Limit search to present level */
-           sym_strt   = saveNSym;
-           getToken(false);            /* Get identifier */
-           const_strt = 0;
-           sym_strt   = 0;
+           /* Limit search to present level */
+
+           getLevelToken();
 
            /* Process the interface declaration */
 
            exportedProcedureHeading();
-         } /* end else if */
+         }
        else break;
-     } /* end for */
+     }
 
    /* We are finished with the interface section */
 
    FP->section = eIsOtherSection;
+
+  /* Restore the symbol/constant table offsets for the previous level */
+
+  g_levelSymOffset   = saveSymOffset;
+  g_levelConstOffset = saveConstOffset;
 }
 
 /* Process Procedure Declaration Block */
@@ -431,7 +435,7 @@ static void exportedProcedureHeading(void)
        return;
      } /* endif */
 
-   procPtr = addProcedure(tkn_strt, sPROC, procLabel, 0, NULL);
+   procPtr = addProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
 
    /* Mark the procedure as external */
 
@@ -441,8 +445,8 @@ static void exportedProcedureHeading(void)
     * formal parameter strings later.  Then get the next token.
     */
 
-   saveChSp = stringSP;
-   getToken(false);
+   saveChSp = g_stringSP;
+   getToken();
 
    /* NOTE:  The level associated with the PROCEDURE symbol is the level
     * At which the procedure was declared.  Everything declare within the
@@ -456,7 +460,7 @@ static void exportedProcedureHeading(void)
    (void)formalParameterList(procPtr);
 
    if (token !=  ';') error (eSEMICOLON);
-   else getToken(false);
+   else getToken();
 
    /* If we are compiling a program or unit that "imports" the
     * procedure then generate the appropriate symbol table entries
@@ -475,13 +479,12 @@ static void exportedProcedureHeading(void)
      {
        procPtr[i].sName = NULL;
      }
-   stringSP = saveChSp;
+   g_stringSP = saveChSp;
 
    /* Drop the level back to where it was */
 
    g_level--;
-
-} /* end exportedProcedureHeading */
+}
 
 /***************************************************************/
 /* Process Function Declaration Block */
@@ -514,7 +517,7 @@ static void exportedFunctionHeading(void)
        return;
      } /* endif */
 
-   funcPtr = addProcedure(tkn_strt, sFUNC, funcLabel, 0, NULL);
+   funcPtr = addProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
 
    /* Mark the procedure as external */
 
@@ -531,8 +534,8 @@ static void exportedFunctionHeading(void)
     * formal parameter strings later.  Then get the next token.
     */
 
-   saveChSp = stringSP;
-   getToken(false);
+   saveChSp = g_stringSP;
+   getToken();
 
    /* Process parameter list */
 
@@ -541,7 +544,7 @@ static void exportedFunctionHeading(void)
    /* Verify that the parameter list is followed by a colon */
 
    if (token !=  ':') error (eCOLON);
-   else getToken(false);
+   else getToken();
 
    /* Get function type, return value type/size and offset to return value */
 
@@ -561,8 +564,8 @@ static void exportedFunctionHeading(void)
 
        /* Skip over the result-type token */
 
-       getToken(false);
-     } /* end if */
+       getToken();
+     }
    else
      {
        error(eINVTYPE);
@@ -571,7 +574,7 @@ static void exportedFunctionHeading(void)
    /* Verify the final semicolon */
 
    if (token !=  ';') error (eSEMICOLON);
-   else getToken(false);
+   else getToken();
 
    /* If we are compiling a program or unit that "imports" the
     * function then generate the appropriate symbol table entries
@@ -591,7 +594,7 @@ static void exportedFunctionHeading(void)
        funcPtr[i].sName = ((char *) NULL);
      }
 
-   stringSP = saveChSp;
+   g_stringSP = saveChSp;
 
    /* Restore the original level */
 

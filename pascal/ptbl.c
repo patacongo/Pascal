@@ -65,8 +65,10 @@ static STYPE *addSymbol(char *name, int16_t type);
  * Public Variables
  ***************************************************************/
 
-STYPE *g_parentInteger = NULL;
-STYPE *g_parentString  = NULL;
+STYPE       *g_parentInteger = NULL;
+STYPE       *g_parentString  = NULL;
+unsigned int g_nSym          = 0;    /* Number symbol table entries */
+unsigned int g_nConst        = 0;    /* Number constant table entries */
 
 /***************************************************************
  * Private Variables
@@ -182,11 +184,11 @@ const RTYPE *findReservedWord (char *name)
 
 /***************************************************************/
 
-STYPE *findSymbol (char *inName)
+STYPE *findSymbol(char *inName, int tableOffset)
 {
-  int16_t i;                /* loop index */
+  int i;
 
-  for (i=nsym-1; i>=sym_strt; i--)
+  for (i = g_nSym - 1; i >= tableOffset; i--)
     {
       if (g_symbolTable[i].sName)
         {
@@ -208,7 +210,7 @@ static STYPE *addSymbol(char *name, int16_t type)
 
    /* Check for Symbol Table overflow */
 
-   if (nsym >= MAX_SYM)
+   if (g_nSym >= MAX_SYM)
      {
       fatal(eOVF);
        return (STYPE *)NULL;
@@ -217,15 +219,15 @@ static STYPE *addSymbol(char *name, int16_t type)
      {
      /* Clear all elements of the symbol table entry */
 
-     memset(&g_symbolTable[nsym], 0, sizeof(STYPE));
+     memset(&g_symbolTable[g_nSym], 0, sizeof(STYPE));
 
      /* Set the elements which are independent of sKind */
 
-     g_symbolTable[nsym].sName  = name;
-     g_symbolTable[nsym].sKind  = type;
-     g_symbolTable[nsym].sLevel = g_level;
+     g_symbolTable[g_nSym].sName  = name;
+     g_symbolTable[g_nSym].sKind  = type;
+     g_symbolTable[g_nSym].sLevel = g_level;
 
-     return &g_symbolTable[nsym++];
+     return &g_symbolTable[g_nSym++];
    }
 }
 
@@ -461,7 +463,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
       fatal(eNOMEMORY);
     }
 
-  nsym = 0;
+  g_nSym = 0;
 
   /* Add the standard constants to the symbol table */
 
@@ -546,7 +548,7 @@ void verifyLabels(int32_t symIndex)
 {
    int16_t i;                 /* loop index */
 
-   for (i=symIndex; i < nsym; i++)
+   for (i=symIndex; i < g_nSym; i++)
      if ((g_symbolTable[i].sKind == sLABEL)
      &&  (g_symbolTable[i].sParm.l.unDefined))
      {
@@ -565,7 +567,7 @@ void dumpTables(void)
   fprintf(lstFile,"\nSYMBOL TABLE:\n");
   fprintf(lstFile,"[  Addr  ]     NAME KIND LEVL\n");
 
-  for (i = 0; i < nsym; i++)
+  for (i = 0; i < g_nSym; i++)
     {
       fprintf(lstFile,"[%p] ", &g_symbolTable[i]);
 

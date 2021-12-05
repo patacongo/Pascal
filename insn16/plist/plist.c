@@ -2,7 +2,7 @@
  * plist.c
  * POFF file lister
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -331,7 +332,7 @@ static void dumpProgramData(poffHandle_t poffHandle)
         {
           /* Print the line number line */
 
-          printf("\n%s:%ld\n", ln->filename, ln->lineno);
+          printf("\n%s:%" PRId32 "\n", ln->filename, ln->lineno);
 
           /* This will suppress reporting the same line number
            * repeatedly.
@@ -342,7 +343,7 @@ static void dumpProgramData(poffHandle_t poffHandle)
 
       /* Print the address then the opcode on stdout */
 
-      fprintf(stdout, "%08lx ", pc);
+      fprintf(stdout, "%08" PRIx32 " ", pc);
       insn_DisassemblePCode(stdout, &op);
 
       /* Bump the PC to the next address */

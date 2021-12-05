@@ -60,7 +60,7 @@
 static void getCharacter        (void);
 static void skipLine            (void);
 static bool getLine             (void);
-static void identifier          (bool nosym);
+static void identifier          (void);
 static void string              (void);
 static void unsignedNumber      (void);
 static void unsignedRealNumber  (void);
@@ -72,15 +72,24 @@ static void unsignedBinary      (void);
  * Private Variables
  ***************************************************************/
 
-static char    *strStack;      /* String Stack */
-static uint16_t inChar;        /* last gotten character */
+static char    *strStack;          /* String Stack */
+static uint16_t inChar;            /* last gotten character */
+static int      g_symStart   = 0;  /* Symbol search start index */
+static int      g_constStart = 0;  /* Constant search start index */
 
 /***************************************************************
  * Public Variables
  ***************************************************************/
 
-char *tkn_strt;               /* Start of token in string stack */
-char *stringSP;               /* Top of string stack */
+/* String stack access variables */
+
+char *g_tokenString;           /* Start of token in string stack */
+char *g_stringSP;              /* Top of string stack */
+
+/* Level-related data */
+
+int   g_levelSymOffset   = 0;  /* Index to symbols for this level */
+int   g_levelConstOffset = 0;  /* Index to constants for this level */
 
 /***************************************************************
  * Public Functions
@@ -102,8 +111,8 @@ int16_t primeTokenizer(unsigned long stringStackSize)
    * string stack.
    */
 
-  tkn_strt = strStack;
-  stringSP = strStack;
+  g_tokenString = strStack;
+  g_stringSP    = strStack;
 
   /* Set up for input at the initial level of file parsing */
 
@@ -210,7 +219,7 @@ char getNextCharacter(bool skipWhiteSpace)
 
 /***************************************************************/
 
-void getToken(bool nosym)
+void getToken(void)
 {
   /* Skip over leading spaces and comments */
 
@@ -218,13 +227,13 @@ void getToken(bool nosym)
 
   /* Point to the beginning of the next token */
 
-  tkn_strt = stringSP;
+  g_tokenString = g_stringSP;
 
   /* Process Identifier, Symbol, or Reserved Word */
 
   if ((isalpha(inChar)) || (inChar == '_'))
     {
-      identifier(nosym);
+      identifier();
     }
 
   /* Process Numeric */
@@ -305,7 +314,7 @@ void getToken(bool nosym)
       do getCharacter();                 /* get the next character */
       while (inChar != '}');             /* loop until end of comment */
       getCharacter();                    /* skip over end of comment */
-      getToken(false);                        /* get the next real token */
+      getToken();                        /* get the next real token */
     }
 
   /* Get comment -- form (* .. *) */
@@ -334,7 +343,7 @@ void getToken(bool nosym)
             }
 
           getCharacter();                /* skip over the comment end char */
-          getToken(false);                    /* and get the next real token */
+          getToken();                    /* and get the next real token */
       }
     }
 
@@ -346,7 +355,7 @@ void getToken(bool nosym)
       if (inChar == '/')                 /* C++ style comment? */
         {
           skipLine();                    /* Yes, skip rest of line */
-          getToken(false);                    /* and get the next real token */
+          getToken();                    /* and get the next real token */
         }
       else if (inChar != '*')            /* is this a C-style comment? */
         {
@@ -369,7 +378,7 @@ void getToken(bool nosym)
             }
 
           getCharacter();                /* skip over the comment end char */
-          getToken(false);                    /* and get the next real token */
+          getToken();                    /* and get the next real token */
       }
     }
 
@@ -400,17 +409,28 @@ void getToken(bool nosym)
   else
     {
       getCharacter();
-      getToken(false);
+      getToken();
     }
 
   DEBUG(lstFile,"[%02x]", token);
+}
+
+/***************************************************************/
+
+void getLevelToken(void)
+{
+  g_constStart = g_levelConstOffset;  /* Limit search to current level */
+  g_symStart   = g_levelSymOffset;
+  getToken();                         /* Get the token in this scope */
+  g_constStart = 0;
+  g_symStart   = 0;
 }
 
 /***************************************************************
  * Private Functions
  ***************************************************************/
 
-static void identifier(bool nosym)
+static void identifier(void)
 {
   const  RTYPE *rptr;                         /* Pointer to reserved word */
 
@@ -420,35 +440,32 @@ static void identifier(bool nosym)
 
   do
     {
-      *stringSP++ = toupper(inChar);          /* concatenate char */
+      *g_stringSP++ = toupper(inChar);        /* concatenate char */
       getCharacter();                         /* get next character */
     }
   while ((isalnum(inChar)) || (inChar == '_'));
-  *stringSP++ = '\0';                         /* make ASCIIZ string */
+
+  *g_stringSP++ = '\0';                       /* make ASCIIZ string */
 
   /* Check if the identifier is a reserved word */
 
-  rptr = findReservedWord(tkn_strt);
+  rptr = findReservedWord(g_tokenString);
   if (rptr)
     {
       token      = rptr->rtype;               /* get type from rsw table */
       tknSubType = rptr->subtype;             /* get subtype from rsw table */
-      stringSP      = tkn_strt;               /* pop token from stack */
+      g_stringSP   = g_tokenString;           /* pop token from stack */
     }
 
-  /* Check if the identifier is a symbol.  If nosym is 'true' then this
-   * check is skipped.  nosym is 'true' in situations where is is acceptable
-   * to redefine a previous defined name (such as the name of a formal
-   * parameter.
-   */
+  /* Check if the indentifier is a previously defined symbol */
 
-  else if (!nosym)
+  else
     {
-      tknPtr = findSymbol(tkn_strt);
+      tknPtr = findSymbol(g_tokenString, g_symStart);
       if (tknPtr)
         {
           token = tknPtr->sKind;              /* get type from symbol table */
-          stringSP = tkn_strt;                /* pop token from stack */
+          g_stringSP = g_tokenString;         /* pop token from stack */
 
           /* The following assignments only apply to constants.  However it
            * is simpler just to make the assignments than it is to determine
@@ -472,11 +489,6 @@ static void identifier(bool nosym)
           token = tIDENT;
         }
     }
-  else
-    {
-      token = tIDENT;
-    }
-
 }
 
 /***************************************************************/
@@ -498,19 +510,19 @@ static void string(void)
         }
       else
         {
-          *stringSP++ = inChar;      /* concatenate character */
+          *g_stringSP++ = inChar;    /* concatenate character */
           count++;                   /* bump count of chars */
         }
       getCharacter();                /* get the next character */
     }
-  *stringSP++ = '\0';                /* terminate ASCIIZ string */
+  *g_stringSP++ = '\0';              /* terminate ASCIIZ string */
 
   getCharacter();                    /* skip over last single quote */
   if (count == 1)                    /* Check for char constant */
     {
-      token = tCHAR_CONST;           /* indicate char constant type */
-      tknInt = *tkn_strt;            /* (integer) value = single char */
-      stringSP = tkn_strt;           /* "pop" from string stack */
+      token    = tCHAR_CONST;        /* indicate char constant type */
+      tknInt   = *g_tokenString;     /* (integer) value = single char */
+      g_stringSP = g_tokenString;    /* "pop" from string stack */
     }
 }
 
@@ -630,7 +642,7 @@ static void unsignedNumber(void)
 
   do
     {
-      *stringSP++ = inChar;
+      *g_stringSP++ = inChar;
       getCharacter();
     }
   while (isdigit(inChar));
@@ -653,12 +665,12 @@ static void unsignedNumber(void)
     {
       /* Terminate the integer string and convert it using sscanf */
 
-      *stringSP++ = '\0';
-      (void)sscanf(tkn_strt, "%" PRId32, &tknInt);
+      *g_stringSP++ = '\0';
+      (void)sscanf(g_tokenString, "%" PRId32, &tknInt);
 
       /* Remove the integer string from the character identifer stack */
 
-      stringSP = tkn_strt;
+      g_stringSP = g_tokenString;
     }
   else
     {
@@ -699,7 +711,7 @@ static void unsignedRealNumber(void)
    * the decimal point).
    */
 
-  *stringSP++ = '.';
+  *g_stringSP++ = '.';
 
   /* Now, loop to process the optional digit-sequence after the
    * decimal point.
@@ -707,7 +719,7 @@ static void unsignedRealNumber(void)
 
   while (isdigit(inChar))
     {
-      *stringSP++ = inChar;
+      *g_stringSP++ = inChar;
       getCharacter();
     }
 
@@ -726,13 +738,13 @@ static void unsignedRealNumber(void)
        * using sscanf.
        */
 
-      *stringSP++ = '\0';
-      (void) sscanf(tkn_strt, "%lf", &tknReal);
+      *g_stringSP++ = '\0';
+      (void) sscanf(g_tokenString, "%lf", &tknReal);
     }
 
   /* Remove the number string from the character identifer stack */
 
-  stringSP = tkn_strt;
+  g_stringSP = g_tokenString;
 }
 
 /***************************************************************/
@@ -764,7 +776,7 @@ static void unsignedExponent(void)
    * the decimal point).
    */
 
-  *stringSP++ = inChar;
+  *g_stringSP++ = inChar;
   getCharacter();
 
   /* Check for an optional sign before the exponent value */
@@ -773,14 +785,14 @@ static void unsignedExponent(void)
     {
       /* Add the sign to the stack */
 
-      *stringSP++ = inChar;
+      *g_stringSP++ = inChar;
       getCharacter();
     }
   else
     {
       /* Add a '+' sign to the stack */
 
-      *stringSP++ = '+';
+      *g_stringSP++ = '+';
     }
 
   /* A digit sequence must appear after the exponent and optional
@@ -798,7 +810,7 @@ static void unsignedExponent(void)
 
       do
         {
-          *stringSP++ = inChar;
+          *g_stringSP++ = inChar;
           getCharacter();
         }
       while (isdigit(inChar));
@@ -807,13 +819,13 @@ static void unsignedExponent(void)
        * using sscanf.
        */
 
-      *stringSP++ = '\0';
-      (void) sscanf(tkn_strt, "%lf", &tknReal);
+      *g_stringSP++ = '\0';
+      (void) sscanf(g_tokenString, "%lf", &tknReal);
     }
 
   /* Remove the number string from the character identifer stack */
 
-  stringSP = tkn_strt;
+  g_stringSP = g_tokenString;
 }
 
 /***************************************************************/
@@ -844,15 +856,15 @@ static void unsignedHexadecimal(void)
       /* Is it a decimal digit? */
 
       if (isdigit(inChar))
-        *stringSP++ = inChar;
+        *g_stringSP++ = inChar;
 
       /* Is it a hex 'digit'? */
 
       else if ((inChar >= 'A') && (inChar <= 'F'))
-        *stringSP++ = inChar;
+        *g_stringSP++ = inChar;
 
       else if ((inChar >= 'a') && (inChar <= 'f'))
-        *stringSP++ = _toupper(inChar);
+        *g_stringSP++ = _toupper(inChar);
 
       /* Otherwise, that must be the end of the hex value */
 
@@ -861,12 +873,12 @@ static void unsignedHexadecimal(void)
 
   /* Terminate the hex string and convert to binary using sscanf */
 
-  *stringSP++ = '\0';
-  (void)sscanf(tkn_strt, "%" PRIx32, &tknInt);
+  *g_stringSP++ = '\0';
+  (void)sscanf(g_tokenString, "%" PRIx32, &tknInt);
 
   /* Remove the hex string from the character identifer stack */
 
-  stringSP = tkn_strt;
+  g_stringSP = g_tokenString;
 }
 
 /***************************************************************/
