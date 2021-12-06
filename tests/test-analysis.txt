@@ -19,17 +19,13 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     implemented.  See rc/107-quicksort.pas
  6. Forward references to variables before the are defined to not work.  See
     src/108-pointerrecode.pas
- 7. The are a bunch of scoping issues.  There is a kludge in place that allows nested formal
-    parameters to have the same name as variables declared with wider cop e.  Basically it
-    just suppresses symbol table lookup.  But this is a bad solution since it then permits
-    formal parameters to have the same name.
- 8. More scoping problems with local variables as seen in src/112-localscope.pas.  The
+ 7. More scoping problems with local variables as seen in src/112-localscope.pas.  The
     kludge used for formal parmeters (above) cannot be used with local variables.  I think
     that we need to extend the symbol lookup so that it can look at the current local scope
     or at the the entire scope based on the current staic nesting level.  This would have
     to be a backward search from the current nesting level down.
- 9. Unit files with data declarations, but no implementation.
-10. General usage of units.  Most of these are not skipped by testall.sh.
+ 8. Unit files with data declarations, but no implementation.
+ 9. General usage of units.  Most of these are not skipped by testall.sh.
 
 Successful test results are not shown.
 
@@ -49,8 +45,7 @@ Analysis:
 This is a consequence of the fact that sets are currently limited to 32-bits:
 
 ########src/107-quicksort.pas########
-Line 0:0024 Error 41 Token 29
-
+Line 0:0024 Error 17 Token 29'
 Line:
  24                readln(a[size]);
 
@@ -62,16 +57,12 @@ Where a is a formal parameter of type 'VAR a: IntArrType' and where
         IntArrType = ARRAY [1..MaxElts] OF Integer;
 
 Error:
-238 #define eARRAYTYPE       ((uint16_t) 0x41)
+#define eINVARG          ((uint16_t) 0x17)
 
 Token:
 ')'
 
 Analysis:
-
-I see a different error when running from GDB:
-
-Fatal Error 23 -- Compilation aborted
 
 Line:
 #0  error (errcode=23) at perr.c:129
@@ -90,13 +81,6 @@ Line:
               break;
             }
           break;
-
-Error:
-193 #define eINVARG          ((uint16_t) 0x17)
-
-Token:
-(gdb) p /x token
-$1 = 0x29
 
 This error occurs because varParm() returns expArrayPtr but there is no code generation logic in the switch statement for that case.
 
@@ -142,65 +126,54 @@ type
 Error:
 #define eINVTYPE         ((uint16_t) 0x1e)
 
-
 Token:
 #define tIDENT           0x01
-
 
 Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
 
-########src/112-localscope.pas########
-NOTE:  This test currently passes with this kludge in place:
+########src/114-pointers.pas########
+This causes a core dump
 
---- a/pascal/pblck.c
-+++ b/pascal/pblck.c
-@@ -777,10 +777,10 @@ static STYPE *pas_DeclareVar(void)
-   if (token == ',')
-     {
-       /* Yes ..Process the next identifer in the indentifier list
--       * via recursion
-+       * via recursion (suppressing symbol conversion so that).
-        */
+Thread 1 "pascal" received signal SIGSEGV, Segmentation fault.
+0x0000000100405d6f in pas_SimpleAssignment (varPtr=0xffffca00, assignFlags=2 '\002') at pstm.c:590
 
--      getToken(false);
-+      getToken(true);
-       if (token != tIDENT) error(eIDENT);
-       else typePtr = pas_DeclareVar();
-     }
-
-But that is a bad change as described in the introcution.  If that change is backed out, then I see this problem:
-
-Line 0:0006 Error 0e Token 46
-
-Line:
-static STYPE *pas_DeclareVar(void)
+static void pas_ComplexAssignment(void)
 {
-  typePtr  = NULL;
+   STYPE symbolSave;
+   symbolSave = *tknPtr;
+   pas_SimpleAssignment(&symbolSave, 0);
+}
 
-  varName = tkn_strt;
-  getToken(false);
+static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
+{
+590       pas_SimpleAssignment(varPtr, assignFlags);
 
-  if (token == ',')
-    {
-      getToken(false);
-      if (token != tIDENT) error(eIDENT); <<< here
-      else typePtr = pas_DeclareVar();
-    }
+(gdb) p symbolSave
+$2 = {sName = 0x800091d47 "IPTR", sKind = 78 'N', sLevel = 0 '\000', sParm = {t = {
+      type = 2 '\002', rtype = 0 '\000', subType = 0 '\000', flags = 0 '\000', asize = 2,
+      rsize = 0, minValue = 0, maxValue = 368648, parent = 0x0, index = 0x0}, c = {val = {
+        f = 4.2439915829186759e-314, i = 2}, parent = 0x0}, s = {offset = 2, size = 2}, vs = {
+      label = 2, size = 0, alloc = 2}, fileNumber = 2, l = {label = 2, unDefined = false}, v = {
+      offset = 2, size = 2, flags = 0 '\000', symIndex = 0, parent = 0x80005a008}, p = {
+      label = 2, nParms = 0, flags = 2 '\002', symIndex = 0, parent = 0x80005a008}, r = {
+      size = 2, offset = 2, record = 0x0, parent = 0x80005a008}}}
+(gdb) p &symbolSave
+$3 = (STYPE *) 0xffffca00
 
-Error:
-#define eIDENT           ((uint16_t) 0x0e)
+pas_SimpleAssignment (varPtr=0xffffca00, assignFlags=2 '\002') at pstm.c:259
+259       typePtr = varPtr->sParm.v.parent;
+260       switch (varPtr->sKind)
+581           if (token == '^') /* value assignment? */
+587             assignFlags |= ADDRESS_ASSIGNMENT;
+589           varPtr->sKind = typePtr->sParm.t.type;
+590           pas_SimpleAssignment(varPtr, assignFlags);
+590           pas_SimpleAssignment(varPtr, assignFlags);
+590           pas_SimpleAssignment(varPtr, assignFlags);
+590           pas_SimpleAssignment(varPtr, assignFlags);
+...
 
-Token:
-#define sINT             0x46
-
-Analysis:
-Fails parsing this line:
- 
-var 
-   a, b, c: integer; (second occurrence)
-
-Basically an indentier is expected but instead we get the variables or the same name defined at wider scope.
+Continues to execute until crash.
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d

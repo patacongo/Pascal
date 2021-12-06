@@ -2,7 +2,7 @@
  * pfdreloc.c
  * Dump contents of a POFF file reloc table
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include "keywords.h"  /* Standard types */
@@ -98,11 +99,9 @@ void poffDumpRelocTable(poffHandle_t handle, FILE *outFile)
     {
       prel = (poffRelocation_t*)&poffInfo->relocTable[index];
 
-      fprintf(outFile, "%-6s 0x%08lx 0x%08lx\n",
+      fprintf(outFile, "%-6s 0x%08" PRIx32 " 0x%08lx\n",
               poffRelocationTypes[RLI_TYPE(prel->rl_info)],
               RLI_SYM(prel->rl_info),
               prel->rl_offset);
     }
 }
-
-/***********************************************************************/

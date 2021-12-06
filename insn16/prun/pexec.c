@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <ctype.h>
 
 #include "keywords.h"
@@ -249,7 +250,7 @@ static uint16_t pexec_sysio(struct pexec_s *st, uint8_t fno, uint16_t subfunc)
        * STACK INPUTS: TOS = integer value to write. */
 
     case xWRITE_INT :
-      printf("%ld", signExtend16(TOS(st, 0)));
+      printf("%" PRId32, signExtend16(TOS(st, 0)));
       break;
 
       /* xWRITE_CHAR:

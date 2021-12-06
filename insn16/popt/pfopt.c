@@ -2,7 +2,7 @@
  * pfopt.c
  * Finalization of optimized image
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 
 #include "keywords.h"
@@ -176,7 +177,8 @@ static void pass2(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
                   int32_t value = poffGetPcForDefinedLabel(symbol.value);
                   if (value < 0)
                     {
-                      DEBUG(stdout, "Failed to find label L%04lx\n", symbol.value);
+                      DEBUG(stdout, "Failed to find label L%04" PRIx32 "\n",
+                           symbol.value);
                       fatal(ePOFFCONFUSION);
                     }
                   else

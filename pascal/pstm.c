@@ -541,7 +541,8 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
                */
 
               if (withRecord.varParm)
-                assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE | VAR_PARM_ASSIGNMENT);
+                assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
+                                VAR_PARM_ASSIGNMENT);
               else
                 assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE);
 
@@ -550,7 +551,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
             }
           else
             {
-              tempOffset   = varPtr->sParm.r.offset + withRecord.offset;
+              tempOffset     = varPtr->sParm.r.offset + withRecord.offset;
             }
 
           /* Modify the variable so that it has the characteristics of the
@@ -569,7 +570,6 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
           varPtr->sParm.v.parent  = typePtr;
 
           pas_SimpleAssignment(varPtr, assignFlags);
-
         }
       break;
 

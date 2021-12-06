@@ -2,7 +2,7 @@
  * pdasm.c
  * P-Code Disassembler
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "keywords.h"
 #include "podefs.h"
@@ -531,7 +532,7 @@ void insn_DisassemblePCode(FILE* lfile, OPTYPE *pop)
             case COMMENT   :
             case DECIMAL   :
               if (pop->op & o8) fprintf(lfile, ", ");
-              fprintf(lfile, "%ld", signExtend16(pop->arg2));
+              fprintf(lfile, "%" PRId32, signExtend16(pop->arg2));
               break;
 
             case UDECIMAL   :
