@@ -9,7 +9,7 @@
  *
  * clear startday endday starthour endhour
  *        The  part  of the schedule indicated is cleared  any assignment
- *        of an employee during those hours is removed. 
+ *        of an employee during those hours is removed.
  *
  * unsched employee
  *        Remove  the  employee  from all places in the schedule to which
@@ -29,9 +29,9 @@
  **************************************************************************)
 
 PROGRAM a1 (input,output);
-    USES dayio;
+    USES DayIO;
 
-    CONST 
+    CONST
         { Open positions in the schedule. }
         NotScheduled = '        ';
 
@@ -40,12 +40,12 @@ PROGRAM a1 (input,output);
 
         { Hours in a day. }
         FirstHour = 8;
-        LastHour = 17;          { 5:00 PM in 24-hour time }
-        PastLastHour = 18;      { One past, for while loops. }
+        LastHour = 17;            { 5:00 PM in 24-hour time }
+        PastLastHour = 18;        { One past, for while loops. }
 
         { How much room to allow for each day in the table. }
         TableDayWidth = 9;
-    TYPE 
+    TYPE
         { The employee name type. }
         EmployeeType = string[EmployeeMaxLen];
 
@@ -65,14 +65,14 @@ PROGRAM a1 (input,output);
             Ch: char;
         BEGIN
             Ch := ' ';
-            WHILE (Ch = ' ') AND NOT eoln DO 
+            WHILE (Ch = ' ') AND NOT eoln DO
                 read(Ch);
 
             IF Ch = ' ' THEN
                 { There is no command on this line. }
                 Str := ''
             ELSE
-                BEGIN 
+                BEGIN
                     { Read the beast. }
                     Str := '';
                     WHILE (Ch <> ' ') AND NOT eoln DO
@@ -88,28 +88,28 @@ PROGRAM a1 (input,output);
         END; { ReadString }
 
     (***********************************************************************
-     * Procedure to read the arguments held in common by the sched 
+     * Procedure to read the arguments held in common by the sched
      * clear commands.  Returns them through the arguments.  If there
      * is some error, that is reported through the argument error.
      *  Precondition: Following the read pointer, the input contains
-     *    two days of the week, then two integers.  If all days are present and
-     *    correct, the integers must be present and correct.
+     *          two days of the week, then two integers.  If all days are present and
+     *          correct, the integers must be present and correct.
      *  Postcondition: If both strings are recognized day names,
-     *    they are read, and the integers are read as well, and their values
-     *    are loaded into StartDay, EndDay, StartHour, and EndHour, and Error
-     *    is set to false.  The hours are mapped to 24-hour clock time under
-     *    the rule that hours less than 6 are PM, and others are AM.  If a day
-     *    is missing or not recognized, the rest of the input line is
-     *    discarded, and Error is set to true.  If there is extra information
-     *    on the line, it is discared.  The read pointer is left at the start
-     *    of the following line.
+     *          they are read, and the integers are read as well, and their values
+     *          are loaded into StartDay, EndDay, StartHour, and EndHour, and Error
+     *          is set to false.  The hours are mapped to 24-hour clock time under
+     *          the rule that hours less than 6 are PM, and others are AM.  If a day
+     *          is missing or not recognized, the rest of the input line is
+     *          discarded, and Error is set to true.  If there is extra information
+     *          on the line, it is discared.  The read pointer is left at the start
+     *          of the following line.
      ***********************************************************************)
     PROCEDURE ReadSchedClrArgs(
-            VAR StartDay, EndDay: DayType;      { Input days. }
-            VAR StartHour, EndHour: HourType;   { Input hour range. }
-            VAR Error: boolean);                { Input error indicator.}
+            VAR StartDay, EndDay: DayType;     { Input days. }
+            VAR StartHour, EndHour: HourType;  { Input hour range. }
+            VAR Error: boolean);               { Input error indicator.}
         VAR
-            InputHour: integer;                 { Input hour value. }
+            InputHour: integer;                { Input hour value. }
 
         { Map time to 24-hours based on the AM/PM rules. }
         FUNCTION MapTo24(Hour: integer): HourType;
@@ -129,7 +129,7 @@ PROGRAM a1 (input,output);
             ReadDay(input, EndDay);
 
             { See if they both worked. }
-            IF (StartDay <> BadDay) AND (EndDay <> BadDay) THEN 
+            IF (StartDay <> BadDay) AND (EndDay <> BadDay) THEN
                 BEGIN
                     { It worked.  Read the hours. }
                     read(InputHour);
@@ -138,7 +138,7 @@ PROGRAM a1 (input,output);
                     EndHour := MapTo24(InputHour);
 
                     { Report success }
-                    Error := FALSE 
+                    Error := FALSE
                 END
             ELSE
                 (* Something went wrong, seriously wrong. *)
@@ -152,7 +152,7 @@ PROGRAM a1 (input,output);
      * PROCEDURE to print headers of each day.
      *  Precondition: None.
      *  Postcondition: A header line with the days of the week has
-     *    been printed.  The 
+     *    been printed.  The
      ****************************************************************}
     PROCEDURE WriteDaysHeader;
         CONST
@@ -187,14 +187,14 @@ PROGRAM a1 (input,output);
      *    changed.
      ****************************************************************}
     FUNCTION SchedLegal(
-            VAR Schedule: ScheduleType;     { Schedule to check. }
-                StartDay, EndDay: DayType;  { Days in question. }
-                FirstHour, LastHour:        { Hours in question. }
+            VAR Schedule: ScheduleType;        { Schedule to check. }
+                StartDay, EndDay: DayType;     { Days in question. }
+                FirstHour, LastHour:           { Hours in question. }
                         HourType): boolean;
         VAR
-            ConflictFound: boolean;         { Tell if one found. }
-            DayScan: DayType;               { Go through the days. }
-            HourScan: HourScanType;         { Go through the hours. }
+            ConflictFound: boolean;            { Tell if one found. }
+            DayScan: DayType;                  { Go through the days. }
+            HourScan: HourScanType;            { Go through the hours. }
         BEGIN
             { Scan the days. }
             DayScan := StartDay;
@@ -233,14 +233,14 @@ PROGRAM a1 (input,output);
      *    is legal before calling this routine.
      ****************************************************************}
     PROCEDURE SetSchedPart(
-            VAR Schedule: ScheduleType;     { Set me! Set me! }
-                Employee: EmployeeType;     { Who gets to work. }
-                StartDay, EndDay: DayType;  { Days in question. }
-                FirstHour, LastHour:        { Hours in question. }
+            VAR Schedule: ScheduleType;        { Set me! Set me! }
+                Employee: EmployeeType;        { Who gets to work. }
+                StartDay, EndDay: DayType;     { Days in question. }
+                FirstHour, LastHour:           { Hours in question. }
                                 HourType);
         VAR
-            DayScan: DayType;               { Go through the days. }
-            HourScan: HourType;             { Go through the hours. }
+            DayScan: DayType;                  { Go through the days. }
+            HourScan: HourType;                { Go through the hours. }
         BEGIN
             for DayScan := StartDay to EndDay do
                 for HourScan := FirstHour to LastHour do
@@ -249,7 +249,7 @@ PROGRAM a1 (input,output);
 
     {****************************************************************
      * Perform the sched command.
-     *  Precondition: The read pointer is followed by the arguments 
+     *  Precondition: The read pointer is followed by the arguments
      *    for the sched command.
      *  Postcondition: The arguments have been read and echoed, and the
      *    read pointer is on the next line.  The sched command has been
@@ -258,17 +258,17 @@ PROGRAM a1 (input,output);
      *    changed.
      ****************************************************************}
     PROCEDURE DoSched(
-            VAR Schedule: ScheduleType);    { Change this. }
+            VAR Schedule: ScheduleType);       { Change this. }
         VAR
-            Employee: EmployeeType;         { Input employee name. }
-            StartDay, EndDay: DayType;      { Input days. }
-            StartHour, EndHour: HourType;   { Input hour range. }
-            Error: boolean;                 { Input error indicator.}
+            Employee: EmployeeType;            { Input employee name. }
+            StartDay, EndDay: DayType;         { Input days. }
+            StartHour, EndHour: HourType;      { Input hour range. }
+            Error: boolean;                    { Input error indicator.}
         BEGIN
             { Read the employee name }
             ReadString(Employee);
 
-            { Read all the other arguments, and recieve error 
+            { Read all the other arguments, and recieve error
                indication. }
             ReadSchedClrArgs(StartDay, EndDay, StartHour, EndHour, Error);
 
@@ -276,7 +276,7 @@ PROGRAM a1 (input,output);
             IF Error THEN
                 writeln('*** Un-recognized day code.  ',
                     'Command not performed. ***')
-            ELSE 
+            ELSE
                 { See if the scheduling is legal. }
                 IF SchedLegal(Schedule, StartDay, EndDay,
                                         StartHour, EndHour) THEN
@@ -286,7 +286,7 @@ PROGRAM a1 (input,output);
                                 StartDay, EndDay, StartHour, EndHour);
                         writeln('>>> ', Employee, ' scheduled. <<<')
                     END
-                ELSE 
+                ELSE
                     { Not legal. }
                     writeln('*** Conflicts with existing schedule.  ',
                         'Command not performed. ***')
@@ -294,7 +294,7 @@ PROGRAM a1 (input,output);
 
     {****************************************************************
      * Perform the clear command.
-     *  Precondition: The read pointer is followed by the arguments 
+     *  Precondition: The read pointer is followed by the arguments
      *    for the clear command.
      *  Postcondition: The arguments have been read and echoed, and the
      *    read pointer is on the next line.  The clear command has been
@@ -303,11 +303,11 @@ PROGRAM a1 (input,output);
      *    changed.
      ****************************************************************}
     PROCEDURE DoClear(
-            VAR Schedule: ScheduleType);    { Change this. }
+            VAR Schedule: ScheduleType);        { Change this. }
         VAR
-            StartDay, EndDay: DayType;      { Input days. }
-            StartHour, EndHour: HourType;   { Input hour range. }
-            Error: boolean;                 { Input error indicator.}
+            StartDay, EndDay: DayType;          { Input days. }
+            StartHour, EndHour: HourType;       { Input hour range. }
+            Error: boolean;                     { Input error indicator.}
         BEGIN
             { Read the arguments, and recieve error indication. }
             ReadSchedClrArgs(StartDay, EndDay, StartHour, EndHour, Error);
@@ -316,7 +316,7 @@ PROGRAM a1 (input,output);
             IF Error THEN
                 writeln('*** Un-recognized day code.  ',
                     'Command not performed. ***')
-            ELSE 
+            ELSE
                 BEGIN
                     SetSchedPart(Schedule, NotScheduled, StartDay, EndDay,
                         StartHour, EndHour);
@@ -326,11 +326,11 @@ PROGRAM a1 (input,output);
 
     {****************************************************************
      * Peform the unsched command.
-     *  Precondition: The read pointer is followed by an employee 
+     *  Precondition: The read pointer is followed by an employee
      *    name.
      *  Postcondition: The argument has been read and echoed, and the
      *    read pointer is on the next line.  The employee read has been
-     *    removed from Schedule.
+     *          removed from Schedule.
      ****************************************************************}
     PROCEDURE DoUnsched(
             VAR Schedule: ScheduleType);        { Remove from. }
@@ -347,20 +347,20 @@ PROGRAM a1 (input,output);
             Found := FALSE;
             FOR Day := Sun TO Sat DO
                 FOR Hour := FirstHour TO LastHour DO
-                    IF Schedule[Hour, Day] = Employee THEN 
+                    IF Schedule[Hour, Day] = Employee THEN
                         BEGIN
                             { Remove. }
                             Schedule[Hour, Day] := NotScheduled;
 
                             { Note. }
-                            Found := TRUE 
+                            Found := TRUE
                         END;
 
             { Warn if not found. Else just state. }
-            IF Found THEN 
+            IF Found THEN
                 write('>>> ', Employee, ' removed from schedule. <<<')
             ELSE
-                write('>>> ', Employee, 
+                write('>>> ', Employee,
                                     ' was not on the schedule. <<<')
         END; { DoUnsched }
 
@@ -376,7 +376,7 @@ PROGRAM a1 (input,output);
             Day: DayType;                       { Day scan. }
 
         { Map from 24-hour time to 12-hour time.  Arguments less than
-          13 are simply returned, arguments greater than 12 are 
+          13 are simply returned, arguments greater than 12 are
           reduced by 12 and returned. }
         FUNCTION Map24to12(HourType: HourType): integer;
             BEGIN
@@ -393,7 +393,7 @@ PROGRAM a1 (input,output);
                 BEGIN
                     write(Map24to12(Hour):2, ':00 ');
                     FOR Day := Sun TO Sat DO
-                        write(Schedule[Hour, Day], 
+                        write(Schedule[Hour, Day],
                             ' ': TableDayWidth - length(Schedule[Hour, Day]));
                     writeln
                 END
@@ -401,11 +401,11 @@ PROGRAM a1 (input,output);
 
     {****************************************************************
      * Peform the total command.
-     *  Precondition: The read pointer is followed by an employee 
+     *  Precondition: The read pointer is followed by an employee
      *    name.
      *  Postcondition: The argument has been read and echoed, and the
      *    read pointer is on the next line.  The total scheduled hours
-     *    for the employee read has been printed.
+     *          for the employee read has been printed.
      ****************************************************************}
     PROCEDURE DoTotal(
             VAR Schedule: ScheduleType);        { The schedule. }
@@ -447,24 +447,24 @@ PROGRAM a1 (input,output);
     BEGIN
         { Clear the schedule. }
         SetSchedPart(Schedule, NotScheduled, Sun, Sat, FirstHour, LastHour);
- 
+
         { Do the commands. }
         write('==> ');
-        ReadString(Command);
+            ReadString(Command);
         KeepRunning := TRUE;
         WHILE KeepRunning DO
             BEGIN
-                IF Command = 'sched' THEN 
-                    DoSched(Schedule)
+                IF Command = 'sched' THEN
+                        DoSched(Schedule)
                 ELSE IF Command = 'clear' THEN
                     DoClear(Schedule)
                 ELSE IF Command = 'unsched' THEN
                     DoUnsched(Schedule)
                 ELSE IF Command = 'print' THEN
-                    DoPrint(Schedule)
+                     DoPrint(Schedule)
                 ELSE IF Command = 'total' THEN
                     DoTotal(Schedule)
-                ELSE IF Command = 'quit' THEN 
+                ELSE IF Command = 'quit' THEN
                     BEGIN
                         writeln;
                         writeln('>>> Program terminating. <<<');
@@ -475,7 +475,7 @@ PROGRAM a1 (input,output);
                     BEGIN
                         readln;
                         writeln;
-                        writeln('*** Command ', Command, 
+                        writeln('*** Command ', Command,
                                                     ' not recognized. ***');
                     END;
 

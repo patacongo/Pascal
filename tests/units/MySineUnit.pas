@@ -11,7 +11,7 @@ function mysine(x : real) : real;
 implementation
 
 uses
-   MyCosineUnit in '501-unit-cosine.pas';
+   MyCosineUnit;
 
 function mysine(x : real) : real;
 var

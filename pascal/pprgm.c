@@ -227,15 +227,15 @@ void usesSection(void)
             }
         }
 
-      /* In any event, make sure that we have a non-NULL unit
-       * file name.
+      /* If the file name is not present following the IN token, then form
+       * the file name from the unit name with the extension .pas.
        */
 
-      if (!unitFileName)
+      else
         {
           /* Create a default filename */
 
-          (void)extension(unitName, ".pas", defaultUnitFileName, 1);
+          (void)extension(unitName, "pas", defaultUnitFileName, 1);
           unitFileName = defaultUnitFileName;
         }
 
@@ -256,7 +256,9 @@ void usesSection(void)
       g_stringSP = saveTknStrt;
 
       /* Verify that the file provides the unit that we are looking
-       * for (only one unit per file is supported)
+       * for (only one unit per file is supported).
+       *
+       * Note that this is case sensitive.
        */
 
       if (g_token != tIDENT) error(eIDENT);

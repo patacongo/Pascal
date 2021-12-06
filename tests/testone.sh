@@ -86,7 +86,7 @@ function compile_source ()
     if [ ! -f ${PASFILENAME} ]; then
 	echo "No source file"
     else
-	PASOPTS=-Isrc
+	PASOPTS=-Iunits
 	${PASCAL} ${PASOPTS} ${PASFILENAME} 2>&1 || rm -f src/${PASBASENAME}.o1
 	if [ -f src/${PASBASENAME}.err ] ; then
 	    cat src/${PASBASENAME}.err | grep Line

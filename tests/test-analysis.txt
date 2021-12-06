@@ -40,8 +40,18 @@ Error:
 Analysis:
 This is a consequence of the fact that sets are currently limited to 32-bits:
 
+########src/106-bubblesort.pas########
+Line 0:0025 Error 17 Token 29
+
+Line:
+ 25                readln(a[size]);
+
+Analysis:
+Same as for src/107-quicksort.pas
+
 ########src/107-quicksort.pas########
 Line 0:0024 Error 17 Token 29'
+
 Line:
  24                readln(a[size]);
 
@@ -160,6 +170,34 @@ In factor():
       getToken();
       break;
 
+########src/501-uses.pas########
+ERROR: Undefined symbol 'checkvars'
+ERROR: Undefined symbol 'mycosine'
+ERROR: Undefined symbol 'mysine'
+Fatal Error 96 -- Aborting
+Using string stack size = 1024
+No p-code executable
+
+Analysis:
+This is an issue with using units.  They do not yet to work.
+
+########ssrc/504-worksched.pas########
+Line 0:0055 Error 11 Token 44
+
+Error:
+#define eINTCONST        ((uint16_t) 0x11)
+
+Line:
+ 55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
+wher
+ 50        EmployeeType = string[EmployeeMaxLen];
+
+Token:
+#define sTYPE            0x44
+
+Analysis:
+I haven't looked into to this but I expect that this is another of many issues related to the fragmental implementation of string types.
+
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d
 
@@ -208,12 +246,3 @@ Token:
 
 Analysis:
 This is a unit with constant/variable/procedure definitions.  It has no implementation section at the end as does a normal program file.
-
-########src/501-uses.pex########
-Fatal Error 41 -- Aborting
-
-Error:
-238 #define eARRAYTYPE       ((uint16_t) 0x41)
-
-Analysis:
-This is an issue with using units.  They appear not to work.

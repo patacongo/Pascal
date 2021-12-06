@@ -463,16 +463,16 @@ void getLevelToken(void)
 
 static void identifier(void)
 {
-  const  RTYPE *rptr;                         /* Pointer to reserved word */
+  const  RTYPE *rptr;                /* Pointer to reserved word */
 
-  g_tknSubType = txNONE;                      /* Initialize */
+  g_tknSubType = txNONE;             /* Initialize */
 
   /* Concatenate identifier */
 
   do
     {
-      *g_stringSP++ = toupper(inChar);        /* concatenate char */
-      getCharacter();                         /* get next character */
+      *g_stringSP++ = inChar;        /* concatenate char */
+      getCharacter();                /* get next character */
     }
   while ((isalnum(inChar)) || (inChar == '_'));
 
@@ -878,7 +878,7 @@ static void unsignedHexadecimal(void)
 
   /* Loop to process each hex 'digit' */
 
-  for (;;)
+  for (; ; )
     {
       /* Get the next character */
 
@@ -887,15 +887,20 @@ static void unsignedHexadecimal(void)
       /* Is it a decimal digit? */
 
       if (isdigit(inChar))
-        *g_stringSP++ = inChar;
+        {
+          *g_stringSP++ = inChar;
+        }
 
       /* Is it a hex 'digit'? */
 
       else if ((inChar >= 'A') && (inChar <= 'F'))
-        *g_stringSP++ = inChar;
-
+        {
+          *g_stringSP++ = inChar;
+        }
       else if ((inChar >= 'a') && (inChar <= 'f'))
-        *g_stringSP++ = _toupper(inChar);
+        {
+          *g_stringSP++ = _toupper(inChar);
+        }
 
       /* Otherwise, that must be the end of the hex value */
 

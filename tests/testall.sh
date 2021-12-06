@@ -2,7 +2,7 @@
 ############################################################################
 # testall.sh
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,6 @@
 #
 ############################################################################
 #set -x
-
-TSTLST="\
-./501-uses.sh\
-"
 
 # Parse command line
 DOLIST=A
@@ -108,17 +104,6 @@ for file in `ls -1 src/*.pas`; do
     else
     echo "########${file}########";
 	./testone.sh ${file}
-    fi
-done
-
-# Special tests performed by custom scripts
-DONTLIST=X
-for file in ${TSTLST}; do
-    SKIPPING=`check_dolist $file`
-    if [ "${SKIPPING}" == "YES" ]; then
-	echo "SKIPPING $file"
-    else
-	${file}
     fi
 done
 exit

@@ -2,7 +2,7 @@
  * pextension.c
  * Manage file extensions
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@ bool extension(const char *inName, const char *ext, char *outName,
    * copy the rest of the input line
    */
 
-  if ((lastdot != NULL) && (!force_default))
+  if (lastdot != NULL && !force_default)
     {
       /* Make sure that the string (with its null terminator) will fit in
        * the allocated buffer.
@@ -86,7 +86,7 @@ bool extension(const char *inName, const char *ext, char *outName,
     {
       /* The name has no extension or we must replace the extension. */
 
-      extlen  = strlen(ext) + 1; /* extension + null terminator */
+      extlen  = strlen(ext); /* extension without dot or null terminator */
 
       if (lastdot != NULL)
         {
@@ -100,14 +100,14 @@ bool extension(const char *inName, const char *ext, char *outName,
         {
           /* It has no extension.  We must copy everything */
 
-          copylen = namelen + 1; /* whole name with null termination */
+          copylen = namelen;  /* whole name without null termination */
         }
 
-      /* Make sure that the string (with its null terminator) will fit in
-       * the allocated buffer.
+      /* Make sure that the string (with the dot selparator and its null
+       * terminator) will fit in the allocated buffer.
        */
 
-      if ((copylen + extlen + 1) > FNAME_SIZE)
+      if (copylen + extlen + 2 > FNAME_SIZE)
         {
           /* It won't */
 
@@ -115,14 +115,16 @@ bool extension(const char *inName, const char *ext, char *outName,
         }
       else
         {
-          /* It will Copy file name up to, but excluding, the '.' */
+          /* This will Copy file name excluding the '.' or NULL
+           * terminator.
+           */
 
           memcpy(outName, inName, copylen);
 
-          /* Then copy the extension */
+          /* Then copy the dotted extension at the end. */
 
           outName[copylen] = '.';
-          memcpy(&outName[copylen+1], ext, extlen);
+          memcpy(&outName[copylen + 1], ext, extlen + 1);
         }
     }
 

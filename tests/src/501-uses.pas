@@ -1,14 +1,14 @@
 program MyProgram;
 
 uses
-   MyCosineUnit in '501-unit-cosine.pas';
-   MySineUnit in '501-unit-sine.pas';
-   MyDataUnit in '501-unit-data.pas';
+   MyCosineUnit;
+   MySineUnit;
+   MyDataUnit;
 
 var
    x : real;
 
-begin			
+begin
    write('Enter radians	: ');
    read(x);
    mycosx := mycosine(x);

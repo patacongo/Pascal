@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string.h>
+#include <strings.h>
 
 #include "config.h"
 #include "keywords.h"
@@ -169,16 +170,20 @@ const RTYPE *findReservedWord (char *name)
   const RTYPE *ptr;                      /* Point into reserved word list */
   int16_t cmp;                           /* 0=equal; >0=past it */
 
-  for (ptr = g_rsw; (ptr->rname); ptr++) /* Try each each reserved word */
+  for (ptr = g_rsw; (ptr->rname); ptr++)  /* Try each each reserved word */
     {
-      cmp = strcmp(ptr->rname, name);    /* Check if names match */
-      if (!cmp)                          /* Check if names match */
-        return ptr;                      /* Return pointer to entry if match */
-      else if (cmp > 0)                  /* Exit early if we are past it */
-        break;
+      cmp = strcasecmp(ptr->rname, name); /* Check if names match */
+      if (!cmp)                           /* Check if names match */
+        {
+          return ptr;                     /* Return pointer to entry if match */
+        }
+      else if (cmp > 0)                   /* Exit early if we are past it */
+        {
+          break;
+        }
     }
 
-  return (RTYPE*)NULL;                   /* return NULL pointer if no match */
+  return (RTYPE *)NULL;                   /* return NULL pointer if no match */
 
 } /* fnd findReservedWord */
 
@@ -192,7 +197,7 @@ STYPE *findSymbol(char *inName, int tableOffset)
     {
       if (g_symbolTable[i].sName)
         {
-          if (!strcmp(g_symbolTable[i].sName, inName))
+          if (!strcasecmp(g_symbolTable[i].sName, inName))
             {
               return &g_symbolTable[i];
             }
