@@ -77,7 +77,6 @@ uint16_t    g_tknSubType;            /* Extended token type */
 int32_t     g_tknInt;                /* Integer token value */
 double      g_tknReal;               /* Real token value */
 STYPE      *g_tknPtr;                /* Pointer to symbol token*/
-WTYPE       withRecord;              /* RECORD used with WITH statement */
 FTYPE       g_files[MAX_FILES + 1];  /* File Table */
 fileState_t g_fileState[MAX_INCL];   /* State of all open files */
 
@@ -90,18 +89,19 @@ char       *g_includePath[MAX_INCPATHES];
 
 poffHandle_t poffHandle;             /* Handle for POFF object */
 
-FILE       *poffFile;                /* Pass1 POFF output file */
-FILE       *lstFile;                 /* List File pointer */
-FILE       *errFile;                 /* Error file pointer */
+FILE       *g_poffFile;              /* Pass1 POFF output file */
+FILE       *g_lstFile;               /* List File pointer */
+FILE       *g_errFile;               /* Error file pointer */
 
-int16_t     g_level      = 0;        /* Static nesting level */
-int16_t     includeIndex = 0;        /* Include file index */
-int16_t     nIncPathes   = 0;        /* Number pathes in g_includePath[] */
-uint16_t    label        = 0;        /* Last label number */
-int16_t     err_count    = 0;        /* Error counter */
-int16_t     nfiles       = 1;        /* Program file counter */
-int32_t     warn_count   = 0;        /* Warning counter */
-int32_t     dstack       = 0;        /* data stack size */
+WTYPE       g_withRecord;            /* RECORD used with WITH statement */
+int16_t     g_level        = 0;      /* Static nesting level */
+int16_t     g_includeIndex = 0;      /* Include file index */
+int16_t     g_nIncPathes   = 0;      /* Number pathes in g_includePath[] */
+uint16_t    g_label        = 0;      /* Last label number */
+int16_t     g_errCount     = 0;      /* Error counter */
+int16_t     g_nFiles       = 1;      /* Program file counter */
+int32_t     g_warnCount    = 0;      /* Warning counter */
+int32_t     g_dStack       = 0;      /* Data stack size */
 
 /**********************************************************************
  * Private Type Definitions
@@ -121,11 +121,11 @@ typedef struct outFileDesc_s outFileDesc_t;
 
 static const outFileDesc_t outFiles[] =
 {
-  { "o1",  "wb", &poffFile },      /* Pass 1 POFF object file */
+  { "o1",  "wb", &g_poffFile },    /* Pass 1 POFF object file */
 #if LSTTOFILE
-  { "lst", "w",  &lstFile },       /* List file */
+  { "lst", "w",  &g_lstFile },     /* List file */
 #endif
-  { "err", "w",  &errFile },       /* Error file */
+  { "err", "w",  &g_errFile },     /* Error file */
   { NULL,  NULL }                  /* (terminates list */
 };
 
@@ -150,7 +150,7 @@ static void closeFiles(void)
 
   /* Close input source files */
 
-  for(; includeIndex >= 0; includeIndex--)
+  for(; g_includeIndex >= 0; g_includeIndex--)
     {
       if (FP->stream)
         {
@@ -202,11 +202,11 @@ static void openOutputFiles(void)
 static void signalHandler(int signo)
 {
 #ifdef  _GNU_SOURCE
-  fprintf(errFile, "Received signal: %s\n", strsignal(signo));
-  fprintf(lstFile, "Received signal: %s\n", strsignal(signo));
+  fprintf(g_errFile, "Received signal: %s\n", strsignal(signo));
+  fprintf(g_lstFile, "Received signal: %s\n", strsignal(signo));
 #else
-  fprintf(errFile, "Received signal %d\n", signo);
-  fprintf(lstFile, "Received signal %d\n", signo);
+  fprintf(g_errFile, "Received signal %d\n", signo);
+  fprintf(g_lstFile, "Received signal %d\n", signo);
 #endif
   closeFiles();
   error(eRCVDSIGNAL);
@@ -240,7 +240,7 @@ static void showUsage(void)
   fprintf(stderr, "    (default is current directory)\n");
   closeFiles();
   exit(1);
-} /* end showUsage */
+}
 
 /***********************************************************************/
 
@@ -268,15 +268,15 @@ static void parseArguments(int argc, char **argv)
           switch (ptr[1])
             {
             case 'I' :
-              if (nIncPathes >= MAX_INCPATHES)
+              if (g_nIncPathes >= MAX_INCPATHES)
                 {
                   fprintf(stderr, "Unrecognized [option]\n");
                   showUsage();
                 }
               else
                 {
-                  g_includePath[nIncPathes] = &ptr[2];
-                  nIncPathes++;
+                  g_includePath[g_nIncPathes] = &ptr[2];
+                  g_nIncPathes++;
                 }
               break;
             default:
@@ -313,13 +313,13 @@ int main(int argc, char *argv[])
   openOutputFiles();
 
 #if !LSTTOFILE
-  lstFile = stdout;
+  g_lstFile = stdout;
 #endif
 
   /* Open source file -- Use .PAS or command line extension, if supplied */
 
   (void)extension(g_sourceFileName, "PAS", filename, 0);
-  fprintf(errFile, "%01x=%s\n", FP->include, filename);
+  fprintf(g_errFile, "%01x=%s\n", FP->include, filename);
 
   memset(FP, 0, sizeof(fileState_t));
   FP->stream = fopen(filename, "r");
@@ -353,17 +353,17 @@ int main(int argc, char *argv[])
   g_files[0].defined = -1;
   g_files[0].flevel  = g_level;
   g_files[0].ftype   = sCHAR;
-  g_files[0].faddr   = dstack;
+  g_files[0].faddr   = g_dStack;
   g_files[0].fsize   = sCHAR_SIZE;
-  dstack            += sCHAR_SIZE;
+  g_dStack          += sCHAR_SIZE;
 
   /* We need the following in order to calculate relative stack positions. */
 
-  FP->dstack       = dstack;
+  FP->dstack       = g_dStack;
 
   /* Indicate that no WITH statement has been processed */
 
-  memset(&withRecord, 0, sizeof(WTYPE));
+  memset(&g_withRecord, 0, sizeof(WTYPE));
 
   /* Process the pascal program
    *
@@ -408,7 +408,7 @@ int main(int argc, char *argv[])
 
   /* Write the POFF output file */
 
-  poffWriteFile(poffHandle, poffFile);
+  poffWriteFile(poffHandle, g_poffFile);
   poffDestroyHandle(poffHandle);
 
   /* Close all output files */
@@ -417,20 +417,19 @@ int main(int argc, char *argv[])
 
   /* Write Closing Message */
 
-  if (warn_count > 0)
+  if (g_warnCount > 0)
     {
-      printf("  %" PRId32 " Warnings Issued\n", warn_count);
-    } /* end if */
+      printf("  %" PRId32 " Warnings Issued\n", g_warnCount);
+    }
 
-  if (err_count > 0)
+  if (g_errCount > 0)
     {
-      printf("  %" PRId32 " Errors Detected\n\n", err_count);
+      printf("  %" PRId32 " Errors Detected\n\n", g_errCount);
       return -1;
-    } /* end if */
+    }
 
   return 0;
-
-} /* end main */
+}
 
 /***********************************************************************/
 
@@ -442,7 +441,7 @@ void openNestedFile(const char *fileName)
 
   /* Make sure we can handle another nested file */
 
-  if (++includeIndex >= MAX_INCL) fatal(eOVF);
+  if (++g_includeIndex >= MAX_INCL) fatal(eOVF);
   else
     {
       /* Clear the file state structure for the new include level */
@@ -461,7 +460,7 @@ void openNestedFile(const char *fileName)
 
           /* The final path that we will try is the current directory */
 
-          if (i == nIncPathes)
+          if (i == g_nIncPathes)
             {
               sprintf(fullpath, "./%s", fileName);
             }
@@ -479,21 +478,23 @@ void openNestedFile(const char *fileName)
                * looping.
                */
 
-              if (i == nIncPathes)
+              if (i == g_nIncPathes)
                 {
                   errmsg("Failed to open '%s': %s\n",
                          fileName, strerror(errno));
                   fatal(eINCLUDE);
                   break; /* Won't get here */
                 }
-            } /* end else if */
+            }
           else
-            break;
+            {
+              break;
+            }
         }
 
       /* Setup the newly opened file */
 
-      fprintf(errFile, "%01x=%s\n", FP->include, fullpath);
+      fprintf(g_errFile, "%01x=%s\n", FP->include, fullpath);
       FP->include = poffAddFileName(poffHandle, fullpath);
 
       /* The caller may change this, but the default behavior is
@@ -503,14 +504,14 @@ void openNestedFile(const char *fileName)
 
       FP->kind    = prev->kind;
       FP->section = prev->section;
-      FP->dstack  = dstack;
+      FP->dstack  = g_dStack;
 
       rePrimeTokenizer();
 
       /* Get the first token from the file */
 
       getToken();
-    } /* end else */
+    }
 }
 
 /***********************************************************************/
@@ -520,7 +521,7 @@ void closeNestedFile(void)
   if (FP->stream)
     {
       (void)fclose(FP->stream);
-      includeIndex--;
+      g_includeIndex--;
     }
 }
 

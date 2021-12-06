@@ -97,7 +97,7 @@ int   g_levelConstOffset = 0;  /* Index to constants for this level */
 
 int16_t primeTokenizer(unsigned long stringStackSize)
 {
-  TRACE(lstFile,"[primeTokenizer]");
+  TRACE(g_lstFile,"[primeTokenizer]");
 
   /* Allocate and initialize the string stack and stack pointers */
 
@@ -124,7 +124,7 @@ int16_t primeTokenizer(unsigned long stringStackSize)
 
 int16_t rePrimeTokenizer(void)
 {
-  TRACE(lstFile,"[rePrimeTokenizer]");
+  TRACE(g_lstFile,"[rePrimeTokenizer]");
 
   /* (Re-)set the char pointer to the beginning of the line */
 
@@ -443,7 +443,7 @@ void getToken(void)
       getToken();
     }
 
-  DEBUG(lstFile,"[%02x]", g_token);
+  DEBUG(g_lstFile,"[%02x]", g_token);
 }
 
 /***************************************************************/
@@ -610,7 +610,7 @@ static bool getLine(void)
        * included file
        */
 
-      if (includeIndex > 0)
+      if (g_includeIndex > 0)
         {
           /* Yes.  Close the file */
 
@@ -637,7 +637,7 @@ static bool getLine(void)
         */
 
        (FP->line)++;
-       fprintf(lstFile, "%d:%04" PRId32 " %s",
+       fprintf(g_lstFile, "%d:%04" PRId32 " %s",
                FP->include, FP->line, FP->buffer);
      }
 

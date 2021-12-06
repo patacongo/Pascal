@@ -98,8 +98,8 @@ void errmsg(char *fmt, ...)
   /* Then output the string to stderr, the err file, and the list file */
 
   fputs(buffer, stderr);
-  fputs(buffer, errFile);
-  fputs(buffer, lstFile);
+  fputs(buffer, g_errFile);
+  fputs(buffer, g_lstFile);
 
   va_end(ap);
 }
@@ -108,7 +108,7 @@ void errmsg(char *fmt, ...)
 
 void warn(uint16_t errcode)
 {
-   TRACE(lstFile,"[warn:%04x]", errcode);
+   TRACE(g_lstFile,"[warn:%04x]", errcode);
 
    /* Write error record to the error and list files */
 
@@ -116,14 +116,14 @@ void warn(uint16_t errcode)
 
    /* Increment the count of warning */
 
-   warn_count++;
-} /* end warn */
+   g_warnCount++;
+}
 
 /***********************************************************************/
 
 void error(uint16_t errcode)
 {
-   TRACE(lstFile,"[error:%04x]", errcode);
+   TRACE(g_lstFile,"[error:%04x]", errcode);
 
 #if CONFIG_DEBUG
    fatal(errcode);
@@ -132,9 +132,9 @@ void error(uint16_t errcode)
 
    printError(errcode);
 
-   /* Check if err_count has been execeeded the max allowable */
+   /* Check if the error count has been execeeded the max allowable */
 
-   if ((++err_count) > MAX_ERRORS)
+   if ((++g_errCount) > MAX_ERRORS)
      {
        fatal(eCOUNT);
      }
@@ -146,7 +146,7 @@ void error(uint16_t errcode)
 
 void fatal(uint16_t errcode)
 {
-   TRACE(lstFile,"[fatal:%04x]", errcode);
+   TRACE(g_lstFile,"[fatal:%04x]", errcode);
 
    /* Write error record to the error and list files */
 
@@ -159,7 +159,7 @@ void fatal(uint16_t errcode)
    /* And say goodbye */
 
    printf(fmtErrAbort, errcode);
-   fprintf(lstFile, fmtErrAbort, errcode);
+   fprintf(g_lstFile, fmtErrAbort, errcode);
 
    exit(1);
 
@@ -173,20 +173,20 @@ static void printError(uint16_t errcode)
 
    if ((g_tokenString) && (g_tokenString < g_stringSP))
      {
-       fprintf (errFile, fmtErrWithToken,
+       fprintf (g_errFile, fmtErrWithToken,
                 FP->include, FP->line, errcode, g_token, g_tokenString);
-       fprintf (lstFile, fmtErrWithToken,
+       fprintf (g_lstFile, fmtErrWithToken,
                 FP->include, FP->line, errcode, g_token, g_tokenString);
        g_stringSP = g_tokenString; /* Clean up string stack */
-     } /* end if */
+     }
    else
      {
-       fprintf (errFile, fmtErrNoToken,
+       fprintf (g_errFile, fmtErrNoToken,
                 FP->include, FP->line, errcode, g_token);
-       fprintf (lstFile, fmtErrNoToken,
+       fprintf (g_lstFile, fmtErrNoToken,
                 FP->include, FP->line, errcode, g_token);
-     } /* end else */
-} /* end printError */
+     }
+}
 
 /***********************************************************************/
 

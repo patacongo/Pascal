@@ -104,7 +104,7 @@ void primeBuiltInProcedures(void)
 
 void builtInProcedure(void)
 {
-  TRACE(lstFile, "[builtInProcedure]");
+  TRACE(g_lstFile, "[builtInProcedure]");
 
   /* Is the token a procedure? */
 
@@ -222,7 +222,7 @@ int actualParameterList(STYPE *procPtr)
   bool lparen = false;
   int size = 0;
 
-  TRACE(lstFile,"[actualParameterList]");
+  TRACE(g_lstFile,"[actualParameterList]");
 
   /* Processes the (optional) actual-parameter-list associated with
    * a function or procedure call:
@@ -401,7 +401,7 @@ static int16_t readProc(void)
 {
   uint16_t fileNumber = 0;
 
-  TRACE(lstFile, "[readProc]");
+  TRACE(g_lstFile, "[readProc]");
 
   /* FORM:
    *  (1) Binary READ: read '(' file-variable ')'
@@ -449,7 +449,7 @@ static void readText(uint16_t fileNumber)
 {
   STYPE *rPtr;
 
-  TRACE(lstFile, "[readText]");
+  TRACE(g_lstFile, "[readText]");
 
   /* The general form is <VAR parm>, <VAR parm>,... */
 
@@ -512,7 +512,7 @@ static void readlnProc(void)          /* READLN procedure */
 {
   int32_t fileNumber;
 
-  TRACE(lstFile, "[readlnProc]");
+  TRACE(g_lstFile, "[readlnProc]");
 
   /* FORM:  Just like READ */
 
@@ -538,7 +538,7 @@ static void readlnProc(void)          /* READLN procedure */
 
 static void fileProc (uint16_t opcode)
 {
-   TRACE(lstFile, "[fileProc]");
+   TRACE(g_lstFile, "[fileProc]");
 
    /* FORM: RESET|REWRITE(<file number>) */
 
@@ -561,7 +561,7 @@ static int16_t writeProc(void)
 {
    uint16_t fileNumber = 0;
 
-   TRACE(lstFile, "[writeProc]");
+   TRACE(g_lstFile, "[writeProc]");
 
    /* FORM: (1) Binary WRITE:  WRITE(<fileNumber>);
     *       (2) Test   WRITE:  WRITE([<fileNumber>], arg1 [,arg2 [...]]) */
@@ -603,7 +603,7 @@ static void writeText (uint16_t fileNumber)
   exprType writeType;
   STYPE *wPtr;
 
-  TRACE(lstFile, "[writeText]");
+  TRACE(g_lstFile, "[writeText]");
 
   for (;;)
     {
@@ -713,7 +713,7 @@ static void writelnProc(void)         /* WRITELN procedure */
 {
    int32_t fileNumber = 0;
 
-   TRACE(lstFile, "[writelnProc]");
+   TRACE(g_lstFile, "[writelnProc]");
 
    /* FORM:  Just like WRITE */
 
@@ -734,7 +734,7 @@ static void writelnProc(void)         /* WRITELN procedure */
 
 static void valProc(void)         /* VAL procedure */
 {
-  TRACE(lstFile, "[valProc]");
+  TRACE(g_lstFile, "[valProc]");
 
   /* Declaration:
    *   procedure val(const S : string; var V; var Code : word);

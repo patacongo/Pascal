@@ -79,7 +79,7 @@ static void isOrdinalConstant(void);
 
 void builtInFunctionOfConstant(void)
 {
-  TRACE(lstFile,"[builtInFunctionFactor]");
+  TRACE(g_lstFile,"[builtInFunctionFactor]");
 
   /* Is the token a function? */
 
@@ -164,7 +164,7 @@ void builtInFunctionOfConstant(void)
 
 static void constantAbsFunc(void)
 {
-   TRACE(lstFile,"[constantAbsFunc]");
+   TRACE(g_lstFile,"[constantAbsFunc]");
 
    /* FORM:  ABS (<simple integer/real expression>) */
 
@@ -191,7 +191,7 @@ static void constantAbsFunc(void)
 
 static void constantOrdFunc(void)
 {
-   TRACE(lstFile,"[constantOrdFunc]");
+   TRACE(g_lstFile,"[constantOrdFunc]");
 
    /* FORM:  ORD (<scalar type>) */
 
@@ -205,7 +205,7 @@ static void constantOrdFunc(void)
 
 static void constantPredFunc(void)
 {
-   TRACE(lstFile,"[constantPredFunc]");
+   TRACE(g_lstFile,"[constantPredFunc]");
 
    /* FORM:  PRED (<simple integer expression>) */
 
@@ -220,7 +220,7 @@ static void constantPredFunc(void)
 
 static void constantSqrFunc(void)
 {
-   TRACE(lstFile,"[constantSqrFunc]");
+   TRACE(g_lstFile,"[constantSqrFunc]");
 
    /* FORM:  SQR (<simple integer OR real expression>) */
 
@@ -246,7 +246,7 @@ static void constantSqrFunc(void)
 
 static void constantRealFunc(uint8_t fpOpCode)
 {
-   TRACE(lstFile,"[constantRealFunc]");
+   TRACE(g_lstFile,"[constantRealFunc]");
 
    /* FORM:  <function identifier> (<real/integer expression>) */
 
@@ -264,7 +264,7 @@ static void constantRealFunc(uint8_t fpOpCode)
 
 static void constantSuccFunc(void)
 {
-   TRACE(lstFile,"[constantSuccFunc]");
+   TRACE(g_lstFile,"[constantSuccFunc]");
 
    /* FORM:  SUCC (<simple integer expression>) */
 
@@ -279,7 +279,7 @@ static void constantSuccFunc(void)
 
 static void constantOddFunc(void)
 {
-   TRACE(lstFile,"[constantOddFunc]");
+   TRACE(g_lstFile,"[constantOddFunc]");
 
    /* FORM:  ODD (<simple integer expression>) */
 
@@ -296,7 +296,7 @@ static void constantOddFunc(void)
 
 static void constantChrFunc(void)
 {
-   TRACE(lstFile,"[constantCharFunc]");
+   TRACE(g_lstFile,"[constantCharFunc]");
 
    /* Form:  chr(integer expression).
     *

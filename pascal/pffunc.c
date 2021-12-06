@@ -95,7 +95,7 @@ exprType builtInFunction(void)
 {
   exprType funcType = exprUnknown;
 
-  TRACE(lstFile,"[builtInFunction]");
+  TRACE(g_lstFile,"[builtInFunction]");
 
   /* Is the token a function? */
 
@@ -236,7 +236,7 @@ static exprType absFunc(void)
 {
    exprType absType;
 
-   TRACE(lstFile,"[absFunc]");
+   TRACE(g_lstFile,"[absFunc]");
 
    /* FORM:  ABS (<simple integer/real expression>) */
 
@@ -258,7 +258,7 @@ static exprType absFunc(void)
 
 static void ordFunc(void)
 {
-   TRACE(lstFile,"[ordFunc]");
+   TRACE(g_lstFile,"[ordFunc]");
 
    /* FORM:  ORD (<scalar type>) */
 
@@ -273,7 +273,7 @@ static exprType predFunc(void)
 {
    exprType predType;
 
-   TRACE(lstFile,"[predFunc]");
+   TRACE(g_lstFile,"[predFunc]");
 
    /* FORM:  PRED (<simple integer expression>) */
 
@@ -293,7 +293,7 @@ static exprType sqrFunc(void)
 {
    exprType sqrType;
 
-   TRACE(lstFile,"[sqrFunc]");
+   TRACE(g_lstFile,"[sqrFunc]");
 
 /* FORM:  SQR (<simple integer OR real expression>) */
 
@@ -322,7 +322,7 @@ static void realFunc (uint8_t fpOpCode)
 {
    exprType realType;
 
-   TRACE(lstFile,"[realFunc]");
+   TRACE(g_lstFile,"[realFunc]");
 
    /* FORM:  <function identifier> (<real/integer expression>) */
 
@@ -345,7 +345,7 @@ static exprType succFunc(void)
 {
    exprType succType;
 
-   TRACE(lstFile,"[succFunc]");
+   TRACE(g_lstFile,"[succFunc]");
 
    /* FORM:  SUCC (<simple integer expression>) */
 
@@ -364,7 +364,7 @@ static exprType succFunc(void)
 
 static void oddFunc(void)
 {
-   TRACE(lstFile,"[oddFunc]");
+   TRACE(g_lstFile,"[oddFunc]");
 
    /* FORM:  ODD (<simple integer expression>) */
 
@@ -384,7 +384,7 @@ static void oddFunc(void)
 
 static void chrFunc(void)
 {
-   TRACE(lstFile,"[charFactor]");
+   TRACE(g_lstFile,"[charFactor]");
 
    /* Form:  chr(integer expression).
     *
@@ -402,7 +402,7 @@ static void chrFunc(void)
 
 static void fileFunc(uint16_t opcode)
 {
-  TRACE(lstFile,"[fileFunc]");
+  TRACE(g_lstFile,"[fileFunc]");
 
   /* FORM: EOF|EOLN (<file number>)
    *
@@ -444,7 +444,7 @@ static exprType getenvFunc(void)
 {
   exprType stringType;
 
-  TRACE(lstFile, "[getenvFunc]");
+  TRACE(g_lstFile, "[getenvFunc]");
 
   /* FORM:  <string_var> = getenv(<string>) */
 

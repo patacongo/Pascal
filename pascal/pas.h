@@ -58,10 +58,10 @@
 
 /* This is a helper macro just to make things pretty in the source code */
 
-#define FP0 (&g_fileState[0])               /* Main file description */
-#define FP  (&g_fileState[includeIndex])    /* Current file description */
-#define FPP (&g_fileState[includeIndex-1])  /* Previous file description */
-#define IS_NESTED_UNIT ((includeIndex > 0) && (FP->kind == eIsUnit))
+#define FP0 (&g_fileState[0])                  /* Main file description */
+#define FP  (&g_fileState[g_includeIndex])     /* Current file description */
+#define FPP (&g_fileState[g_includeIndex - 1]) /* Previous file description */
+#define IS_NESTED_UNIT ((g_includeIndex > 0) && (FP->kind == eIsUnit))
 
 /***************************************************************************
  * Public Types
@@ -88,19 +88,19 @@ extern char       *g_includePath[MAX_INCPATHES];
 
 extern poffHandle_t poffHandle;            /* Handle for POFF object */
 
-extern FILE       *poffFile;               /* POFF output file */
-extern FILE       *errFile;                /* Error file pointer */
-extern FILE       *lstFile;                /* List file pointer */
+extern FILE       *g_poffFile;             /* POFF output file */
+extern FILE       *g_errFile;              /* Error file pointer */
+extern FILE       *g_lstFile;              /* List file pointer */
 
-extern WTYPE       withRecord;             /* RECORD of WITH statement */
+extern WTYPE       g_withRecord;           /* RECORD of WITH statement */
 extern int16_t     g_level;                /* Static nesting level */
-extern int16_t     includeIndex;           /* Include file index */
-extern int16_t     nIncPathes;             /* Number pathes in g_includePath[] */
-extern uint16_t    label;                  /* Last label number */
-extern int16_t     err_count;              /* Error counter */
-extern int16_t     nfiles;                 /* Program file counter */
-extern int32_t     warn_count;             /* Warning counter */
-extern int32_t     dstack;                 /* data stack size */
+extern int16_t     g_includeIndex;         /* Include file index */
+extern int16_t     g_nIncPathes;           /* Number pathes in g_includePath[] */
+extern uint16_t    g_label;                /* Last label number */
+extern int16_t     g_errCount;             /* Error counter */
+extern int16_t     g_nFiles;               /* Program file counter */
+extern int32_t     g_warnCount;            /* Warning counter */
+extern int32_t     g_dStack;               /* Data stack size */
 
 /***************************************************************************
  * Public Function Prototypes

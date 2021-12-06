@@ -18,12 +18,8 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
  5. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See rc/107-quicksort.pas
  6. Forward references to variables before the are defined to not work.  See
-    src/108-pointerrecode.pas
- 7. More scoping problems with local variables as seen in src/112-localscope.pas.  The
-    kludge used for formal parmeters (above) cannot be used with local variables.  I think
-    that we need to extend the symbol lookup so that it can look at the current local scope
-    or at the the entire scope based on the current staic nesting level.  This would have
-    to be a backward search from the current nesting level down.
+    failure in src/108-pointerrecode.pas.
+ 7. The @ unary operator has not yet been implemented.  See failure in src/114-pointers.pas
  8. Unit files with data declarations, but no implementation.
  9. General usage of units.  Most of these are not skipped by testall.sh.
 
@@ -103,7 +99,7 @@ Token:
 #define tIDENT           0x01
 
 Analysis:
-Fails becuase recdata is not defined yet and the forward reference is not supported.
+Fails because recdata is not defined yet and the forward reference is not supported.
 
 ########src/109-findwords.pas########
 Line 0:0018 Error 1e Token 01 (LIST)
@@ -133,47 +129,36 @@ Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
 
 ########src/114-pointers.pas########
-This causes a core dump
+Line 0:0008 Error 24 Token 40
 
-Thread 1 "pascal" received signal SIGSEGV, Segmentation fault.
-0x0000000100405d6f in pas_SimpleAssignment (varPtr=0xffffca00, assignFlags=2 '\002') at pstm.c:590
+Line:
+ 8    iptr := @number;
 
-static void pas_ComplexAssignment(void)
-{
-   STYPE symbolSave;
-   symbolSave = *tknPtr;
-   pas_SimpleAssignment(&symbolSave, 0);
-}
+Where
+  var
+    iptr: ^integer;
 
-static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
-{
-590       pas_SimpleAssignment(varPtr, assignFlags);
+Error:
+207 #define eNOTYET          ((uint16_t) 0x24)
 
-(gdb) p symbolSave
-$2 = {sName = 0x800091d47 "IPTR", sKind = 78 'N', sLevel = 0 '\000', sParm = {t = {
-      type = 2 '\002', rtype = 0 '\000', subType = 0 '\000', flags = 0 '\000', asize = 2,
-      rsize = 0, minValue = 0, maxValue = 368648, parent = 0x0, index = 0x0}, c = {val = {
-        f = 4.2439915829186759e-314, i = 2}, parent = 0x0}, s = {offset = 2, size = 2}, vs = {
-      label = 2, size = 0, alloc = 2}, fileNumber = 2, l = {label = 2, unDefined = false}, v = {
-      offset = 2, size = 2, flags = 0 '\000', symIndex = 0, parent = 0x80005a008}, p = {
-      label = 2, nParms = 0, flags = 2 '\002', symIndex = 0, parent = 0x80005a008}, r = {
-      size = 2, offset = 2, record = 0x0, parent = 0x80005a008}}}
-(gdb) p &symbolSave
-$3 = (STYPE *) 0xffffca00
 
-pas_SimpleAssignment (varPtr=0xffffca00, assignFlags=2 '\002') at pstm.c:259
-259       typePtr = varPtr->sParm.v.parent;
-260       switch (varPtr->sKind)
-581           if (token == '^') /* value assignment? */
-587             assignFlags |= ADDRESS_ASSIGNMENT;
-589           varPtr->sKind = typePtr->sParm.t.type;
-590           pas_SimpleAssignment(varPtr, assignFlags);
-590           pas_SimpleAssignment(varPtr, assignFlags);
-590           pas_SimpleAssignment(varPtr, assignFlags);
-590           pas_SimpleAssignment(varPtr, assignFlags);
-...
+Token:
+'@'
 
-Continues to execute until crash.
+Analysis:
+
+Support for the @ unary operation has not yet been implemented:
+
+In factor():
+
+    case '@':
+      /* The address operator @ returns the address of a variable, procedure
+       * or function.
+       */
+
+      error(eNOTYET);
+      getToken();
+      break;
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d

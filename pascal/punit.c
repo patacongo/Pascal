@@ -88,7 +88,7 @@ void unitImplementation(void)
 {
   char   *saveTknStart = g_tokenString;
 
-  TRACE(lstFile, "[unitImplementation]");
+  TRACE(g_lstFile, "[unitImplementation]");
 
   /* FORM: unit =
    *       unit-heading ';' interface-section implementation-section
@@ -197,8 +197,8 @@ void unitImplementation(void)
 
 void unitInterface(void)
 {
-  int32_t savedDStack  = dstack;
-  TRACE(lstFile, "[unitInterface]");
+  int32_t savedDStack  = g_dStack;
+  TRACE(g_lstFile, "[unitInterface]");
 
   /* FORM: unit =
    *       unit-heading ';' interface-section implementation-section
@@ -250,7 +250,7 @@ void unitInterface(void)
    * process.
    */
 
-  dstack = savedDStack;
+  g_dStack = savedDStack;
 }
 
 /***********************************************************************
@@ -264,7 +264,7 @@ static void interfaceSection(void)
   unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
   unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
 
-  TRACE(lstFile, "[interfaceSection]");
+  TRACE(g_lstFile, "[interfaceSection]");
 
   /* Set the current symbol/constant table offsets for this level */
 
@@ -412,12 +412,12 @@ static void interfaceSection(void)
 
 static void exportedProcedureHeading(void)
 {
-   uint16_t procLabel = ++label;
+   uint16_t procLabel = ++g_label;
    char    *saveChSp;
    STYPE   *procPtr;
    register int i;
 
-   TRACE(lstFile,"[exportedProcedureHeading]");
+   TRACE(g_lstFile,"[exportedProcedureHeading]");
 
    /* FORM: procedure-heading =
     *       'procedure' identifier [ formal-parameter-list ]
@@ -468,7 +468,7 @@ static void exportedProcedureHeading(void)
     * procedure is called.
     */
 
-   if (includeIndex > 0)
+   if (g_includeIndex > 0)
      {
        pas_GenerateProcImport(procPtr);
      }
@@ -479,6 +479,7 @@ static void exportedProcedureHeading(void)
      {
        procPtr[i].sName = NULL;
      }
+
    g_stringSP = saveChSp;
 
    /* Drop the level back to where it was */
@@ -491,13 +492,13 @@ static void exportedProcedureHeading(void)
 
 static void exportedFunctionHeading(void)
 {
-   uint16_t funcLabel = ++label;
+   uint16_t funcLabel = ++g_label;
    int16_t  parameterOffset;
    char    *saveChSp;
    STYPE   *funcPtr;
-   register int i;
+   int      i;
 
-   TRACE(lstFile,"[exportedFunctionHeading]");
+   TRACE(g_lstFile,"[exportedFunctionHeading]");
 
    /* FORM: function-declaration =
     *       function-heading ';' directive |
@@ -582,7 +583,7 @@ static void exportedFunctionHeading(void)
     * function is called.
     */
 
-   if (includeIndex > 0)
+   if (g_includeIndex > 0)
      {
        pas_GenerateProcImport(funcPtr);
      }

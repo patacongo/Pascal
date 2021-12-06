@@ -206,7 +206,7 @@ STYPE *findSymbol(char *inName, int tableOffset)
 
 static STYPE *addSymbol(char *name, int16_t type)
 {
-   TRACE(lstFile,"[addSymbol]");
+   TRACE(g_lstFile,"[addSymbol]");
 
    /* Check for Symbol Table overflow */
 
@@ -238,7 +238,7 @@ STYPE *addTypeDefine(char *name, uint8_t type, uint16_t size,
 {
    STYPE *typePtr;
 
-   TRACE(lstFile,"[addTypeDefine]");
+   TRACE(g_lstFile,"[addTypeDefine]");
 
    /* Get a slot in the symbol table */
 
@@ -276,7 +276,7 @@ STYPE *addConstant(char *name, uint8_t type, int32_t *value, STYPE *parent)
 {
    STYPE *constPtr;
 
-   TRACE(lstFile,"[addConstant]");
+   TRACE(g_lstFile,"[addConstant]");
 
    /* Get a slot in the symbol table */
    constPtr = addSymbol(name, type);
@@ -302,7 +302,7 @@ STYPE *addStringConst(char *name, uint32_t offset, uint32_t size)
 {
   STYPE *stringPtr;
 
-  TRACE(lstFile,"[addStringConst]");
+  TRACE(g_lstFile,"[addStringConst]");
 
   /* Get a slot in the symbol table */
 
@@ -326,7 +326,7 @@ STYPE *addFile(char *name, uint16_t fileNumber)
 {
    STYPE *filePtr;
 
-   TRACE(lstFile,"[addFile]");
+   TRACE(g_lstFile,"[addFile]");
 
    /* Get a slot in the symbol table */
    filePtr = addSymbol(name, sFILE);
@@ -349,7 +349,7 @@ STYPE *addProcedure(char *name, uint8_t type, uint16_t label,
 {
    STYPE *procPtr;
 
-   TRACE(lstFile,"[addProcedure]");
+   TRACE(g_lstFile,"[addProcedure]");
 
    /* Get a slot in the symbol table */
    procPtr = addSymbol(name, type);
@@ -376,7 +376,7 @@ STYPE *addVariable(char *name, uint8_t type, uint16_t offset,
 {
   STYPE *varPtr;
 
-  TRACE(lstFile,"[addVariable]");
+  TRACE(g_lstFile,"[addVariable]");
 
   /* Get a slot in the symbol table */
 
@@ -403,7 +403,7 @@ STYPE *addLabel(char *name, uint16_t label)
 {
   STYPE *labelPtr;
 
-  TRACE(lstFile,"[addLabel]");
+  TRACE(g_lstFile,"[addLabel]");
 
   /* Get a slot in the symbol table */
 
@@ -427,7 +427,7 @@ STYPE *addField(char *name, STYPE *record)
 {
    STYPE *fieldPtr;
 
-   TRACE(lstFile,"[addField]");
+   TRACE(g_lstFile,"[addField]");
 
    /* Get a slot in the symbol table */
    fieldPtr = addSymbol(name, sRECORD_OBJECT);
@@ -453,7 +453,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
   STYPE *typePtr;
   int16_t i;
 
-  TRACE(lstFile,"[primeSymbolTable]");
+  TRACE(g_lstFile,"[primeSymbolTable]");
 
   /* Allocate and initialize symbol table */
 
@@ -564,23 +564,23 @@ void dumpTables(void)
 {
   int16_t i;
 
-  fprintf(lstFile,"\nSYMBOL TABLE:\n");
-  fprintf(lstFile,"[  Addr  ]     NAME KIND LEVL\n");
+  fprintf(g_lstFile,"\nSYMBOL TABLE:\n");
+  fprintf(g_lstFile,"[  Addr  ]     NAME KIND LEVL\n");
 
   for (i = 0; i < g_nSym; i++)
     {
-      fprintf(lstFile,"[%p] ", &g_symbolTable[i]);
+      fprintf(g_lstFile,"[%p] ", &g_symbolTable[i]);
 
       if (g_symbolTable[i].sName)
         {
-          fprintf(lstFile, "%8s", g_symbolTable[i].sName);
+          fprintf(g_lstFile, "%8s", g_symbolTable[i].sName);
         }
       else
         {
-          fprintf(lstFile, "%8s", noName);
+          fprintf(g_lstFile, "%8s", noName);
         }
 
-      fprintf(lstFile," %04x %04x ",
+      fprintf(g_lstFile," %04x %04x ",
               g_symbolTable[i].sKind,
               g_symbolTable[i].sLevel);
 
@@ -593,12 +593,12 @@ void dumpTables(void)
         case tBOOLEAN_CONST :
         case tNIL :
         case sSCALAR :
-          fprintf(lstFile, "val=%" PRId32 " parent=[%p]\n",
+          fprintf(g_lstFile, "val=%" PRId32 " parent=[%p]\n",
                   g_symbolTable[i].sParm.c.val.i,
                   g_symbolTable[i].sParm.c.parent);
           break;
         case tREAL_CONST :
-          fprintf(lstFile, "val=%f parent=[%p]\n",
+          fprintf(g_lstFile, "val=%f parent=[%p]\n",
                   g_symbolTable[i].sParm.c.val.f,
                   g_symbolTable[i].sParm.c.parent);
           break;
@@ -606,7 +606,7 @@ void dumpTables(void)
           /* Types */
 
         case sTYPE  :
-          fprintf(lstFile,
+          fprintf(g_lstFile,
                   "type=%02x rtype=%02x subType=%02x flags=%02x "
                   "asize=%" PRId32 " rsize=%" PRId32 " minValue=%" PRId32
                   " maxValue=%" PRId32 " parent=[%p]\n",
@@ -627,7 +627,7 @@ void dumpTables(void)
 
         case sPROC :
         case sFUNC :
-          fprintf(lstFile,
+          fprintf(g_lstFile,
                   "label=L%04x nParms=%d flags=%02x parent=[%p]\n",
                   g_symbolTable[i].sParm.p.label,
                   g_symbolTable[i].sParm.p.nParms,
@@ -638,7 +638,7 @@ void dumpTables(void)
           /* Labels */
 
         case sLABEL :
-          fprintf(lstFile, "label=L%04x unDefined=%d\n",
+          fprintf(g_lstFile, "label=L%04x unDefined=%d\n",
                   g_symbolTable[i].sParm.l.label,
                   g_symbolTable[i].sParm.l.unDefined);
           break;
@@ -646,7 +646,7 @@ void dumpTables(void)
           /* Files */
 
         case sFILE :
-          fprintf(lstFile, "fileNumber=%d\n",
+          fprintf(g_lstFile, "fileNumber=%d\n",
                   g_symbolTable[i].sParm.fileNumber);
           break;
 
@@ -662,7 +662,7 @@ void dumpTables(void)
         case sVAR_PARM :
         case sRECORD :
         case sFILE_OF :
-          fprintf(lstFile, "offset=%" PRId32 " size=%" PRId32 " flags=%02x "
+          fprintf(g_lstFile, "offset=%" PRId32 " size=%" PRId32 " flags=%02x "
                   "parent=[%p]\n",
                   g_symbolTable[i].sParm.v.offset,
                   g_symbolTable[i].sParm.v.size,
@@ -673,7 +673,7 @@ void dumpTables(void)
           /* Record objects */
 
         case sRECORD_OBJECT :
-          fprintf(lstFile,
+          fprintf(g_lstFile,
                   "offset=%" PRId32 " size=%" PRId32 " record=[%p] "
                   "parent=[%p]\n",
                   g_symbolTable[i].sParm.r.offset,
@@ -685,13 +685,13 @@ void dumpTables(void)
           /* Constant strings */
 
         case sSTRING_CONST :
-          fprintf(lstFile, "offset=%04" PRIx32 " size=%" PRId32 "\n",
+          fprintf(g_lstFile, "offset=%04" PRIx32 " size=%" PRId32 "\n",
                   g_symbolTable[i].sParm.s.offset,
                   g_symbolTable[i].sParm.s.size);
           break;
 
         default :
-          fprintf(lstFile, "Unknown sKind\n");
+          fprintf(g_lstFile, "Unknown sKind\n");
           break;
         }
     }

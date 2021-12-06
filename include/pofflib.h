@@ -188,7 +188,7 @@ extern void         poffResetAccess(poffHandle_t handle);
 /* Functions to manage writing a POFF file */
 
 extern void         poffSetFileType(poffHandle_t handle, uint8_t fh_type,
-                    uint16_t nfiles, const char *name);
+                      uint16_t nfiles, const char *name);
 extern void         poffSetArchitecture(poffHandle_t handle, uint8_t fh_arch);
 extern void         poffSetEntryPoint(poffHandle_t handle, uint32_t entryPoint);
 extern int32_t      poffFindString(poffHandle_t handle, const char *string);
@@ -201,7 +201,7 @@ extern uint32_t     poffAddRoDataByte(poffHandle_t handle, uint8_t dataByte);
 extern uint32_t     poffAddRoDataString(poffHandle_t handle,
                     const char *string);
 extern uint32_t     poffAddSymbol(poffHandle_t handle,
-                  poffLibSymbol_t *symbol);
+                      poffLibSymbol_t *symbol);
 extern uint32_t     poffAddLineNumber(poffHandle_t handle,
                       uint16_t lineNumber, uint16_t fileNumber,
                       uint32_t progSectionDataOffset);
@@ -223,7 +223,7 @@ extern uint32_t     poffGetRoDataSize(poffHandle_t handle);
 extern int32_t      poffGetFileName(poffHandle_t handle, const char **fname);
 extern int          poffGetProgByte(poffHandle_t handle);
 extern int32_t      poffGetSymbol(poffHandle_t handle,
-                  poffLibSymbol_t *symbol);
+                      poffLibSymbol_t *symbol);
 extern const char  *poffGetString(poffHandle_t handle, uint32_t index);
 extern int32_t      poffGetLineNumber(poffHandle_t handle,
                       poffLibLineNumber_t *lineno);

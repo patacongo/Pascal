@@ -91,7 +91,7 @@ void program(void)
 {
   char *pgmname = NULL;
 
-  TRACE(lstFile, "[program]");
+  TRACE(g_lstFile, "[program]");
 
   /* FORM: program = program-heading ';' [uses-section ] block '.'
    * FORM: program-heading = 'program' identifier [ '(' identifier-list ')' ]
@@ -120,8 +120,8 @@ void program(void)
           getToken();
           if (g_token == tIDENT)
             {
-              if ((++nfiles) > MAX_FILES) fatal(eOVF);
-              (void)addFile(g_tokenString, nfiles);
+              if ((++g_nFiles) > MAX_FILES) fatal(eOVF);
+              (void)addFile(g_tokenString, g_nFiles);
               g_stringSP = g_tokenString;
               getToken();
             }
@@ -153,7 +153,7 @@ void program(void)
 
   /* Set the POFF file header type */
 
-  poffSetFileType(poffHandle, FHT_PROGRAM, nfiles, pgmname);
+  poffSetFileType(poffHandle, FHT_PROGRAM, g_nFiles, pgmname);
   poffSetArchitecture(poffHandle, FHA_PCODE);
 
   /* Discard the program name string */
@@ -187,7 +187,7 @@ void usesSection(void)
   char *saveTknStrt;
   char *unitName;
 
-  TRACE(lstFile, "[usesSection]");
+  TRACE(g_lstFile, "[usesSection]");
 
   /* FORM: uses-section = 'uses' [ uses-unit-list ] ';'
    * FORM: uses-unit-list = unit-import {';' uses-unit-list }

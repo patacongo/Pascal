@@ -108,7 +108,7 @@ void statement(void)
 {
   STYPE *symPtr;     /* Save Symbol Table pointer to token */
 
-  TRACE(lstFile,"[statement");
+  TRACE(g_lstFile,"[statement");
 
   /* Generate file/line number pseudo-operation to facilitate P-Code testing */
 
@@ -218,7 +218,7 @@ void statement(void)
 
   pas_GenerateSimple(opPOPS);
 
-  TRACE(lstFile,"]");
+  TRACE(g_lstFile,"]");
 }
 
 /***********************************************************************/
@@ -227,7 +227,7 @@ void statement(void)
 static void pas_ComplexAssignment(void)
 {
    STYPE symbolSave;
-   TRACE(lstFile,"[pas_ComplexAssignment]");
+   TRACE(g_lstFile,"[pas_ComplexAssignment]");
 
    /* FORM:  <variable OR function identifer> := <expression>
     * First, make a copy of the symbol table entry because the call to
@@ -246,17 +246,27 @@ static void pas_ComplexAssignment(void)
 
 /***********************************************************************/
 /* Process a complex assignment (recursively) until it becomes a
- * simple assignment statement
+ * simple assignment statement.
+ *
+ * Called only from pas_ComplexAssignment() (and recursively) with abort
+ * snapshot of the symbol on the stack.  Hence, it is safe to modify the
+ * content of the structure reffered to by varPtr.
  */
 
 static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 {
   STYPE *typePtr;
-  TRACE(lstFile,"[pas_SimpleAssignment]");
+
+  TRACE(g_lstFile,"[pas_SimpleAssignment]");
 
   /* FORM:  <variable OR function identifer> := <expression> */
 
+  /* Get the parent type */
+
   typePtr = varPtr->sParm.v.parent;
+
+  /* Now, handle the variable by its type */
+
   switch (varPtr->sKind)
     {
       /* Check if we have reduce the complex assignment to a simple
@@ -272,9 +282,13 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprInteger, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTSX, exprIntegerPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprIntegerPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTSX, exprInteger, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprInteger, varPtr, typePtr);
+            }
         }
       else
         {
@@ -284,11 +298,16 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprInteger, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTS, exprIntegerPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprIntegerPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTS, exprInteger, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprInteger, varPtr, typePtr);
+            }
         }
       break;
+
     case sCHAR :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
         {
@@ -298,9 +317,13 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTIB, exprChar, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTSX, exprCharPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprCharPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTSXB, exprChar, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSXB, exprChar, varPtr, typePtr);
+            }
         }
       else
         {
@@ -310,11 +333,16 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTIB, exprChar, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTS, exprCharPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprCharPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTSB, exprChar, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSB, exprChar, varPtr, typePtr);
+            }
         }
       break;
+
     case sBOOLEAN :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
         {
@@ -324,9 +352,13 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprBoolean, varPtr, NULL);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTSX, exprBooleanPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprBooleanPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTSX, exprBoolean, varPtr, NULL);
+            {
+              pas_Assignment(opSTSX, exprBoolean, varPtr, NULL);
+            }
         }
       else
         {
@@ -336,11 +368,16 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprBoolean, varPtr, NULL);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTS, exprBooleanPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprBooleanPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTS, exprBoolean, varPtr, NULL);
+            {
+              pas_Assignment(opSTS, exprBoolean, varPtr, NULL);
+            }
         }
       break;
+
     case sREAL         :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
         {
@@ -350,9 +387,13 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTSX, exprRealPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprRealPtr, varPtr, typePtr);
+            }
           else
-            pas_LargeAssignment(opSTSXM, exprReal, varPtr, typePtr);
+            {
+              pas_LargeAssignment(opSTSXM, exprReal, varPtr, typePtr);
+            }
         }
       else
         {
@@ -362,11 +403,16 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTS, exprRealPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprRealPtr, varPtr, typePtr);
+            }
           else
-            pas_LargeAssignment(opSTSM, exprReal, varPtr, typePtr);
+            {
+              pas_LargeAssignment(opSTSM, exprReal, varPtr, typePtr);
+            }
         }
       break;
+
     case sSCALAR :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
         {
@@ -376,9 +422,13 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprScalar, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTSX, exprScalarPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprScalarPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTSX, exprScalar, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprScalar, varPtr, typePtr);
+            }
         }
       else
         {
@@ -388,11 +438,16 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprScalar, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTS, exprScalarPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprScalarPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTS, exprScalar, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprScalar, varPtr, typePtr);
+            }
         }
       break;
+
     case sSET_OF :
       if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
         {
@@ -402,9 +457,13 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprSet, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTSX, exprSetPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprSetPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTSX, exprSet, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprSet, varPtr, typePtr);
+            }
         }
       else
         {
@@ -414,9 +473,13 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTI, exprSet, varPtr, typePtr);
             }
           else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            pas_Assignment(opSTS, exprSetPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprSetPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTS, exprSet, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprSet, varPtr, typePtr);
+            }
         }
       break;
 
@@ -439,13 +502,19 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
           if (g_token == '.') error(ePOINTERTYPE);
 
           if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
-            pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
+            }
           else
-            pas_Assignment(opSTS, exprRecordPtr, varPtr, typePtr);
+            {
+              pas_Assignment(opSTS, exprRecordPtr, varPtr, typePtr);
+            }
         }
       else if (((assignFlags & ADDRESS_DEREFERENCE) != 0) &&
                ((assignFlags & VAR_PARM_ASSIGNMENT) == 0))
-        error(ePOINTERTYPE);
+        {
+          error(ePOINTERTYPE);
+        }
 
       /* Check if a period separates the RECORD identifier from the
        * record field identifier
@@ -463,7 +532,9 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 
           if ((g_token != sRECORD_OBJECT) ||
               (g_tknPtr->sParm.r.record != typePtr))
-            error(eRECORDOBJECT);
+            {
+              error(eRECORDOBJECT);
+            }
           else
             {
               /* Modify the variable so that it has the characteristics of the
@@ -482,7 +553,9 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
                   pas_GenerateSimple(opADD);
                 }
               else
-                varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
+                {
+                 varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
+                }
 
               getToken();
               pas_SimpleAssignment(varPtr, assignFlags);
@@ -512,46 +585,57 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
        * defining the RECORD type
        */
 
-      if (!withRecord.parent)
-        error(eINVTYPE);
+      if (!g_withRecord.parent)
+        {
+          error(eINVTYPE);
+        }
       else if ((assignFlags && (ADDRESS_DEREFERENCE | ADDRESS_ASSIGNMENT)) != 0)
-        error(ePOINTERTYPE);
+        {
+          error(ePOINTERTYPE);
+        }
       else if ((assignFlags && INDEXED_ASSIGNMENT) != 0)
-        error(eARRAYTYPE);
+        {
+          error(eARRAYTYPE);
+        }
 
       /* Verify that a field identifier is associated with the RECORD
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.record != withRecord.parent)
-        error(eRECORDOBJECT);
-
+      else if (varPtr->sParm.r.record != g_withRecord.parent)
+        {
+          error(eRECORDOBJECT);
+        }
       else
         {
           int16_t tempOffset;
 
-          /* Now there are two cases to consider:  (1) the withRecord is a
-           * pointer to a RECORD, or (2) the withRecord is the RECORD itself
+          /* Now there are two cases to consider:  (1) the g_withRecord is a
+           * pointer to a RECORD, or (2) the g_withRecord is the RECORD itself
            */
 
-          if (withRecord.pointer)
+          if (g_withRecord.pointer)
             {
               /* If the pointer is really a VAR parameter, then other syntax
                * rules will apply
                */
 
-              if (withRecord.varParm)
-                assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
-                                VAR_PARM_ASSIGNMENT);
+              if (g_withRecord.varParm)
+                {
+                  assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
+                                  VAR_PARM_ASSIGNMENT);
+                }
               else
-                assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE);
+                {
+                  assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE);
+                }
 
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + withRecord.index));
-              tempOffset     = withRecord.offset;
+              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
+              tempOffset = g_withRecord.offset;
             }
           else
             {
-              tempOffset     = varPtr->sParm.r.offset + withRecord.offset;
+              tempOffset = varPtr->sParm.r.offset + g_withRecord.offset;
             }
 
           /* Modify the variable so that it has the characteristics of the
@@ -564,7 +648,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
           typePtr                 = varPtr->sParm.r.parent;
 
           varPtr->sKind           = typePtr->sParm.t.type;
-          varPtr->sLevel          = withRecord.level;
+          varPtr->sLevel          = g_withRecord.level;
           varPtr->sParm.v.size    = typePtr->sParm.t.asize;
           varPtr->sParm.v.offset  = tempOffset;
           varPtr->sParm.v.parent  = typePtr;
@@ -584,9 +668,31 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
           assignFlags |= ADDRESS_DEREFERENCE;
         }
       else
-        assignFlags |= ADDRESS_ASSIGNMENT;
+        {
+          assignFlags |= ADDRESS_ASSIGNMENT;
+        }
 
-      varPtr->sKind = typePtr->sParm.t.type;
+      /* If the parent type is itself a typed pointer, then get the
+       * pointed-at type.
+       */
+
+      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.type == sPOINTER)
+        {
+          STYPE *baseTypePtr = typePtr->sParm.t.parent;
+
+          varPtr->sKind = baseTypePtr->sParm.t.type;
+
+          /* REVISIT:  What if the type is a pointer to a pointer? */
+
+           if (varPtr->sKind == sPOINTER) fatal(eNOTYET);
+        }
+      else
+        {
+          /* Get the kind of parent type */
+
+          varPtr->sKind = typePtr->sParm.t.type;
+        }
+
       pas_SimpleAssignment(varPtr, assignFlags);
       break;
 
@@ -618,7 +724,6 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
     default :
       error(eINVTYPE);
       break;
-
     }
 }
 
@@ -628,7 +733,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 static void pas_Assignment(uint16_t storeOp, exprType assignType,
                            STYPE *varPtr, STYPE *typePtr)
 {
-   TRACE(lstFile,"[pas_Assignment]");
+   TRACE(g_lstFile,"[pas_Assignment]");
 
    /* FORM:  <variable OR function identifer> := <expression> */
 
@@ -646,7 +751,7 @@ static void pas_StringAssignment(STYPE *varPtr, STYPE *typePtr)
 {
   exprType stringKind;
 
-   TRACE(lstFile,"[pas_StringAssignment]");
+   TRACE(g_lstFile,"[pas_StringAssignment]");
 
    /* FORM:  <variable OR function identifer> := <expression> */
 
@@ -745,7 +850,7 @@ static void pas_StringAssignment(STYPE *varPtr, STYPE *typePtr)
 static void pas_LargeAssignment(uint16_t storeOp, exprType assignType,
                                 STYPE *varPtr, STYPE *typePtr)
 {
-   TRACE(lstFile,"[pas_LargeAssignment]");
+   TRACE(g_lstFile,"[pas_LargeAssignment]");
 
    /* FORM:  <variable OR function identifer> := <expression> */
 
@@ -764,7 +869,7 @@ static void pas_GotoStatement(void)
    char   labelname [8];                /* Label symbol table name */
    STYPE  *label_ptr;                   /* Pointer to Label Symbol */
 
-   TRACE(lstFile,"[pas_GotoStatement]");
+   TRACE(g_lstFile,"[pas_GotoStatement]");
 
    /* FORM:  GOTO <integer> */
 
@@ -819,7 +924,7 @@ static void pas_LabelStatement(void)
    char   labelName [8];                /* Label symbol table name */
    STYPE  *labelPtr;                    /* Pointer to Label Symbol */
 
-   TRACE(lstFile,"[pas_LabelStatement]");
+   TRACE(g_lstFile,"[pas_LabelStatement]");
 
    /* FORM:  <integer> : */
 
@@ -876,7 +981,7 @@ static void pas_ProcStatement(void)
   STYPE *procPtr = g_tknPtr;
   int size = 0;
 
-  TRACE(lstFile,"[pas_ProcStatement]");
+  TRACE(g_lstFile,"[pas_ProcStatement]");
 
   /* FORM: procedure-method-statement =
    * procedure-method-specifier [ actual-parameter-list ]
@@ -909,12 +1014,12 @@ static void pas_ProcStatement(void)
 
 static void pas_IfStatement(void)
 {
-  uint16_t else_label  = ++label;
+  uint16_t else_label  = ++g_label;
   uint16_t endif_label = else_label;
   int32_t thenLSP;
   int32_t elseLSP;
 
-  TRACE(lstFile,"[pas_IfStatement]");
+  TRACE(g_lstFile,"[pas_IfStatement]");
 
   /* FORM: IF <expression> THEN <statement> [ELSE <statement>] */
 
@@ -968,7 +1073,7 @@ static void pas_IfStatement(void)
            * logic generated here.
            */
 
-          endif_label = ++label;
+          endif_label = ++g_label;
 
           /* Skip over the ELSE token */
 
@@ -1020,7 +1125,7 @@ static void pas_IfStatement(void)
 
 void compoundStatement(void)
 {
-   TRACE(lstFile,"[compoundStatement]");
+   TRACE(g_lstFile,"[compoundStatement]");
 
    /* Process statements until END encountered */
 
@@ -1041,9 +1146,9 @@ void compoundStatement(void)
 
 void pas_RepeatStatement ()
 {
-   uint16_t rpt_label = ++label;
+   uint16_t rpt_label = ++g_label;
 
-   TRACE(lstFile,"[pas_RepeatStatement]");
+   TRACE(g_lstFile,"[pas_RepeatStatement]");
 
    /* REPEAT <statement[;statement[statement...]]> UNTIL <expression> */
 
@@ -1083,13 +1188,13 @@ void pas_RepeatStatement ()
 
 static void pas_WhileStatement(void)
 {
-   uint16_t while_label    = ++label;     /* Top of loop label */
-   uint16_t endwhile_label = ++label;     /* End of loop label */
+   uint16_t while_label    = ++g_label;  /* Top of loop label */
+   uint16_t endwhile_label = ++g_label;  /* End of loop label */
    uint32_t nLspChanges;
    int32_t  topOfLoopLSP;
    bool     bCheckLSP      = false;
 
-   TRACE(lstFile,"[pas_WhileStatement]");
+   TRACE(g_lstFile,"[pas_WhileStatement]");
 
    /* Generate WHILE <expression> DO <statement> */
 
@@ -1228,12 +1333,12 @@ static bool pas_CheckInvalidateLSP(int32_t *pTerminalLSP)
 static void pas_CaseStatement(void)
 {
    uint16_t this_case;
-   uint16_t next_case      = ++label;
-   uint16_t end_case       = ++label;
+   uint16_t next_case      = ++g_label;
+   uint16_t end_case       = ++g_label;
    int32_t  terminalLSP    = -1;
    bool     bInvalidateLSP = false;
 
-   TRACE(lstFile,"[pas_CaseStatement]");
+   TRACE(g_lstFile,"[pas_CaseStatement]");
 
    /* Process "CASE <expression> OF" */
 
@@ -1255,7 +1360,7 @@ static void pas_CaseStatement(void)
    for (;;)
      {
        this_case = next_case;
-       next_case = ++label;
+       next_case = ++g_label;
 
        /* Process NON-STANDARD ELSE <statement> END */
 
@@ -1425,13 +1530,13 @@ static void pas_CaseStatement(void)
 static void pas_ForStatement(void)
 {
    STYPE *varPtr;
-   uint16_t forLabel    = ++label;
-   uint16_t endForLabel = ++label;
+   uint16_t forLabel    = ++g_label;
+   uint16_t endForLabel = ++g_label;
    uint16_t jmpOp;
    uint16_t modOp;
    int32_t topOfLoopLSP;
 
-   TRACE(lstFile,"[pas_ForStatement]");
+   TRACE(g_lstFile,"[pas_ForStatement]");
 
    /* FOR <assigment statement> <TO, DOWNTO> <expression> DO <statement> */
 
@@ -1554,7 +1659,7 @@ static void pas_WithStatement(void)
 {
    WTYPE saveWithRecord;
 
-   TRACE(lstFile,"[pas_WithStatement]");
+   TRACE(g_lstFile,"[pas_WithStatement]");
 
    /* Generate WITH <variable[,variable[...]] DO <statement> */
 
@@ -1562,7 +1667,7 @@ static void pas_WithStatement(void)
     * any given time.
     */
 
-   saveWithRecord = withRecord;
+   saveWithRecord = g_withRecord;
 
    /* Process each RECORD or RECORD OBJECT in the <variable> list */
 
@@ -1573,15 +1678,15 @@ static void pas_WithStatement(void)
         * there is no other WITH active
         */
 
-       if ((g_token == sRECORD) && (!withRecord.parent))
+       if ((g_token == sRECORD) && (!g_withRecord.parent))
          {
-           /* Save the RECORD variable as the new withRecord */
+           /* Save the RECORD variable as the new with record */
 
-           withRecord.level   = g_tknPtr->sLevel;
-           withRecord.pointer = false;
-           withRecord.varParm = false;
-           withRecord.offset  = g_tknPtr->sParm.v.offset;
-           withRecord.parent  = g_tknPtr->sParm.v.parent;
+           g_withRecord.level   = g_tknPtr->sLevel;
+           g_withRecord.pointer = false;
+           g_withRecord.varParm = false;
+           g_withRecord.offset  = g_tknPtr->sParm.v.offset;
+           g_withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD variable */
 
@@ -1593,16 +1698,16 @@ static void pas_WithStatement(void)
         */
 
        else if ((g_token == sVAR_PARM) &&
-                (!withRecord.parent) &&
+                (!g_withRecord.parent) &&
                 (g_tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
          {
-           /* Save the RECORD VAR parameter as the new withRecord */
+           /* Save the RECORD VAR parameter as the new with record */
 
-           withRecord.level   = g_tknPtr->sLevel;
-           withRecord.pointer = true;
-           withRecord.varParm = true;
-           withRecord.offset  = g_tknPtr->sParm.v.offset;
-           withRecord.parent  = g_tknPtr->sParm.v.parent;
+           g_withRecord.level   = g_tknPtr->sLevel;
+           g_withRecord.pointer = true;
+           g_withRecord.varParm = true;
+           g_withRecord.offset  = g_tknPtr->sParm.v.offset;
+           g_withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD VAR parameter */
 
@@ -1614,16 +1719,16 @@ static void pas_WithStatement(void)
         */
 
        else if ((g_token == sPOINTER) &&
-                (!withRecord.parent) &&
+                (!g_withRecord.parent) &&
                 (g_tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
          {
-           /* Save the RECORD pointer as the new withRecord */
+           /* Save the RECORD pointer as the new with record */
 
-           withRecord.level   = g_tknPtr->sLevel;
-           withRecord.pointer = true;
-           withRecord.pointer = false;
-           withRecord.offset  = g_tknPtr->sParm.v.offset;
-           withRecord.parent  = g_tknPtr->sParm.v.parent;
+           g_withRecord.level   = g_tknPtr->sLevel;
+           g_withRecord.pointer = true;
+           g_withRecord.pointer = false;
+           g_withRecord.offset  = g_tknPtr->sParm.v.offset;
+           g_withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD pointer */
 
@@ -1640,17 +1745,17 @@ static void pas_WithStatement(void)
         */
 
        else if ((g_token == sRECORD_OBJECT) &&
-                (g_tknPtr->sParm.r.record == withRecord.parent) &&
+                (g_tknPtr->sParm.r.record == g_withRecord.parent) &&
                 (g_tknPtr->sParm.r.parent->sParm.t.type == sRECORD))
          {
-           /* Okay, update the withRecord to use this record field */
+           /* Okay, update the with record to use this record field */
 
-           if (withRecord.pointer)
-             withRecord.index += g_tknPtr->sParm.r.offset;
+           if (g_withRecord.pointer)
+             g_withRecord.index += g_tknPtr->sParm.r.offset;
            else
-             withRecord.offset += g_tknPtr->sParm.r.offset;
+             g_withRecord.offset += g_tknPtr->sParm.r.offset;
 
-           withRecord.parent  = g_tknPtr->sParm.r.parent;
+           g_withRecord.parent  = g_tknPtr->sParm.r.parent;
 
            /* Skip over the sRECORD_OBJECT */
 
@@ -1681,7 +1786,7 @@ static void pas_WithStatement(void)
 
    statement();
 
-   /* Restore the previous value of the withRecord */
+   /* Restore the previous value of the with record */
 
-   withRecord = saveWithRecord;
+   g_withRecord = saveWithRecord;
 }

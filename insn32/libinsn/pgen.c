@@ -65,8 +65,7 @@
  **********************************************************************/
 
 extern poffHandle_t poffHandle; /* Handle to POFF object */
-extern FILE *lstFile;           /* LIST file pointer */
-extern int16_t level;            /* Static nesting level */
+extern FILE *g_lstFile;         /* LIST file pointer */
 
 /**********************************************************************
  * Private Variables
@@ -197,7 +196,7 @@ insn32_DisassemblePCode(uint8_t opcode, uint32_t arg)
   op.op  = opcode;
   op.arg = arg;
 
-  insn_DisassemblePCode(lstFile, &op);
+  insn_DisassemblePCode(g_lstFile, &op);
 }
 #else
 # define insn32_DisassemblePCode(op,a)
@@ -221,7 +220,7 @@ insn32_DisassembleOpcode(uint8_t opcode, uint32_t data)
 static void
 insn32_GenerateSimple(uint8_t opcode)
 {
-  TRACE(lstFile,"[insn32_GenerateSimple:0x%02x]", opcode);
+  TRACE(g_lstFile,"[insn32_GenerateSimple:0x%02x]", opcode);
 
   /* Write the 8-bit opcode */
 
@@ -243,7 +242,7 @@ insn32_GenerateDataOperation(uint8_t opcode, uint32_t data)
     uint32_t w;
   } udata;
 
-  TRACE(lstFile,"[insn32_GenerateDataOperation:0x%02x:0x%07x]", opcode, data);
+  TRACE(g_lstFile,"[insn32_GenerateDataOperation:0x%02x:0x%07x]", opcode, data);
 
   /* Write the 8-bit opcode */
 
@@ -269,7 +268,7 @@ insn32_Generate(enum pcode_e opcode, uint32_t arg)
 {
   uint8_t insn_opcode = opmap[opcode];
 
-  TRACE(lstFile,"[insn32_Generate:0x%02x->0x%02x]", opcode, insn_opcode);
+  TRACE(g_lstFile,"[insn32_Generate:0x%02x->0x%02x]", opcode, insn_opcode);
 
   if (insn_opcode & o32)
     {

@@ -124,14 +124,14 @@ static STYPE *abstractType;
 
 exprType expression(exprType findExprType, STYPE *typePtr)
 {
-  uint8_t operation;
+  uint8_t  operation;
   uint16_t intOpCode;
   uint16_t fpOpCode;
   uint16_t strOpCode;
   exprType simple1Type;
   exprType simple2Type;
 
-  TRACE(lstFile,"[expression]");
+  TRACE(g_lstFile,"[expression]");
 
   /* The abstract types - SETs, RECORDS, etc - require an exact */
   /* match in type.  Save the symbol table sTYPE entry associated */
@@ -382,7 +382,7 @@ exprType varParm (exprType varExprType, STYPE *typePtr)
 
 void arrayIndex(int32_t size, int32_t offset)
 {
-  TRACE(lstFile,"[arrayIndex]");
+  TRACE(g_lstFile,"[arrayIndex]");
 
   /* FORM:  [<integer expression>].
    * On entry 'g_token' should refer to the ']' token.
@@ -427,7 +427,7 @@ exprType getExprType(STYPE *sType)
 {
   exprType factorType = sINT;
 
-  TRACE(lstFile,"[getExprType]");
+  TRACE(g_lstFile,"[getExprType]");
 
   if ((sType) && (sType->sKind == sTYPE))
     {
@@ -515,10 +515,12 @@ static exprType simpleExpression(exprType findExprType)
   exprType term1Type;
   exprType term2Type;
 
-  TRACE(lstFile,"[simpleExpression]");
+  TRACE(g_lstFile,"[simpleExpression]");
 
-  /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]] */
-  /* get +/- unary operation */
+  /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]]
+   *
+   * get +/- unary operation
+   */
 
   if ((g_token == '+') || (g_token == '-'))
     {
@@ -532,11 +534,17 @@ static exprType simpleExpression(exprType findExprType)
   if (operation == '-')
     {
       if (term1Type == exprInteger)
-        pas_GenerateSimple(opNEG);
+        {
+          pas_GenerateSimple(opNEG);
+        }
       else if (term1Type == exprReal)
-        pas_GenerateFpOperation(fpNEG);
+        {
+          pas_GenerateFpOperation(fpNEG);
+        }
       else
-        error(eTERMTYPE);
+        {
+          error(eTERMTYPE);
+        }
     }
 
   /* Process subsequent (optional) terms and binary operations */
@@ -546,9 +554,13 @@ static exprType simpleExpression(exprType findExprType)
       /* Check for binary operator */
 
       if ((g_token == '+') || (g_token == '-') || (g_token == tOR))
-        operation = g_token;
+        {
+          operation = g_token;
+        }
       else
-        break;
+        {
+          break;
+        }
 
       /* Special case for string types.  So far, we have parsed
        * '<string> +'  At this point, it is safe to assume we
@@ -749,7 +761,7 @@ static exprType term(exprType findExprType)
   exprType factor1Type;
   exprType factor2Type;
 
-  TRACE(lstFile,"[term]");
+  TRACE(g_lstFile,"[term]");
 
   /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
 
@@ -917,7 +929,7 @@ static exprType factor(exprType findExprType)
 {
   exprType factorType = exprUnknown;
 
-  TRACE(lstFile,"[factor]");
+  TRACE(g_lstFile,"[factor]");
 
   /* Process by token type */
 
@@ -966,7 +978,9 @@ static exprType factor(exprType findExprType)
           if (g_tknPtr->sParm.c.parent != abstractType) error(eSCALARTYPE);
         }
       else
-        abstractType = g_tknPtr->sParm.c.parent;
+        {
+         abstractType = g_tknPtr->sParm.c.parent;
+        }
 
       pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.c.val.i);
       getToken();
@@ -1072,7 +1086,9 @@ static exprType factor(exprType findExprType)
           if (g_tknPtr->sParm.v.parent != abstractType) error(eSCALARTYPE);
         }
       else
-        abstractType = g_tknPtr->sParm.v.parent;
+        {
+          abstractType = g_tknPtr->sParm.v.parent;
+        }
 
       pas_GenerateStackReference(opLDS, g_tknPtr);
       getToken();
@@ -1142,11 +1158,23 @@ static exprType factor(exprType findExprType)
 
       /* Highest Priority Operators */
 
+    case '@':
+      /* The address operator @ returns the address of a variable, procedure
+       * or function.
+       */
+
+      error(eNOTYET);
+      getToken();
+      break;
+
     case tNOT:
       getToken();
       factorType = factor(findExprType);
-      if ((factorType != exprInteger) && (factorType != exprBoolean))
-        error(eFACTORTYPE);
+      if (factorType != exprInteger && factorType != exprBoolean)
+        {
+          error(eFACTORTYPE);
+        }
+
       pas_GenerateSimple(opNOT);
       break;
 
@@ -1161,7 +1189,6 @@ static exprType factor(exprType findExprType)
     default :
       error(eINVFACTOR);
       break;
-
     }
 
   return factorType;
@@ -1174,7 +1201,7 @@ static exprType complexFactor(void)
 {
    STYPE symbolSave;
 
-   TRACE(lstFile,"[complexFactor]");
+   TRACE(g_lstFile,"[complexFactor]");
 
    /* First, make a copy of the symbol table entry because the call to */
    /* simpleFactor() will modify it. */
@@ -1197,7 +1224,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
   struct S *typePtr;
   exprType factorType;
 
-  TRACE(lstFile,"[simpleFactor]");
+  TRACE(g_lstFile,"[simpleFactor]");
 
   /* Process according to the current variable sKind */
 
@@ -1573,7 +1600,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
       /* NOTE:  This must have been preceeded with a WITH statement */
       /* defining the RECORD type */
 
-      if (!withRecord.parent)
+      if (!g_withRecord.parent)
         {
           error(eINVTYPE);
         }
@@ -1589,7 +1616,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
       /* Verify that a field identifier is associated with the RECORD */
       /* specified by the WITH statement. */
 
-      else if (varPtr->sParm.r.record != withRecord.parent)
+      else if (varPtr->sParm.r.record != g_withRecord.parent)
         {
           error(eRECORDOBJECT);
         }
@@ -1597,15 +1624,15 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
         {
           int16_t tempOffset;
 
-          /* Now there are two cases to consider:  (1) the withRecord is a */
-          /* pointer to a RECORD, or (2) the withRecord is the RECOR itself */
+          /* Now there are two cases to consider:  (1) the g_withRecord is a */
+          /* pointer to a RECORD, or (2) the g_withRecord is the RECOR itself */
 
-          if (withRecord.pointer)
+          if (g_withRecord.pointer)
             {
               /* If the pointer is really a VAR parameter, then other syntax */
               /* rules will apply */
 
-              if (withRecord.varParm)
+              if (g_withRecord.varParm)
                 {
                   factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
                                   VAR_PARM_FACTOR);
@@ -1615,12 +1642,12 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
                   factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
                 }
 
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + withRecord.index));
-              tempOffset   = withRecord.offset;
+              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
+              tempOffset   = g_withRecord.offset;
             }
           else
             {
-              tempOffset   = varPtr->sParm.r.offset + withRecord.offset;
+              tempOffset   = varPtr->sParm.r.offset + g_withRecord.offset;
             }
 
           /* Modify the variable so that it has the characteristics of the */
@@ -1633,9 +1660,9 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
           tempOffset              = varPtr->sParm.r.offset;
 
           varPtr->sKind           = typePtr->sParm.t.type;
-          varPtr->sLevel          = withRecord.level;
+          varPtr->sLevel          = g_withRecord.level;
           varPtr->sParm.v.size    = typePtr->sParm.t.asize;
-          varPtr->sParm.v.offset  = tempOffset + withRecord.offset;
+          varPtr->sParm.v.offset  = tempOffset + g_withRecord.offset;
           varPtr->sParm.v.parent  = typePtr;
 
           factorType = simpleFactor(varPtr, factorFlags);
@@ -1724,7 +1751,7 @@ static exprType ptrFactor(void)
 {
    exprType factorType;
 
-   TRACE(lstFile,"[ptrFactor]");
+   TRACE(g_lstFile,"[ptrFactor]");
 
    /* Process by token type */
 
@@ -1822,7 +1849,7 @@ static exprType complexPtrFactor(void)
 {
   STYPE symbolSave;
 
-  TRACE(lstFile,"[complexPtrFactor]");
+  TRACE(g_lstFile,"[complexPtrFactor]");
 
   /* First, make a copy of the symbol table entry because the call to
    * simplePtrFactor() will modify it.
@@ -1848,7 +1875,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
   struct S *typePtr;
   exprType factorType;
 
-  TRACE(lstFile,"[simplePtrFactor]");
+  TRACE(g_lstFile,"[simplePtrFactor]");
 
   /* Process according to the current variable sKind */
 
@@ -2119,7 +2146,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
        * defining the RECORD type
        */
 
-      if (!withRecord.parent)
+      if (!g_withRecord.parent)
         {
           error(eINVTYPE);
         }
@@ -2136,7 +2163,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.record != withRecord.parent)
+      else if (varPtr->sParm.r.record != g_withRecord.parent)
         {
           error(eRECORDOBJECT);
         }
@@ -2144,19 +2171,19 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
         {
           int16_t tempOffset;
 
-          /* Now there are two cases to consider:  (1) the withRecord is a
-           * pointer to a RECORD, or (2) the withRecord is the RECOR itself
+          /* Now there are two cases to consider:  (1) the g_withRecord is a
+           * pointer to a RECORD, or (2) the g_withRecord is the RECOR itself
            */
 
-          if (withRecord.pointer)
+          if (g_withRecord.pointer)
             {
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + withRecord.index));
+              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
               factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
-              tempOffset   = withRecord.offset;
+              tempOffset   = g_withRecord.offset;
             }
           else
             {
-              tempOffset   = varPtr->sParm.r.offset + withRecord.offset;
+              tempOffset   = varPtr->sParm.r.offset + g_withRecord.offset;
             }
 
           /* Modify the variable so that it has the characteristics of the
@@ -2170,9 +2197,9 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
           tempOffset              = varPtr->sParm.r.offset;
 
           varPtr->sKind           = typePtr->sParm.t.type;
-          varPtr->sLevel          = withRecord.level;
+          varPtr->sLevel          = g_withRecord.level;
           varPtr->sParm.v.size    = typePtr->sParm.t.asize;
-          varPtr->sParm.v.offset  = tempOffset + withRecord.offset;
+          varPtr->sParm.v.offset  = tempOffset + g_withRecord.offset;
           varPtr->sParm.v.parent  = typePtr;
 
           factorType = simplePtrFactor(varPtr, factorFlags);
@@ -2249,7 +2276,7 @@ static exprType functionDesignator(void)
   exprType factorType;
   int size = 0;
 
-  TRACE(lstFile,"[functionDesignator]");
+  TRACE(g_lstFile,"[functionDesignator]");
 
   /* FORM: function-designator =
    *       function-identifier [ actual-parameter-list ]
@@ -2313,7 +2340,7 @@ static exprType functionDesignator(void)
 
 static void setAbstractType(STYPE *sType)
 {
-  TRACE(lstFile,"[setAbstractType]");
+  TRACE(g_lstFile,"[setAbstractType]");
 
   if ((sType) && (sType->sKind == sTYPE)
   &&   (sType->sParm.t.type == sPOINTER))
@@ -2373,7 +2400,7 @@ static void getSetFactor(void)
 {
    setTypeStruct s;
 
-   TRACE(lstFile,"[getSetFactor]");
+   TRACE(g_lstFile,"[getSetFactor]");
 
    /* FORM: [[<constant>[,<constant>[, ...]]]] */
    /* ASSUMPTION:  The first '[' has already been processed */
@@ -2442,7 +2469,7 @@ static void getSetElement(setTypeStruct *s)
    int16_t lastValue;
    STYPE  *setPtr;
 
-   TRACE(lstFile,"[getSetElement]");
+   TRACE(g_lstFile,"[getSetElement]");
 
    switch (g_token) {
      case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */

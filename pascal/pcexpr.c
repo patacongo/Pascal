@@ -119,7 +119,7 @@ char   *constantStart;
 
 void constantExpression(void)
 {
-  TRACE(lstFile,"[constantExpression]");
+  TRACE(g_lstFile,"[constantExpression]");
 
   /* Get the value of a simple constant expression */
 
@@ -252,7 +252,7 @@ static void constantSimpleExpression(void)
   int32_t termInt;
   double  termReal;
 
-  TRACE(lstFile,"[constantSimpleExpression]");
+  TRACE(g_lstFile,"[constantSimpleExpression]");
 
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]] */
   /* get +/- unary operation */
@@ -387,7 +387,7 @@ void constantTerm(void)
   int32_t factorInt;
   double  factorReal;
 
-  TRACE(lstFile,"[constantTerm]");
+  TRACE(g_lstFile,"[constantTerm]");
 
   /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
 
@@ -527,7 +527,7 @@ void constantTerm(void)
 
 static void constantFactor(void)
 {
-  TRACE(lstFile,"[constantFactor]");
+  TRACE(g_lstFile,"[constantFactor]");
 
   /* Process by token type */
 

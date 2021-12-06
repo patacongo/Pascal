@@ -2,7 +2,7 @@
  * pgen.c
  * P-Code generation logic
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,8 +63,7 @@
  **********************************************************************/
 
 extern poffHandle_t poffHandle; /* Handle to POFF object */
-extern FILE *lstFile;           /* LIST file pointer */
-extern int16_t level;            /* Static nesting level */
+extern FILE *g_lstFile;         /* LIST file pointer */
 
 /**********************************************************************
  * Private Variables
@@ -190,7 +189,7 @@ insn16_DisassemblePCode(uint8_t opcode, uint8_t arg1, uint16_t arg2)
   op.arg1 = arg1;
   op.arg2 = arg2;
 
-  insn_DisassemblePCode(lstFile, &op);
+  insn_DisassemblePCode(g_lstFile, &op);
 }
 #else
 # define insn16_DisassemblePCode(op,a1,a2)
@@ -204,7 +203,7 @@ insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2)
 {
   uint16_t insn_opcode = opmap[opcode];
   uint16_t arg16;
-  TRACE(lstFile,"[insn16_Generate:0x%02x->0x%04x]", opcode, insn_opcode);
+  TRACE(g_lstFile,"[insn16_Generate:0x%02x->0x%04x]", opcode, insn_opcode);
 
   poffAddProgByte(poffHandle, insn_opcode);
   if (insn_opcode & o8)

@@ -135,8 +135,8 @@ static int32_t g_dwVarSize;
 
 void block()
 {
-  uint16_t beginLabel          = ++label;            /* BEGIN label */
-  int32_t saveDStack           = dstack;             /* Save DSEG size */
+  uint16_t beginLabel          = ++g_label;          /* BEGIN label */
+  int32_t saveDStack           = g_dStack;           /* Save DSEG size */
   char   *saveStringSP         = g_stringSP;         /* Save top of string stack */
   unsigned int saveNSym        = g_nSym;             /* Save top of symbol table */
   unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
@@ -144,7 +144,7 @@ void block()
   unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
   register int16_t i;
 
-  TRACE(lstFile,"[block]");
+  TRACE(g_lstFile,"[block]");
 
   /* Set the current symbol/constant table offsets for this level */
 
@@ -158,12 +158,12 @@ void block()
 
   if ((g_level == 0) && (FP0->kind == eIsProgram))
     {
-      poffSetEntryPoint(poffHandle, label);
+      poffSetEntryPoint(poffHandle, g_label);
     }
 
   /* Init size of the new DSEG */
 
-  dstack = 0;
+  g_dStack = 0;
 
   /* FORM: block = declaration-group compound-statement
    * Process the declaration-group
@@ -207,16 +207,16 @@ void block()
 
   /* Then emit the compoundStatement itself */
 
-  if (dstack)
+  if (g_dStack)
     {
-      pas_GenerateDataOperation(opINDS, (int32_t)dstack);
+      pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
     }
 
   compoundStatement();
 
-  if (dstack)
+  if (g_dStack)
     {
-      pas_GenerateDataOperation(opINDS, -(int32_t)dstack);
+      pas_GenerateDataOperation(opINDS, -(int32_t)g_dStack);
     }
 
   /* Make sure all declared labels were defined in the block */
@@ -239,7 +239,7 @@ void block()
 
   /* "Pop" declarations local to this block */
 
-  dstack             = saveDStack;    /* Restore old DSEG size */
+  g_dStack           = saveDStack;    /* Restore old DSEG size */
   g_stringSP         = saveStringSP;  /* Restore top of string stack */
 
   /* Restore the symbol/constant table offsets for the previous level */
@@ -264,7 +264,7 @@ void declarationGroup(int32_t beginLabel)
   unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
   unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
 
-  TRACE(lstFile,"[declarationGroup]");
+  TRACE(g_lstFile,"[declarationGroup]");
 
   /* Set the current symbol/constant table offsets for this level */
 
@@ -516,7 +516,7 @@ int16_t formalParameterList(STYPE *procPtr)
   int16_t i;
   bool    pointerType;
 
-  TRACE(lstFile,"[formalParameterList]");
+  TRACE(g_lstFile,"[formalParameterList]");
 
   /* FORM: formal-parameter-list =
    *       '(' formal-parameter-section { ';' formal-parameter-section } ')'
@@ -613,7 +613,7 @@ static void pas_DeclareLabel(void)
 {
    char   *labelname;                   /* Label symbol table name */
 
-   TRACE(lstFile,"[pas_DeclareLabel]");
+   TRACE(g_lstFile,"[pas_DeclareLabel]");
 
    /* FORM:  LABEL <integer>[,<integer>[,<integer>][...]]]; */
 
@@ -625,7 +625,7 @@ static void pas_DeclareLabel(void)
            labelname = g_stringSP;
            (void)sprintf(labelname, "%" PRId32, g_tknInt);
            while (*g_stringSP++);
-           (void)addLabel(labelname, ++label);
+           (void)addLabel(labelname, ++g_label);
            getToken();
          }
        else error(eINTCONST);
@@ -650,7 +650,7 @@ static void pas_DeclareConst(void)
 {
   char *const_name;
 
-  TRACE(lstFile,"[pas_DeclareConst]");
+  TRACE(g_lstFile,"[pas_DeclareConst]");
 
   /* FORM:  <identifier> = <numeric constant|string>
    * NOTE:  Only integer constants are supported
@@ -708,7 +708,7 @@ static STYPE *pas_DeclareType(char *typeName)
 {
   STYPE *typePtr;
 
-  TRACE(lstFile,"[pas_DeclareType]");
+  TRACE(g_lstFile,"[pas_DeclareType]");
 
   /* This function processes the type-denoter in
    * FORM: type-definition = identifier '=' type-denoter
@@ -773,7 +773,7 @@ static STYPE *pas_DeclareVar(void)
   STYPE *typePtr;
   char  *varName;
 
-  TRACE(lstFile,"[pas_DeclareVar]");
+  TRACE(g_lstFile,"[pas_DeclareVar]");
 
   /* FORM: variable-declaration = identifier-list ':' type-denoter
    * FORM: identifier-list = identifier { ',' identifier }
@@ -822,12 +822,12 @@ static STYPE *pas_DeclareVar(void)
 
       /* Determine if alignment to INTEGER boundaries is necessary */
 
-      if ((!isIntAligned(dstack)) && (pas_IntAlignRequired(typePtr)))
-        dstack = intAlign(dstack);
+      if ((!isIntAligned(g_dStack)) && (pas_IntAlignRequired(typePtr)))
+        g_dStack = intAlign(g_dStack);
 
       /* Add the new variable to the symbol table */
 
-      varPtr = addVariable(varName, varType, dstack, g_dwVarSize, typePtr);
+      varPtr = addVariable(varName, varType, g_dStack, g_dwVarSize, typePtr);
 
       /* If the variable is declared in an interface section at level zero,
        * then it is a candidate to imported or exported.
@@ -856,7 +856,7 @@ static STYPE *pas_DeclareVar(void)
                */
 
               varPtr->sParm.v.flags  |= SVAR_EXTERNAL;
-              varPtr->sParm.v.offset  = dstack - FP->dstack;
+              varPtr->sParm.v.offset  = g_dStack - FP->dstack;
 
               /* IMPORT the symbol; assign an offset relative to
                * the dstack at the beginning of this file
@@ -877,7 +877,7 @@ static STYPE *pas_DeclareVar(void)
        * offset for the next variable that is declared.
        */
 
-      dstack += g_dwVarSize;
+      g_dStack += g_dwVarSize;
     }
 
   return typePtr;
@@ -891,7 +891,7 @@ static void pas_DeclareFile(void)
    int16_t fileNumber = g_tknPtr->sParm.fileNumber;
    STYPE *filePtr;
 
-   TRACE(lstFile,"[pas_DeclareFile]");
+   TRACE(g_lstFile,"[pas_DeclareFile]");
 
    /* FORM:  <file identifier> : FILE OF <type> */
    /* OR:    <file identifier> : <FILE OF type identifier> */
@@ -908,7 +908,7 @@ static void pas_DeclareFile(void)
 
      /* Make sure that the data stack is aligned to INTEGER boundaries */
 
-     dstack = intAlign(dstack);
+     g_dStack = intAlign(g_dStack);
 
      /* FORM:  <file identifier> : FILE OF <type> */
 
@@ -917,9 +917,9 @@ static void pas_DeclareFile(void)
          g_files[fileNumber].defined = -1;
          g_files[fileNumber].flevel  = g_level;
          g_files[fileNumber].ftype   = g_tknPtr->sParm.t.type;
-         g_files[fileNumber].faddr   = dstack;
+         g_files[fileNumber].faddr   = g_dStack;
          g_files[fileNumber].fsize   = g_tknPtr->sParm.t.asize;
-         dstack                     += (g_tknPtr->sParm.t.asize);
+         g_dStack                     += (g_tknPtr->sParm.t.asize);
          getToken();
        }
 
@@ -939,9 +939,9 @@ static void pas_DeclareFile(void)
              g_files[fileNumber].defined = -1;
              g_files[fileNumber].flevel  = g_level;
              g_files[fileNumber].ftype   = filePtr->sParm.t.type;
-             g_files[fileNumber].faddr   = dstack;
+             g_files[fileNumber].faddr   = g_dStack;
              g_files[fileNumber].fsize   = g_dwVarSize;
-             dstack                     += g_dwVarSize;
+             g_dStack                   += g_dwVarSize;
            }
        }
     }
@@ -952,14 +952,14 @@ static void pas_DeclareFile(void)
 
 static void pas_ProcedureDeclaration(void)
 {
-  uint16_t     procLabel = ++label;
+  uint16_t     procLabel = ++g_label;
   char        *saveStringSP;
   STYPE       *procPtr;
   unsigned int saveSymOffset;    /* Save previous level symbol offset */
   unsigned int saveConstOffset;  /* Save previous level constant offset */
   int          i;
 
-  TRACE(lstFile,"[pas_ProcedureDeclaration]");
+  TRACE(g_lstFile,"[pas_ProcedureDeclaration]");
 
   /* FORM: procedure-declaration =
    *       procedure-heading ';' directive |
@@ -1066,7 +1066,7 @@ static void pas_ProcedureDeclaration(void)
 
 static void pas_FunctionDeclaration(void)
 {
-  uint16_t    funcLabel = ++label;
+  uint16_t    funcLabel = ++g_label;
   int16_t     parameterOffset;
   char        *saveStringSP;
   STYPE       *funcPtr;
@@ -1077,7 +1077,7 @@ static void pas_FunctionDeclaration(void)
   unsigned int saveConstOffset; /* Save previous level constant offset */
   int          i;
 
-  TRACE(lstFile,"[pas_FunctionDeclaration]");
+  TRACE(g_lstFile,"[pas_FunctionDeclaration]");
 
   /* FORM: function-declaration =
    *       function-heading ';' directive |
@@ -1225,7 +1225,7 @@ static void pas_FunctionDeclaration(void)
 
 static void pas_SetTypeSize(STYPE *typePtr, bool allocate)
 {
-  TRACE(lstFile,"[pas_SetTypeSize]");
+  TRACE(g_lstFile,"[pas_SetTypeSize]");
 
   /* Check for type-identifier */
 
@@ -1335,7 +1335,7 @@ static STYPE *pas_TypeIdentifier(bool allocate)
 {
   STYPE *typePtr = NULL;
 
-  TRACE(lstFile,"[pas_TypeIdentifier]");
+  TRACE(g_lstFile,"[pas_TypeIdentifier]");
 
   /* Check for type-identifier */
 
@@ -1360,7 +1360,7 @@ static STYPE *pas_TypeDenoter(char *typeName, bool allocate)
 {
   STYPE *typePtr;
 
-  TRACE(lstFile,"[pas_TypeDenoter]");
+  TRACE(g_lstFile,"[pas_TypeDenoter]");
 
   /* FORM: type-denoter = type-identifier | new-type
    *
@@ -1550,7 +1550,7 @@ static STYPE *pas_NewComplexType(char *typeName)
   STYPE *typeIdPtr;
   STYPE *indexTypePtr;
 
-  TRACE(lstFile,"[pas_NewComplexType]");
+  TRACE(g_lstFile,"[pas_NewComplexType]");
 
   /* FORM: new-complex-type = new-structured-type | new-pointer-type */
 
@@ -1749,7 +1749,7 @@ static STYPE *pas_OrdinalTypeIdentifier(bool allocate)
 {
   STYPE *typePtr;
 
-  TRACE(lstFile,"[pas_OrdinalTypeIdentifier]");
+  TRACE(g_lstFile,"[pas_OrdinalTypeIdentifier]");
 
   /* Get the next type from the input stream */
 
@@ -1791,7 +1791,7 @@ static STYPE *pas_GetArrayIndexType(void)
 {
   STYPE *indexType = NULL;
 
-  TRACE(lstFile,"[pas_GetArrayIndexType]");
+  TRACE(g_lstFile,"[pas_GetArrayIndexType]");
 
   /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
    * FORM: [PACKED] ARRAY [<integer>] OF type-denoter
@@ -1880,7 +1880,7 @@ static STYPE *pas_GetArrayBaseType(STYPE *indexTypePtr)
 {
   STYPE *typeDenoter = NULL;
 
-  TRACE(lstFile,"[pas_GetArrayBaseType]");
+  TRACE(g_lstFile,"[pas_GetArrayBaseType]");
 
   /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
    * FORM: [PACKED] ARRAY [<integer>] OF type-denoter
@@ -1918,7 +1918,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
   int16_t recordOffset;
   int recordCount, symbolIndex;
 
-  TRACE(lstFile,"[pas_DeclareRecord]");
+  TRACE(g_lstFile,"[pas_DeclareRecord]");
 
   /* FORM: record-type = 'record' field-list 'end' */
 
@@ -2281,7 +2281,7 @@ static STYPE *pas_DeclareField(STYPE *recordPtr)
    STYPE *fieldPtr = NULL;
    STYPE *typePtr;
 
-   TRACE(lstFile,"[pas_DeclareField]");
+   TRACE(g_lstFile,"[pas_DeclareField]");
 
    /* Declare one record-section with a record.
     * FORM: record-section = identifier-list ':' type-denoter
@@ -2344,7 +2344,7 @@ static STYPE *pas_DeclareParameter(bool pointerType)
    STYPE  *varPtr;
    STYPE  *typePtr;
 
-   TRACE(lstFile,"[pas_DeclareParameter]");
+   TRACE(g_lstFile,"[pas_DeclareParameter]");
 
    /* FORM:
     * <identifier>[,<identifier>[,<identifier>[...]]] : <type identifier>
