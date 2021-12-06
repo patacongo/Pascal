@@ -174,17 +174,17 @@ static void printError(uint16_t errcode)
    if ((g_tokenString) && (g_tokenString < g_stringSP))
      {
        fprintf (errFile, fmtErrWithToken,
-                FP->include, FP->line, errcode, token, g_tokenString);
+                FP->include, FP->line, errcode, g_token, g_tokenString);
        fprintf (lstFile, fmtErrWithToken,
-                FP->include, FP->line, errcode, token, g_tokenString);
+                FP->include, FP->line, errcode, g_token, g_tokenString);
        g_stringSP = g_tokenString; /* Clean up string stack */
      } /* end if */
    else
      {
        fprintf (errFile, fmtErrNoToken,
-                FP->include, FP->line, errcode, token);
+                FP->include, FP->line, errcode, g_token);
        fprintf (lstFile, fmtErrNoToken,
-                FP->include, FP->line, errcode, token);
+                FP->include, FP->line, errcode, g_token);
      } /* end else */
 } /* end printError */
 

@@ -121,7 +121,7 @@
 #define ISVOLATILE(n)         regm_IsKind(VOLATILE_REG, (n))
 
 /***************************************************************************
- * Global Types
+ * Public Types
  ***************************************************************************/
 
 struct regm32_t
@@ -208,7 +208,7 @@ struct regm_rcode2_s
 typedef int (*regm_rcode2_node_t)(struct regm_rcode2_s*, void*);
 
 /***************************************************************************
- * Global Variables
+ * Public Datas
  ***************************************************************************/
 
 extern struct regm_rcode2_s *g_pRCode2;
@@ -260,7 +260,7 @@ static inline void regm_SetRegNo(int wRegNo, uint32_t *pdwRegister)
 }
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************C***********************************************/
 
 /* Generate function prologue: Save return address, create stack frame

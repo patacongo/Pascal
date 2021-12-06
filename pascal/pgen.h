@@ -45,7 +45,7 @@
 #include "podefs.h"
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 int32_t pas_GetCurrentStackLevel(void);

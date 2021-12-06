@@ -534,11 +534,11 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   for (i = 0; i <= MAX_FILES; i++)
     {
-      files[i].defined = 0;
-      files[i].flevel  = 0;
-      files[i].ftype   = 0;
-      files[i].faddr   = 0;
-      files[i].fsize   = 0;
+      g_files[i].defined = 0;
+      g_files[i].flevel  = 0;
+      g_files[i].ftype   = 0;
+      g_files[i].faddr   = 0;
+      g_files[i].fsize   = 0;
     }
 }
 

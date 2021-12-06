@@ -76,7 +76,7 @@ typedef enum exprEnum
 } exprType;
 
 /***********************************************************************
- * Global Variables
+ * Public Datas
  ***********************************************************************/
 
 extern int     constantToken;
@@ -85,7 +85,7 @@ extern double  constantReal;
 extern char   *constantStart;
 
 /***********************************************************************
- * Global Function Protypes
+ * Public Function Protothypes
  ***********************************************************************/
 
 exprType expression(exprType findExprType, STYPE *typePtr);

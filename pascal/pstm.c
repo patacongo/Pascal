@@ -128,49 +128,49 @@ void statement(void)
 
   /* Process the statement according to the type of the leading token */
 
-  switch (token)
+  switch (g_token)
     {
       /* Simple assignment statements */
 
     case sINT :
-      symPtr = tknPtr;
+      symPtr = g_tknPtr;
       getToken();
       pas_Assignment(opSTS, exprInteger, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sCHAR :
-      symPtr = tknPtr;
+      symPtr = g_tknPtr;
       getToken();
       pas_Assignment(opSTSB, exprChar, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sBOOLEAN :
-      symPtr = tknPtr;
+      symPtr = g_tknPtr;
       getToken();
       pas_Assignment(opSTSB, exprBoolean, symPtr, NULL);
       break;
 
     case sREAL :
-      symPtr = tknPtr;
+      symPtr = g_tknPtr;
       getToken();
       pas_LargeAssignment(opSTSM, exprReal, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sSCALAR :
-      symPtr = tknPtr;
+      symPtr = g_tknPtr;
       getToken();
       pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sSET_OF :
-      symPtr = tknPtr;
+      symPtr = g_tknPtr;
       getToken();
       pas_Assignment(opSTS, exprSet, symPtr, symPtr->sParm.v.parent);
       break;
 
     case sSTRING :
     case sRSTRING :
-      symPtr = tknPtr;
+      symPtr = g_tknPtr;
       getToken();
       pas_StringAssignment(symPtr, symPtr->sParm.v.parent);
       break;
@@ -234,7 +234,7 @@ static void pas_ComplexAssignment(void)
     * pas_SimpleAssignment() will modify it.
     */
 
-   symbolSave = *tknPtr;
+   symbolSave = *g_tknPtr;
    getToken();
 
    /* Then process the complex assignment until it is reduced to a simple
@@ -436,7 +436,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 
       if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
         {
-          if (token == '.') error(ePOINTERTYPE);
+          if (g_token == '.') error(ePOINTERTYPE);
 
           if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
             pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
@@ -451,7 +451,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
        * record field identifier
        */
 
-      else if (token == '.')
+      else if (g_token == '.')
         {
           /* Skip over the period */
 
@@ -461,8 +461,8 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
            * follows the period.
            */
 
-          if ((token != sRECORD_OBJECT) ||
-              (tknPtr->sParm.r.record != typePtr))
+          if ((g_token != sRECORD_OBJECT) ||
+              (g_tknPtr->sParm.r.record != typePtr))
             error(eRECORDOBJECT);
           else
             {
@@ -470,7 +470,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
                * the field but with level and offset associated with the record
                */
 
-              typePtr                 = tknPtr->sParm.r.parent;
+              typePtr                 = g_tknPtr->sParm.r.parent;
               varPtr->sKind           = typePtr->sParm.t.type;
               varPtr->sParm.v.parent  = typePtr;
 
@@ -478,11 +478,11 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 
               if (assignFlags == (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE | VAR_PARM_ASSIGNMENT))
                 {
-                  pas_GenerateDataOperation(opPUSH, tknPtr->sParm.r.offset);
+                  pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
                   pas_GenerateSimple(opADD);
                 }
               else
-                varPtr->sParm.v.offset += tknPtr->sParm.r.offset;
+                varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
 
               getToken();
               pas_SimpleAssignment(varPtr, assignFlags);
@@ -578,7 +578,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
        * OR:   <pointer identifier> := <pointer expression>
        */
 
-      if (token == '^') /* value assignment? */
+      if (g_token == '^') /* value assignment? */
         {
           getToken();
           assignFlags |= ADDRESS_DEREFERENCE;
@@ -632,7 +632,7 @@ static void pas_Assignment(uint16_t storeOp, exprType assignType,
 
    /* FORM:  <variable OR function identifer> := <expression> */
 
-   if (token != tASSIGN) error (eASSIGN);
+   if (g_token != tASSIGN) error (eASSIGN);
    else getToken();
 
    expression(assignType, typePtr);
@@ -652,7 +652,7 @@ static void pas_StringAssignment(STYPE *varPtr, STYPE *typePtr)
 
    /* Verify that the assignment token follows the indentifier */
 
-   if (token != tASSIGN) error (eASSIGN);
+   if (g_token != tASSIGN) error (eASSIGN);
    else getToken();
 
    /* Get the expression after assignment token. We'll take any kind
@@ -749,7 +749,7 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType assignType,
 
    /* FORM:  <variable OR function identifer> := <expression> */
 
-   if (token != tASSIGN) error (eASSIGN);
+   if (g_token != tASSIGN) error (eASSIGN);
    else getToken();
 
    expression(assignType, typePtr);
@@ -771,7 +771,7 @@ static void pas_GotoStatement(void)
    /* Get the token after the goto reserved word. It should be an <integer> */
 
    getToken();
-   if (token != tINT_CONST)
+   if (g_token != tINT_CONST)
      {
        /* Token following the goto is not an integer */
 
@@ -781,7 +781,7 @@ static void pas_GotoStatement(void)
      {
        /* The integer label must be non-negative */
 
-       if (tknInt < 0)
+       if (g_tknInt < 0)
          {
            error(eINVLABEL);
          }
@@ -789,7 +789,7 @@ static void pas_GotoStatement(void)
          {
            /* Find and verify the symbol associated with the label */
 
-           (void)sprintf (labelname, "%" PRId32, tknInt);
+           (void)sprintf (labelname, "%" PRId32, g_tknInt);
            if (!(label_ptr = findSymbol(labelname, 0)))
              {
                error(eUNDECLABEL);
@@ -825,7 +825,7 @@ static void pas_LabelStatement(void)
 
    /* Verify that the integer is a label name */
 
-   (void)sprintf (labelName, "%" PRId32, tknInt);
+   (void)sprintf (labelName, "%" PRId32, g_tknInt);
    if (!(labelPtr = findSymbol(labelName, 0)))
      {
        error(eUNDECLABEL);
@@ -865,7 +865,7 @@ static void pas_LabelStatement(void)
 
    /* Make sure that the label is followed by a colon */
 
-   if (token != ':') error (eCOLON);
+   if (g_token != ':') error (eCOLON);
    else getToken();
 }
 
@@ -873,7 +873,7 @@ static void pas_LabelStatement(void)
 
 static void pas_ProcStatement(void)
 {
-  STYPE *procPtr = tknPtr;
+  STYPE *procPtr = g_tknPtr;
   int size = 0;
 
   TRACE(lstFile,"[pas_ProcStatement]");
@@ -928,7 +928,7 @@ static void pas_IfStatement(void)
 
   /* Make sure that the boolean expression is followed by the THEN token */
 
-  if (token !=  tTHEN)
+  if (g_token !=  tTHEN)
     error (eTHEN);
   else
     {
@@ -961,7 +961,7 @@ static void pas_IfStatement(void)
 
       /* Check for optional ELSE <statement> */
 
-      if (token == tELSE)
+      if (g_token == tELSE)
         {
           /* Change the ENDIF label.  Now instead of branching to
            * the ENDIF, the logic above will branch to the ELSE
@@ -1029,11 +1029,11 @@ void compoundStatement(void)
        getToken();
        statement();
      }
-   while (token == ';');
+   while (g_token == ';');
 
    /* Verify that it really was END */
 
-   if (token != tEND) error (eEND);
+   if (g_token != tEND) error (eEND);
    else getToken();
 }
 
@@ -1058,11 +1058,11 @@ void pas_RepeatStatement ()
 
        statement();
      }
-   while (token == ';');
+   while (g_token == ';');
 
    /* Verify UNTIL follows */
 
-   if (token !=  tUNTIL) error (eUNTIL);
+   if (g_token !=  tUNTIL) error (eUNTIL);
    else getToken();
 
    /* Generate UNTIL <expression> */
@@ -1134,7 +1134,7 @@ static void pas_WhileStatement(void)
 
    /* Verify that the DO token follows the expression */
 
-   if (token !=  tDO) error(eDO);
+   if (g_token !=  tDO) error(eDO);
    else getToken();
 
    /* Generate the <statement> following the DO token */
@@ -1247,7 +1247,7 @@ static void pas_CaseStatement(void)
 
    /* Verify that CASE <expression> is followed with the OF token */
 
-   if (token !=  tOF) error (eOF);
+   if (g_token !=  tOF) error (eOF);
    else getToken();
 
    /* Loop to process each case until END encountered */
@@ -1259,7 +1259,7 @@ static void pas_CaseStatement(void)
 
        /* Process NON-STANDARD ELSE <statement> END */
 
-       if (token == tELSE)
+       if (g_token == tELSE)
          {
            getToken();
 
@@ -1285,7 +1285,7 @@ static void pas_CaseStatement(void)
 
            /* Verify that END follows the ELSE <statement> */
 
-           if (token != tEND) error(eEND);
+           if (g_token != tEND) error(eEND);
            else getToken();
 
            /* Terminate FOR loop */
@@ -1307,7 +1307,7 @@ static void pas_CaseStatement(void)
              {
                /* Verify that we have a constant */
 
-               if (!isConstant(token))
+               if (!isConstant(g_token))
                  {
                    error(eINTCONST);
                    break;
@@ -1320,7 +1320,7 @@ static void pas_CaseStatement(void)
                 */
 
                pas_GenerateSimple(opDUP);
-               pas_GenerateDataOperation(opPUSH, tknInt);
+               pas_GenerateDataOperation(opPUSH, g_tknInt);
 
                /* The kind of comparison we generate depends on if we have to
                 * jump over other case selector comparsions to the statement
@@ -1335,7 +1335,7 @@ static void pas_CaseStatement(void)
                 * commas.
                 */
 
-               if (token == ',')
+               if (g_token == ',')
                  {
                    /* Generate jump to <statement> */
 
@@ -1358,7 +1358,7 @@ static void pas_CaseStatement(void)
 
            /* Verify colon presence */
 
-           if (token != ':') error(eCOLON);
+           if (g_token != ':') error(eCOLON);
            else getToken();
 
            /* Set CASE label */
@@ -1388,11 +1388,11 @@ static void pas_CaseStatement(void)
 
        /* Check if there are more statements.  If not, verify END present */
 
-       if (token == ';')
+       if (g_token == ';')
          {
            getToken();
          }
-       else if (token == tEND)
+       else if (g_token == tEND)
          {
            getToken();
            break;
@@ -1440,7 +1440,7 @@ static void pas_ForStatement(void)
    getToken();
 
    /* Get and verify the left side of the assignment. */
-   if ((token != sINT) && (token != sSUBRANGE))
+   if ((g_token != sINT) && (g_token != sSUBRANGE))
      error(eINTVAR);
    else
      {
@@ -1448,24 +1448,24 @@ static void pas_ForStatement(void)
         * and evaluate the integer assignment.
         */
 
-       varPtr = tknPtr;
+       varPtr = g_tknPtr;
        getToken();
 
        /* Generate the assignment to the integer variable */
 
-       pas_Assignment(opSTS, exprInteger, tknPtr, tknPtr->sParm.v.parent);
+       pas_Assignment(opSTS, exprInteger, g_tknPtr, g_tknPtr->sParm.v.parent);
 
        /* Determine if this is a TO or a DOWNTO loop and set up the opCodes
         * to generate appropriately.
         */
 
-       if (token == tDOWNTO)
+       if (g_token == tDOWNTO)
          {
            jmpOp = opJGT;
            modOp = opDEC;
            getToken();
          }
-       else if (token == tTO)
+       else if (g_token == tTO)
          {
            jmpOp = opJLT;
            modOp = opINC;
@@ -1480,7 +1480,7 @@ static void pas_ForStatement(void)
 
        /* Verify that the <expression> is followed by the DO token */
 
-       if (token != tDO) error (eDO);
+       if (g_token != tDO) error (eDO);
        else getToken();
 
        /* Generate top of loop label */
@@ -1573,15 +1573,15 @@ static void pas_WithStatement(void)
         * there is no other WITH active
         */
 
-       if ((token == sRECORD) && (!withRecord.parent))
+       if ((g_token == sRECORD) && (!withRecord.parent))
          {
            /* Save the RECORD variable as the new withRecord */
 
-           withRecord.level   = tknPtr->sLevel;
+           withRecord.level   = g_tknPtr->sLevel;
            withRecord.pointer = false;
            withRecord.varParm = false;
-           withRecord.offset  = tknPtr->sParm.v.offset;
-           withRecord.parent  = tknPtr->sParm.v.parent;
+           withRecord.offset  = g_tknPtr->sParm.v.offset;
+           withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD variable */
 
@@ -1592,17 +1592,17 @@ static void pas_WithStatement(void)
         * (again only if there is no other WITH active)
         */
 
-       else if ((token == sVAR_PARM) &&
+       else if ((g_token == sVAR_PARM) &&
                 (!withRecord.parent) &&
-                (tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
          {
            /* Save the RECORD VAR parameter as the new withRecord */
 
-           withRecord.level   = tknPtr->sLevel;
+           withRecord.level   = g_tknPtr->sLevel;
            withRecord.pointer = true;
            withRecord.varParm = true;
-           withRecord.offset  = tknPtr->sParm.v.offset;
-           withRecord.parent  = tknPtr->sParm.v.parent;
+           withRecord.offset  = g_tknPtr->sParm.v.offset;
+           withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD VAR parameter */
 
@@ -1613,17 +1613,17 @@ static void pas_WithStatement(void)
         * (again only if there is no other WITH active)
         */
 
-       else if ((token == sPOINTER) &&
+       else if ((g_token == sPOINTER) &&
                 (!withRecord.parent) &&
-                (tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
          {
            /* Save the RECORD pointer as the new withRecord */
 
-           withRecord.level   = tknPtr->sLevel;
+           withRecord.level   = g_tknPtr->sLevel;
            withRecord.pointer = true;
            withRecord.pointer = false;
-           withRecord.offset  = tknPtr->sParm.v.offset;
-           withRecord.parent  = tknPtr->sParm.v.parent;
+           withRecord.offset  = g_tknPtr->sParm.v.offset;
+           withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD pointer */
 
@@ -1631,7 +1631,7 @@ static void pas_WithStatement(void)
 
            /* Verify that deferencing is specified! */
 
-           if (token != '^') error(eRECORDVAR);
+           if (g_token != '^') error(eRECORDVAR);
            else getToken();
          }
 
@@ -1639,18 +1639,18 @@ static void pas_WithStatement(void)
         * is from the same sRECORD type and is itself of type RECORD.
         */
 
-       else if ((token == sRECORD_OBJECT) &&
-                (tknPtr->sParm.r.record == withRecord.parent) &&
-                (tknPtr->sParm.r.parent->sParm.t.type == sRECORD))
+       else if ((g_token == sRECORD_OBJECT) &&
+                (g_tknPtr->sParm.r.record == withRecord.parent) &&
+                (g_tknPtr->sParm.r.parent->sParm.t.type == sRECORD))
          {
            /* Okay, update the withRecord to use this record field */
 
            if (withRecord.pointer)
-             withRecord.index += tknPtr->sParm.r.offset;
+             withRecord.index += g_tknPtr->sParm.r.offset;
            else
-             withRecord.offset += tknPtr->sParm.r.offset;
+             withRecord.offset += g_tknPtr->sParm.r.offset;
 
-           withRecord.parent  = tknPtr->sParm.r.parent;
+           withRecord.parent  = g_tknPtr->sParm.r.parent;
 
            /* Skip over the sRECORD_OBJECT */
 
@@ -1668,13 +1668,13 @@ static void pas_WithStatement(void)
 
        /* Check if there are multiple variables in the WITH statement */
 
-       if (token == ',') getToken();
+       if (g_token == ',') getToken();
        else break;
      }
 
    /* Verify that the RECORD list is terminated with DO */
 
-   if (token != tDO) error (eDO);
+   if (g_token != tDO) error (eDO);
    else getToken();
 
    /* Then process the statement following the WITH */

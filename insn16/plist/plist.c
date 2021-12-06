@@ -102,7 +102,7 @@ static void parseArgs       (int argc, char **argv);
 static void dumpProgramData (poffHandle_t poffHandle);
 
 /**********************************************************************
- * Global Functions
+ * Public Functions
  **********************************************************************/
 
 int main (int argc, char *argv[], char *envp[])

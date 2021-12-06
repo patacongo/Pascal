@@ -340,7 +340,7 @@ static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
 }
 
 /**********************************************************************
- * Global Functions
+ * Public Functions
  **********************************************************************/
 
 void stringStackOptimize(poffHandle_t poffHandle,

@@ -38,7 +38,7 @@
 #define __PPROC_H
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void primeBuiltInProcedures(void);

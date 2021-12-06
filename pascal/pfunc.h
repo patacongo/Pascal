@@ -44,7 +44,7 @@
 #include "pexpr.h" /* For exprType */
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void primeBuiltInFunctions(void);

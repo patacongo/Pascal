@@ -97,7 +97,7 @@ static uint32_t mergeLineNumbers (poffHandle_t inHandle, poffHandle_t outHandle,
 static void     writeOutputFile  (poffHandle_t outHandle);
 
 /**********************************************************************
- * Global Variables
+ * Public Data
  **********************************************************************/
 
 /**********************************************************************

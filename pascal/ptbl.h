@@ -45,7 +45,7 @@
 #include "config.h"
 
 /***************************************************************************
- * Global Variables
+ * Public Datas
  ***************************************************************************/
 
 extern STYPE       *g_parentInteger;
@@ -54,7 +54,7 @@ extern unsigned int g_nSym;          /* Number symbol table entries */
 extern unsigned int g_nConst;        /* Number constant table entries */
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 const RTYPE *findReservedWord (char *name);

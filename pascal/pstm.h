@@ -38,7 +38,7 @@
 #define __PSTM_H
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void statement         (void);  /* Process Statement */

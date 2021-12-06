@@ -48,7 +48,7 @@
 #include "pofflib.h"
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 /* POFF file is always big-endian */
@@ -64,7 +64,7 @@
 #endif
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 /* File name extension helper */
@@ -83,7 +83,7 @@ extern uint16_t poffSwap16(uint16_t val);
 extern uint32_t poffSwap32(uint32_t val);
 
 /***************************************************************************
- * Global Variables
+ * Public Datas
  ***************************************************************************/
 
 #endif /* __PASLIB_H */

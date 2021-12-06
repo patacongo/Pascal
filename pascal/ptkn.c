@@ -2,7 +2,7 @@
  * ptkn.c
  * Tokenization Package
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -255,8 +255,15 @@ void getToken(void)
   else if (inChar == ':')
     {
       getCharacter();
-      if (inChar == '=') {token = tASSIGN; getCharacter();}
-      else token = ':';
+      if (inChar == '=')
+        {
+          g_token = tASSIGN;
+          getCharacter();
+        }
+      else
+        {
+          g_token = ':';
+        }
     }
 
   /* Process '.' or subrange or real-number */
@@ -271,7 +278,7 @@ void getToken(void)
 
       if (inChar == '.')
         {
-          token = tSUBRANGE;
+          g_token = tSUBRANGE;
           getCharacter();
         }
 
@@ -282,7 +289,7 @@ void getToken(void)
 
       /* Otherwise, it is just a '.' */
 
-      else token = '.';
+      else g_token = '.';
     }
 
   /* Process '<' or '<=' or '<>' or '<<' */
@@ -290,10 +297,22 @@ void getToken(void)
   else if (inChar == '<')
     {
       getCharacter();
-      if (inChar == '>') {token = tNE; getCharacter();}
-      else if (inChar == '=') {token = tLE; getCharacter();}
-      else if (inChar == '<') {token = tSHL; getCharacter();}
-      else token = tLT;
+      if (inChar == '>')
+        {
+          g_token = tNE; getCharacter();
+        }
+      else if (inChar == '=')
+        {
+          g_token = tLE; getCharacter();
+        }
+      else if (inChar == '<')
+        {
+          g_token = tSHL; getCharacter();
+        }
+      else
+        {
+          g_token = tLT;
+        }
     }
 
   /* Process '>' or '>=' or '><' or '>>' */
@@ -301,10 +320,22 @@ void getToken(void)
   else if (inChar == '>')
     {
       getCharacter();
-      if (inChar == '<') {token = tNE; getCharacter();}
-      else if (inChar == '=') {token = tGE; getCharacter();}
-      else if (inChar == '>') {token = tSHR; getCharacter();}
-      else token = tGT;
+      if (inChar == '<')
+        {
+          g_token = tNE; getCharacter();
+        }
+      else if (inChar == '=')
+        {
+          g_token = tGE; getCharacter();
+        }
+      else if (inChar == '>')
+        {
+          g_token = tSHR; getCharacter();
+        }
+      else
+        {
+          g_token = tGT;
+        }
     }
 
   /* Get Comment -- form { .. } */
@@ -324,7 +355,7 @@ void getToken(void)
       getCharacter();                    /* skip over comment character */
       if (inChar != '*')                 /* is this a comment? */
         {
-          token = '(';                   /* No return '(' leaving the
+          g_token = '(';                 /* No return '(' leaving the
                                           * unprocessed char in inChar */
         }
       else
@@ -359,7 +390,7 @@ void getToken(void)
         }
       else if (inChar != '*')            /* is this a C-style comment? */
         {
-          token = '/';                   /* No return '/' leaving the
+          g_token = '/';                 /* No return '/' leaving the
                                           * unprocessed char in inChar */
         }
       else
@@ -400,7 +431,7 @@ void getToken(void)
 
   else if (isascii(inChar))
     {
-      token = inChar;
+      g_token = inChar;
       getCharacter();
     }
 
@@ -412,7 +443,7 @@ void getToken(void)
       getToken();
     }
 
-  DEBUG(lstFile,"[%02x]", token);
+  DEBUG(lstFile,"[%02x]", g_token);
 }
 
 /***************************************************************/
@@ -434,7 +465,7 @@ static void identifier(void)
 {
   const  RTYPE *rptr;                         /* Pointer to reserved word */
 
-  tknSubType = txNONE;                        /* Initialize */
+  g_tknSubType = txNONE;                      /* Initialize */
 
   /* Concatenate identifier */
 
@@ -452,8 +483,8 @@ static void identifier(void)
   rptr = findReservedWord(g_tokenString);
   if (rptr)
     {
-      token      = rptr->rtype;               /* get type from rsw table */
-      tknSubType = rptr->subtype;             /* get subtype from rsw table */
+      g_token      = rptr->rtype;             /* get type from rsw table */
+      g_tknSubType = rptr->subtype;           /* get subtype from rsw table */
       g_stringSP   = g_tokenString;           /* pop token from stack */
     }
 
@@ -461,10 +492,10 @@ static void identifier(void)
 
   else
     {
-      tknPtr = findSymbol(g_tokenString, g_symStart);
-      if (tknPtr)
+      g_tknPtr = findSymbol(g_tokenString, g_symStart);
+      if (g_tknPtr)
         {
-          token = tknPtr->sKind;              /* get type from symbol table */
+          g_token    = g_tknPtr->sKind;       /* get type from symbol table */
           g_stringSP = g_tokenString;         /* pop token from stack */
 
           /* The following assignments only apply to constants.  However it
@@ -472,13 +503,13 @@ static void identifier(void)
            * if is appropriate to do so
            */
 
-          if (token == tREAL_CONST)
+          if (g_token == tREAL_CONST)
             {
-              tknReal = tknPtr->sParm.c.val.f;
+              g_tknReal = g_tknPtr->sParm.c.val.f;
             }
           else
             {
-              tknInt  = tknPtr->sParm.c.val.i;
+              g_tknInt  = g_tknPtr->sParm.c.val.i;
             }
         }
 
@@ -486,7 +517,7 @@ static void identifier(void)
 
       else
         {
-          token = tIDENT;
+          g_token = tIDENT;
         }
     }
 }
@@ -498,7 +529,7 @@ static void string(void)
 {
   register int16_t count = 0;         /* # chars in string */
 
-  token = tSTRING_CONST;             /* indicate string constant type */
+  g_token = tSTRING_CONST;           /* indicate string constant type */
   getCharacter();                    /* skip over 1st single quote */
 
   while (inChar != SQUOTE)           /* loop until next single quote */
@@ -520,8 +551,8 @@ static void string(void)
   getCharacter();                    /* skip over last single quote */
   if (count == 1)                    /* Check for char constant */
     {
-      token    = tCHAR_CONST;        /* indicate char constant type */
-      tknInt   = *g_tokenString;     /* (integer) value = single char */
+      g_token    = tCHAR_CONST;      /* indicate char constant type */
+      g_tknInt   = *g_tokenString;   /* (integer) value = single char */
       g_stringSP = g_tokenString;    /* "pop" from string stack */
     }
 }
@@ -636,7 +667,7 @@ static void unsignedNumber(void)
 
   /* Assume an integer type (might be real) */
 
-  token = tINT_CONST;
+  g_token = tINT_CONST;
 
   /* Concatenate all digits until an non-digit is found */
 
@@ -666,7 +697,7 @@ static void unsignedNumber(void)
       /* Terminate the integer string and convert it using sscanf */
 
       *g_stringSP++ = '\0';
-      (void)sscanf(g_tokenString, "%" PRId32, &tknInt);
+      (void)sscanf(g_tokenString, "%" PRId32, &g_tknInt);
 
       /* Remove the integer string from the character identifer stack */
 
@@ -705,7 +736,7 @@ static void unsignedRealNumber(void)
 
   /* Its a real constant */
 
-  token = tREAL_CONST;
+  g_token = tREAL_CONST;
 
   /* Save the decimal point (inChar points to the character after
    * the decimal point).
@@ -739,7 +770,7 @@ static void unsignedRealNumber(void)
        */
 
       *g_stringSP++ = '\0';
-      (void) sscanf(g_tokenString, "%lf", &tknReal);
+      (void) sscanf(g_tokenString, "%lf", &g_tknReal);
     }
 
   /* Remove the number string from the character identifer stack */
@@ -770,7 +801,7 @@ static void unsignedExponent(void)
 
   /* Its a real constant */
 
-  token = tREAL_CONST;
+  g_token = tREAL_CONST;
 
   /* Save the decimal point (inChar points to the character after
    * the decimal point).
@@ -802,7 +833,7 @@ static void unsignedExponent(void)
   if (!isdigit(inChar))
     {
       error(eEXPONENT);
-      tknReal = 0.0;
+      g_tknReal = 0.0;
     }
   else
     {
@@ -820,7 +851,7 @@ static void unsignedExponent(void)
        */
 
       *g_stringSP++ = '\0';
-      (void) sscanf(g_tokenString, "%lf", &tknReal);
+      (void) sscanf(g_tokenString, "%lf", &g_tknReal);
     }
 
   /* Remove the number string from the character identifer stack */
@@ -843,7 +874,7 @@ static void unsignedHexadecimal(void)
 
   /* This is another representation for an integer */
 
-  token = tINT_CONST;
+  g_token = tINT_CONST;
 
   /* Loop to process each hex 'digit' */
 
@@ -874,7 +905,7 @@ static void unsignedHexadecimal(void)
   /* Terminate the hex string and convert to binary using sscanf */
 
   *g_stringSP++ = '\0';
-  (void)sscanf(g_tokenString, "%" PRIx32, &tknInt);
+  (void)sscanf(g_tokenString, "%" PRIx32, &g_tknInt);
 
   /* Remove the hex string from the character identifer stack */
 
@@ -898,7 +929,7 @@ static void unsignedBinary(void)
 
   /* This is another representation for an integer */
 
-  token = tINT_CONST;
+  g_token = tINT_CONST;
 
   /* Loop to process each hex 'digit' */
 
@@ -930,7 +961,7 @@ static void unsignedBinary(void)
    * why we did it above.
    */
 
-  tknInt = (int32_t)value;
+  g_tknInt = (int32_t)value;
 }
 
 /***************************************************************/

@@ -68,7 +68,7 @@
  **********************************************************************/
 
 /**********************************************************************
- * Global Variables
+ * Public Data
  **********************************************************************/
 
 /**********************************************************************
@@ -96,11 +96,11 @@ void program(void)
   /* FORM: program = program-heading ';' [uses-section ] block '.'
    * FORM: program-heading = 'program' identifier [ '(' identifier-list ')' ]
    *
-   * On entry, 'program' has already been identified and token refers to
+   * On entry, 'program' has already been identified and g_token refers to
    * the next token after 'program'
    */
 
-  if (token != tIDENT) error(eIDENT);      /* Verify <program name> */
+  if (g_token != tIDENT) error(eIDENT);      /* Verify <program name> */
   else
     {
       pgmname = g_tokenString;             /* Save program name */
@@ -109,7 +109,7 @@ void program(void)
 
   /* Process optional file list (allow re-declaration of INPUT & OUTPUT) */
 
-  if (token == '(')
+  if (g_token == '(')
     {
       do
         {
@@ -118,7 +118,7 @@ void program(void)
            */
 
           getToken();
-          if (token == tIDENT)
+          if (g_token == tIDENT)
             {
               if ((++nfiles) > MAX_FILES) fatal(eOVF);
               (void)addFile(g_tokenString, nfiles);
@@ -130,8 +130,8 @@ void program(void)
            * (non-standard) and will have file numbers 0 and 1, respectively.
            */
 
-          else if ((token == sFILE) &&
-                   (tknPtr->sParm.fileNumber < FIRST_USER_FILE))
+          else if ((g_token == sFILE) &&
+                   (g_tknPtr->sParm.fileNumber < FIRST_USER_FILE))
             {
               getToken();
             }
@@ -140,15 +140,15 @@ void program(void)
               error(eIDENT);
             }
         }
-      while (token == ',');
+      while (g_token == ',');
 
-      if (token != ')') error(eRPAREN);
+      if (g_token != ')') error(eRPAREN);
       else getToken();
     }
 
   /* Make sure that a semicolon follows the program-heading */
 
-  if (token != ';') error(eSEMICOLON);
+  if (g_token != ';') error(eSEMICOLON);
   else getToken();
 
   /* Set the POFF file header type */
@@ -164,7 +164,7 @@ void program(void)
    * FORM: uses-section = 'uses' [ uses-unit-list ] ';'
    */
 
-  if (token == tUSES)
+  if (g_token == tUSES)
     {
       getToken();
       usesSection();
@@ -173,7 +173,7 @@ void program(void)
   /* Process the block */
 
   block();
-  if (token !=  '.') error(ePERIOD);
+  if (g_token !=  '.') error(ePERIOD);
   pas_GenerateSimple(opEND);
 }
 
@@ -193,11 +193,11 @@ void usesSection(void)
    * FORM: uses-unit-list = unit-import {';' uses-unit-list }
    * FORM: unit-import = identifier ['in' non-empty-string ]
    *
-   * On entry, token will point to the token just after
+   * On entry, g_token will point to the token just after
    * the 'uses' reservers word.
    */
 
-  while (token == tIDENT)
+  while (g_token == tIDENT)
     {
       /* Save the unit name identifier and skip over the identifier */
 
@@ -207,14 +207,14 @@ void usesSection(void)
       /* Check for the optional 'in' */
 
       saveTknStrt = g_tokenString;
-      if (token == tIN)
+      if (g_token == tIN)
         {
           /* Skip over 'in' and verify that a string constant representing
            * the file name follows.
            */
 
           getToken();
-          if (token != tSTRING_CONST) error(eSTRING);
+          if (g_token != tSTRING_CONST) error(eSTRING);
           else
             {
               /* Save the unit file name and skip to the
@@ -241,14 +241,14 @@ void usesSection(void)
 
       /* Open the unit file */
 
-      saveToken   = token;
+      saveToken   = g_token;
       openNestedFile(unitFileName);
       FP->kind    = eIsUnit;
       FP->section = eIsOtherSection;
 
       /* Verify that this is a unit file */
 
-      if (token != tUNIT) error(eUNIT);
+      if (g_token != tUNIT) error(eUNIT);
       else getToken();
 
       /* Release the file name from the string stack */
@@ -259,7 +259,7 @@ void usesSection(void)
        * for (only one unit per file is supported)
        */
 
-      if (token != tIDENT) error(eIDENT);
+      if (g_token != tIDENT) error(eIDENT);
       else if (strcmp(unitName, g_tokenString) != 0) error(eUNITNAME);
 
       /* Parse the interface from the unit file (token must refer
@@ -271,8 +271,8 @@ void usesSection(void)
 
       /* Verify the terminating semicolon */
 
-      token = saveToken;
-      if (token !=  ';') error(eSEMICOLON);
+      g_token = saveToken;
+      if (g_token !=  ';') error(eSEMICOLON);
       else getToken();
     }
 }

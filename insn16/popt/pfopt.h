@@ -44,7 +44,7 @@
 #include "pofflib.h"
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void optFinalize(poffHandle_t poffHandle,

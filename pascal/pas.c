@@ -69,30 +69,24 @@
 #include "perr.h"     /* for error() */
 
 /**********************************************************************
- * Pre-processor Definitions
+ * Public Data
  **********************************************************************/
 
-/**********************************************************************
- * Global Variables
- **********************************************************************/
-
-/* Unitialized Global Data */
-
-uint16_t    token;                   /* Current token */
-uint16_t    tknSubType;              /* Extended token type */
-int32_t     tknInt;                  /* Integer token value */
-double      tknReal;                 /* Real token value */
-STYPE      *tknPtr;                  /* Pointer to symbol token*/
+uint16_t    g_token;                 /* Current token */
+uint16_t    g_tknSubType;            /* Extended token type */
+int32_t     g_tknInt;                /* Integer token value */
+double      g_tknReal;               /* Real token value */
+STYPE      *g_tknPtr;                /* Pointer to symbol token*/
 WTYPE       withRecord;              /* RECORD used with WITH statement */
-FTYPE       files[MAX_FILES+1];      /* File Table */
-fileState_t fileState[MAX_INCL];     /* State of all open files */
+FTYPE       g_files[MAX_FILES + 1];  /* File Table */
+fileState_t g_fileState[MAX_INCL];   /* State of all open files */
 
-/* sourceFileName : Program name from command line
- * includePath[] : Pathes to search when including file
+/* g_sourceFileName : Program name from command line
+ * g_includePath[] : Pathes to search when including file
  */
 
-char       *sourceFileName;
-char       *includePath[MAX_INCPATHES];
+char       *g_sourceFileName;
+char       *g_includePath[MAX_INCPATHES];
 
 poffHandle_t poffHandle;             /* Handle for POFF object */
 
@@ -100,11 +94,9 @@ FILE       *poffFile;                /* Pass1 POFF output file */
 FILE       *lstFile;                 /* List File pointer */
 FILE       *errFile;                 /* Error file pointer */
 
-/* Initialized Global Data */
-
 int16_t     g_level      = 0;        /* Static nesting level */
 int16_t     includeIndex = 0;        /* Include file index */
-int16_t     nIncPathes   = 0;        /* Number pathes in includePath[] */
+int16_t     nIncPathes   = 0;        /* Number pathes in g_includePath[] */
 uint16_t    label        = 0;        /* Last label number */
 int16_t     err_count    = 0;        /* Error counter */
 int16_t     nfiles       = 1;        /* Program file counter */
@@ -194,7 +186,7 @@ static void openOutputFiles(void)
        * name and an extension associated with the output file.
        */
 
-      (void)extension(sourceFileName, outFile->extension, tmpname, 1);
+      (void)extension(g_sourceFileName, outFile->extension, tmpname, 1);
       *outFile->stream = fopen(tmpname, outFile->flags);
       if (*outFile->stream == NULL)
         {
@@ -283,7 +275,7 @@ static void parseArguments(int argc, char **argv)
                 }
               else
                 {
-                  includePath[nIncPathes] = &ptr[2];
+                  g_includePath[nIncPathes] = &ptr[2];
                   nIncPathes++;
                 }
               break;
@@ -301,7 +293,7 @@ static void parseArguments(int argc, char **argv)
 
   /* Extract the Pascal program name from the command line */
 
-  sourceFileName = argv[argc-1];
+  g_sourceFileName = argv[argc-1];
 }
 
 /***********************************************************************
@@ -326,7 +318,7 @@ int main(int argc, char *argv[])
 
   /* Open source file -- Use .PAS or command line extension, if supplied */
 
-  (void)extension(sourceFileName, "PAS", filename, 0);
+  (void)extension(g_sourceFileName, "PAS", filename, 0);
   fprintf(errFile, "%01x=%s\n", FP->include, filename);
 
   memset(FP, 0, sizeof(fileState_t));
@@ -358,12 +350,12 @@ int main(int argc, char *argv[])
 
   /* Define standard input/output file characteristics */
 
-  files[0].defined = -1;
-  files[0].flevel  = g_level;
-  files[0].ftype   = sCHAR;
-  files[0].faddr   = dstack;
-  files[0].fsize   = sCHAR_SIZE;
-  dstack          += sCHAR_SIZE;
+  g_files[0].defined = -1;
+  g_files[0].flevel  = g_level;
+  g_files[0].ftype   = sCHAR;
+  g_files[0].faddr   = dstack;
+  g_files[0].fsize   = sCHAR_SIZE;
+  dstack            += sCHAR_SIZE;
 
   /* We need the following in order to calculate relative stack positions. */
 
@@ -383,7 +375,7 @@ int main(int argc, char *argv[])
    */
 
   getToken();
-  if (token == tPROGRAM)
+  if (g_token == tPROGRAM)
     {
       /* Compile a pascal program */
 
@@ -392,7 +384,7 @@ int main(int argc, char *argv[])
       getToken();
       program();
     }
-  else if (token == tUNIT)
+  else if (g_token == tUNIT)
     {
       /* Compile a pascal unit */
 
@@ -475,7 +467,7 @@ void openNestedFile(const char *fileName)
             }
           else
             {
-              sprintf(fullpath, "%s/%s", includePath[i], fileName);
+              sprintf(fullpath, "%s/%s", g_includePath[i], fileName);
             }
 
           FP->stream = fopen (fullpath, "rb");

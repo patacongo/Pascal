@@ -38,7 +38,7 @@
 #define __PCOPT_H
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern int unaryOptimize  ( void );

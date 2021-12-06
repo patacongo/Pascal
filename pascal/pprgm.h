@@ -38,7 +38,7 @@
 #define __PPRGM_H
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void program(void);

@@ -495,7 +495,7 @@ static void pass5(poffHandle_t poffHandle)
 }
 
 /**********************************************************************
- * Global Functions
+ * Public Functions
  **********************************************************************/
 
 void optFinalize(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)

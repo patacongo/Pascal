@@ -147,7 +147,7 @@ exprType expression(exprType findExprType, STYPE *typePtr)
 
   /* Get the optional <relational operator> which may follow */
 
-  operation = token;
+  operation = g_token;
   switch (operation)
     {
     case tEQ :
@@ -385,10 +385,10 @@ void arrayIndex(int32_t size, int32_t offset)
   TRACE(lstFile,"[arrayIndex]");
 
   /* FORM:  [<integer expression>].
-   * On entry 'token' should refer to the ']' token.
+   * On entry 'g_token' should refer to the ']' token.
    */
 
-  if (token != '[') error(eLBRACKET);
+  if (g_token != '[') error(eLBRACKET);
   else
     {
       /* Evaluate index expression */
@@ -414,7 +414,7 @@ void arrayIndex(int32_t size, int32_t offset)
 
       /* Verify right bracket */
 
-      if (token !=  ']') error(eRBRACKET);
+      if (g_token !=  ']') error(eRBRACKET);
       else getToken();
     }
 }
@@ -520,9 +520,9 @@ static exprType simpleExpression(exprType findExprType)
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]] */
   /* get +/- unary operation */
 
-  if ((token == '+') || (token == '-'))
+  if ((g_token == '+') || (g_token == '-'))
     {
-      operation = token;
+      operation = g_token;
       getToken();
     }
 
@@ -545,8 +545,8 @@ static exprType simpleExpression(exprType findExprType)
     {
       /* Check for binary operator */
 
-      if ((token == '+') || (token == '-') || (token == tOR))
-        operation = token;
+      if ((g_token == '+') || (g_token == '-') || (g_token == tOR))
+        operation = g_token;
       else
         break;
 
@@ -758,11 +758,11 @@ static exprType term(exprType findExprType)
     {
       /* Check for binary operator */
 
-      if ((token == tMUL)  || (token == tDIV)  ||
-          (token == tFDIV) || (token == tMOD)  ||
-          (token == tAND)  || (token == tSHL)  ||
-          (token == tSHR))
-        operation = token;
+      if ((g_token == tMUL)  || (g_token == tDIV)  ||
+          (g_token == tFDIV) || (g_token == tMOD)  ||
+          (g_token == tAND)  || (g_token == tSHL)  ||
+          (g_token == tSHR))
+        operation = g_token;
       else
         break;
 
@@ -921,7 +921,7 @@ static exprType factor(exprType findExprType)
 
   /* Process by token type */
 
-  switch (token)
+  switch (g_token)
     {
       /* User defined tokens */
 
@@ -934,28 +934,28 @@ static exprType factor(exprType findExprType)
       /* Constant factors */
 
     case tINT_CONST :
-      pas_GenerateDataOperation(opPUSH, tknInt);
+      pas_GenerateDataOperation(opPUSH, g_tknInt);
       getToken();
       factorType = exprInteger;
       break;
 
     case tBOOLEAN_CONST :
-      pas_GenerateDataOperation(opPUSH, tknInt);
+      pas_GenerateDataOperation(opPUSH, g_tknInt);
       getToken();
       factorType = exprBoolean;
       break;
 
     case tCHAR_CONST :
-      pas_GenerateDataOperation(opPUSH, tknInt);
+      pas_GenerateDataOperation(opPUSH, g_tknInt);
       getToken();
       factorType = exprChar;
       break;
 
     case tREAL_CONST     :
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&tknReal)+0));
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&tknReal)+1));
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&tknReal)+2));
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&tknReal)+3));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+0));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+1));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+2));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+3));
       getToken();
       factorType = exprReal;
       break;
@@ -963,12 +963,12 @@ static exprType factor(exprType findExprType)
     case sSCALAR_OBJECT :
       if (abstractType)
         {
-          if (tknPtr->sParm.c.parent != abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.c.parent != abstractType) error(eSCALARTYPE);
         }
       else
-        abstractType = tknPtr->sParm.c.parent;
+        abstractType = g_tknPtr->sParm.c.parent;
 
-      pas_GenerateDataOperation(opPUSH, tknPtr->sParm.c.val.i);
+      pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.c.val.i);
       getToken();
       factorType = exprScalar;
       break;
@@ -976,26 +976,26 @@ static exprType factor(exprType findExprType)
       /* Simple Factors */
 
     case sINT :
-      pas_GenerateStackReference(opLDS, tknPtr);
+      pas_GenerateStackReference(opLDS, g_tknPtr);
       getToken();
       factorType = exprInteger;
       break;
 
     case sBOOLEAN :
-      pas_GenerateStackReference(opLDS, tknPtr);
+      pas_GenerateStackReference(opLDS, g_tknPtr);
       getToken();
       factorType = exprBoolean;
       break;
 
     case sCHAR :
-      pas_GenerateStackReference(opLDSB, tknPtr);
+      pas_GenerateStackReference(opLDSB, g_tknPtr);
       getToken();
       factorType = exprChar;
       break;
 
     case sREAL :
       pas_GenerateDataSize(sREAL_SIZE);
-      pas_GenerateStackReference(opLDSM, tknPtr);
+      pas_GenerateStackReference(opLDSM, g_tknPtr);
       getToken();
       factorType = exprReal;
       break;
@@ -1033,8 +1033,8 @@ static exprType factor(exprType findExprType)
        * TOS(1) : pointer to string
        */
 
-      pas_GenerateDataOperation(opLAC, tknPtr->sParm.s.offset);
-      pas_GenerateDataOperation(opPUSH, tknPtr->sParm.s.size);
+      pas_GenerateDataOperation(opLAC, g_tknPtr->sParm.s.offset);
+      pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.s.size);
       getToken();
       factorType = exprString;
       break;
@@ -1046,8 +1046,8 @@ static exprType factor(exprType findExprType)
        */
 
       pas_GenerateDataOperation(opPUSH, sSTRING_HDR_SIZE);
-      pas_GenerateStackReference(opLASX, tknPtr);
-      pas_GenerateStackReference(opLDSH, tknPtr);
+      pas_GenerateStackReference(opLASX, g_tknPtr);
+      pas_GenerateStackReference(opLDSH, g_tknPtr);
 
       getToken();
       factorType = exprString;
@@ -1060,8 +1060,8 @@ static exprType factor(exprType findExprType)
        *
        * We get that by just cloning the reference on the top of the stack
        */
-      pas_GenerateDataSize(tknPtr->sParm.v.size);
-      pas_GenerateStackReference(opLDSM, tknPtr);
+      pas_GenerateDataSize(g_tknPtr->sParm.v.size);
+      pas_GenerateStackReference(opLDSM, g_tknPtr);
       getToken();
       factorType = exprString;
       break;
@@ -1069,12 +1069,12 @@ static exprType factor(exprType findExprType)
     case sSCALAR :
       if (abstractType)
         {
-          if (tknPtr->sParm.v.parent != abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.v.parent != abstractType) error(eSCALARTYPE);
         }
       else
-        abstractType = tknPtr->sParm.v.parent;
+        abstractType = g_tknPtr->sParm.v.parent;
 
-      pas_GenerateStackReference(opLDS, tknPtr);
+      pas_GenerateStackReference(opLDS, g_tknPtr);
       getToken();
       factorType = exprScalar;
       break;
@@ -1085,14 +1085,14 @@ static exprType factor(exprType findExprType)
 
       if (abstractType)
         {
-          if ((tknPtr->sParm.v.parent != abstractType) &&
-              (tknPtr->sParm.v.parent->sParm.t.parent != abstractType))
+          if ((g_tknPtr->sParm.v.parent != abstractType) &&
+              (g_tknPtr->sParm.v.parent->sParm.t.parent != abstractType))
             error(eSET);
         }
       else
-        abstractType = tknPtr->sParm.v.parent;
+        abstractType = g_tknPtr->sParm.v.parent;
 
-      pas_GenerateStackReference(opLDS, tknPtr);
+      pas_GenerateStackReference(opLDS, g_tknPtr);
       getToken();
       factorType = exprSet;
       break;
@@ -1102,7 +1102,7 @@ static exprType factor(exprType findExprType)
     case '[' : /* Set constant */
       getToken();
       getSetFactor();
-      if (token != ']') error(eRBRACKET);
+      if (g_token != ']') error(eRBRACKET);
       else getToken();
       factorType = exprSet;
       break;
@@ -1129,7 +1129,7 @@ static exprType factor(exprType findExprType)
     case '(' :
       getToken();
       factorType = expression(exprUnknown, abstractType);
-      if (token == ')') getToken();
+      if (g_token == ')') getToken();
       else error (eRPAREN);
       break;
 
@@ -1179,7 +1179,7 @@ static exprType complexFactor(void)
    /* First, make a copy of the symbol table entry because the call to */
    /* simpleFactor() will modify it. */
 
-   symbolSave = *tknPtr;
+   symbolSave = *g_tknPtr;
    getToken();
 
    /* Then process the complex factor until it is reduced to a simple */
@@ -1488,7 +1488,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
 
       if ((factorFlags & ADDRESS_FACTOR) != 0)
         {
-          if (token == '.') error(ePOINTERTYPE);
+          if (g_token == '.') error(ePOINTERTYPE);
 
           if ((factorFlags & INDEXED_FACTOR) != 0)
             pas_GenerateStackReference(opLDSX, varPtr);
@@ -1501,7 +1501,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
       /* Verify that a period separates the RECORD identifier from the */
       /* record field identifier */
 
-      else if (token == '.')
+      else if (g_token == '.')
         {
           if (((factorFlags & ADDRESS_DEREFERENCE) != 0) &&
               ((factorFlags & VAR_PARM_FACTOR) == 0))
@@ -1514,8 +1514,8 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
           /* Verify that a field identifier associated with this record */
           /* follows the period. */
 
-          if ((token != sRECORD_OBJECT) ||
-              (tknPtr->sParm.r.record != typePtr))
+          if ((g_token != sRECORD_OBJECT) ||
+              (g_tknPtr->sParm.r.record != typePtr))
             {
               error(eRECORDOBJECT);
               factorType = exprInteger;
@@ -1525,7 +1525,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
               /* Modify the variable so that it has the characteristics of the */
               /* the field but with level and offset associated with the record */
 
-              typePtr                 = tknPtr->sParm.r.parent;
+              typePtr                 = g_tknPtr->sParm.r.parent;
               varPtr->sKind           = typePtr->sParm.t.type;
               varPtr->sParm.v.parent  = typePtr;
 
@@ -1533,11 +1533,11 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
 
               if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE | VAR_PARM_FACTOR))
                 {
-                  pas_GenerateDataOperation(opPUSH, tknPtr->sParm.r.offset);
+                  pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
                   pas_GenerateSimple(opADD);
                 }
               else
-                varPtr->sParm.v.offset += tknPtr->sParm.r.offset;
+                varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
 
               getToken();
               factorType = simpleFactor(varPtr, factorFlags);
@@ -1643,7 +1643,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
       break;
 
     case sPOINTER :
-      if (token == '^')
+      if (g_token == '^')
         {
           getToken();
           factorFlags |= ADDRESS_DEREFERENCE;
@@ -1668,7 +1668,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
     case sARRAY :
       if (factorFlags != 0) error(eARRAYTYPE);
 
-      if (token == '[')
+      if (g_token == '[')
         {
           /* Get the type of the index.  We will need minimum value of
            * if the index type in order to offset the array index
@@ -1728,39 +1728,39 @@ static exprType ptrFactor(void)
 
    /* Process by token type */
 
-   switch (token) {
+   switch (g_token) {
 
      /* Pointers to simple types */
 
      case sINT              :
-       pas_GenerateStackReference(opLAS, tknPtr);
+       pas_GenerateStackReference(opLAS, g_tknPtr);
        getToken();
        factorType = exprIntegerPtr;
        break;
      case sBOOLEAN :
-       pas_GenerateStackReference(opLAS, tknPtr);
+       pas_GenerateStackReference(opLAS, g_tknPtr);
        getToken();
        factorType = exprBooleanPtr;
        break;
      case sCHAR           :
-       pas_GenerateStackReference(opLAS, tknPtr);
+       pas_GenerateStackReference(opLAS, g_tknPtr);
        getToken();
        factorType = exprCharPtr;
        break;
      case sREAL              :
-       pas_GenerateStackReference(opLAS, tknPtr);
+       pas_GenerateStackReference(opLAS, g_tknPtr);
        getToken();
        factorType = exprRealPtr;
        break;
      case sSCALAR :
        if (abstractType)
          {
-           if (tknPtr->sParm.v.parent != abstractType) error(eSCALARTYPE);
+           if (g_tknPtr->sParm.v.parent != abstractType) error(eSCALARTYPE);
          }
        else
-         abstractType = tknPtr->sParm.v.parent;
+         abstractType = g_tknPtr->sParm.v.parent;
 
-       pas_GenerateStackReference(opLAS, tknPtr);
+       pas_GenerateStackReference(opLAS, g_tknPtr);
        getToken();
        factorType = exprScalarPtr;
        break;
@@ -1769,13 +1769,13 @@ static exprType ptrFactor(void)
        /* same SET OF <object> -OR- the same <object> */
 
        if (abstractType) {
-         if ((tknPtr->sParm.v.parent != abstractType)
-         &&   (tknPtr->sParm.v.parent->sParm.t.parent != abstractType))
+         if ((g_tknPtr->sParm.v.parent != abstractType)
+         &&   (g_tknPtr->sParm.v.parent->sParm.t.parent != abstractType))
            error(eSET);
        }
        else
-         abstractType = tknPtr->sParm.v.parent;
-       pas_GenerateStackReference(opLAS, tknPtr);
+         abstractType = g_tknPtr->sParm.v.parent;
+       pas_GenerateStackReference(opLAS, g_tknPtr);
        getToken();
        factorType = exprSetPtr;
        break;
@@ -1802,7 +1802,7 @@ static exprType ptrFactor(void)
      case '('             :
        getToken();
        factorType = ptrFactor();
-       if (token != ')') error (eRPAREN);
+       if (g_token != ')') error (eRPAREN);
        else getToken();
        break;
 
@@ -1828,7 +1828,7 @@ static exprType complexPtrFactor(void)
    * simplePtrFactor() will modify it.
    */
 
-  symbolSave = *tknPtr;
+  symbolSave = *g_tknPtr;
   getToken();
 
   /* Then process the complex factor until it is reduced to a simple
@@ -2061,7 +2061,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
     case sRECORD :
       /* Check if this is a pointer to a record */
 
-      if (token != '.')
+      if (g_token != '.')
         {
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
             error(ePOINTERTYPE);
@@ -2083,15 +2083,15 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
            * record field identifier
            */
 
-          if (token != '.') error(ePERIOD);
+          if (g_token != '.') error(ePERIOD);
           else getToken();
 
           /* Verify that a field identifier associated with this record
            * follows the period.
            */
 
-          if ((token != sRECORD_OBJECT) ||
-              (tknPtr->sParm.r.record != typePtr))
+          if ((g_token != sRECORD_OBJECT) ||
+              (g_tknPtr->sParm.r.record != typePtr))
             {
               error(eRECORDOBJECT);
               factorType = exprInteger;
@@ -2103,9 +2103,9 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
                * the record
                */
 
-              typePtr                 = tknPtr->sParm.r.parent;
+              typePtr                 = g_tknPtr->sParm.r.parent;
               varPtr->sKind           = typePtr->sParm.t.type;
-              varPtr->sParm.v.offset += tknPtr->sParm.r.offset;
+              varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
               varPtr->sParm.v.parent  = typePtr;
 
               getToken();
@@ -2180,7 +2180,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
       break;
 
     case sPOINTER :
-      if (token == '^') error(ePTRADR);
+      if (g_token == '^') error(ePTRADR);
       else getToken();
 
       factorFlags   |= ADDRESS_DEREFERENCE;
@@ -2202,7 +2202,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
           error(eARRAYTYPE);
         }
 
-      if (token == '[')
+      if (g_token == '[')
         {
           /* Get the type of the index.  We will need minimum value of
            * if the index type in order to offset the array index
@@ -2244,7 +2244,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
 
 static exprType functionDesignator(void)
 {
-  STYPE *funcPtr = tknPtr;
+  STYPE *funcPtr = g_tknPtr;
   STYPE *typePtr = funcPtr->sParm.p.parent;
   exprType factorType;
   int size = 0;
@@ -2421,7 +2421,7 @@ static void getSetFactor(void)
    /* NOTE:  The optimizer will combine sets of constant elements into a */
    /* single PUSH! */
 
-   while (token == ',') {
+   while (g_token == ',') {
 
      /* Get the next element of the set */
 
@@ -2444,23 +2444,23 @@ static void getSetElement(setTypeStruct *s)
 
    TRACE(lstFile,"[getSetElement]");
 
-   switch (token) {
+   switch (g_token) {
      case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-       firstValue = tknPtr->sParm.c.val.i;
+       firstValue = g_tknPtr->sParm.c.val.i;
        if (!s->typeFound) {
          s->typeFound = true;
-         s->typePtr   = tknPtr->sParm.c.parent;
+         s->typePtr   = g_tknPtr->sParm.c.parent;
          s->setType   = sSCALAR;
          s->minValue  = s->typePtr->sParm.t.minValue;
          s->maxValue  = s->typePtr->sParm.t.maxValue;
        }
        else if ((s->setType != sSCALAR)
-       ||        (s->typePtr != tknPtr->sParm.c.parent))
+       ||        (s->typePtr != g_tknPtr->sParm.c.parent))
          error(eSET);
        goto addBit;
 
      case tINT_CONST : /* An integer subrange constant ? */
-       firstValue = tknInt;
+       firstValue = g_tknInt;
        if (!s->typeFound) {
          s->typeFound = true;
          s->setType   = sINT;
@@ -2470,7 +2470,7 @@ static void getSetElement(setTypeStruct *s)
        goto addBit;
 
      case tCHAR_CONST : /* A character subrange constant */
-       firstValue = tknInt;
+       firstValue = g_tknInt;
        if (!s->typeFound) {
          s->typeFound = true;
          s->setType   = sCHAR;
@@ -2483,7 +2483,7 @@ static void getSetElement(setTypeStruct *s)
        /* subrange of values */
 
        getToken();
-       if (token != tSUBRANGE) {
+       if (g_token != tSUBRANGE) {
 
          /* Verify that the new value is in range */
 
@@ -2508,21 +2508,21 @@ static void getSetElement(setTypeStruct *s)
 
          /* TYPE check */
 
-         switch (token) {
+         switch (g_token) {
            case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-             lastValue = tknPtr->sParm.c.val.i;
+             lastValue = g_tknPtr->sParm.c.val.i;
              if ((s->setType != sSCALAR)
-             ||   (s->typePtr != tknPtr->sParm.c.parent))
+             ||   (s->typePtr != g_tknPtr->sParm.c.parent))
                error(eSET);
              goto addLottaBits;
 
            case tINT_CONST : /* An integer subrange constant ? */
-             lastValue = tknInt;
+             lastValue = g_tknInt;
              if (s->setType != sINT) error(eSET);
              goto addLottaBits;
 
            case tCHAR_CONST : /* A character subrange constant */
-             lastValue = tknInt;
+             lastValue = g_tknInt;
              if (s->setType != sCHAR) error(eSET);
 
            addLottaBits :
@@ -2558,12 +2558,12 @@ static void getSetElement(setTypeStruct *s)
 
            case sSCALAR :
              if ((!s->typePtr)
-             ||   (s->typePtr != tknPtr->sParm.v.parent)) {
+             ||   (s->typePtr != g_tknPtr->sParm.v.parent)) {
                error(eSET);
 
                if (!s->typePtr) {
                  s->typeFound = true;
-                 s->typePtr   = tknPtr->sParm.v.parent;
+                 s->typePtr   = g_tknPtr->sParm.v.parent;
                  s->setType   = sSCALAR;
                  s->minValue  = s->typePtr->sParm.t.minValue;
                  s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -2573,20 +2573,20 @@ static void getSetElement(setTypeStruct *s)
 
            case sINT : /* An integer subrange variable ? */
            case sCHAR : /* A character subrange variable? */
-             if (s->setType != token) error(eSET);
+             if (s->setType != g_token) error(eSET);
              goto addVarToBits;
 
            case sSUBRANGE :
              if ((!s->typePtr)
-             ||   (s->typePtr != tknPtr->sParm.v.parent)) {
+             ||   (s->typePtr != g_tknPtr->sParm.v.parent)) {
 
-               if ((tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR)
-               ||   (tknPtr->sParm.v.parent->sParm.t.subType != s->setType))
+               if ((g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR)
+               ||   (g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType))
                  error(eSET);
 
                if (!s->typePtr) {
                  s->typeFound = true;
-                 s->typePtr   = tknPtr->sParm.v.parent;
+                 s->typePtr   = g_tknPtr->sParm.v.parent;
                  s->setType   = s->typePtr->sParm.t.subType;
                  s->minValue  = s->typePtr->sParm.t.minValue;
                  s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -2616,7 +2616,7 @@ static void getSetElement(setTypeStruct *s)
 
              pas_GenerateDataOperation(opPUSH, 0xffff);
              pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER-1) + s->minValue));
-             pas_GenerateStackReference(opLDS, tknPtr);
+             pas_GenerateStackReference(opLDS, g_tknPtr);
              pas_GenerateSimple(opSUB);
              pas_GenerateSimple(opSRL);
 
@@ -2641,12 +2641,12 @@ static void getSetElement(setTypeStruct *s)
 
      case sSCALAR :
        if (s->typeFound) {
-         if ((!s->typePtr) || (s->typePtr != tknPtr->sParm.v.parent))
+         if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
            error(eSET);
        }
        else {
          s->typeFound = true;
-         s->typePtr   = tknPtr->sParm.v.parent;
+         s->typePtr   = g_tknPtr->sParm.v.parent;
          s->setType   = sSCALAR;
          s->minValue  = s->typePtr->sParm.t.minValue;
          s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -2657,20 +2657,20 @@ static void getSetElement(setTypeStruct *s)
      case sCHAR : /* A character subrange variable? */
        if (!s->typeFound) {
          s->typeFound = true;
-         s->setType   = token;
+         s->setType   = g_token;
        }
-       else if (s->setType != token)
+       else if (s->setType != g_token)
          error(eSET);
        goto addVar;
 
      case sSUBRANGE :
        if (s->typeFound) {
-         if ((!s->typePtr) || (s->typePtr != tknPtr->sParm.v.parent))
+         if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
            error(eSET);
        }
        else {
          s->typeFound = true;
-         s->typePtr   = tknPtr->sParm.v.parent;
+         s->typePtr   = g_tknPtr->sParm.v.parent;
          s->setType   = s->typePtr->sParm.t.subType;
          s->minValue  = s->typePtr->sParm.t.minValue;
          s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -2680,9 +2680,9 @@ static void getSetElement(setTypeStruct *s)
        /* Check if the variable set element is the first value in a */
        /* subrange of values */
 
-       setPtr = tknPtr;
+       setPtr = g_tknPtr;
        getToken();
-       if (token != tSUBRANGE) {
+       if (g_token != tSUBRANGE) {
 
          /* Generate P-Code to push the set value onto the stack */
          /* FORM:  1 << (firstValue - minValue) */
@@ -2703,21 +2703,21 @@ static void getSetElement(setTypeStruct *s)
 
          /* TYPE check */
 
-         switch (token) {
+         switch (g_token) {
            case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-             lastValue = tknPtr->sParm.c.val.i;
+             lastValue = g_tknPtr->sParm.c.val.i;
              if ((s->setType != sSCALAR)
-             ||   (s->typePtr != tknPtr->sParm.c.parent))
+             ||   (s->typePtr != g_tknPtr->sParm.c.parent))
                error(eSET);
              goto addBitsToVar;
 
            case tINT_CONST : /* An integer subrange constant ? */
-             lastValue = tknInt;
+             lastValue = g_tknInt;
              if (s->setType != sINT) error(eSET);
              goto addBitsToVar;
 
            case tCHAR_CONST : /* A character subrange constant */
-             lastValue = tknInt;
+             lastValue = g_tknInt;
              if (s->setType != sCHAR) error(eSET);
 
            addBitsToVar :
@@ -2759,17 +2759,17 @@ static void getSetElement(setTypeStruct *s)
 
            case sINT : /* An integer subrange variable ? */
            case sCHAR : /* A character subrange variable? */
-             if (s->setType != token) error(eSET);
+             if (s->setType != g_token) error(eSET);
              goto addVarToVar;
 
            case sSCALAR :
-             if (s->typePtr != tknPtr->sParm.v.parent) error(eSET);
+             if (s->typePtr != g_tknPtr->sParm.v.parent) error(eSET);
              goto addVarToVar;
 
            case sSUBRANGE :
-             if ((s->typePtr != tknPtr->sParm.v.parent)
-             &&   ((tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR)
-             ||     (tknPtr->sParm.v.parent->sParm.t.subType != s->setType)))
+             if ((s->typePtr != g_tknPtr->sParm.v.parent)
+             &&   ((g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR)
+             ||     (g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType)))
                error(eSET);
 
            addVarToVar:
@@ -2791,7 +2791,7 @@ static void getSetElement(setTypeStruct *s)
 
              pas_GenerateDataOperation(opPUSH, 0xffff);
              pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER-1) + s->minValue));
-             pas_GenerateStackReference(opLDS, tknPtr);
+             pas_GenerateStackReference(opLDS, g_tknPtr);
              pas_GenerateSimple(opSUB);
              pas_GenerateSimple(opSRL);
 

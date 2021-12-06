@@ -53,13 +53,13 @@
 #define DEBUG_FILE stdout
 
 /***************************************************************************
- * Global Variables
+ * Public Datas
  ***************************************************************************/
 
 extern int vRegmDebug;
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void regm_ProgSeek(poffHandle_t handle, uint32_t dwOffset);

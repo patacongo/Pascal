@@ -2,7 +2,7 @@
  * pproc.c
  * Standard procedures (all called in pstm.c)
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -108,11 +108,11 @@ void builtInProcedure(void)
 
   /* Is the token a procedure? */
 
-  if (token == tPROC)
+  if (g_token == tPROC)
     {
       /* Yes, process it procedure according to the extended token type */
 
-      switch (tknSubType)
+      switch (g_tknSubType)
         {
           /* Standard Procedures & Functions */
 
@@ -232,7 +232,7 @@ int actualParameterList(STYPE *procPtr)
    * FORM: function-designator = function-identifier [ actual-parameter-list ]
    *
    *
-   * On entry, 'token' refers to the token just AFTER the procedure
+   * On entry, 'g_token' refers to the token just AFTER the procedure
    * function identifier.
    *
    * FORM: actual-parameter-list =
@@ -242,7 +242,7 @@ int actualParameterList(STYPE *procPtr)
    *       procedure-identifier | function-identifier
    */
 
-  if (token == '(')
+  if (g_token == '(')
     {
       lparen = true;
       getToken();
@@ -369,7 +369,7 @@ int actualParameterList(STYPE *procPtr)
 
           if (nParms < procPtr->sParm.p.nParms)
             {
-              if (token != ',') error (eCOMMA);
+              if (g_token != ',') error (eCOMMA);
               else getToken();
             }
         }
@@ -377,7 +377,7 @@ int actualParameterList(STYPE *procPtr)
 
   if (lparen == true)
     {
-      if (token != ')') error (eRPAREN);
+      if (g_token != ')') error (eRPAREN);
       else getToken();
     }
 
@@ -410,34 +410,34 @@ static int16_t readProc(void)
    *   '(' [ file-variable ',' ] variable-access { ',' variable-access } ')'
    */
 
-  if (token != '(') error (eLPAREN);   /* Skip over '(' */
+  if (g_token != '(') error (eLPAREN);   /* Skip over '(' */
   else getToken();
 
   /* Get file number */
 
-   if (token == sFILE)
+   if (g_token == sFILE)
      {
-       fileNumber = tknPtr->sParm.fileNumber;
+       fileNumber = g_tknPtr->sParm.fileNumber;
        getToken();
      }
 
-   if (token == ',') getToken();
+   if (g_token == ',') getToken();
 
    /* Determine if this is a text or binary file */
 
-   if (!(files[fileNumber].defined)) error (eUNDEFILE);
-   else if (files[fileNumber].ftype == sCHAR)
+   if (!(g_files[fileNumber].defined)) error (eUNDEFILE);
+   else if (g_files[fileNumber].ftype == sCHAR)
      {
        readText(fileNumber);
      }
    else
      {
-       pas_GenerateLevelReference(opLAS, files[fileNumber].flevel, files [fileNumber].faddr);
-       pas_GenerateDataOperation(opPUSH, files[fileNumber].fsize);
+       pas_GenerateLevelReference(opLAS, g_files[fileNumber].flevel, g_files [fileNumber].faddr);
+       pas_GenerateDataOperation(opPUSH, g_files[fileNumber].fsize);
        pas_GenerateIoOperation(xREAD_BINARY, fileNumber);
      }
 
-   if (token != ')') error (eRPAREN);
+   if (g_token != ')') error (eRPAREN);
    else getToken();
 
    return (fileNumber);
@@ -455,12 +455,12 @@ static void readText(uint16_t fileNumber)
 
   for (; ; )
     {
-      switch (token)
+      switch (g_token)
         {
           /* SPECIAL CASE: Array of type CHAR without indexing */
 
         case sARRAY :
-          rPtr = tknPtr->sParm.v.parent;
+          rPtr = g_tknPtr->sParm.v.parent;
           if (((rPtr) && (rPtr->sKind == sTYPE)) &&
               (rPtr->sParm.t.type == sCHAR) &&
               (getNextCharacter(true) != '['))
@@ -501,7 +501,7 @@ static void readText(uint16_t fileNumber)
           break;
         }
 
-      if (token == ',') getToken();
+      if (g_token == ',') getToken();
       else return;
     }
 }
@@ -517,7 +517,7 @@ static void readlnProc(void)          /* READLN procedure */
   /* FORM:  Just like READ */
 
   getToken();
-  if (token == '(')
+  if (g_token == '(')
     {
       fileNumber = readProc();
     }
@@ -543,14 +543,14 @@ static void fileProc (uint16_t opcode)
    /* FORM: RESET|REWRITE(<file number>) */
 
    getToken();
-   if (token != '(') error(eLPAREN);
+   if (g_token != '(') error(eLPAREN);
    else getToken();
-   if (token !=  sFILE) error(eFILE);
+   if (g_token !=  sFILE) error(eFILE);
    else
      {
-       pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
+       pas_GenerateIoOperation(opcode, g_tknPtr->sParm.fileNumber);
        getToken();
-       if (token != ')') error(eRPAREN);
+       if (g_token != ')') error(eRPAREN);
        else getToken();
      }
 }
@@ -566,32 +566,32 @@ static int16_t writeProc(void)
    /* FORM: (1) Binary WRITE:  WRITE(<fileNumber>);
     *       (2) Test   WRITE:  WRITE([<fileNumber>], arg1 [,arg2 [...]]) */
 
-   if (token != '(') error(eLPAREN);   /* Skip over '(' */
+   if (g_token != '(') error(eLPAREN);   /* Skip over '(' */
    else getToken();
 
    /* Get file number */
 
-   if (token == sFILE)
+   if (g_token == sFILE)
      {
-       fileNumber = tknPtr->sParm.fileNumber;
+       fileNumber = g_tknPtr->sParm.fileNumber;
        getToken();
      }
 
-   if (token == ',') getToken();
+   if (g_token == ',') getToken();
 
    /* Determine if this is a text or binary file */
 
-   if (!(files [fileNumber].defined)) error(eUNDEFILE);
-   else if (files [fileNumber].ftype == sCHAR)
+   if (!(g_files [fileNumber].defined)) error(eUNDEFILE);
+   else if (g_files [fileNumber].ftype == sCHAR)
      writeText(fileNumber);
    else
      {
-       pas_GenerateLevelReference(opLAS, files[fileNumber].flevel, files [fileNumber].faddr);
-       pas_GenerateDataOperation(opPUSH, files[fileNumber].fsize);
+       pas_GenerateLevelReference(opLAS, g_files[fileNumber].flevel, g_files [fileNumber].faddr);
+       pas_GenerateDataOperation(opPUSH, g_files[fileNumber].fsize);
        pas_GenerateIoOperation(xWRITE_BINARY, fileNumber);
      }
 
-   if (token != ')') error(eRPAREN);
+   if (g_token != ')') error(eRPAREN);
    else getToken();
    return(fileNumber);
 }
@@ -612,7 +612,7 @@ static void writeText (uint16_t fileNumber)
        * cases
        */
 
-      switch (token)
+      switch (g_token)
         {
           /* const strings -- either literal constants (tSTRING_CONST)
            * or defined string constant symbols (sSTRING_CONST)
@@ -639,8 +639,8 @@ static void writeText (uint16_t fileNumber)
           break;
 
         case sSTRING_CONST :
-          pas_GenerateDataOperation(opLAC, (uint16_t)tknPtr->sParm.s.offset);
-          pas_GenerateDataOperation(opPUSH, (uint16_t)tknPtr->sParm.s.size);
+          pas_GenerateDataOperation(opLAC, (uint16_t)g_tknPtr->sParm.s.offset);
+          pas_GenerateDataOperation(opPUSH, (uint16_t)g_tknPtr->sParm.s.size);
           pas_GenerateIoOperation(xWRITE_STRING, fileNumber);
           pas_GenerateDataOperation(opINDS, -(sPTR_SIZE + sINT_SIZE));
           getToken();
@@ -649,7 +649,7 @@ static void writeText (uint16_t fileNumber)
           /* Array of type CHAR without indexing */
 
         case sARRAY :
-          wPtr = tknPtr->sParm.v.parent;
+          wPtr = g_tknPtr->sParm.v.parent;
           if (((wPtr) && (wPtr->sKind == sTYPE)) &&
               (wPtr->sParm.t.type == sCHAR) &&
               (getNextCharacter(true) != '['))
@@ -702,7 +702,7 @@ static void writeText (uint16_t fileNumber)
 
         }
 
-      if (token == ',') getToken();
+      if (g_token == ',') getToken();
       else return;
     }
 }
@@ -718,7 +718,7 @@ static void writelnProc(void)         /* WRITELN procedure */
    /* FORM:  Just like WRITE */
 
    getToken();
-   if (token == '(')
+   if (g_token == '(')
      {
        fileNumber = writeProc();
      }

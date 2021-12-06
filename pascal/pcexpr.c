@@ -2,7 +2,7 @@
  * pexpr.c
  * Constant expression evaluation
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -102,7 +102,7 @@ static void constantTerm(void);
 static void constantFactor(void);
 
 /***************************************************************
- * Global Variables
+ * Public Data
  ***************************************************************/
 
 int     constantToken;
@@ -127,12 +127,12 @@ void constantExpression(void)
 
   /* Is it followed by a relational operator? */
 
-  if (isRelationalOperator(token) && isRelationalType(constantToken))
+  if (isRelationalOperator(g_token) && isRelationalType(constantToken))
     {
       int simple1        = constantToken;
       int32_t simple1Int = constantInt;
       double simple1Real = constantReal;
-      int operator       = token;
+      int operator       = g_token;
 
       /* Get the second simple expression */
 
@@ -257,9 +257,9 @@ static void constantSimpleExpression(void)
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]] */
   /* get +/- unary operation */
 
-  if ((token == '+') || (token == '-'))
+  if ((g_token == '+') || (g_token == '-'))
     {
-      unary = token;
+      unary = g_token;
       getToken();
     }
 
@@ -290,10 +290,10 @@ static void constantSimpleExpression(void)
 
       /* Check for binary operator */
 
-      if ((((token == '+') || (token == '-')) )&& isAdditiveType(term))
-        operator = token;
-      else if ((token == tOR) && isLogicalType(term))
-        operator = token;
+      if ((((g_token == '+') || (g_token == '-')) )&& isAdditiveType(term))
+        operator = g_token;
+      else if ((g_token == tOR) && isLogicalType(term))
+        operator = g_token;
       else
         break;
 
@@ -398,24 +398,24 @@ void constantTerm(void)
   for (;;) {
     /* Check for binary operator */
 
-    if (((token == tMUL) || (token == tMOD)) &&
+    if (((g_token == tMUL) || (g_token == tMOD)) &&
         (isMultiplicativeType(factor)))
-      operator = token;
-    else if (((token == tDIV) || (token == tSHL) || (token == tSHR)) &&
+      operator = g_token;
+    else if (((g_token == tDIV) || (g_token == tSHL) || (g_token == tSHR)) &&
              (factor == tINT_CONST))
-      operator = token;
-    else if ((token == tFDIV) && (factor == tREAL_CONST))
-      operator = token;
+      operator = g_token;
+    else if ((g_token == tFDIV) && (factor == tREAL_CONST))
+      operator = g_token;
 #if 0
-    else if ((token == tFDIV) && (factor == tINT_CONST))
+    else if ((g_token == tFDIV) && (factor == tINT_CONST))
       {
         factorReal = (double)factorInt;
         factor     = tREAL_CONST;
-        operator  = token;
+        operator  = g_token;
       }
 #endif
-    else if ((token == tAND) && isLogicalType(factor))
-      operator = token;
+    else if ((g_token == tAND) && isLogicalType(factor))
+      operator = g_token;
     else
       {
         constantToken = factor;
@@ -531,24 +531,24 @@ static void constantFactor(void)
 
   /* Process by token type */
 
-  switch (token)
+  switch (g_token)
     {
     case tINT_CONST :
     case tBOOLEAN_CONST :
     case tCHAR_CONST :
-      constantToken = token;
-      constantInt   = tknInt;
+      constantToken = g_token;
+      constantInt   = g_tknInt;
       getToken();
       break;
 
     case tREAL_CONST     :
-      constantToken = token;
-      constantReal  = tknReal;
+      constantToken = g_token;
+      constantReal  = g_tknReal;
       getToken();
       break;
 
     case tSTRING_CONST :
-      constantToken = token;
+      constantToken = g_token;
       constantStart = g_tokenString;
       getToken();
       break;

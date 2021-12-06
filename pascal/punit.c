@@ -77,7 +77,7 @@ static void exportedProcedureHeading  (void);
 static void exportedFunctionHeading   (void);
 
 /***********************************************************************
- * Global Functions
+ * Public Functions
  ***********************************************************************/
 /* This function is called only main() when the first token parsed out
  * the specified file is 'unit'.  In this case, we are parsing a unit file
@@ -111,7 +111,7 @@ void unitImplementation(void)
    * that we are processing the correct unit).
    */
 
-  if (token != tIDENT) error(eIDENT);
+  if (g_token != tIDENT) error(eIDENT);
 
   /* Set a UNIT indication in the output poff file header */
 
@@ -127,7 +127,7 @@ void unitImplementation(void)
    * interface-section.
    */
 
-  if (token != ';') error(eSEMICOLON);
+  if (g_token != ';') error(eSEMICOLON);
   else getToken();
 
   /* Verify that the interface-section is present
@@ -142,14 +142,14 @@ void unitImplementation(void)
    *       'implementation' [ uses-section ] declaration-group
    */
 
-  if (token != tIMPLEMENTATION) error(eIMPLEMENTATION);
+  if (g_token != tIMPLEMENTATION) error(eIMPLEMENTATION);
   else getToken();
 
   FP->section = eIsImplementationSection;
 
   /* Check for the presence of an optional uses-section */
 
-  if (token == tUSES)
+  if (g_token == tUSES)
     {
       /* Process the uses-section */
 
@@ -179,14 +179,14 @@ void unitImplementation(void)
    */
 
   FP->section = eIsInitializationSection;
-  if (token != tEND) error(eEND);
+  if (g_token != tEND) error(eEND);
   else getToken();
 
   FP->section = eIsOtherSection;
 
   /* Verify that the unit file ends with a period */
 
-  if (token != '.') error(ePERIOD);
+  if (g_token != '.') error(ePERIOD);
 }
 
 /***********************************************************************/
@@ -213,14 +213,14 @@ void unitInterface(void)
    * that we are processing the correct unit).
    */
 
-  if (token != tIDENT) error(eIDENT);
+  if (g_token != tIDENT) error(eIDENT);
   else getToken();
 
   /* Skip over the semicolon separating the unit-heading from the
    * interface-section.
    */
 
-  if (token != ';') error(eSEMICOLON);
+  if (g_token != ';') error(eSEMICOLON);
   else getToken();
 
   /* Process the interface-section
@@ -235,7 +235,7 @@ void unitInterface(void)
    *       'implementation' [ uses-section ] declaration-group
    */
 
-  if (token != tIMPLEMENTATION) error(eIMPLEMENTATION);
+  if (g_token != tIMPLEMENTATION) error(eIMPLEMENTATION);
 
   /* Then just ignore the rest of the file.  We'll let the compilation
    * of the unit file check the correctness of the implementation.
@@ -278,14 +278,14 @@ static void interfaceSection(void)
    * current token should point to the identifier following unit.
    */
 
-  if (token != tINTERFACE) error(eINTERFACE);
+  if (g_token != tINTERFACE) error(eINTERFACE);
   else getToken();
 
   FP->section = eIsInterfaceSection;
 
   /* Check for the presence of an optional uses-section */
 
-  if (token == tUSES)
+  if (g_token == tUSES)
     {
       /* Process the uses-section */
 
@@ -305,7 +305,7 @@ static void interfaceSection(void)
     *       'const' constant-definition ';' { constant-definition ';' }
     */
 
-   if (token == tCONST)
+   if (g_token == tCONST)
      {
        /* Limit search to present level */
 
@@ -324,7 +324,7 @@ static void interfaceSection(void)
     *       'type' type-definition ';' { type-definition ';' }
     */
 
-   if (token == tTYPE)
+   if (g_token == tTYPE)
      {
        /* Limit search to present level */
 
@@ -342,7 +342,7 @@ static void interfaceSection(void)
     *       'var' variable-declaration { ';' variable-declaration }
     */
 
-   if (token == tVAR)
+   if (g_token == tVAR)
      {
        /* Limit search to present level */
 
@@ -370,7 +370,7 @@ static void interfaceSection(void)
         *        ':' result-type
         */
 
-       if (token == tFUNCTION)
+       if (g_token == tFUNCTION)
          {
            /* Limit search to present level */
 
@@ -385,7 +385,7 @@ static void interfaceSection(void)
         *       'procedure' procedure-identifier [ formal-parameter-list ]
         */
 
-       else if (token == tPROCEDURE)
+       else if (g_token == tPROCEDURE)
          {
            /* Limit search to present level */
 
@@ -423,13 +423,13 @@ static void exportedProcedureHeading(void)
     *       'procedure' identifier [ formal-parameter-list ]
     * FORM: procedure-identifier = identifier
     *
-    * On entry, token refers to token AFTER the 'procedure' reserved
+    * On entry, g_token refers to token AFTER the 'procedure' reserved
     * word.
     */
 
    /* Process the procedure-heading */
 
-   if (token != tIDENT)
+   if (g_token != tIDENT)
      {
        error (eIDENT);
        return;
@@ -459,7 +459,7 @@ static void exportedProcedureHeading(void)
 
    (void)formalParameterList(procPtr);
 
-   if (token !=  ';') error (eSEMICOLON);
+   if (g_token !=  ';') error (eSEMICOLON);
    else getToken();
 
    /* If we are compiling a program or unit that "imports" the
@@ -511,7 +511,7 @@ static void exportedFunctionHeading(void)
 
    /* Verify function-identifier */
 
-   if (token != tIDENT)
+   if (g_token != tIDENT)
      {
        error (eIDENT);
        return;
@@ -543,24 +543,24 @@ static void exportedFunctionHeading(void)
 
    /* Verify that the parameter list is followed by a colon */
 
-   if (token !=  ':') error (eCOLON);
+   if (g_token !=  ':') error (eCOLON);
    else getToken();
 
    /* Get function type, return value type/size and offset to return value */
 
-   if (token == sTYPE)
+   if (g_token == sTYPE)
      {
        /* The offset to the return value is the offset to the last
         * parameter minus the size of the return value (aligned to
         * multiples of size of INTEGER).
         */
 
-       parameterOffset        -= tknPtr->sParm.t.rsize;
+       parameterOffset        -= g_tknPtr->sParm.t.rsize;
        parameterOffset         = intAlign(parameterOffset);
 
        /* Save the TYPE for the function */
 
-       funcPtr->sParm.p.parent = tknPtr;
+       funcPtr->sParm.p.parent = g_tknPtr;
 
        /* Skip over the result-type token */
 
@@ -573,7 +573,7 @@ static void exportedFunctionHeading(void)
 
    /* Verify the final semicolon */
 
-   if (token !=  ';') error (eSEMICOLON);
+   if (g_token !=  ';') error (eSEMICOLON);
    else getToken();
 
    /* If we are compiling a program or unit that "imports" the

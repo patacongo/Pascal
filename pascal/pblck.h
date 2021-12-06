@@ -44,7 +44,7 @@
 #include <stdint.h>
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void block(void);

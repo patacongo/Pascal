@@ -61,7 +61,7 @@ static void putPCodeFromTable (void);
 static void setupPointer      (void);
 
 /**********************************************************************
- * Global Variables
+ * Public Data
  **********************************************************************/
 
 OPTYPE  ptable [WINDOW];                /* Pcode Table */
@@ -78,7 +78,7 @@ static poffHandle_t     myPoffHandle;         /* Handle to POFF object */
 static poffProgHandle_t myPoffProgHandle;/* Handle to temporary POFF object */
 
 /**********************************************************************
- * Global Functions
+ * Public Functions
  **********************************************************************/
 
 /***********************************************************************/

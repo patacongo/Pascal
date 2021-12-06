@@ -44,7 +44,7 @@
 #include "pexec.h"
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void dbg_run(struct pexec_s *st);

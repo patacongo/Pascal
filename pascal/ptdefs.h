@@ -2,7 +2,7 @@
  * ptdefs.h
  * Token and Symbol Table Definitions
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -150,7 +150,7 @@
 
 /* The following codes indicate that the token is a built-in procedure
  * or function recognized by the compiler.  An additional code will be
- * place in tknSubType by the tokenizer to indicate which built-in
+ * place in g_tknSubType by the tokenizer to indicate which built-in
  * procedure or function applies.
  */
 

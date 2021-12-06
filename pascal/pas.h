@@ -58,33 +58,33 @@
 
 /* This is a helper macro just to make things pretty in the source code */
 
-#define FP0 (&fileState[0])               /* Main file description */
-#define FP  (&fileState[includeIndex])    /* Current file description */
-#define FPP (&fileState[includeIndex-1])  /* Previous file description */
+#define FP0 (&g_fileState[0])               /* Main file description */
+#define FP  (&g_fileState[includeIndex])    /* Current file description */
+#define FPP (&g_fileState[includeIndex-1])  /* Previous file description */
 #define IS_NESTED_UNIT ((includeIndex > 0) && (FP->kind == eIsUnit))
 
 /***************************************************************************
- * Global Types
+ * Public Types
  ***************************************************************************/
 
 /***************************************************************************
- * Global Variable
+ * Public Data
  ***************************************************************************/
 
-extern uint16_t    token;                  /* Current token */
-extern uint16_t    tknSubType;             /* Extended token type */
-extern int32_t     tknInt;                 /* Integer token value */
-extern double      tknReal;                /* Real token value */
-extern STYPE      *tknPtr;                 /* Pointer to symbol token */
-extern FTYPE       files[MAX_FILES+1];     /* File Table */
-extern fileState_t fileState[MAX_INCL];    /* State of all open files */
+extern uint16_t    g_token;                /* Current token */
+extern uint16_t    g_tknSubType;           /* Extended token type */
+extern int32_t     g_tknInt;               /* Integer token value */
+extern double      g_tknReal;              /* Real token value */
+extern STYPE      *g_tknPtr;               /* Pointer to symbol token */
+extern FTYPE       g_files[MAX_FILES + 1]; /* File Table */
+extern fileState_t g_fileState[MAX_INCL];  /* State of all open files */
 
-/* sourceFileName : Source file name from command line
- * includePath[]  : Pathes to search when including file
+/* g_sourceFileName : Source file name from command line
+ * g_includePath[]  : Pathes to search when including file
  */
 
-extern char       *sourceFileName;
-extern char       *includePath[MAX_INCPATHES];
+extern char       *g_sourceFileName;
+extern char       *g_includePath[MAX_INCPATHES];
 
 extern poffHandle_t poffHandle;            /* Handle for POFF object */
 
@@ -95,7 +95,7 @@ extern FILE       *lstFile;                /* List file pointer */
 extern WTYPE       withRecord;             /* RECORD of WITH statement */
 extern int16_t     g_level;                /* Static nesting level */
 extern int16_t     includeIndex;           /* Include file index */
-extern int16_t     nIncPathes;             /* Number pathes in includePath[] */
+extern int16_t     nIncPathes;             /* Number pathes in g_includePath[] */
 extern uint16_t    label;                  /* Last label number */
 extern int16_t     err_count;              /* Error counter */
 extern int16_t     nfiles;                 /* Program file counter */
@@ -103,7 +103,7 @@ extern int32_t     warn_count;             /* Warning counter */
 extern int32_t     dstack;                 /* data stack size */
 
 /***************************************************************************
- * Global Function Prototypes
+ * Public Function Prototypes
  ***************************************************************************/
 
 extern void openNestedFile  (const char *fileName);

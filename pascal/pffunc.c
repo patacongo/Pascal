@@ -99,11 +99,11 @@ exprType builtInFunction(void)
 
   /* Is the token a function? */
 
-  if (token == tFUNC)
+  if (g_token == tFUNC)
     {
       /* Yes, process it procedure according to the extended token type */
 
-      switch (tknSubType)
+      switch (g_tknSubType)
         {
           /* Functions which return the same type as their argument */
         case txABS :
@@ -217,14 +217,14 @@ exprType builtInFunction(void)
 
 void checkLParen(void)
 {
-   getToken();                        /* Skip over function name */
-   if (token != '(') error(eLPAREN);  /* Check for '(' */
+   getToken();                          /* Skip over function name */
+   if (g_token != '(') error(eLPAREN);  /* Check for '(' */
    else getToken();
 }
 
 void checkRParen(void)
 {
-   if (token != ')') error(eRPAREN);  /* Check for ')') */
+   if (g_token != ')') error(eRPAREN);  /* Check for ')') */
    else getToken();
 }
 
@@ -413,19 +413,19 @@ static void fileFunc(uint16_t opcode)
    * used.
    */
 
-  getToken();        /* Skip over function name */
-  if (token == '(')  /* Check for '(' */
+  getToken();          /* Skip over function name */
+  if (g_token == '(')  /* Check for '(' */
     {
       /* Get the file number argument */
 
       getToken();
-      if (token != sFILE) error(eFILE);
+      if (g_token != sFILE) error(eFILE);
       else
         {
           /* Generate the I/O operation */
 
           pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-          pas_GenerateIoOperation(opcode, tknPtr->sParm.fileNumber);
+          pas_GenerateIoOperation(opcode, g_tknPtr->sParm.fileNumber);
         }
 
       checkRParen();

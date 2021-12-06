@@ -52,7 +52,7 @@
 #define WINDOW             10           /* size of optimization window */
 
 /***************************************************************************
-* Global Function Prototypes
+* Public Function Prototypes
 ****************************************************************************/
 
 extern void localOptimization(poffHandle_t poffHandle,
@@ -61,7 +61,7 @@ extern void deletePcode      (int delIndex);
 extern void deletePcodePair  (int delIndex1, int delIndex2);
 
 /***************************************************************************
- * Global Variables
+ * Public Datas
  ****************************************************************************/
 
 extern OPTYPE  ptable [WINDOW];        /* Pcode Table */

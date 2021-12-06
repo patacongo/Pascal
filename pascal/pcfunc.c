@@ -2,7 +2,7 @@
  * pcfunc.c
  * Standard Function operating on constant values
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,11 +83,11 @@ void builtInFunctionOfConstant(void)
 
   /* Is the token a function? */
 
-  if (token == tFUNC)
+  if (g_token == tFUNC)
     {
       /* Yes, process it procedure according to the extended token type */
 
-      switch (tknSubType)
+      switch (g_tknSubType)
         {
           /* Functions which return the same type as their argument */
         case txABS :

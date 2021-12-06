@@ -61,7 +61,7 @@
 #define INVALID_INCLUDE (-1)
 
 /**********************************************************************
- * Global Variables
+ * Public Data
  **********************************************************************/
 
 extern poffHandle_t poffHandle; /* Handle to POFF object */
