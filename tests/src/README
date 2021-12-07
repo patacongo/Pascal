@@ -23,7 +23,6 @@ General numbering conventions:
 000-099: Basic functionality
 100-199: Math and runtime libraries
 200-299: Strings
-500-599: multi-file features:  uses, units
 800-899: Erie pascal programs
 900-999: Misc. large programs not targeted at any particular feature.
 

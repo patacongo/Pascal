@@ -87,13 +87,13 @@ static void     showUsage        (const char *progname);
 static void     parseArgs        (int argc, char **argv);
 static void     loadInputFiles   (poffHandle_t outHandle);
 static void     checkFileHeader  (poffHandle_t inHandle, poffHandle_t outHandle,
-				  uint32_t pcOffset, bool *progFound);
+                                  uint32_t pcOffset, bool *progFound);
 static uint32_t mergeRoData      (poffHandle_t inHandle, poffHandle_t outHandle);
 static uint32_t mergeProgramData (poffHandle_t inHandle, poffHandle_t outHandle,
-				  uint32_t pcOffset, uint32_t roOffset);
+                                  uint32_t pcOffset, uint32_t roOffset);
 static uint32_t mergeFileNames   (poffHandle_t inHandle, poffHandle_t outHandle);
 static uint32_t mergeLineNumbers (poffHandle_t inHandle, poffHandle_t outHandle,
-				  uint32_t pcOffset, uint32_t fnOffset);
+                                  uint32_t pcOffset, uint32_t fnOffset);
 static void     writeOutputFile  (poffHandle_t outHandle);
 
 /**********************************************************************
@@ -162,7 +162,7 @@ static void showUsage(const char *progname)
 {
   fprintf(stderr, "Usage:\n");
   fprintf(stderr, "  %s <in-file-name> {<in-file-name>} <out-file-name>\n",
-	  progname);
+          progname);
 }
 
 /***********************************************************************/
@@ -176,7 +176,7 @@ static void parseArgs(int argc, char **argv)
   if (argc < 3)
     {
       fprintf(stderr,
-	      "ERROR: <in-file-name> and one <out-file-name> required\n");
+              "ERROR: <in-file-name> and one <out-file-name> required\n");
       showUsage(argv[0]);
     } /* end if */
 
@@ -234,21 +234,21 @@ static void loadInputFiles(poffHandle_t outHandle)
 
       instream = fopen(fileName, "rb");
       if (instream == NULL)
-	{
-	  fprintf(stderr, "ERROR: Could not open %s: %s\n",
-		  fileName, strerror(errno));
-	  exit(1);
-	}
+        {
+          fprintf(stderr, "ERROR: Could not open %s: %s\n",
+                  fileName, strerror(errno));
+          exit(1);
+        }
 
       /* Load the POFF file */
 
       errCode = poffReadFile(inHandle, instream);
       if (errCode != eNOERROR)
-	{
-	  fprintf(stderr, "ERROR: Could not read %s (%d)\n",
-		  fileName, errCode);
-	  exit(1);
-	}
+        {
+          fprintf(stderr, "ERROR: Could not read %s (%d)\n",
+                  fileName, errCode);
+          exit(1);
+        }
 
       /* Check file header for critical settings */
 
@@ -322,7 +322,7 @@ static void loadInputFiles(poffHandle_t outHandle)
 /***********************************************************************/
 
 static void checkFileHeader(poffHandle_t inHandle, poffHandle_t outHandle,
-			    uint32_t pcOffset, bool *progFound)
+                            uint32_t pcOffset, bool *progFound)
 {
   uint8_t fileType;
 
@@ -334,34 +334,34 @@ static void checkFileHeader(poffHandle_t inHandle, poffHandle_t outHandle,
       /* We can handle only one pascal program file */
 
       if (*progFound)
-	{
-	  fprintf(stderr,
-		  "ERROR: Only one compiled pascal program file "
-		  "may appear in input file list\n");
-	  exit(1);
-	}
+        {
+          fprintf(stderr,
+                  "ERROR: Only one compiled pascal program file "
+                  "may appear in input file list\n");
+          exit(1);
+        }
       else
-	{
-	  /* Get the entry point from the pascal file, apply any
-	   * necessary offsets, and store the entry point in the
-	   * linked output file's file header.
-	   */
+        {
+          /* Get the entry point from the pascal file, apply any
+           * necessary offsets, and store the entry point in the
+           * linked output file's file header.
+           */
 
-	  poffSetEntryPoint(outHandle,
-			    poffGetEntryPoint(inHandle) + pcOffset);
+          poffSetEntryPoint(outHandle,
+                            poffGetEntryPoint(inHandle) + pcOffset);
 
-	  /* Copy the program name from the pascal file to the linked
-	   * output file's file header and mark the output file as
-	   * a pascal executable.
-	   */
+          /* Copy the program name from the pascal file to the linked
+           * output file's file header and mark the output file as
+           * a pascal executable.
+           */
 
-	  poffSetFileType(outHandle, FHT_EXEC, 0,
-			  poffGetFileHdrName(inHandle));
+          poffSetFileType(outHandle, FHT_EXEC, 0,
+                          poffGetFileHdrName(inHandle));
 
-	  /* Indicate that we have found the program file */
+          /* Indicate that we have found the program file */
 
-	  *progFound = true;
-	}
+          *progFound = true;
+        }
     }
   else if (fileType != FHT_UNIT)
     {
@@ -370,8 +370,8 @@ static void checkFileHeader(poffHandle_t inHandle, poffHandle_t outHandle,
        */
 
       fprintf(stderr,
-	      "ERROR: Only compiled pascal program and unit files "
-	      "may appear in input file list\n");
+              "ERROR: Only compiled pascal program and unit files "
+              "may appear in input file list\n");
       exit(1);
     }
 }
@@ -409,8 +409,8 @@ static uint32_t mergeRoData(poffHandle_t inHandle, poffHandle_t outHandle)
  */
 
 static uint32_t mergeProgramData(poffHandle_t inHandle,
-			       poffHandle_t outHandle,
-			       uint32_t pcOffset, uint32_t roOffset)
+                               poffHandle_t outHandle,
+                               uint32_t pcOffset, uint32_t roOffset)
 {
   OPTYPE op;
   uint32_t pc;
@@ -451,7 +451,7 @@ static uint32_t mergeProgramData(poffHandle_t inHandle,
  */
 
 static uint32_t mergeFileNames(poffHandle_t inHandle,
-			     poffHandle_t outHandle)
+                             poffHandle_t outHandle)
 {
   int32_t inOffset;
   uint32_t outOffset;
@@ -463,11 +463,11 @@ static uint32_t mergeFileNames(poffHandle_t inHandle,
 
       inOffset = poffGetFileName(inHandle, &fname);
       if (inOffset >= 0)
-	{
-	  /* And write it to the output file */
+        {
+          /* And write it to the output file */
 
-	  outOffset = poffAddFileName(outHandle, fname);
-	}
+          outOffset = poffAddFileName(outHandle, fname);
+        }
     }
   while (inOffset >= 0);
 
@@ -485,9 +485,9 @@ static uint32_t mergeFileNames(poffHandle_t inHandle,
  */
 
 static uint32_t mergeLineNumbers(poffHandle_t inHandle,
-			       poffHandle_t outHandle,
-			       uint32_t pcOffset,
-			       uint32_t fnOffset)
+                               poffHandle_t outHandle,
+                               uint32_t pcOffset,
+                               uint32_t fnOffset)
 {
   poffLineNumber_t lineno;
   int32_t inOffset;
@@ -499,13 +499,13 @@ static uint32_t mergeLineNumbers(poffHandle_t inHandle,
 
       inOffset = poffGetRawLineNumber(inHandle, &lineno);
       if (inOffset >= 0)
-	{
-	  /* And write it to the output file */
+        {
+          /* And write it to the output file */
 
-	  outOffset = poffAddLineNumber(outHandle, lineno.ln_lineno,
-					lineno.ln_fileno + fnOffset,
-					lineno.ln_poffset + pcOffset);
-	}
+          outOffset = poffAddLineNumber(outHandle, lineno.ln_lineno,
+                                        lineno.ln_fileno + fnOffset,
+                                        lineno.ln_poffset + pcOffset);
+        }
     }
   while (inOffset >= 0);
 
@@ -535,7 +535,7 @@ static void writeOutputFile(poffHandle_t outHandle)
   if (outstream == NULL)
     {
       fprintf(stderr, "ERROR: Could not open %s: %s\n",
-	      fileName, strerror(errno));
+              fileName, strerror(errno));
       exit(1);
     }
 

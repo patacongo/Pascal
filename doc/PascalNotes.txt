@@ -57,7 +57,7 @@ Extended Pascal Features
 NON-standard Pascal extensions/differences
 
 TYPES
-- ARRAY index type is integer constant specifying size of array or
+- ARRAY index type may be an integer constant specifying size of array or
   a range of integer constants.
 - Hexadecimal constants.
 - INPUT and OUTPUT parameters in PROGRAM statement are
@@ -90,13 +90,6 @@ o BUGS
   strcat and strcatc need to know how big the string storage space is.
 - Need logic to release string stack used by actual parameters after
   function/procedure call.
-- Can't declare new parameters / variables with same name as another
-  variable at higher stack.  Tokenizer does not return tIDENT, it
-  returns the previous symbol.  This has been fixed for the formal
-  parameters of functions and procedures only:  getToken() know
-  excepts a boolean argument that suppresses the symbol lookup.  When
-  getting the formal parameter name, the lookup is suppressed allowing
-  for duplicate symbols (unverified).
 - There are lots of cases where the string stack is not being managed
   correctly (e.g., usesSection()).
 - Redirection of input and output is not supported (e.g. see setting of
@@ -108,7 +101,7 @@ o BUGS
   fixed for some functions (like eof and eoln) but not all cases have been
   verified.
 - Operations on type 'string' are no yet supported
-- Unit files with data declarations, but no implementation fenerate an
+- Unit files with data declarations, but no implementation generate an
   error.
 
 o IMPROVEMENTS

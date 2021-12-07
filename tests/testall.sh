@@ -36,19 +36,20 @@
 #set -x
 
 # Parse command line
+
 DOLIST=A
 if [ -n "$1" ]; then
     case "$1" in
-	[0,1,2,5,8,9,A] )
-	    DOLIST=${1}
-	    ;;
-	a )
-	    DOLIST=A
-	    ;;
-	* )
-	    echo ""; echo "Unrecognized filter option"
-	    show_usage
-	;;
+    [0,1,2,5,8,9,A] )
+        DOLIST=${1}
+        ;;
+    a )
+        DOLIST=A
+        ;;
+    * )
+        echo ""; echo "Unrecognized filter option"
+        show_usage
+    ;;
     esac
 fi
 
@@ -75,17 +76,17 @@ function check_dolist ()
     BASEFILE=`basename ${1}`
     FILECHAR=`echo "${BASEFILE}" | cut -b1`
     if [ "${DONTLIST}" == "${FILECHAR}" ]; then
-	echo "YES"
+    echo "YES"
     else
-	if [ "${DOLIST}" == "A" ]; then
-	    echo "NO"
-	else
-	    if [ "${DOLIST}" == "${FILECHAR}" ]; then
-		echo "NO"
-	    else
-		echo "YES"
-	    fi
-	fi
+    if [ "${DOLIST}" == "A" ]; then
+        echo "NO"
+    else
+        if [ "${DOLIST}" == "${FILECHAR}" ]; then
+        echo "NO"
+        else
+        echo "YES"
+        fi
+    fi
     fi
 }
 
@@ -95,15 +96,23 @@ rm -f src/*.o src/*.o1 src/*.pex src/*.err src/*.lst
 # Compile and execute all of the selected tests in the src
 # directory.  Skip the multiple scripts; they must be handled
 # by custom scripts
+
 DONTLIST=5
 for file in `ls -1 src/*.pas`; do
 
     SKIPPING=`check_dolist $file`
     if [ "${SKIPPING}" == "YES" ]; then
-	echo "SKIPPING $file"
+    echo "SKIPPING $file"
     else
     echo "########${file}########";
-	./testone.sh ${file}
+    ./testone.sh ${file}
     fi
 done
+
+# Multi-file tests are controlled by units.sh
+
+if [ "${DOLIST}" == "A" -o "${DOLIST}" == "5" ]; then
+    ./testmulti.sh sinecos.pas "unit-cosine.pas unit-sine.pas unit-data.pas" sinecos.inp
+    ./testmulti.sh worksched.pas DayIO.pas
+fi
 exit

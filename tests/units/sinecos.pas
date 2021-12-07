@@ -1,9 +1,9 @@
 program MyProgram;
 
 uses
-   MyCosineUnit;
-   MySineUnit;
-   MyDataUnit;
+   MyCosineUnit in 'unit-cosine.pas';
+   MySineUnit in 'unit-sine.pas';
+   MyDataUnit in 'unit-data.pas';
 
 var
    x : real;

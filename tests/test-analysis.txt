@@ -6,7 +6,7 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     the filename type has been changed to the string type.
     According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
     not sure how standard that unit is.
- 2. Currently a set is limited to 32-bits to so that they can be represented internally
+ 2. Currently a set is limited to 32-bits so that they can be represented internally
     as a 32-bit bit set.
  3. Input procedures in writeln() take the file number as an optional first parameter.
     If the optional file parameter is not supplied then the file associated with the
@@ -21,7 +21,7 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     failure in src/108-pointerrecode.pas.
  7. The @ unary operator has not yet been implemented.  See failure in src/114-pointers.pas
  8. Unit files with data declarations, but no implementation.
- 9. General usage of units.  Most of these are not skipped by testall.sh.
+ 9. General usage of units.  Primary issues with the linker.  See sinecos.pex
 
 Successful test results are not shown.
 
@@ -170,34 +170,6 @@ In factor():
       getToken();
       break;
 
-########src/501-uses.pas########
-ERROR: Undefined symbol 'checkvars'
-ERROR: Undefined symbol 'mycosine'
-ERROR: Undefined symbol 'mysine'
-Fatal Error 96 -- Aborting
-Using string stack size = 1024
-No p-code executable
-
-Analysis:
-This is an issue with using units.  They do not yet to work.
-
-########ssrc/504-worksched.pas########
-Line 0:0055 Error 11 Token 44
-
-Error:
-#define eINTCONST        ((uint16_t) 0x11)
-
-Line:
- 55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
-wher
- 50        EmployeeType = string[EmployeeMaxLen];
-
-Token:
-#define sTYPE            0x44
-
-Analysis:
-I haven't looked into to this but I expect that this is another of many issues related to the fragmental implementation of string types.
-
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d
 
@@ -246,3 +218,41 @@ Token:
 
 Analysis:
 This is a unit with constant/variable/procedure definitions.  It has no implementation section at the end as does a normal program file.
+
+########sinecos.pas########
+########unit-cosine.pas########
+########unit-sine.pas########
+########unit-data.pas########
+########sinecos.pex########
+sinecos.pex Loaded
+Enter radians	: Runtime error 0x87 -- Execution Stopped
+
+Error:
+277 #define eBADFPOPCODE     ((uint16_t) 0x87)
+
+########worksched.pas########
+Line 0:0055 Error 11 Token 44
+
+Error:
+#define eINTCONST        ((uint16_t) 0x11)
+
+Line:
+ 55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
+wher
+ 50        EmployeeType = string[EmployeeMaxLen];
+
+Token:
+#define sTYPE            0x44
+
+Analysis:
+I haven't looked into to this but I expect that this is another of many issues related to the fragmental implementation of string types.
+
+########DayIO.pas########
+Line 0:0060 Error 11 Token 44
+
+Analysis:
+Haven't look at yet.
+########worksched.pex########
+ERROR: Could not open worksched.o: No such file or directory
+ERROR: Error opening 'worksched.pex': 2
+ERROR: Could not load worksched.pex

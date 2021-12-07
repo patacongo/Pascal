@@ -2,7 +2,7 @@
  * libpoff/pfswap.c
  * Handle POFF Endian-ness
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,22 +43,6 @@
 #include "keywords.h"  /* Standard types */
 #include "paslib.h"    /* Common library */
 #include "pfprivate.h" /* POFF private definitions */
-
-/**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-/***********************************************************************
- * Private Function Prototypes
- ***********************************************************************/
 
 /***********************************************************************
  * Private Functions
@@ -196,10 +180,10 @@ void poffSwapFileTableData(poffInfo_t *poffInfo)
   uint32_t       index;
 
   for (index = 0;
-       index < poffInfo->relocSection.sh_size;
-       index += poffInfo->relocSection.sh_entsize)
+       index < poffInfo->fileNameTableSection.sh_size;
+       index += poffInfo->fileNameTableSection.sh_entsize)
     {
-      pfile = (poffFileTab_t*)&poffInfo->relocTable[index];
+      pfile = (poffFileTab_t*)&poffInfo->fileNameTable[index];
       poffSwapFileTabEntry(pfile);
     }
 }
@@ -214,10 +198,10 @@ void poffSwapLineNumberData(poffInfo_t *poffInfo)
   uint32_t          index;
 
   for (index = 0;
-       index < poffInfo->relocSection.sh_size;
-       index += poffInfo->relocSection.sh_entsize)
+       index < poffInfo->lineNumberSection.sh_size;
+       index += poffInfo->lineNumberSection.sh_entsize)
     {
-      plineno = (poffLineNumber_t*)&poffInfo->relocTable[index];
+      plineno = (poffLineNumber_t*)&poffInfo->lineNumberTable[index];
       poffSwaplineno(plineno);
     }
 }
@@ -248,5 +232,3 @@ void poffSwapDebugData(poffInfo_t *poffInfo)
     }
 }
 #endif
-
-/***********************************************************************/
