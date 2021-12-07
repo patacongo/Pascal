@@ -116,98 +116,103 @@ typedef enum fileSection_e fileSection_t;
 
 /* Reserved word table entry */
 
-struct R
+struct reservedWord_s
 {
-  char   *rname;         /* pointer to name in string stack */
-  uint8_t rtype;         /* reserved word type */
-  uint8_t subtype;       /* reserved word extended type */
+  char   *rname;           /* pointer to name in string stack */
+  uint8_t rtype;           /* reserved word type */
+  uint8_t subtype;         /* reserved word extended type */
 };
-typedef struct R RTYPE;
+typedef struct reservedWord_s reservedWord_t;
 
 /* Symbol table entry */
 
-struct symType_s         /* for sKind = sTYPE */
+struct symType_s           /* for sKind = sTYPE */
 {
-  uint8_t   type;        /* specific type */
-  uint8_t   rtype;       /* reference to type */
-  uint8_t   subType;     /* constant type for subrange types */
-  uint8_t   flags;       /* flags to customize a type (see above) */
-  uint32_t  asize;       /* size of allocated instances of this type */
-  uint32_t  rsize;       /* size of reference to an instances of this type */
-  int32_t   minValue;    /* minimum value taken subrange */
-  int32_t   maxValue;    /* maximum value taken by subrange or scalar */
-  struct S *parent;      /* pointer to parent type */
-  struct S *index;       /* pointer to index subrange type (arrays)*/
+  uint8_t   type;          /* specific type */
+  uint8_t   rtype;         /* reference to type */
+  uint8_t   subType;       /* constant type for subrange types */
+  uint8_t   flags;         /* flags to customize a type (see above) */
+  uint32_t  asize;         /* size of allocated instances of this type */
+  uint32_t  rsize;         /* size of reference to an instances of this type */
+  int32_t   minValue;      /* minimum value taken subrange */
+  int32_t   maxValue;      /* maximum value taken by subrange or scalar */
+
+  struct symbol_s *parent; /* pointer to parent type */
+  struct symbol_s *index;  /* pointer to index subrange type (arrays)*/
 };
 typedef struct symType_s symType_t;
 
-struct symConst_s        /* for sKind == constant type */
+struct symConst_s          /* for sKind == constant type */
 {
   union
   {
-    double  f;           /* real value */
-    int32_t i;           /* integer value */
+    double  f;             /* real value */
+    int32_t i;             /* integer value */
   } val;
-  struct S *parent;      /* pointer to parent type */
+
+  struct symbol_s *parent; /* pointer to parent type */
 };
 typedef struct symConst_s symConst_t;
 
-struct symStringConst_s  /* for sKind == sSTRING_CONST */
+struct symStringConst_s    /* for sKind == sSTRING_CONST */
 {
-  uint32_t offset;       /* RO data section offset of string */
-  uint32_t size;         /* length of string in bytes */
+  uint32_t offset;         /* RO data section offset of string */
+  uint32_t size;           /* length of string in bytes */
 };
 typedef struct symStringConst_s symStringConst_t;
 
-struct symVarString_s    /* for sKind == sSTRING */
+struct symVarString_s      /* for sKind == sSTRING */
 {
-  uint16_t label;        /* label at string declaration */
-  uint16_t size;         /* valid length of string in bytes */
-  uint16_t alloc;        /* max length of string in bytes */
+  uint16_t label;          /* label at string declaration */
+  uint16_t size;           /* valid length of string in bytes */
+  uint16_t alloc;          /* max length of string in bytes */
 };
 typedef struct symVarString_s symVarString_t;
 
-struct symLabel_s        /* for sKind == sLABEL */
+struct symLabel_s          /* for sKind == sLABEL */
 {
-  uint16_t label;        /* label number */
-  bool     unDefined;    /* set false when defined */
+  uint16_t label;          /* label number */
+  bool     unDefined;      /* set false when defined */
 };
 typedef struct symLabel_s symLabel_t;
 
-struct symVar_s          /* for sKind == type identifier */
+struct symVar_s            /* for sKind == type identifier */
 {
-  int32_t   offset;      /* Data stack offset */
-  uint32_t  size;        /* Size of variable */
-  uint8_t   flags;       /* flags to customize a variable (see above) */
-  uint32_t  symIndex;    /* POFF symbol table index (if undefined) */
-  struct S *parent;      /* pointer to parent type */
+  int32_t   offset;        /* Data stack offset */
+  uint32_t  size;          /* Size of variable */
+  uint8_t   flags;         /* flags to customize a variable (see above) */
+  uint32_t  symIndex;      /* POFF symbol table index (if undefined) */
+
+  struct symbol_s *parent; /* pointer to parent type */
 };
 typedef struct symVar_s symVar_t;
 
-struct symProc_s         /* for sKind == sPROC or sFUNC */
+struct symProc_s           /* for sKind == sPROC or sFUNC */
 {
-  uint16_t  label;       /* entry point label */
-  uint16_t  nParms;      /* number of parameters that follow */
-  uint8_t   flags;       /* flags to customize a proc/func (see above) */
-  uint32_t  symIndex;    /* POFF symbol table index (if undefined) */
-  struct S *parent;      /* pointer to parent type (sFUNC only) */
+  uint16_t  label;         /* entry point label */
+  uint16_t  nParms;        /* number of parameters that follow */
+  uint8_t   flags;         /* flags to customize a proc/func (see above) */
+  uint32_t  symIndex;      /* POFF symbol table index (if undefined) */
+
+  struct symbol_s *parent; /* pointer to parent type (sFUNC only) */
 };
 typedef struct symProc_s symProc_t;
 
-struct symRecord_s       /* for sKind == sRECORD_OBJECT */
+struct symRecord_s         /* for sKind == sRECORD_OBJECT */
 {
-  uint32_t  size;        /* size of this field */
-  uint32_t  offset;      /* offset into the RECORD */
-  struct S *record;      /* pointer to parent sRECORD type */
-  struct S *parent;      /* pointer to parent field type */
+  uint32_t  size;          /* size of this field */
+  uint32_t  offset;        /* offset into the RECORD */
+
+  struct symbol_s *record; /* pointer to parent sRECORD type */
+  struct symbol_s *parent; /* pointer to parent field type */
 };
 typedef struct symRecord_s symRecord_t;
 
-struct S
+struct symbol_s
 {
-  char     *sName;       /* pointer to name in string stack */
-  uint8_t   sKind;       /* kind of symbol */
-  uint8_t   sLevel;      /* static nesting level */
+  char     *sName;         /* pointer to name in string stack */
+  uint8_t   sKind;         /* kind of symbol */
+  uint8_t   sLevel;        /* static nesting level */
   union
   {
     symType_t        t;          /* for type definitions */
@@ -221,24 +226,24 @@ struct S
     symRecord_t      r;          /* for files of RECORDS */
   } sParm;
 };
-typedef struct S STYPE;
+typedef struct symbol_s symbol_t;
 
 /* WITH structure */
 
-struct W
+struct with_s
 {
-  uint8_t   level;       /* static nesting level */
-  bool      pointer;     /* true if offset is to pointer to RECORD */
-  bool      varParm;     /* true if VAR param (+pointer) */
-  int32_t   offset;      /* Data stack offset */
-  uint16_t  index;       /* RECORD offset (if pointer) */
-  STYPE    *parent;      /* pointer to parent RECORD type */
+  uint8_t   level;         /* static nesting level */
+  bool      pointer;       /* true if offset is to pointer to RECORD */
+  bool      varParm;       /* true if VAR param (+pointer) */
+  int32_t   offset;        /* Data stack offset */
+  uint16_t  index;         /* RECORD offset (if pointer) */
+  symbol_t *parent;        /* pointer to parent RECORD type */
 };
-typedef struct W WTYPE;
+typedef struct with_s with_t;
 
 /* File table record */
 
-struct F
+struct fileTable_s
 {
   int16_t defined;
   int16_t flevel;
@@ -246,7 +251,7 @@ struct F
   int32_t faddr;
   int16_t fsize;
 };
-typedef struct F FTYPE;
+typedef struct fileTable_s fileTable_t;
 
 /* This structure captures the parsing state of the compiler for a particular
  * file.  Since multiple, nested files can be processed, this represents

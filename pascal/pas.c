@@ -76,8 +76,8 @@ uint16_t    g_token;                 /* Current token */
 uint16_t    g_tknSubType;            /* Extended token type */
 int32_t     g_tknInt;                /* Integer token value */
 double      g_tknReal;               /* Real token value */
-STYPE      *g_tknPtr;                /* Pointer to symbol token*/
-FTYPE       g_files[MAX_FILES + 1];  /* File Table */
+symbol_t   *g_tknPtr;                /* Pointer to symbol token*/
+fileTable_t g_files[MAX_FILES + 1];  /* File Table */
 fileState_t g_fileState[MAX_INCL];   /* State of all open files */
 
 /* g_sourceFileName : Program name from command line
@@ -93,7 +93,7 @@ FILE       *g_poffFile;              /* Pass1 POFF output file */
 FILE       *g_lstFile;               /* List File pointer */
 FILE       *g_errFile;               /* Error file pointer */
 
-WTYPE       g_withRecord;            /* RECORD used with WITH statement */
+with_t      g_withRecord;            /* RECORD used with WITH statement */
 int16_t     g_level        = 0;      /* Static nesting level */
 int16_t     g_includeIndex = 0;      /* Include file index */
 int16_t     g_nIncPathes   = 0;      /* Number pathes in g_includePath[] */
@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
 
   /* Indicate that no WITH statement has been processed */
 
-  memset(&g_withRecord, 0, sizeof(WTYPE));
+  memset(&g_withRecord, 0, sizeof(with_t));
 
   /* Process the pascal program
    *

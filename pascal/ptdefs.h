@@ -38,6 +38,7 @@
 #define __PTDEFS_H
 
 /***********************************************************************/
+
 /* Token Values 0-0x20 reserved for get_token identification */
 
 #define tIDENT           0x01
@@ -60,6 +61,7 @@
 #define tFDIV            ('/')
 
 /* Token Values 0x30-0x39 are spare */
+
 /* Token Values 0x3A-0x40 are for ASCII character tokens */
 
 #define tLT              ('<')
@@ -93,16 +95,19 @@
 #define sVAR_PARM        0x57
 
 /* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens */
+
 /* Token Values 0x61-0x7a are SYMBOL TABLE definitions */
 
 /* Token Values 0x7b-0x7f are for ASCII character tokens */
+
 /* Token Value  0x7f is spare */
 
 /* Token Values 0x80-0xef are for RESERVED WORDS */
 
 /* Standard constants (TRUE, FALSE, MAXINT) and standard files (INPUT, OUTPUT)
  * are hard initialized into the constant/symbol table and are transparent
- * to the compiler */
+ * to the compiler.
+ */
 
 /* Reserved Words 0x80-0xaf*/
 
@@ -158,6 +163,7 @@
 #define tPROC            0xb1
 
 /***********************************************************************/
+
 /* Codes to indentify built-in functions and procedures */
 
 #define txNONE           0x00

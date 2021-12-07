@@ -90,7 +90,7 @@ static uint32_t g_nStackLevelReferenceChanges = 0;
  */
 
 static void
-pas_GenerateLevel0StackReference(enum pcode_e eOpCode, STYPE *pVar)
+pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *pVar)
 {
   /* Sanity checking.  Double check nesting level and also since this is
    * a level zero reference, then the offset must be positive
@@ -319,7 +319,7 @@ void pas_GenerateLevelReference(enum pcode_e eOpCode, uint16_t wLevel,
  * stack offsets.
  */
 
-void pas_GenerateStackReference(enum pcode_e eOpCode, STYPE *pVar)
+void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *pVar)
 {
   /* Is this variable declared at level 0 (i.e., it has global scope)
    * that is being offset via a nesting level?
@@ -359,7 +359,7 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, STYPE *pVar)
  * called procedure is external.
  */
 
-void pas_GenerateProcedureCall(STYPE *pProc)
+void pas_GenerateProcedureCall(symbol_t *pProc)
 {
   /* sLevel is the level at which the procedure was declared.  We need
    * to set the SLP to this value prior to the call (on some architectures
@@ -406,7 +406,7 @@ void pas_GenerateLineNumber(uint16_t wIncludeNumber, uint32_t dwLineNumber)
 
 /***********************************************************************/
 
-void pas_GenerateDebugInfo(STYPE *pProc, uint32_t dwReturnSize)
+void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
 {
   int i;
 
@@ -442,14 +442,14 @@ void pas_GenerateDebugInfo(STYPE *pProc, uint32_t dwReturnSize)
  * exported by a unit.
  */
 
-void pas_GenerateStackExport(STYPE *pVar)
+void pas_GenerateStackExport(symbol_t *pVar)
 {
   poffLibSymbol_t symbol;
 
 #if CONFIG_DEBUG
   /* Get the parent type of the variable */
 
-  STYPE *typePtr = pVar->sParm.v.parent;
+  symbol_t *typePtr = pVar->sParm.v.parent;
 
   /* Perform some sanity checking:
    * - Must have a parent type
@@ -484,14 +484,14 @@ void pas_GenerateStackExport(STYPE *pVar)
  * imported by a program or unit from a unit.
  */
 
-void pas_GenerateStackImport(STYPE *pVar)
+void pas_GenerateStackImport(symbol_t *pVar)
 {
   poffLibSymbol_t symbol;
 
 #if CONFIG_DEBUG
   /* Get the parent type of the variable */
 
-  STYPE *typePtr = pVar->sParm.v.parent;
+  symbol_t *typePtr = pVar->sParm.v.parent;
 
   /* Perform some sanity checking
    * - Must have a parent type
@@ -526,14 +526,14 @@ void pas_GenerateStackImport(STYPE *pVar)
  * exported by a unit.
  */
 
-void pas_GenerateProcExport(STYPE *pProc)
+void pas_GenerateProcExport(symbol_t *pProc)
 {
   poffLibSymbol_t symbol;
 
 #if CONFIG_DEBUG
   /* Get the parent type of the function (assuming it is a function) */
 
-  STYPE *typePtr = pProc->sParm.p.parent;
+  symbol_t *typePtr = pProc->sParm.p.parent;
 
   /* Perform some sanity checking */
 
@@ -583,14 +583,14 @@ void pas_GenerateProcExport(STYPE *pProc)
  * imported by a program or unit from a unit.
  */
 
-void pas_GenerateProcImport(STYPE *pProc)
+void pas_GenerateProcImport(symbol_t *pProc)
 {
   poffLibSymbol_t symbol;
 
 #if CONFIG_DEBUG
   /* Get the parent type of the function (assuming it is a function) */
 
-  STYPE *typePtr = pProc->sParm.p.parent;
+  symbol_t *typePtr = pProc->sParm.p.parent;
 
   /* Perform some sanity checking */
 

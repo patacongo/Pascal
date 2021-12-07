@@ -2,7 +2,7 @@
  * pprgm.h
  * External Declarations associated with pprgm.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void program(void);
-extern void usesSection(void);
+void program(void);
+void usesSection(void);
 
 #endif /* __PPRGM_H */

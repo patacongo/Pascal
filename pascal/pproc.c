@@ -83,7 +83,7 @@ static void   valProc      (void);                /* VAL procedure */
 
 /* procedure val(const S : string; var V; var Code : word); */
 
-static STYPE valSymbol[4];
+static symbol_t valSymbol[4];
 
 /****************************************************************************/
 
@@ -177,13 +177,13 @@ void builtInProcedure(void)
 
 /***********************************************************************/
 
-int actualParameterSize(STYPE *procPtr, int parmNo)
+int actualParameterSize(symbol_t *procPtr, int parmNo)
 {
   /* These sizes must agree with the sizes used in actualParameterListg()
    * below.
    */
 
-  STYPE *typePtr = procPtr[parmNo].sParm.v.parent;
+  symbol_t *typePtr = procPtr[parmNo].sParm.v.parent;
   switch (typePtr->sKind)
     {
     case sINT :
@@ -215,9 +215,9 @@ int actualParameterSize(STYPE *procPtr, int parmNo)
 
 /***********************************************************************/
 
-int actualParameterList(STYPE *procPtr)
+int actualParameterList(symbol_t *procPtr)
 {
-  STYPE *typePtr;
+  symbol_t *typePtr;
   register int nParms = 0;
   bool lparen = false;
   int size = 0;
@@ -447,7 +447,7 @@ static int16_t readProc(void)
 
 static void readText(uint16_t fileNumber)
 {
-  STYPE *rPtr;
+  symbol_t *rPtr;
 
   TRACE(g_lstFile, "[readText]");
 
@@ -600,8 +600,8 @@ static int16_t writeProc(void)
 
 static void writeText (uint16_t fileNumber)
 {
-  exprType writeType;
-  STYPE *wPtr;
+  exprType_t writeType;
+  symbol_t  *wPtr;
 
   TRACE(g_lstFile, "[writeText]");
 

@@ -49,18 +49,6 @@
 #include "pofflib.h"   /* Public interfaces */
 
 /**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-/**********************************************************************
  * Private Constant Data
  **********************************************************************/
 
@@ -99,7 +87,7 @@ void poffDumpRelocTable(poffHandle_t handle, FILE *outFile)
     {
       prel = (poffRelocation_t*)&poffInfo->relocTable[index];
 
-      fprintf(outFile, "%-6s 0x%08" PRIx32 " 0x%08lx\n",
+      fprintf(outFile, "%-6s 0x%08" PRIx32 " 0x%08" PRIx32 "\n",
               poffRelocationTypes[RLI_TYPE(prel->rl_info)],
               RLI_SYM(prel->rl_info),
               prel->rl_offset);

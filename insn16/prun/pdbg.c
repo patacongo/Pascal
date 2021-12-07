@@ -192,7 +192,7 @@ void dbg_run(struct pexec_s *st)
             printf("Unrecognized Command\n");
             pdbg_execcommand(st, eCMD_HELP, 0);
             break;
-          } /* end switch */
+          }
           break;
         case 'S' :  /* Single Step (into) */
           pdbg_execcommand(st, eCMD_STEP, 0);
@@ -217,7 +217,7 @@ void dbg_run(struct pexec_s *st)
             printf("Unrecognized Command\n");
             pdbg_execcommand(st, eCMD_HELP, 0);
             break;
-          } /* end switch */
+          }
           break;
         case 'D' :
           switch (toupper(g_inline[1])) {
@@ -242,7 +242,7 @@ void dbg_run(struct pexec_s *st)
             printf("Unrecognized Command\n");
             pdbg_execcommand(st, eCMD_HELP, 0);
             break;
-          } /* end switch */
+          }
           break;
         case 'Q' :  /* Quit */
           pdbg_execcommand(st, eCMD_QUIT, pc);
@@ -259,10 +259,9 @@ void dbg_run(struct pexec_s *st)
           printf("Unrecognized Command\n");
           pdbg_execcommand(st, eCMD_HELP, 0);
           break;
-        } /* end switch */
-    } /* end while */
-
-} /* end pdbg_debugpcodeProgram */
+        }
+    }
+}
 
 /**********************************************************************
  * Private Functions
@@ -286,8 +285,7 @@ static void pdbg_showcommands(void)
    printf("  DB        - Display Breakpoints\n");
    printf("  H or ?    - Shows this list\n");
    printf("  Q[uit]    - Quit\n");
-
-} /* end pdbg_showcommands */
+}
 
 /***********************************************************************/
 static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t value)
@@ -352,7 +350,7 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
         {
           pdbg_addbreakpoint(value);
           pdbg_printbreakpoints(st);
-        } /* end else */
+        }
       break;
     case eCMD_BC:     /* Clear Breakpoint */
       if ((value >= 1) && (value <= g_nbreakpoints))
@@ -381,7 +379,7 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
       else
         {
           g_lastvalue = pdbg_printstack(st, value, DISPLAY_STACK_SIZE);
-        } /* end else */
+        }
       break;
     case eCMD_DI:     /* Display Instructions */
       if (value >= st->maxpc)
@@ -392,7 +390,7 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
       else
         {
           g_lastvalue = pdbg_printpcode(st, value, DISPLAY_INST_SIZE);
-        } /* end else */
+        }
       break;
     case eCMD_DB:     /* Display Breakpoints */
       pdbg_printbreakpoints(st);
@@ -406,25 +404,26 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
       pdbg_showcommands();
       g_lastcmd = eCMD_NONE;
       break;
-    } /* end switch */
-
-} /* end pdbg_execcommand */
+    }
+}
 
 /***********************************************************************/
 /* Read a decimal value from the  input string */
 
 static int32_t pdbg_readdecimal(char *ptr)
 {
-   int32_t decimal = 0;
+  int32_t decimal = 0;
 
-   while (!isspace(*ptr)) ptr++;
-   while (isspace(*ptr))  ptr++;
-   for (; ((*ptr >= '0') && (*ptr <= '9')); ptr++)
+  while (!isspace((int)*ptr)) ptr++;
+  while (isspace((int)*ptr))  ptr++;
+  for (; ((*ptr >= '0') && (*ptr <= '9')); ptr++)
+    {
       decimal = 10*decimal + (int32_t)*ptr - (int32_t)'0';
+    }
 
-   return decimal;
+  return decimal;
+}
 
-} /* end pdbg_readdecimal */
 /***********************************************************************/
 /* Read a hexadecimal value from the  input string */
 
@@ -434,41 +433,38 @@ static int32_t pdbg_readhex(char *ptr, int32_t defaultvalue)
    int32_t hex = 0;
    bool    found = false;
 
-   while (!isspace(*ptr)) ptr++;
-   while (isspace(*ptr))  ptr++;
+   while (!isspace((int)*ptr)) ptr++;
+   while (isspace((int)*ptr))  ptr++;
    while (true) {
 
       c = toupper(*ptr);
       if ((c >= '0') && (c <= '9')) {
          hex = ((hex << 4) | ((int32_t)c - (int32_t)'0'));
          found = true;
-      } /* end if */
+      }
       else if ((c >= 'A') && (c <= 'F')) {
          hex = ((hex << 4) | ((int32_t)c - (int32_t)'A' + 10));
          found = true;
-      } /* end else if */
+      }
       else {
          if (found)
             return hex;
          else
             return defaultvalue;
-      } /* end else */
+      }
       ptr++;
-
-   } /* end while */
-
-} /* end pdbg_readhex */
+   }
+}
 
 /***********************************************************************/
 /* Print the disassembled P-Code at PC */
 
 static void pdbg_programstatus(struct pexec_s *st)
 {
-   (void)pdbg_printpcode(st, st->pc, 1);
-   (void)pdbg_printstack(st, st->sp, 2);
-   pdbg_printregisters(st);
-
-} /* end pdbg_programstatus */
+  (void)pdbg_printpcode(st, st->pc, 1);
+  (void)pdbg_printstack(st, st->sp, 2);
+  pdbg_printregisters(st);
+}
 
 /***********************************************************************/
 /* Print the disassembled P-Code at PC */
@@ -494,7 +490,7 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
           op.arg1 = *address++;
           printf("%02x", op.arg1);
           opsize++;
-        } /* end if */
+        }
       else
         printf("..");
 
@@ -504,7 +500,7 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
           op.arg2 |= *address++;
           printf("%04x", op.arg2);
           opsize += 2;
-        } /* end if */
+        }
       else
         printf("....");
 
@@ -517,7 +513,7 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
 
       pc += opsize;
 
-    } /* end for */
+    }
 
   return pc;
 
@@ -539,11 +535,11 @@ static paddr_t pdbg_printstack(struct pexec_s *st, paddr_t sp, int16_t nitems)
            ((isp >= 0) && (nitems > 0));
            isp--, sp -= BPERI, nitems--)
         printf("   %04x  %04x\n", sp, st->dstack.i[isp] & 0xffff);
-    } /* end if */
+    }
   else
     {
       printf("SP:%04x  BAD\n", sp);
-    } /* end else */
+    }
 
   return sp;
 } /* end pdbg_printstack */
@@ -584,7 +580,7 @@ static void pdbg_printtracearray(struct pexec_s *st)
       if (++index >= TRACE_ARRAY_SIZE)
          index = 0;
 
-   } /* end for */
+   }
 
 } /* end pdbg_printtracearray */
 
@@ -614,7 +610,7 @@ static void pdbg_addbreakpoint(paddr_t pc)
       /* The breakpoint is not already set -- set it */
 
       g_breakpoint[g_nbreakpoints++] = pc;
-    } /* end if */
+    }
 
 } /* end pdbg_addbreakpoint */
 
@@ -630,7 +626,7 @@ static void pdbg_deletebreakpoint(int16_t bpno)
 
       g_nbreakpoints--;
 
-   } /* end if */
+   }
 
 } /* end pdbg_deletebreakpoint */
 
@@ -646,7 +642,7 @@ static void pdbg_printbreakpoints(struct pexec_s *st)
      {
        printf("BP:%d  ", (i+1));
        (void)pdbg_printpcode(st, g_breakpoint[i], 1);
-     } /* end for */
+     }
 
 } /* end pdbg_printbreakpoints */
 
@@ -669,10 +665,9 @@ static void pdbg_checkbreakpoint(struct pexec_s *st)
           printf("Breakpoint #%d -- Execution Stopped\n", (bpIndex+1));
           g_bstopexecution = true;
           return;
-        } /* end if */
-    } /* end for */
-
-} /* end pdbg_checkbreakpoint */
+        }
+    }
+}
 
 /***********************************************************************/
 /* Initialize Debugger variables */
@@ -721,7 +716,7 @@ static void pdbg_debugpcode(struct pexec_s *st)
           else
             printf("Runtime error 0x%02x -- Execution Stopped\n", errno);
           g_bstopexecution = true;
-        } /* end if */
+        }
 
       /* Check for normal stopping conditions */
 
@@ -744,5 +739,4 @@ static void pdbg_debugpcode(struct pexec_s *st)
         }
 
    } while (!g_bstopexecution);
-
-} /* end pdbg_debugpcode */
+}

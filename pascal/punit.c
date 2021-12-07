@@ -412,10 +412,10 @@ static void interfaceSection(void)
 
 static void exportedProcedureHeading(void)
 {
-   uint16_t procLabel = ++g_label;
-   char    *saveChSp;
-   STYPE   *procPtr;
-   register int i;
+   uint16_t  procLabel = ++g_label;
+   char     *saveChSp;
+   symbol_t *procPtr;
+   int       i;
 
    TRACE(g_lstFile,"[exportedProcedureHeading]");
 
@@ -492,11 +492,11 @@ static void exportedProcedureHeading(void)
 
 static void exportedFunctionHeading(void)
 {
-   uint16_t funcLabel = ++g_label;
-   int16_t  parameterOffset;
-   char    *saveChSp;
-   STYPE   *funcPtr;
-   int      i;
+   uint16_t  funcLabel = ++g_label;
+   int16_t   parameterOffset;
+   char     *saveChSp;
+   symbol_t *funcPtr;
+   int       i;
 
    TRACE(g_lstFile,"[exportedFunctionHeading]");
 

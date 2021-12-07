@@ -75,8 +75,8 @@ extern uint16_t    g_token;                /* Current token */
 extern uint16_t    g_tknSubType;           /* Extended token type */
 extern int32_t     g_tknInt;               /* Integer token value */
 extern double      g_tknReal;              /* Real token value */
-extern STYPE      *g_tknPtr;               /* Pointer to symbol token */
-extern FTYPE       g_files[MAX_FILES + 1]; /* File Table */
+extern symbol_t   *g_tknPtr;               /* Pointer to symbol token */
+extern fileTable_t g_files[MAX_FILES + 1]; /* File Table */
 extern fileState_t g_fileState[MAX_INCL];  /* State of all open files */
 
 /* g_sourceFileName : Source file name from command line
@@ -92,7 +92,7 @@ extern FILE       *g_poffFile;             /* POFF output file */
 extern FILE       *g_errFile;              /* Error file pointer */
 extern FILE       *g_lstFile;              /* List file pointer */
 
-extern WTYPE       g_withRecord;           /* RECORD of WITH statement */
+extern with_t      g_withRecord;           /* RECORD of WITH statement */
 extern int16_t     g_level;                /* Static nesting level */
 extern int16_t     g_includeIndex;         /* Include file index */
 extern int16_t     g_nIncPathes;           /* Number pathes in g_includePath[] */
@@ -106,7 +106,7 @@ extern int32_t     g_dStack;               /* Data stack size */
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void openNestedFile  (const char *fileName);
-extern void closeNestedFile (void);
+void openNestedFile(const char *fileName);
+void closeNestedFile(void);
 
 #endif /* __PAS_H */

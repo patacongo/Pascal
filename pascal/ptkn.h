@@ -2,7 +2,7 @@
  * ptkn.h
  * External Declarations associated with ptkn.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,22 +50,22 @@
 
 /* String stack access variables */
 
-extern char   *g_tokenString;          /* Start of token in string stack */
-extern char   *g_stringSP;             /* Top of string stack */
+extern char *g_tokenString;          /* Start of token in string stack */
+extern char *g_stringSP;             /* Top of string stack */
 
 /* Level-related data */
 
-extern int     g_levelSymOffset;       /* Index to symbols for this level */
-extern int     g_levelConstOffset;     /* Index to constants for this level */
+extern int   g_levelSymOffset;       /* Index to symbols for this level */
+extern int   g_levelConstOffset;     /* Index to constants for this level */
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void    getToken         (void);
-void    getLevelToken    (void);
-char    getNextCharacter (bool skipWhiteSpace);
-int16_t primeTokenizer   (unsigned long stringStackSize);
-int16_t rePrimeTokenizer (void);
+void    getToken(void);
+void    getLevelToken(void);
+char    getNextCharacter(bool skipWhiteSpace);
+int16_t primeTokenizer(unsigned long stringStackSize);
+int16_t rePrimeTokenizer(void);
 
 #endif /* __PTKN_H */

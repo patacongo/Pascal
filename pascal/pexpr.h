@@ -47,7 +47,7 @@
  * Type Definitions
  ***********************************************************************/
 
-typedef enum exprEnum
+enum exprType_s
 {
   exprUnknown = 0,    /* TOS value unknown */
   exprAnyOrdinal,     /* TOS = any ordinal type */
@@ -73,7 +73,9 @@ typedef enum exprEnum
   exprSetPtr,         /* TOS = pointer to a set value */
   exprArrayPtr,       /* TOS = pointer to an array */
   exprRecordPtr       /* TOS = pointer to a record */
-} exprType;
+};
+
+typedef enum exprType_s exprType_t;
 
 /***********************************************************************
  * Public Datas
@@ -88,10 +90,10 @@ extern char   *constantStart;
  * Public Function Protothypes
  ***********************************************************************/
 
-exprType expression(exprType findExprType, STYPE *typePtr);
-exprType varParm(exprType varExprType, STYPE *typePtr);
-void     arrayIndex(int32_t size, int offset);
-exprType getExprType(STYPE *sType);
+exprType_t expression(exprType_t findExprType, symbol_t *typePtr);
+exprType_t varParm(exprType_t varExprType, symbol_t *typePtr);
+void       arrayIndex(int32_t size, int offset);
+exprType_t getExprType(symbol_t *sType);
 
 void constantExpression(void);
 

@@ -2,7 +2,7 @@
  * punit.h
  * External Declarations associated with punit.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,14 +38,10 @@
 #define __PUNIT_H
 
 /***************************************************************************
- * Public Types
- ***************************************************************************/
-
-/***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void unitImplementation(void);
-extern void unitInterface(void);
+void unitImplementation(void);
+void unitInterface(void);
 
 #endif /* __PUNIT_H */

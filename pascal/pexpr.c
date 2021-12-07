@@ -81,32 +81,32 @@
 
 typedef struct
 {
-  uint8_t setType;
-  bool typeFound;
-  int16_t minValue;
-  int16_t maxValue;
-  STYPE  *typePtr;
+  uint8_t    setType;
+  bool       typeFound;
+  int16_t    minValue;
+  int16_t    maxValue;
+  symbol_t  *typePtr;
 } setTypeStruct;
 
 /***************************************************************
  * Private Function Prototypes
  ***************************************************************/
 
-static exprType simpleExpression  (exprType findExprType);
-static exprType term              (exprType findExprType);
-static exprType factor            (exprType findExprType);
-static exprType complexFactor     (void);
-static exprType simpleFactor      (STYPE *varPtr, uint8_t factorFlags);
-static exprType ptrFactor         (void);
-static exprType complexPtrFactor  (void);
-static exprType simplePtrFactor   (STYPE *varPtr, uint8_t factorFlags);
-static exprType functionDesignator(void);
-static void     setAbstractType   (STYPE *sType);
-static void     getSetFactor      (void);
-static void     getSetElement     (setTypeStruct *s);
-static bool     isOrdinalType     (exprType testExprType);
-static bool     isAnyStringType   (exprType testExprType);
-static bool     isStringReference (exprType testExprType);
+static exprType_t simpleExpression(exprType_t findExprType);
+static exprType_t term(exprType_t findExprType);
+static exprType_t factor(exprType_t findExprType);
+static exprType_t complexFactor(void);
+static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags);
+static exprType_t ptrFactor(void);
+static exprType_t complexPtrFactor(void);
+static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags);
+static exprType_t functionDesignator(void);
+static void       setAbstractType(symbol_t *sType);
+static void       getSetFactor(void);
+static void       getSetElement(setTypeStruct *s);
+static bool       isOrdinalType(exprType_t testExprType);
+static bool       isAnyStringType(exprType_t testExprType);
+static bool       isStringReference(exprType_t testExprType);
 
 /***************************************************************
  * Private Variables
@@ -117,19 +117,19 @@ static bool     isStringReference (exprType testExprType);
  * sTYPE entry associated with the expression.
  */
 
-static STYPE *abstractType;
+static symbol_t *abstractType;
 
 /***************************************************************/
 /* Evaluate (boolean) Expression */
 
-exprType expression(exprType findExprType, STYPE *typePtr)
+exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
 {
-  uint8_t  operation;
-  uint16_t intOpCode;
-  uint16_t fpOpCode;
-  uint16_t strOpCode;
-  exprType simple1Type;
-  exprType simple2Type;
+  uint8_t    operation;
+  uint16_t   intOpCode;
+  uint16_t   fpOpCode;
+  uint16_t   strOpCode;
+  exprType_t simple1Type;
+  exprType_t simple2Type;
 
   TRACE(g_lstFile,"[expression]");
 
@@ -353,9 +353,9 @@ exprType expression(exprType findExprType, STYPE *typePtr)
 /***************************************************************/
 /* Provide VAR parameter assignments */
 
-exprType varParm (exprType varExprType, STYPE *typePtr)
+exprType_t varParm (exprType_t varExprType, symbol_t *typePtr)
 {
-  exprType factorType;
+  exprType_t factorType;
 
   /* The abstract types - SETs, RECORDS, etc - require an exact
    * match in type.  Save the symbol table sTYPE entry associated
@@ -423,9 +423,9 @@ void arrayIndex(int32_t size, int32_t offset)
 /* Determine the expression type associated with a pointer to a type */
 /* symbol */
 
-exprType getExprType(STYPE *sType)
+exprType_t getExprType(symbol_t *sType)
 {
-  exprType factorType = sINT;
+  exprType_t factorType = sINT;
 
   TRACE(g_lstFile,"[getExprType]");
 
@@ -508,12 +508,12 @@ exprType getExprType(STYPE *sType)
 /***************************************************************/
 /* Process Simple Expression */
 
-static exprType simpleExpression(exprType findExprType)
+static exprType_t simpleExpression(exprType_t findExprType)
 {
-  int16_t  operation = '+';
-  uint16_t arg8FpBits;
-  exprType term1Type;
-  exprType term2Type;
+  int16_t    operation = '+';
+  uint16_t   arg8FpBits;
+  exprType_t term1Type;
+  exprType_t term2Type;
 
   TRACE(g_lstFile,"[simpleExpression]");
 
@@ -754,12 +754,12 @@ static exprType simpleExpression(exprType findExprType)
 /***************************************************************/
 /* Evaluate a TERM */
 
-static exprType term(exprType findExprType)
+static exprType_t term(exprType_t findExprType)
 {
-  uint8_t  operation;
-  uint16_t arg8FpBits;
-  exprType factor1Type;
-  exprType factor2Type;
+  uint8_t    operation;
+  uint16_t   arg8FpBits;
+  exprType_t factor1Type;
+  exprType_t factor2Type;
 
   TRACE(g_lstFile,"[term]");
 
@@ -925,9 +925,9 @@ static exprType term(exprType findExprType)
 /***************************************************************/
 /* Process a FACTOR */
 
-static exprType factor(exprType findExprType)
+static exprType_t factor(exprType_t findExprType)
 {
-  exprType factorType = exprUnknown;
+  exprType_t factorType = exprUnknown;
 
   TRACE(g_lstFile,"[factor]");
 
@@ -1197,9 +1197,9 @@ static exprType factor(exprType findExprType)
 /***********************************************************************/
 /* Process a complex factor */
 
-static exprType complexFactor(void)
+static exprType_t complexFactor(void)
 {
-   STYPE symbolSave;
+   symbol_t symbolSave;
 
    TRACE(g_lstFile,"[complexFactor]");
 
@@ -1219,10 +1219,10 @@ static exprType complexFactor(void)
 /* Process a complex factor (recursively) until it becomes a */
 /* simple factor */
 
-static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
+static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
 {
-  struct S *typePtr;
-  exprType factorType;
+  symbol_t  *typePtr;
+  exprType_t factorType;
 
   TRACE(g_lstFile,"[simpleFactor]");
 
@@ -1702,7 +1702,7 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
            * calcaultion
            */
 
-          STYPE *indexTypePtr = typePtr->sParm.t.index;
+          symbol_t *indexTypePtr = typePtr->sParm.t.index;
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
@@ -1747,9 +1747,9 @@ static exprType simpleFactor(STYPE *varPtr, uint8_t factorFlags)
 /* Process a factor of the for ^variable OR a VAR parameter (where the
  * ^ is implicit. */
 
-static exprType ptrFactor(void)
+static exprType_t ptrFactor(void)
 {
-   exprType factorType;
+   exprType_t factorType;
 
    TRACE(g_lstFile,"[ptrFactor]");
 
@@ -1845,9 +1845,9 @@ static exprType ptrFactor(void)
 /***********************************************************************/
 /* Process a complex factor */
 
-static exprType complexPtrFactor(void)
+static exprType_t complexPtrFactor(void)
 {
-  STYPE symbolSave;
+  symbol_t symbolSave;
 
   TRACE(g_lstFile,"[complexPtrFactor]");
 
@@ -1870,10 +1870,10 @@ static exprType complexPtrFactor(void)
  * factor.
  */
 
-static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
+static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
 {
-  struct S *typePtr;
-  exprType factorType;
+  symbol_t  *typePtr;
+  exprType_t factorType;
 
   TRACE(g_lstFile,"[simplePtrFactor]");
 
@@ -2236,7 +2236,7 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
            * calcaultion
            */
 
-          STYPE *indexTypePtr = typePtr->sParm.t.index;
+          symbol_t *indexTypePtr = typePtr->sParm.t.index;
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
@@ -2269,12 +2269,12 @@ static exprType simplePtrFactor(STYPE *varPtr, uint8_t factorFlags)
 
 /***********************************************************************/
 
-static exprType functionDesignator(void)
+static exprType_t functionDesignator(void)
 {
-  STYPE *funcPtr = g_tknPtr;
-  STYPE *typePtr = funcPtr->sParm.p.parent;
-  exprType factorType;
-  int size = 0;
+  symbol_t  *funcPtr = g_tknPtr;
+  symbol_t  *typePtr = funcPtr->sParm.p.parent;
+  exprType_t factorType;
+  int        size = 0;
 
   TRACE(g_lstFile,"[functionDesignator]");
 
@@ -2338,7 +2338,7 @@ static exprType functionDesignator(void)
 /* Determine the expression type associated with a pointer to a type */
 /* symbol */
 
-static void setAbstractType(STYPE *sType)
+static void setAbstractType(symbol_t *sType)
 {
   TRACE(g_lstFile,"[setAbstractType]");
 
@@ -2467,7 +2467,7 @@ static void getSetElement(setTypeStruct *s)
    uint16_t setValue;
    int16_t firstValue;
    int16_t lastValue;
-   STYPE  *setPtr;
+   symbol_t  *setPtr;
 
    TRACE(g_lstFile,"[getSetElement]");
 
@@ -2853,7 +2853,7 @@ static void getSetElement(setTypeStruct *s)
  * as well.
  */
 
-static bool isOrdinalType(exprType testExprType)
+static bool isOrdinalType(exprType_t testExprType)
 {
   if ((testExprType == exprInteger) || /* integer value */
       (testExprType == exprChar) ||    /* character value */
@@ -2870,7 +2870,7 @@ static bool isOrdinalType(exprType testExprType)
  * records upon assignment.
  */
 
-static bool isAnyStringType(exprType testExprType)
+static bool isAnyStringType(exprType_t testExprType)
 {
   if ((testExprType == exprString) ||
       (testExprType == exprStkString) ||
@@ -2880,7 +2880,7 @@ static bool isAnyStringType(exprType testExprType)
     return false;
 }
 
-static bool  isStringReference (exprType testExprType)
+static bool  isStringReference (exprType_t testExprType)
 {
   if ((testExprType == exprString) ||
       (testExprType == exprStkString))

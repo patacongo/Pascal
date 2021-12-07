@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "keywords.h"  /* Standard types */
 #include "pfprivate.h" /* POFF private definitions */
@@ -92,16 +93,17 @@ static const char *poffShTypes[SHT_NTYPES] =
  ***********************************************************************/
 
 static void poffDumpSectionHeader(poffHandle_t handle,
-				  poffSectionHeader_t *shdr,
-				  FILE *outFile)
+                  poffSectionHeader_t *shdr,
+                  FILE *outFile)
 {
   poffInfo_t *poffInfo = (poffInfo_t*)handle;
 
-  fprintf(outFile, "%-10s %8s 0x%02x 0x%04x 0x%08lx 0x%08lx %ld\n",
-	  poffGetString(poffInfo, shdr->sh_name),
-	  poffShTypes[shdr->sh_type], shdr->sh_flags,
-	  shdr->sh_entsize, shdr->sh_addr, shdr->sh_offset,
-	  shdr->sh_size);
+  fprintf(outFile, "%-10s %8s 0x%02x 0x%04x 0x%08" PRIx32
+                   " 0x%08" PRIx32 " %" PRId32 "\n",
+      poffGetString(poffInfo, shdr->sh_name),
+      poffShTypes[shdr->sh_type], shdr->sh_flags,
+      shdr->sh_entsize, shdr->sh_addr, shdr->sh_offset,
+      shdr->sh_size);
 }
 
 /***********************************************************************
@@ -116,17 +118,24 @@ void poffDumpFileHeader(poffHandle_t handle, FILE *outFile)
 
   fprintf(outFile, "\nPOFF File Header:\n");
   fprintf(outFile, "  fh_ident:    %c%c%c%c\n",
-	  poffInfo->fileHeader.fh_ident[0], poffInfo->fileHeader.fh_ident[1],
-	  poffInfo->fileHeader.fh_ident[2], poffInfo->fileHeader.fh_ident[3]);
-  fprintf(outFile, "  fh_version:  %d\n", poffInfo->fileHeader.fh_version);
+      poffInfo->fileHeader.fh_ident[0],
+      poffInfo->fileHeader.fh_ident[1],
+      poffInfo->fileHeader.fh_ident[2],
+      poffInfo->fileHeader.fh_ident[3]);
+  fprintf(outFile, "  fh_version:  %d\n",
+      poffInfo->fileHeader.fh_version);
   fprintf(outFile, "  fh_type:     %s\n",
-	  poffFhTypes[poffInfo->fileHeader.fh_type]);
-  fprintf(outFile, "  fh_shsize:   %d\n", poffInfo->fileHeader.fh_shsize);
-  fprintf(outFile, "  fh_shnum:    %d\n", poffInfo->fileHeader.fh_shnum);
+      poffFhTypes[poffInfo->fileHeader.fh_type]);
+  fprintf(outFile, "  fh_shsize:   %d\n",
+      poffInfo->fileHeader.fh_shsize);
+  fprintf(outFile, "  fh_shnum:    %d\n",
+      poffInfo->fileHeader.fh_shnum);
   fprintf(outFile, "  fh_name:     %s\n",
-	  poffGetString(poffInfo, poffInfo->fileHeader.fh_name));
-  fprintf(outFile, "  fh_entry:    0x%08lx\n", poffInfo->fileHeader.fh_entry);
-  fprintf(outFile, "  fh_shoff:    0x%08lx\n", poffInfo->fileHeader.fh_shoff);
+      poffGetString(poffInfo, poffInfo->fileHeader.fh_name));
+  fprintf(outFile, "  fh_entry:    0x%08" PRIx32 "\n",
+      poffInfo->fileHeader.fh_entry);
+  fprintf(outFile, "  fh_shoff:    0x%08" PRIx32 "\n",
+      poffInfo->fileHeader.fh_shoff);
 }
 
 /***********************************************************************/

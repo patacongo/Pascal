@@ -41,7 +41,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void statement         (void);  /* Process Statement */
-extern void compoundStatement (void);  /* Compound statement */
+extern void statement(void);          /* Process Statement */
+extern void compoundStatement(void);  /* Compound statement */
 
 #endif /* __PSTM_H */

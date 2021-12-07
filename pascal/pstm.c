@@ -85,10 +85,12 @@
 /* Assignment Statements */
 
 static void pas_ComplexAssignment(void);
-static void pas_SimpleAssignment (STYPE *varPtr, uint8_t assignFlags);
-static void pas_Assignment       (uint16_t storeOp, exprType assignType, STYPE *varPtr, STYPE *typePtr);
-static void pas_StringAssignment (STYPE *varPtr, STYPE *typePtr);
-static void pas_LargeAssignment  (uint16_t storeOp, exprType assignType, STYPE *varPtr, STYPE *typePtr);
+static void pas_SimpleAssignment (symbol_t *varPtr, uint8_t assignFlags);
+static void pas_Assignment       (uint16_t storeOp, exprType_t assignType,
+                                  symbol_t *varPtr, symbol_t *typePtr);
+static void pas_StringAssignment (symbol_t *varPtr, symbol_t *typePtr);
+static void pas_LargeAssignment  (uint16_t storeOp, exprType_t assignType,
+                                  symbol_t *varPtr, symbol_t *typePtr);
 
 /* Other Statements */
 
@@ -106,7 +108,7 @@ static void pas_WithStatement    (void);  /* With statement */
 
 void statement(void)
 {
-  STYPE *symPtr;     /* Save Symbol Table pointer to token */
+  symbol_t *symPtr;     /* Save Symbol Table pointer to token */
 
   TRACE(g_lstFile,"[statement");
 
@@ -226,7 +228,7 @@ void statement(void)
 
 static void pas_ComplexAssignment(void)
 {
-   STYPE symbolSave;
+   symbol_t symbolSave;
    TRACE(g_lstFile,"[pas_ComplexAssignment]");
 
    /* FORM:  <variable OR function identifer> := <expression>
@@ -253,9 +255,9 @@ static void pas_ComplexAssignment(void)
  * content of the structure reffered to by varPtr.
  */
 
-static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
+static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 {
-  STYPE *typePtr;
+  symbol_t *typePtr;
 
   TRACE(g_lstFile,"[pas_SimpleAssignment]");
 
@@ -678,7 +680,7 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 
       if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.type == sPOINTER)
         {
-          STYPE *baseTypePtr = typePtr->sParm.t.parent;
+          symbol_t *baseTypePtr = typePtr->sParm.t.parent;
 
           varPtr->sKind = baseTypePtr->sParm.t.type;
 
@@ -730,8 +732,8 @@ static void pas_SimpleAssignment(STYPE *varPtr, uint8_t assignFlags)
 /***********************************************************************/
 /* Process simple assignment statement */
 
-static void pas_Assignment(uint16_t storeOp, exprType assignType,
-                           STYPE *varPtr, STYPE *typePtr)
+static void pas_Assignment(uint16_t storeOp, exprType_t assignType,
+                           symbol_t *varPtr, symbol_t *typePtr)
 {
    TRACE(g_lstFile,"[pas_Assignment]");
 
@@ -747,9 +749,9 @@ static void pas_Assignment(uint16_t storeOp, exprType assignType,
 /***********************************************************************/
 /* Process the assignment to a variable length string record */
 
-static void pas_StringAssignment(STYPE *varPtr, STYPE *typePtr)
+static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
 {
-  exprType stringKind;
+  exprType_t stringKind;
 
    TRACE(g_lstFile,"[pas_StringAssignment]");
 
@@ -847,8 +849,8 @@ static void pas_StringAssignment(STYPE *varPtr, STYPE *typePtr)
 /***********************************************************************/
 /* Process a multiple word assignment statement */
 
-static void pas_LargeAssignment(uint16_t storeOp, exprType assignType,
-                                STYPE *varPtr, STYPE *typePtr)
+static void pas_LargeAssignment(uint16_t storeOp, exprType_t assignType,
+                                symbol_t *varPtr, symbol_t *typePtr)
 {
    TRACE(g_lstFile,"[pas_LargeAssignment]");
 
@@ -866,8 +868,8 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType assignType,
 
 static void pas_GotoStatement(void)
 {
-   char   labelname [8];                /* Label symbol table name */
-   STYPE  *label_ptr;                   /* Pointer to Label Symbol */
+   char     labelname [8];             /* Label symbol table name */
+   symbol_t *label_ptr;                /* Pointer to Label Symbol */
 
    TRACE(g_lstFile,"[pas_GotoStatement]");
 
@@ -921,8 +923,8 @@ static void pas_GotoStatement(void)
 
 static void pas_LabelStatement(void)
 {
-   char   labelName [8];                /* Label symbol table name */
-   STYPE  *labelPtr;                    /* Pointer to Label Symbol */
+   char labelName [8];               /* Label symbol table name */
+   symbol_t *labelPtr;               /* Pointer to Label Symbol */
 
    TRACE(g_lstFile,"[pas_LabelStatement]");
 
@@ -978,7 +980,7 @@ static void pas_LabelStatement(void)
 
 static void pas_ProcStatement(void)
 {
-  STYPE *procPtr = g_tknPtr;
+  symbol_t *procPtr = g_tknPtr;
   int size = 0;
 
   TRACE(g_lstFile,"[pas_ProcStatement]");
@@ -1529,7 +1531,7 @@ static void pas_CaseStatement(void)
 /***********************************************************************/
 static void pas_ForStatement(void)
 {
-   STYPE *varPtr;
+   symbol_t *varPtr;
    uint16_t forLabel    = ++g_label;
    uint16_t endForLabel = ++g_label;
    uint16_t jmpOp;
@@ -1657,7 +1659,7 @@ static void pas_ForStatement(void)
 /***********************************************************************/
 static void pas_WithStatement(void)
 {
-   WTYPE saveWithRecord;
+   with_t saveWithRecord;
 
    TRACE(g_lstFile,"[pas_WithStatement]");
 

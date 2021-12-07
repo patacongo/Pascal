@@ -60,14 +60,14 @@
  * Private Function Prototypes
  ***************************************************************/
 
-static STYPE *addSymbol(char *name, int16_t type);
+static symbol_t *addSymbol(char *name, int16_t type);
 
 /***************************************************************
  * Public Variables
  ***************************************************************/
 
-STYPE       *g_parentInteger = NULL;
-STYPE       *g_parentString  = NULL;
+symbol_t    *g_parentInteger = NULL;
+symbol_t    *g_parentString  = NULL;
 unsigned int g_nSym          = 0;    /* Number symbol table entries */
 unsigned int g_nConst        = 0;    /* Number constant table entries */
 
@@ -84,7 +84,7 @@ unsigned int g_nConst        = 0;    /* Number constant table entries */
  * (6) Extended (or non-standard) Pascal procedure
  */
 
-static const RTYPE g_rsw[] =                      /* Reserved word list */
+static const reservedWord_t g_rsw[] =                      /* Reserved word list */
 {
   {"ABS",            tFUNC,           txABS},     /* (2) */
   {"AND",            tAND,            txNONE},    /* (1) */
@@ -161,14 +161,14 @@ static const RTYPE g_rsw[] =                      /* Reserved word list */
   {NULL,             0,               txNONE}     /* List terminator */
 };
 
-static STYPE *g_symbolTable;                      /* Symbol Table */
+static symbol_t *g_symbolTable;                   /* Symbol Table */
 
 /**************************************************************/
 
-const RTYPE *findReservedWord (char *name)
+const reservedWord_t *findReservedWord (char *name)
 {
-  const RTYPE *ptr;                      /* Point into reserved word list */
-  int16_t cmp;                           /* 0=equal; >0=past it */
+  const reservedWord_t *ptr;              /* Point into reserved word list */
+  int16_t cmp;                            /* 0=equal; >0=past it */
 
   for (ptr = g_rsw; (ptr->rname); ptr++)  /* Try each each reserved word */
     {
@@ -183,13 +183,13 @@ const RTYPE *findReservedWord (char *name)
         }
     }
 
-  return (RTYPE *)NULL;                   /* return NULL pointer if no match */
+  return (reservedWord_t *)NULL;          /* return NULL pointer if no match */
 
 } /* fnd findReservedWord */
 
 /***************************************************************/
 
-STYPE *findSymbol(char *inName, int tableOffset)
+symbol_t *findSymbol(char *inName, int tableOffset)
 {
   int i;
 
@@ -204,12 +204,12 @@ STYPE *findSymbol(char *inName, int tableOffset)
         }
     }
 
-  return (STYPE*)NULL;
+  return (symbol_t *)NULL;
 }
 
 /***************************************************************/
 
-static STYPE *addSymbol(char *name, int16_t type)
+static symbol_t *addSymbol(char *name, int16_t type)
 {
    TRACE(g_lstFile,"[addSymbol]");
 
@@ -218,13 +218,13 @@ static STYPE *addSymbol(char *name, int16_t type)
    if (g_nSym >= MAX_SYM)
      {
       fatal(eOVF);
-       return (STYPE *)NULL;
+       return (symbol_t *)NULL;
      }
    else
      {
      /* Clear all elements of the symbol table entry */
 
-     memset(&g_symbolTable[g_nSym], 0, sizeof(STYPE));
+     memset(&g_symbolTable[g_nSym], 0, sizeof(symbol_t));
 
      /* Set the elements which are independent of sKind */
 
@@ -238,10 +238,10 @@ static STYPE *addSymbol(char *name, int16_t type)
 
 /***************************************************************/
 
-STYPE *addTypeDefine(char *name, uint8_t type, uint16_t size,
-                     STYPE *parent, STYPE *index)
+symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
+                     symbol_t *parent, symbol_t *index)
 {
-   STYPE *typePtr;
+   symbol_t *typePtr;
 
    TRACE(g_lstFile,"[addTypeDefine]");
 
@@ -277,9 +277,10 @@ STYPE *addTypeDefine(char *name, uint8_t type, uint16_t size,
 
 /***************************************************************/
 
-STYPE *addConstant(char *name, uint8_t type, int32_t *value, STYPE *parent)
+symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
+                      symbol_t *parent)
 {
-   STYPE *constPtr;
+   symbol_t *constPtr;
 
    TRACE(g_lstFile,"[addConstant]");
 
@@ -303,9 +304,9 @@ STYPE *addConstant(char *name, uint8_t type, int32_t *value, STYPE *parent)
 
 /***************************************************************/
 
-STYPE *addStringConst(char *name, uint32_t offset, uint32_t size)
+symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size)
 {
-  STYPE *stringPtr;
+  symbol_t *stringPtr;
 
   TRACE(g_lstFile,"[addStringConst]");
 
@@ -327,9 +328,9 @@ STYPE *addStringConst(char *name, uint32_t offset, uint32_t size)
 
 /***************************************************************/
 
-STYPE *addFile(char *name, uint16_t fileNumber)
+symbol_t *addFile(char *name, uint16_t fileNumber)
 {
-   STYPE *filePtr;
+   symbol_t *filePtr;
 
    TRACE(g_lstFile,"[addFile]");
 
@@ -349,10 +350,10 @@ STYPE *addFile(char *name, uint16_t fileNumber)
 
 /***************************************************************/
 
-STYPE *addProcedure(char *name, uint8_t type, uint16_t label,
-                    uint16_t nParms, STYPE *parent)
+symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
+                    uint16_t nParms, symbol_t *parent)
 {
-   STYPE *procPtr;
+   symbol_t *procPtr;
 
    TRACE(g_lstFile,"[addProcedure]");
 
@@ -376,10 +377,10 @@ STYPE *addProcedure(char *name, uint8_t type, uint16_t label,
 
 /***************************************************************/
 
-STYPE *addVariable(char *name, uint8_t type, uint16_t offset,
-                   uint16_t size, STYPE *parent)
+symbol_t *addVariable(char *name, uint8_t type, uint16_t offset,
+                   uint16_t size, symbol_t *parent)
 {
-  STYPE *varPtr;
+  symbol_t *varPtr;
 
   TRACE(g_lstFile,"[addVariable]");
 
@@ -404,9 +405,9 @@ STYPE *addVariable(char *name, uint8_t type, uint16_t offset,
 
 /***************************************************************/
 
-STYPE *addLabel(char *name, uint16_t label)
+symbol_t *addLabel(char *name, uint16_t label)
 {
-  STYPE *labelPtr;
+  symbol_t *labelPtr;
 
   TRACE(g_lstFile,"[addLabel]");
 
@@ -428,9 +429,9 @@ STYPE *addLabel(char *name, uint16_t label)
 
 /***************************************************************/
 
-STYPE *addField(char *name, STYPE *record)
+symbol_t *addField(char *name, symbol_t *record)
 {
-   STYPE *fieldPtr;
+   symbol_t *fieldPtr;
 
    TRACE(g_lstFile,"[addField]");
 
@@ -455,14 +456,14 @@ void primeSymbolTable(unsigned long symbolTableSize)
   int32_t trueValue   = -1;
   int32_t falseValue  =  0;
   int32_t maxintValue = MAXINT;
-  STYPE *typePtr;
+  symbol_t *typePtr;
   int16_t i;
 
   TRACE(g_lstFile,"[primeSymbolTable]");
 
   /* Allocate and initialize symbol table */
 
-  g_symbolTable = malloc(symbolTableSize * sizeof(STYPE));
+  g_symbolTable = malloc(symbolTableSize * sizeof(symbol_t));
   if (!g_symbolTable)
     {
       fatal(eNOMEMORY);

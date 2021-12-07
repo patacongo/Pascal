@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "keywords.h"  /* Standard types */
 #include "pfprivate.h" /* POFF private definitions */
@@ -104,7 +105,8 @@ void poffDumpSymbolTable(poffHandle_t handle, FILE *outFile)
     {
       psym = (poffSymbol_t*)&poffInfo->symbolTable[index];
 
-      fprintf(outFile, "%-20s %6s 0x%02x 0x%02x 0x%08lx 0x%08lx\n",
+      fprintf(outFile, "%-20s %6s 0x%02x 0x%02x 0x%08" PRIx32
+                       " 0x%08" PRIx32 "\n",
               poffGetString(poffInfo, psym->st_name),
               poffSymTypes[psym->st_type],
               psym->st_flags,

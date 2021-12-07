@@ -2,7 +2,7 @@
  * pfunc.h
  * External Declarations associated with pfunc.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,17 +41,17 @@
  * Included Files
  ***************************************************************************/
 
-#include "pexpr.h" /* For exprType */
+#include "pexpr.h" /* For exprType_t */
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void primeBuiltInFunctions(void);
-extern exprType builtInFunction(void);
-extern void builtInFunctionOfConstant(void);
+void primeBuiltInFunctions(void);
+exprType_t builtInFunction(void);
+void builtInFunctionOfConstant(void);
 
-extern void checkLParen(void);
-extern void checkRParen(void);
+void checkLParen(void);
+void checkRParen(void);
 
 #endif /* __PFUNC_H */

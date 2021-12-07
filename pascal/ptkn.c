@@ -463,7 +463,7 @@ void getLevelToken(void)
 
 static void identifier(void)
 {
-  const  RTYPE *rptr;                /* Pointer to reserved word */
+  const reservedWord_t *rptr;        /* Pointer to reserved word */
 
   g_tknSubType = txNONE;             /* Initialize */
 

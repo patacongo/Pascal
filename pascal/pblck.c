@@ -82,27 +82,27 @@
  * Private Function Prototypes
  ***************************************************************/
 
-static void   pas_DeclareLabel          (void);
-static void   pas_DeclareConst          (void);
-static STYPE *pas_DeclareType           (char *typeName);
-static STYPE *pas_DeclareOrdinalType    (char *typeName);
-static STYPE *pas_DeclareVar            (void);
-static void   pas_DeclareFile           (void);
-static void   pas_ProcedureDeclaration  (void);
-static void   pas_FunctionDeclaration   (void);
+static void      pas_DeclareLabel          (void);
+static void      pas_DeclareConst          (void);
+static symbol_t *pas_DeclareType           (char *typeName);
+static symbol_t *pas_DeclareOrdinalType    (char *typeName);
+static symbol_t *pas_DeclareVar            (void);
+static void      pas_DeclareFile           (void);
+static void      pas_ProcedureDeclaration  (void);
+static void      pas_FunctionDeclaration   (void);
 
-static void   pas_SetTypeSize           (STYPE *typePtr, bool allocate);
-static STYPE *pas_TypeIdentifier        (bool allocate);
-static STYPE *pas_TypeDenoter           (char *typeName, bool allocate);
-static STYPE *pas_NewComplexType        (char *typeName);
-static STYPE *pas_NewOrdinalType        (char *typeName);
-static STYPE *pas_OrdinalTypeIdentifier (bool allocate);
-static STYPE *pas_GetArrayIndexType     (void);
-static STYPE *pas_GetArrayBaseType      (STYPE *indexTypePtr);
-static STYPE *pas_DeclareRecord         (char *recordName);
-static STYPE *pas_DeclareField          (STYPE *recordPtr);
-static STYPE *pas_DeclareParameter      (bool pointerType);
-static bool   pas_IntAlignRequired      (STYPE *typePtr);
+static void      pas_SetTypeSize           (symbol_t *typePtr, bool allocate);
+static symbol_t *pas_TypeIdentifier        (bool allocate);
+static symbol_t *pas_TypeDenoter           (char *typeName, bool allocate);
+static symbol_t *pas_NewComplexType        (char *typeName);
+static symbol_t *pas_NewOrdinalType        (char *typeName);
+static symbol_t *pas_OrdinalTypeIdentifier (bool allocate);
+static symbol_t *pas_GetArrayIndexType     (void);
+static symbol_t *pas_GetArrayBaseType      (symbol_t *indexTypePtr);
+static symbol_t *pas_DeclareRecord         (char *recordName);
+static symbol_t *pas_DeclareField          (symbol_t *recordPtr);
+static symbol_t *pas_DeclareParameter      (bool pointerType);
+static bool      pas_IntAlignRequired      (symbol_t *typePtr);
 
 /***************************************************************
  * Private Public Data
@@ -510,7 +510,7 @@ void variableDeclarationGroup(void)
 /***************************************************************/
 /* Process formal-parameter-list */
 
-int16_t formalParameterList(STYPE *procPtr)
+int16_t formalParameterList(symbol_t *procPtr)
 {
   int16_t parameterOffset;
   int16_t i;
@@ -704,9 +704,9 @@ static void pas_DeclareConst(void)
 /***************************************************************/
 /* Process TYPE declaration */
 
-static STYPE *pas_DeclareType(char *typeName)
+static symbol_t *pas_DeclareType(char *typeName)
 {
-  STYPE *typePtr;
+  symbol_t *typePtr;
 
   TRACE(g_lstFile,"[pas_DeclareType]");
 
@@ -737,10 +737,10 @@ static STYPE *pas_DeclareType(char *typeName)
 /***************************************************************/
 /* Process a simple TYPE declaration */
 
-static STYPE *pas_DeclareOrdinalType(char *typeName)
+static symbol_t *pas_DeclareOrdinalType(char *typeName)
 {
-  STYPE *typePtr;
-  STYPE *typeIdPtr;
+  symbol_t *typePtr;
+  symbol_t *typeIdPtr;
 
   /* Declare a new ordinal type */
 
@@ -767,11 +767,11 @@ static STYPE *pas_DeclareOrdinalType(char *typeName)
 /***************************************************************/
 /* Process VAR declaration */
 
-static STYPE *pas_DeclareVar(void)
+static symbol_t *pas_DeclareVar(void)
 {
-  STYPE *varPtr;
-  STYPE *typePtr;
-  char  *varName;
+  symbol_t *varPtr;
+  symbol_t *typePtr;
+  char     *varName;
 
   TRACE(g_lstFile,"[pas_DeclareVar]");
 
@@ -889,7 +889,7 @@ static STYPE *pas_DeclareVar(void)
 static void pas_DeclareFile(void)
 {
    int16_t fileNumber = g_tknPtr->sParm.fileNumber;
-   STYPE *filePtr;
+   symbol_t *filePtr;
 
    TRACE(g_lstFile,"[pas_DeclareFile]");
 
@@ -954,7 +954,7 @@ static void pas_ProcedureDeclaration(void)
 {
   uint16_t     procLabel = ++g_label;
   char        *saveStringSP;
-  STYPE       *procPtr;
+  symbol_t    *procPtr;
   unsigned int saveSymOffset;    /* Save previous level symbol offset */
   unsigned int saveConstOffset;  /* Save previous level constant offset */
   int          i;
@@ -1069,9 +1069,9 @@ static void pas_FunctionDeclaration(void)
   uint16_t    funcLabel = ++g_label;
   int16_t     parameterOffset;
   char        *saveStringSP;
-  STYPE       *funcPtr;
-  STYPE       *valPtr;
-  STYPE       *typePtr;
+  symbol_t    *funcPtr;
+  symbol_t    *valPtr;
+  symbol_t    *typePtr;
   char        *funcName;
   unsigned int saveSymOffset;   /* Save previous level symbol offset */
   unsigned int saveConstOffset; /* Save previous level constant offset */
@@ -1223,7 +1223,7 @@ static void pas_FunctionDeclaration(void)
 /***************************************************************/
 /* Determine the size value to use with this type */
 
-static void pas_SetTypeSize(STYPE *typePtr, bool allocate)
+static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
 {
   TRACE(g_lstFile,"[pas_SetTypeSize]");
 
@@ -1331,9 +1331,9 @@ static void pas_SetTypeSize(STYPE *typePtr, bool allocate)
  * as a side-effect
  */
 
-static STYPE *pas_TypeIdentifier(bool allocate)
+static symbol_t *pas_TypeIdentifier(bool allocate)
 {
-  STYPE *typePtr = NULL;
+  symbol_t *typePtr = NULL;
 
   TRACE(g_lstFile,"[pas_TypeIdentifier]");
 
@@ -1356,9 +1356,9 @@ static STYPE *pas_TypeIdentifier(bool allocate)
 
 /***************************************************************/
 
-static STYPE *pas_TypeDenoter(char *typeName, bool allocate)
+static symbol_t *pas_TypeDenoter(char *typeName, bool allocate)
 {
-  STYPE *typePtr;
+  symbol_t *typePtr;
 
   TRACE(g_lstFile,"[pas_TypeDenoter]");
 
@@ -1399,9 +1399,9 @@ static STYPE *pas_TypeDenoter(char *typeName, bool allocate)
 /***************************************************************/
 /* Declare is new ordinal type */
 
-static STYPE *pas_NewOrdinalType(char *typeName)
+static symbol_t *pas_NewOrdinalType(char *typeName)
 {
-  STYPE *typePtr = NULL;
+  symbol_t *typePtr = NULL;
 
   /* Declare a new-ordinal-type
    * FORM: new-ordinal-type = enumerated-type | subrange-type
@@ -1544,11 +1544,11 @@ static STYPE *pas_NewOrdinalType(char *typeName)
 
 /***************************************************************/
 
-static STYPE *pas_NewComplexType(char *typeName)
+static symbol_t *pas_NewComplexType(char *typeName)
 {
-  STYPE *typePtr = NULL;
-  STYPE *typeIdPtr;
-  STYPE *indexTypePtr;
+  symbol_t *typePtr = NULL;
+  symbol_t *typeIdPtr;
+  symbol_t *indexTypePtr;
 
   TRACE(g_lstFile,"[pas_NewComplexType]");
 
@@ -1745,9 +1745,9 @@ static STYPE *pas_NewComplexType(char *typeName)
 /* Verify that the next token is a type identifer
  */
 
-static STYPE *pas_OrdinalTypeIdentifier(bool allocate)
+static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
 {
-  STYPE *typePtr;
+  symbol_t *typePtr;
 
   TRACE(g_lstFile,"[pas_OrdinalTypeIdentifier]");
 
@@ -1787,9 +1787,9 @@ static STYPE *pas_OrdinalTypeIdentifier(bool allocate)
 /***************************************************************/
 /* get index and array type for TYPE block or variable declaration */
 
-static STYPE *pas_GetArrayIndexType(void)
+static symbol_t *pas_GetArrayIndexType(void)
 {
-  STYPE *indexType = NULL;
+  symbol_t *indexType = NULL;
 
   TRACE(g_lstFile,"[pas_GetArrayIndexType]");
 
@@ -1876,9 +1876,9 @@ static STYPE *pas_GetArrayIndexType(void)
   return indexType;
 }
 
-static STYPE *pas_GetArrayBaseType(STYPE *indexTypePtr)
+static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
 {
-  STYPE *typeDenoter = NULL;
+  symbol_t *typeDenoter = NULL;
 
   TRACE(g_lstFile,"[pas_GetArrayBaseType]");
 
@@ -1912,9 +1912,9 @@ static STYPE *pas_GetArrayBaseType(STYPE *indexTypePtr)
 
 /***************************************************************/
 
-static STYPE *pas_DeclareRecord(char *recordName)
+static symbol_t *pas_DeclareRecord(char *recordName)
 {
-  STYPE *recordPtr;
+  symbol_t *recordPtr;
   int16_t recordOffset;
   int recordCount, symbolIndex;
 
@@ -2044,7 +2044,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
       else
         {
-          STYPE *typePtr;
+          symbol_t *typePtr;
           char  *fieldName;
 
           /* Save the field name */
@@ -2063,7 +2063,7 @@ static STYPE *pas_DeclareRecord(char *recordName)
           if (!typePtr) error(eINVTYPE);
           else
             {
-              STYPE *fieldPtr;
+              symbol_t *fieldPtr;
 
               /* Declare a <field> with this <identifier> as its name */
 
@@ -2276,10 +2276,10 @@ static STYPE *pas_DeclareRecord(char *recordName)
 
 /***************************************************************/
 
-static STYPE *pas_DeclareField(STYPE *recordPtr)
+static symbol_t *pas_DeclareField(symbol_t *recordPtr)
 {
-   STYPE *fieldPtr = NULL;
-   STYPE *typePtr;
+   symbol_t *fieldPtr = NULL;
+   symbol_t *typePtr;
 
    TRACE(g_lstFile,"[pas_DeclareField]");
 
@@ -2338,11 +2338,11 @@ static STYPE *pas_DeclareField(STYPE *recordPtr)
 /* NOTE:  This function increments the global variable g_nParms */
 /* as a side-effect */
 
-static STYPE *pas_DeclareParameter(bool pointerType)
+static symbol_t *pas_DeclareParameter(bool pointerType)
 {
-   int16_t varType = 0;
-   STYPE  *varPtr;
-   STYPE  *typePtr;
+   int16_t   varType = 0;
+   symbol_t *varPtr;
+   symbol_t *typePtr;
 
    TRACE(g_lstFile,"[pas_DeclareParameter]");
 
@@ -2407,7 +2407,7 @@ static STYPE *pas_DeclareParameter(bool pointerType)
 
 /***************************************************************/
 
-static bool pas_IntAlignRequired(STYPE *typePtr)
+static bool pas_IntAlignRequired(symbol_t *typePtr)
 {
   bool returnValue = false;
 

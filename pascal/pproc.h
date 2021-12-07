@@ -2,7 +2,7 @@
  * pproc.h
  * External Declarations associated with PPROC.C
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,9 +41,9 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void primeBuiltInProcedures(void);
-extern void builtInProcedure(void);
-extern int  actualParameterSize(STYPE *procPtr, int parmNo);
-extern int  actualParameterList(STYPE *procPtr);
+void primeBuiltInProcedures(void);
+void builtInProcedure(void);
+int  actualParameterSize(symbol_t *procPtr, int parmNo);
+int  actualParameterList(symbol_t *procPtr);
 
 #endif /* __PPROC_H */

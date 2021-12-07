@@ -64,21 +64,21 @@
 
 /* Standard Pascal Functions */
 
-static exprType absFunc    (void);    /* Integer absolute value */
-static exprType predFunc   (void);
-static void     ordFunc    (void);    /* Convert scalar to integer */
-static exprType sqrFunc    (void);
-static void     realFunc   (uint8_t fpCode);
-static exprType succFunc   (void);
-static void     oddFunc    (void);
-static void     chrFunc    (void);
-static void     fileFunc   (uint16_t opcode);
+static exprType_t absFunc(void);    /* Integer absolute value */
+static exprType_t predFunc(void);
+static void       ordFunc(void);    /* Convert scalar to integer */
+static exprType_t sqrFunc(void);
+static void       realFunc(uint8_t fpCode);
+static exprType_t succFunc(void);
+static void       oddFunc(void);
+static void       chrFunc(void);
+static void       fileFunc(uint16_t opcode);
 
 /* Enhanced Pascal functions */
 
 /* Non-standard C-library interface functions */
 
-static exprType getenvFunc (void);    /* Get environment string value */
+static exprType_t getenvFunc (void);    /* Get environment string value */
 
 /***************************************************************
  * Public Functions
@@ -91,9 +91,9 @@ void primeBuiltInFunctions(void)
 /***************************************************************/
 /* Process a standard Pascal function call */
 
-exprType builtInFunction(void)
+exprType_t builtInFunction(void)
 {
-  exprType funcType = exprUnknown;
+  exprType_t funcType = exprUnknown;
 
   TRACE(g_lstFile,"[builtInFunction]");
 
@@ -232,9 +232,9 @@ void checkRParen(void)
  * Private Functions
  ***************************************************************/
 
-static exprType absFunc(void)
+static exprType_t absFunc(void)
 {
-   exprType absType;
+   exprType_t absType;
 
    TRACE(g_lstFile,"[absFunc]");
 
@@ -269,9 +269,9 @@ static void ordFunc(void)
 
 /**********************************************************************/
 
-static exprType predFunc(void)
+static exprType_t predFunc(void)
 {
-   exprType predType;
+   exprType_t predType;
 
    TRACE(g_lstFile,"[predFunc]");
 
@@ -289,9 +289,9 @@ static exprType predFunc(void)
 
 /**********************************************************************/
 
-static exprType sqrFunc(void)
+static exprType_t sqrFunc(void)
 {
-   exprType sqrType;
+   exprType_t sqrType;
 
    TRACE(g_lstFile,"[sqrFunc]");
 
@@ -320,7 +320,7 @@ static exprType sqrFunc(void)
 
 static void realFunc (uint8_t fpOpCode)
 {
-   exprType realType;
+   exprType_t realType;
 
    TRACE(g_lstFile,"[realFunc]");
 
@@ -341,9 +341,9 @@ static void realFunc (uint8_t fpOpCode)
 
 /**********************************************************************/
 
-static exprType succFunc(void)
+static exprType_t succFunc(void)
 {
-   exprType succType;
+   exprType_t succType;
 
    TRACE(g_lstFile,"[succFunc]");
 
@@ -440,9 +440,9 @@ static void fileFunc(uint16_t opcode)
 /**********************************************************************/
 /* C library getenv interface */
 
-static exprType getenvFunc(void)
+static exprType_t getenvFunc(void)
 {
-  exprType stringType;
+  exprType_t stringType;
 
   TRACE(g_lstFile, "[getenvFunc]");
 

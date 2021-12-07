@@ -47,11 +47,11 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void block(void);
-extern void declarationGroup(int32_t beginLabel);
-extern void constantDefinitionGroup(void);
-extern void typeDefinitionGroup(void);
-extern void variableDeclarationGroup(void);
-extern int16_t formalParameterList(STYPE *procPtr);
+void    block(void);
+void    declarationGroup(int32_t beginLabel);
+void    constantDefinitionGroup(void);
+void    typeDefinitionGroup(void);
+void    variableDeclarationGroup(void);
+int16_t formalParameterList(symbol_t *procPtr);
 
 #endif /* __PBLCK_H */
