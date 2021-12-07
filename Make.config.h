@@ -43,7 +43,7 @@ include $(PASCAL)/Make.defs
 INCDIR		= $(PASCAL)/include
 CONFIGH		= $(INCDIR)/config.h
 
-CONFIGS		= CONFIG_DEBUG CONFIG_TRACE CONFIG_INSN16 CONFIG_INSN32
+CONFIGS		= CONFIG_DEBUG CONFIG_TRACE CONFIG_INSN16 CONFIG_INSN32 CONFIG_REGM CONFIG_HAVE_LIBM
 
 # ----------------------------------------------------------------------
 # Objects and targets

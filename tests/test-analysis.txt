@@ -21,7 +21,6 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     failure in src/108-pointerrecode.pas.
  7. The @ unary operator has not yet been implemented.  See failure in src/114-pointers.pas
  8. Unit files with data declarations, but no implementation.
- 9. General usage of units.  Primary issues with the linker.  See sinecos.pex
 
 Successful test results are not shown.
 
@@ -225,10 +224,11 @@ This is a unit with constant/variable/procedure definitions.  It has no implemen
 ########unit-data.pas########
 ########sinecos.pex########
 sinecos.pex Loaded
-Enter radians	: Runtime error 0x87 -- Execution Stopped
+Enter radians   : cos(0.707107)=0.707107
+sin(0.707107)=-1049815400776833903362048.000000
+sin(0.703117)**2 + cos(0.703117)**20.000000
 
-Error:
-277 #define eBADFPOPCODE     ((uint16_t) 0x87)
+Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
 Line 0:0055 Error 11 Token 44
