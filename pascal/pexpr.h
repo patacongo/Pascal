@@ -44,35 +44,54 @@
 #include <stdint.h>
 
 /***********************************************************************
+ * Pre-processor Definitions
+ ***********************************************************************/
+
+/* Bit 7 is set in all pointer expression types.  If bit 7 is cleared,
+ * then the base expression type can be recovered.
+ *
+ * REVISIT: How are pointers to pointers handled?
+ */
+
+#define EXPRTYPE_POINTER       0x80
+#define IS_POINTER_EXPRTYPE(t) (((uint8_t)(t) & EXPRTYPE_POINTER) != 0)
+
+/***********************************************************************
  * Type Definitions
  ***********************************************************************/
 
 enum exprType_s
 {
-  exprUnknown = 0,    /* TOS value unknown */
-  exprAnyOrdinal,     /* TOS = any ordinal type */
-  exprAnyString,      /* TOS = any string type */
+  /* General expression type */
 
-  exprInteger,        /* TOS = integer value */
-  exprReal,           /* TOS = real value */
-  exprChar,           /* TOS = character value */
-  exprBoolean,        /* TOS = boolean(integer) value */
-  exprScalar,         /* TOS = scalar(integer) value */
-  exprString,         /* TOS = variable length string reference */
-  exprStkString,      /* TOS = reference to string on string stack */
-  exprCString,        /* TOS = pointer to C string */
-  exprSet,            /* TOS = set(integer) value */
-  exprArray,          /* TOS = array */
-  exprRecord,         /* TOS = record */
+  exprUnknown    = 0x00,    /* TOS value unknown */
+  exprAnyOrdinal = 0x01,    /* TOS = any ordinal type */
+  exprAnyString  = 0x02,    /* TOS = any string type */
 
-  exprIntegerPtr,     /* TOS = pointer to integer value */
-  exprRealPtr,        /* TOS = pointer to a real value */
-  exprCharPtr,        /* TOS = pointer to a character value */
-  exprBooleanPtr,     /* TOS = pointer to a boolean value */
-  exprScalarPtr,      /* TOS = pointer to a scalar value */
-  exprSetPtr,         /* TOS = pointer to a set value */
-  exprArrayPtr,       /* TOS = pointer to an array */
-  exprRecordPtr       /* TOS = pointer to a record */
+  /* Standard expression types */
+
+  exprInteger    = 0x03,    /* TOS = integer value */
+  exprReal       = 0x04,    /* TOS = real value */
+  exprChar       = 0x05,    /* TOS = character value */
+  exprBoolean    = 0x06,    /* TOS = boolean(integer) value */
+  exprScalar     = 0x07,    /* TOS = scalar(integer) value */
+  exprString     = 0x08,    /* TOS = variable length string reference */
+  exprStkString  = 0x09,    /* TOS = reference to string on string stack */
+  exprCString    = 0x0a,    /* TOS = pointer to C string */
+  exprSet        = 0x0b,    /* TOS = set(integer) value */
+  exprArray      = 0x0c,    /* TOS = array */
+  exprRecord     = 0x0d,    /* TOS = record */
+
+  /* Expressions that evaluate to pointers to standard type */
+
+  exprIntegerPtr = 0x83,    /* TOS = pointer to integer value */
+  exprRealPtr    = 0x84,    /* TOS = pointer to a real value */
+  exprCharPtr    = 0x85,    /* TOS = pointer to a character value */
+  exprBooleanPtr = 0x86,    /* TOS = pointer to a boolean value */
+  exprScalarPtr  = 0x87,    /* TOS = pointer to a scalar value */
+  exprSetPtr     = 0x8b,    /* TOS = pointer to a set value */
+  exprArrayPtr   = 0x8c,    /* TOS = pointer to an array */
+  exprRecordPtr  = 0x8d     /* TOS = pointer to a record */
 };
 
 typedef enum exprType_s exprType_t;

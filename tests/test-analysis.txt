@@ -16,11 +16,10 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     verified.
  4. Operations on type 'string' are not yet supported
  5. I/O operations on most types of arrays and VAR arrays are not fully
-    implemented.  See rc/107-quicksort.pas
+    implemented.  See src/107-quicksort.pas
  6. Forward references to variables before the are defined to not work.  See
     failure in src/108-pointerrecode.pas.
- 7. The @ unary operator has not yet been implemented.  See failure in src/114-pointers.pas
- 8. Unit files with data declarations, but no implementation.
+ 7. Unit files with data declarations, but no implementation.
 
 Successful test results are not shown.
 
@@ -136,38 +135,6 @@ Token:
 
 Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
-
-########src/114-pointers.pas########
-Line 0:0008 Error 24 Token 40
-
-Line:
- 8    iptr := @number;
-
-Where
-  var
-    iptr: ^integer;
-
-Error:
-207 #define eNOTYET          ((uint16_t) 0x24)
-
-
-Token:
-'@'
-
-Analysis:
-
-Support for the @ unary operation has not yet been implemented:
-
-In factor():
-
-    case '@':
-      /* The address operator @ returns the address of a variable, procedure
-       * or function.
-       */
-
-      error(eNOTYET);
-      getToken();
-      break;
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d
