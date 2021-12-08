@@ -258,6 +258,7 @@ static void pas_ComplexAssignment(void)
 static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 {
   symbol_t *typePtr;
+  symbol_t *indexTypePtr;
 
   TRACE(g_lstFile,"[pas_SimpleAssignment]");
 
@@ -717,7 +718,10 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       if (assignFlags != 0) error(eARRAYTYPE);
       assignFlags |= INDEXED_ASSIGNMENT;
 
-      arrayIndex(typePtr->sParm.t.asize, typePtr->sParm.t.minValue);
+      indexTypePtr = typePtr->sParm.t.index;
+      if (indexTypePtr == NULL) error(eHUH);
+
+      arrayIndex(indexTypePtr, typePtr->sParm.t.asize);
       varPtr->sKind        = typePtr->sParm.t.type;
       varPtr->sParm.v.size = typePtr->sParm.t.asize;
       pas_SimpleAssignment(varPtr, assignFlags);
@@ -1547,8 +1551,11 @@ static void pas_ForStatement(void)
    getToken();
 
    /* Get and verify the left side of the assignment. */
-   if ((g_token != sINT) && (g_token != sSUBRANGE))
-     error(eINTVAR);
+
+   if (g_token != sINT && g_token != sSUBRANGE)
+     {
+       error(eINTVAR);
+     }
    else
      {
        /* Save the token associated with the left side of the assignment

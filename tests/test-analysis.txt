@@ -193,61 +193,40 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0055 Error 24 Token 44
+Line 0:0055 Error 2e Token 2c
 
 Error:
-#define eINDEXTYPE       ((uint16_t) 0x41)
+#define eRBRACKET        ((uint16_t) 0x2e)
 
 Line:
  55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
 where
  50        EmployeeType = string[EmployeeMaxLen];
 
-Token:
-#define eNOTYET          ((uint16_t) 0x24)
+Token: ','
 
 Analysis:
-This is the same issue as with DayIO.pas (see below).
+The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-Line 0:0060 Error 24 Token 44
+Line 0:0073 Error 3c Token a0
 
 Error:
-#define eSUBRANGETYPE    ((uint16_t) 0x46)
+#define eEXPRTYPE        ((uint16_t) 0x3c)
 
 Line:
+ 72                    IF DayMap[Day] = S THEN
+Where:
  60         DayMap: ARRAY[DayType] of DayStrType;
+ 64    FUNCTION MapToDay(S: String): DayType;
 
 Token:
-#define eNOTYET          ((uint16_t) 0x24)
+0xa0 is not a valid token.  Looks like memory corruption.
 
 Analysis:
-This is a limitation in the parsing of the array index-type.  DayType is a set defined in the interface section of the DayIO unit:
+This is more unimplemented logic for type 'string'
 
-     TYPE
-         { Type to represent a day of the week, or an error. }
-         DayType = (Sun, Mon, Tue, Wed, Thu, Fri, Sat, BadDay);
-
-Currently, the logic of pas_GetArrayIndexType() in pblck.c handles this case is just a stub at present:
-
-    FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
-    FORM: [PACKED] ARRAY [<integer>] OF type-denoter
-    FORM: index-type-list = index-type { ',' index-type }
-    FORM: index-type = ordinal-type
-
-In pas_GetArrayIndexType() of pblck.c:
-
-          /* Check for and ordinal type */
-
-          if (token == sINT ||
-              token == sBOOLEAN ||
-              token == sCHAR ||
-              token == sSCALAR ||
-              token == sSUBRANGE)
-            {
-              error(eNOTYET);
-              getToken();
-            }
+The failure occurs in expression() called from pas_IfStatement().  The expression on the left of the '=' evalues to exprArray but the expression on the right evaluates to exprString.  This mismatch causes the eEXPRTYPE error.
 
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory

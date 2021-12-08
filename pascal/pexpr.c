@@ -187,9 +187,9 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
       break;
 
     case tIN :
-      if ((!abstractType) ||
-          ((abstractType->sParm.t.type != sSCALAR) &&
-           (abstractType->sParm.t.type != sSUBRANGE)))
+      if (!abstractType ||
+          (abstractType->sParm.t.type != sSCALAR &&
+           abstractType->sParm.t.type != sSUBRANGE))
         {
           error(eEXPRTYPE);
         }
@@ -230,9 +230,9 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
            * second is INTEGER.
            */
 
-          if ((simple1Type == exprReal) &&
-              (simple2Type == exprInteger) &&
-              (fpOpCode != fpINVLD))
+          if (simple1Type == exprReal &&
+              simple2Type == exprInteger &&
+              fpOpCode != fpINVLD)
             {
               fpOpCode   |= fpARG2;
               simple2Type = exprReal;
@@ -242,9 +242,9 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
            * second is REAL.
            */
 
-          else if ((simple1Type == exprInteger) &&
-                   (simple2Type == exprReal) &&
-                   (fpOpCode != fpINVLD))
+          else if (simple1Type == exprInteger &&
+                   simple2Type == exprReal &&
+                   fpOpCode != fpINVLD)
             {
               fpOpCode   |= fpARG1;
               simple1Type = exprReal;
@@ -253,7 +253,7 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
           /* Allow the case of <scalar type> IN <set type> */
           /* Otherwise, the two terms must agree in type */
 
-          else if ((operation != tIN) || (simple2Type != exprSet))
+          else if (operation != tIN || simple2Type != exprSet)
             {
               error(eEXPRTYPE);
             }
@@ -264,11 +264,15 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
       if (simple1Type == exprReal)
         {
           if (fpOpCode == fpINVLD)
-            error(eEXPRTYPE);
+            {
+              error(eEXPRTYPE);
+            }
           else
-            pas_GenerateFpOperation(fpOpCode);
+            {
+              pas_GenerateFpOperation(fpOpCode);
+            }
         }
-      else if ((simple1Type == exprString) || (simple1Type == exprString))
+      else if (simple1Type == exprString || simple1Type == exprString)
         {
           if (strOpCode != opNOP)
             {
@@ -380,7 +384,7 @@ exprType_t varParm(exprType_t varExprType, symbol_t *typePtr)
 /**********************************************************************/
 /* Process Array Index */
 
-void arrayIndex(int32_t size, int32_t offset)
+void arrayIndex(symbol_t *indexTypePtr, int32_t size)
 {
   TRACE(g_lstFile,"[arrayIndex]");
 
@@ -391,16 +395,65 @@ void arrayIndex(int32_t size, int32_t offset)
   if (g_token != '[') error(eLBRACKET);
   else
     {
+      uint16_t indexType;
+      enum exprType_s exprType;
+
+      /* Get the type of the index */
+
+      if (indexTypePtr->sKind != sTYPE)
+        {
+          error(eINDEXTYPE);
+          indexType = 0; /* Invalid */
+        }
+      else
+        {
+          indexType = indexTypePtr->sParm.t.type;
+
+          /* REVISIT:  For subranges, we use the base type of the subrange. */
+
+          if (indexType == sSUBRANGE)
+            {
+              indexType = indexTypePtr->sParm.t.subType;
+            }
+        }
+
+      /* Get the expression type from the index type */
+
+      switch (indexType)
+      {
+        case sINT :
+          exprType = exprInteger;
+          break;
+
+        case sCHAR :
+          exprType = exprChar;
+          break;
+
+        case sBOOLEAN :
+          exprType = exprBoolean;
+          break;
+
+        case sSCALAR :
+          exprType = exprUnknown;
+          break;
+
+        default:
+          error(eEXPRTYPE);
+          exprType = exprUnknown;
+          break;
+      }
+
       /* Evaluate index expression */
-      /* FIX ME:  Need to allow any scalar type */
 
       getToken();
-      expression(exprInteger, NULL);
+      expression(exprType, NULL);
 
       /* Correct for size of array element */
 
       if (size > 1)
         {
+          int32_t offset = indexTypePtr->sParm.t.minValue;
+
           pas_GenerateDataOperation(opPUSH, size);
 
           if (offset != 0)
@@ -452,7 +505,7 @@ exprType_t getExprType(symbol_t *sType)
         case sRSTRING :
           factorType = exprString;
           break;
-               case sSUBRANGE :
+        case sSUBRANGE :
           switch (sType->sParm.t.subType)
             {
             case sINT :
@@ -1781,8 +1834,7 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               /* Generate the array offset calculation */
 
-              arrayIndex(typePtr->sParm.t.asize,
-                         indexTypePtr->sParm.t.minValue);
+              arrayIndex(indexTypePtr, typePtr->sParm.t.asize);
 
               /* Return the parent type */
 
@@ -2328,8 +2380,7 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               /* Generate the array offset calculation */
 
-              arrayIndex(typePtr->sParm.t.asize,
-                         indexTypePtr->sParm.t.minValue);
+              arrayIndex(indexTypePtr, typePtr->sParm.t.asize);
 
               /* Return the parent type */
 

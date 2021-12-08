@@ -818,7 +818,7 @@ static symbol_t *pas_DeclareVar(void)
 
   if (typePtr)
     {
-      uint8_t varType = typePtr->sParm.t.type;
+      uint16_t varType = typePtr->sParm.t.type;
 
       /* Determine if alignment to INTEGER boundaries is necessary */
 
@@ -1788,11 +1788,12 @@ static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
 
 static symbol_t *pas_GetArrayIndexType(void)
 {
-  symbol_t *indexType = NULL;
+  symbol_t *indexTypePtr = NULL;
   int32_t minValue;
   int32_t maxValue;
-  uint8_t indexSize;
-  uint8_t subType;
+  uint16_t indexSize;
+  uint16_t indexType;
+  uint16_t subType;
   bool    haveIndex;
 
   TRACE(g_lstFile,"[pas_GetArrayIndexType]");
@@ -1847,6 +1848,7 @@ static symbol_t *pas_GetArrayIndexType(void)
                        minValue  = saveTknInt;
                        maxValue  = g_tknInt;
                        indexSize = sINT_SIZE;
+                       indexType = sSUBRANGE;
                        subType   = sINT;
                        haveIndex = true;
 
@@ -1867,6 +1869,7 @@ static symbol_t *pas_GetArrayIndexType(void)
                 {
                   minValue  = 0;
                   maxValue  = saveTknInt - 1;
+                  indexType = sSUBRANGE;
                   subType   = sINT;
                   indexSize = sINT_SIZE;
                   haveIndex = true;
@@ -1926,7 +1929,8 @@ static symbol_t *pas_GetArrayIndexType(void)
               indexSize = (ordinalType == sBOOLEAN ?
                            sBOOLEAN_SIZE :
                            sINT_SIZE);
-              subType   = ordinalType;
+              indexType = ordinalType;
+              subType   = g_tknPtr->sParm.t.type;
               haveIndex = true;
 
               getToken();
@@ -1968,17 +1972,17 @@ static symbol_t *pas_GetArrayIndexType(void)
            * added to deal with ordinal type names as index-type.
            */
 
-         indexType = addTypeDefine(NULL, sSUBRANGE, indexSize, NULL, NULL);
-          if (indexType)
+         indexTypePtr = addTypeDefine(NULL, indexType, indexSize, NULL, NULL);
+          if (indexTypePtr)
             {
-              indexType->sParm.t.minValue = minValue;
-              indexType->sParm.t.maxValue = maxValue;
-              indexType->sParm.t.subType  = subType;
+              indexTypePtr->sParm.t.minValue = minValue;
+              indexTypePtr->sParm.t.maxValue = maxValue;
+              indexTypePtr->sParm.t.subType  = subType;
             }
         }
     }
 
-  return indexType;
+  return indexTypePtr;
 }
 
 static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
