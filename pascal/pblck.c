@@ -1791,6 +1791,9 @@ static symbol_t *pas_GetArrayIndexType(void)
   symbol_t *indexType = NULL;
   int32_t minValue;
   int32_t maxValue;
+  uint8_t indexSize;
+  uint8_t subType;
+  bool    haveIndex;
 
   TRACE(g_lstFile,"[pas_GetArrayIndexType]");
 
@@ -1802,6 +1805,7 @@ static symbol_t *pas_GetArrayIndexType(void)
 
   /* Verify that the index-type-list is preceded by '[' */
 
+  haveIndex = false;
   if (g_token != '[') error(eLBRACKET);
   else
     {
@@ -1840,8 +1844,12 @@ static symbol_t *pas_GetArrayIndexType(void)
                    if (g_tknInt <= saveTknInt) error(eSUBRANGETYPE);
                    else
                      {
-                       minValue = saveTknInt;
-                       maxValue = g_tknInt;
+                       minValue  = saveTknInt;
+                       maxValue  = g_tknInt;
+                       indexSize = sINT_SIZE;
+                       subType   = sINT;
+                       haveIndex = true;
+
                        getToken();
                      }
                 }
@@ -1857,8 +1865,12 @@ static symbol_t *pas_GetArrayIndexType(void)
               if (g_tknInt < 0) error(eINVCONST);
               else
                 {
-                  minValue = 0;
-                  maxValue = saveTknInt - 1;
+                  minValue  = 0;
+                  maxValue  = saveTknInt - 1;
+                  subType   = sINT;
+                  indexSize = sINT_SIZE;
+                  haveIndex = true;
+
                   getToken();
                 }
             }
@@ -1893,22 +1905,36 @@ static symbol_t *pas_GetArrayIndexType(void)
 
       else
         {
-          uint16_t token = g_token;
+          uint16_t ordinalType;
 
-          /* If this is a typedef'ed symbol, then get the base type */
+          /* g_token should refer to a type identifier */
 
-          if (token == sTYPE)
+          if (g_token != sTYPE) error(eINDEXTYPE);
+
+          /* Get the base type of the type identifier */
+
+          ordinalType = g_tknPtr->sParm.t.type;
+
+          /* Check for an ordinal type. */
+
+          if (ordinalType == sBOOLEAN ||
+              ordinalType == sSCALAR ||
+              ordinalType == sSUBRANGE)
             {
-              token = g_tknPtr->sParm.t.type;
+              minValue  = g_tknPtr->sParm.t.minValue;
+              maxValue  = g_tknPtr->sParm.t.maxValue;
+              indexSize = (ordinalType == sBOOLEAN ?
+                           sBOOLEAN_SIZE :
+                           sINT_SIZE);
+              subType   = ordinalType;
+              haveIndex = true;
+
+              getToken();
             }
 
-          /* Check for and ordinal type */
+          /* REVISIT: What about other ordinal types like sINT and sCHAR? */
 
-          if (token == sINT ||
-              token == sBOOLEAN ||
-              token == sCHAR ||
-              token == sSCALAR ||
-              token == sSUBRANGE)
+          else if (ordinalType == sINT || ordinalType == sCHAR)
             {
               error(eNOTYET);
               getToken();
@@ -1920,6 +1946,8 @@ static symbol_t *pas_GetArrayIndexType(void)
             {
               error(eINDEXTYPE);
               getToken();
+              if (g_token == ']') getToken();
+              return NULL;
             }
         }
 
@@ -1928,20 +1956,25 @@ static symbol_t *pas_GetArrayIndexType(void)
       if (g_token != ']') error(eRBRACKET);
       else getToken();
 
-      /* We have the array size in elements and the base type, now
-       * create the unnamed index-type and convert the size for the
-       * type found
-       *
-       * REVISIT:  This needs to be extended when additional logic is
-       * added to deal with ordinal type names as index-type.
-       */
+      /* Check for success */
 
-      indexType = addTypeDefine(NULL, sSUBRANGE, sINT_SIZE, NULL, NULL);
-      if (indexType)
+      if (haveIndex)
         {
-          indexType->sParm.t.subType  = sINT;
-          indexType->sParm.t.minValue = minValue;
-          indexType->sParm.t.maxValue = maxValue;
+          /* We have the array size in elements and the base type, now
+           * create the unnamed index-type and convert the size for the
+           * type found
+           *
+           * REVISIT:  This needs to be extended when additional logic is
+           * added to deal with ordinal type names as index-type.
+           */
+
+         indexType = addTypeDefine(NULL, sSUBRANGE, indexSize, NULL, NULL);
+          if (indexType)
+            {
+              indexType->sParm.t.minValue = minValue;
+              indexType->sParm.t.maxValue = maxValue;
+              indexType->sParm.t.subType  = subType;
+            }
         }
     }
 

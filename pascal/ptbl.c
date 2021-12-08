@@ -453,8 +453,8 @@ symbol_t *addField(char *name, symbol_t *record)
 
 void primeSymbolTable(unsigned long symbolTableSize)
 {
-  int32_t trueValue   = -1;
-  int32_t falseValue  =  0;
+  int32_t trueValue   = BOOLEAN_TRUE;
+  int32_t falseValue  = BOOLEAN_FALSE;
   int32_t maxintValue = MAXINT;
   symbol_t *typePtr;
   int16_t i;
@@ -491,8 +491,8 @@ void primeSymbolTable(unsigned long symbolTableSize)
   typePtr = addTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL, NULL);
   if (typePtr)
     {
-      typePtr->sParm.t.minValue = falseValue;
-      typePtr->sParm.t.maxValue = trueValue;
+      typePtr->sParm.t.minValue = trueValue;
+      typePtr->sParm.t.maxValue = falseValue;
     }
 
   typePtr = addTypeDefine("REAL", sREAL, sREAL_SIZE, NULL, NULL);

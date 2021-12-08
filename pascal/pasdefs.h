@@ -80,6 +80,11 @@
 #define SPROC_EXTERNAL     (1 << 1) /* Proc/func. is defined externally */
 #define SVAR_EXTERNAL      (1 << 2) /* Variable is defined externally */
 
+/* BOOLEAN constant values */
+
+#define BOOLEAN_TRUE        (-1)
+#define BOOLEAN_FALSE       (0)
+
 /***********************************************************************
  * Public Enumeration Types
  ***********************************************************************/
