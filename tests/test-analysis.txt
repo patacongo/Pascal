@@ -1,30 +1,25 @@
 testall.sh compiles all (most) of the pascal source files in the src/ sub-directory.  The src/ sub-directory contains various pascal programs found by scouring the internet (most not attributed here.. sorry).  As of this writing, the following errors are reported when testall.sh is ran:
 
- 1. Several test cases fail because the involve use of non-standard Pascal types
-    (filename, list, word) and undefined procedures (fsplit, addr).
-    test cases using the list type probably have been removed; For testing purposes,
-    the filename type has been changed to the string type.
-    According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
-    not sure how standard that unit is.
+ 1. Several test cases found on the internet failed because they involved the
+    use of non-standard Pascal types('filename', 'list', 'word') and undefined
+    functions, and  procedures (fsplit, addr).
+    - Test cases using the list type probably have been removed;
+    - For testing purposes, the filename type has been changed to the string type.
+    - According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
+      not sure how standard that unit is.
  2. Currently a set is limited to 32-bits so that they can be represented internally
     as a 32-bit bit set.
- 3. Input procedures in writeln() take the file number as an optional first parameter.
-    If the optional file parameter is not supplied then the file associated with the
-    built-in variable input is tested.  Similarly, ouoptout procedures would default to
-    the built-in output.
-    This has been fixed for some functions (like eof and eoln) but not all cases have been
-    verified.
- 4. Operations on type 'string' are not yet supported
- 5. I/O operations on most types of arrays and VAR arrays are not fully
+ 3. Operations on type 'string' are not yet supported
+ 4. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See src/107-quicksort.pas
- 6. Forward references to variables before the are defined to not work.  See
+ 5. Forward references to variables before they are defined to not work.  See
     failure in src/108-pointerrecode.pas.
- 7. Unit files with data declarations, but no implementation.
+ 6. Unit files with data declarations, but no implementation.
 
 Successful test results are not shown.
 
 ########src/104-primes.pas########
-Line 0:0012 Error 47 Token 3b
+Line 0:0012 Error 48 Token 3b
 
 Line (in var section):
  12   sieve, primes : array[0..w] of set of 0..maxbit;
@@ -33,7 +28,7 @@ Where (in const section)
   8   maxbit = 58;
 
 Error:
-244 #define eSETRANGE        ((uint16_t) 0x47)
+244 #define eSETRANGE        ((uint16_t) 0x48)
 
 Analysis:
 This is a consequence of the fact that sets are currently limited to 32-bits:
@@ -198,27 +193,62 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0055 Error 11 Token 44
+Line 0:0055 Error 24 Token 44
 
 Error:
-#define eINTCONST        ((uint16_t) 0x11)
+#define eINDEXTYPE       ((uint16_t) 0x41)
 
 Line:
  55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
-wher
+where
  50        EmployeeType = string[EmployeeMaxLen];
 
 Token:
-#define sTYPE            0x44
+#define eNOTYET          ((uint16_t) 0x24)
 
 Analysis:
-I haven't looked into to this but I expect that this is another of many issues related to the fragmental implementation of string types.
+This is the same issue as with DayIO.pas (see below).
 
 ########DayIO.pas########
-Line 0:0060 Error 11 Token 44
+Line 0:0060 Error 24 Token 44
+
+Error:
+#define eSUBRANGETYPE    ((uint16_t) 0x46)
+
+Line:
+ 60         DayMap: ARRAY[DayType] of DayStrType;
+
+Token:
+#define eNOTYET          ((uint16_t) 0x24)
 
 Analysis:
-Haven't look at yet.
+This is a limitation in the parsing of the array index-type.  DayType is a set defined in the interface section of the DayIO unit:
+
+     TYPE
+         { Type to represent a day of the week, or an error. }
+         DayType = (Sun, Mon, Tue, Wed, Thu, Fri, Sat, BadDay);
+
+Currently, the logic of pas_GetArrayIndexType() in pblck.c handles this case is just a stub at present:
+
+    FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
+    FORM: [PACKED] ARRAY [<integer>] OF type-denoter
+    FORM: index-type-list = index-type { ',' index-type }
+    FORM: index-type = ordinal-type
+
+In pas_GetArrayIndexType() of pblck.c:
+
+          /* Check for and ordinal type */
+
+          if (token == sINT ||
+              token == sBOOLEAN ||
+              token == sCHAR ||
+              token == sSCALAR ||
+              token == sSUBRANGE)
+            {
+              error(eNOTYET);
+              getToken();
+            }
+
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory
 ERROR: Error opening 'worksched.pex': 2

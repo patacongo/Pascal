@@ -49,6 +49,7 @@
 
 /***********************************************************************
  * COMPILATION TIME ERRORS
+ * -----------------------
  * eASSIGN              Expected ':='
  * eBEGIN               Expected 'BEGIN'
  * eCOLON               Expected ':'
@@ -114,6 +115,7 @@
  * eFACTORTYPE          Illegal factor type for this operation
  * eREADPARM            Illegal parameter in READ statement
  * eWRITEPARM           Illegal parameter in WRITE statement
+ * eINDEXTYPE           Illegal array index type
  * eARRAYTYPE           Illegal type for ARRAY OF
  * ePOINTERTYPE         Illegal pointer type
  * eVARPARMTYPE         Illegal VAR parameter type
@@ -132,16 +134,19 @@
  * eARGIGNORED          An argument was provided, but ignored
  *
  * LINK TIME ERRORS
+ * ----------------
  * eUNDEFINEDSYMBOL     A necessary symbol was not defined
  * eMULTIDEFSYMBOL      A symbol was defined multiple times
  *
  * ERRORS WHICH MAY OCCUR AT EITHER COMPILATION, LINK OR RUNTIME
+ * -------------------------------------------------------------
  * eNOMEMORY            Memory allocation failed
  * ePOFFREADERROR       Error reading a POFF file
  * ePOFFBADFORMAT       The file format does not like valid POFF
  * eRCVDSIGNAL          Received SIGSEGV (or other) signal.
  *
  * RUN TIME ERRORS
+ * ---------------
  * eBADPC               Program Counter is out-of-range
  * eBADSP               Stack reference is out-of-range
  * eSTRSTKOVERFLOW      String stack overflow
@@ -150,8 +155,8 @@
  * eBADSYSIOFUNC        Illegal SYSIO sub-function
  * eBADSYSLIBCALL       Illegal runtime library call
  * eBADFPOPCODE         Illegal FLOAT POINT op-code
- * eFAILEDLIBCALL       Runtime library call returned failure
  * eINTEGEROVERFLOW     Integer overflow
+ * eFAILEDLIBCALL       Runtime library call returned failure
  *
  **********************************************************************/
 
@@ -235,23 +240,24 @@
 #define eREADPARM        ((uint16_t) 0x3f)
 
 #define eWRITEPARM       ((uint16_t) 0x40)
-#define eARRAYTYPE       ((uint16_t) 0x41)
-#define ePOINTERTYPE     ((uint16_t) 0x42)
-#define eVARPARMTYPE     ((uint16_t) 0x43)
-#define eSUBRANGE        ((uint16_t) 0x44)
-#define eSUBRANGETYPE    ((uint16_t) 0x45)
-#define eSET             ((uint16_t) 0x46)
-#define eSETRANGE        ((uint16_t) 0x47)
-#define eSCALARTYPE      ((uint16_t) 0x48)
-#define eBADSHORTINT     ((uint16_t) 0x49)
-#define eSYMTABINTERNAL  ((uint16_t) 0x4a)
-#define eRECORDDECLARE   ((uint16_t) 0x4b)
-#define eRECORDOBJECT    ((uint16_t) 0x4c)
-#define eRECORDVAR       ((uint16_t) 0x4d)
-#define eUNIT            ((uint16_t) 0x4e)
-#define eUNITNAME        ((uint16_t) 0x4f)
+#define eINDEXTYPE       ((uint16_t) 0x41)
+#define eARRAYTYPE       ((uint16_t) 0x42)
+#define ePOINTERTYPE     ((uint16_t) 0x43)
+#define eVARPARMTYPE     ((uint16_t) 0x44)
+#define eSUBRANGE        ((uint16_t) 0x45)
+#define eSUBRANGETYPE    ((uint16_t) 0x46)
+#define eSET             ((uint16_t) 0x47)
+#define eSETRANGE        ((uint16_t) 0x48)
+#define eSCALARTYPE      ((uint16_t) 0x49)
+#define eBADSHORTINT     ((uint16_t) 0x4a)
+#define eSYMTABINTERNAL  ((uint16_t) 0x4b)
+#define eRECORDDECLARE   ((uint16_t) 0x4d)
+#define eRECORDOBJECT    ((uint16_t) 0x4d)
+#define eRECORDVAR       ((uint16_t) 0x4e)
+#define eUNIT            ((uint16_t) 0x4f)
 
-#define eARGIGNORED      ((uint16_t) 0x50)
+#define eUNITNAME        ((uint16_t) 0x50)
+#define eARGIGNORED      ((uint16_t) 0x51)
 
 /* LINK TIME ERRORS */
 
@@ -267,8 +273,8 @@
 
 /* RUN TIME ERRORS */
 
-#define eBADPC	         ((uint16_t) 0x80)
-#define eBADSP	         ((uint16_t) 0x81)
+#define eBADPC           ((uint16_t) 0x80)
+#define eBADSP           ((uint16_t) 0x81)
 #define eSTRSTKOVERFLOW  ((uint16_t) 0x82)
 #define eILLEGALOPCODE   ((uint16_t) 0x83)
 #define eEXIT            ((uint16_t) 0x84)
@@ -276,6 +282,6 @@
 #define eBADSYSLIBCALL   ((uint16_t) 0x86)
 #define eBADFPOPCODE     ((uint16_t) 0x87)
 #define eINTEGEROVERFLOW ((uint16_t) 0x89)
-#define eFAILEDLIBCALL   ((uint16_t) 0x90)
+#define eFAILEDLIBCALL   ((uint16_t) 0x8a)
 
 #endif /* __PEDEFS_H */

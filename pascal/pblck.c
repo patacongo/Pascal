@@ -1435,7 +1435,6 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
 
        if (g_token != ')') error(eRPAREN);
        else getToken();
-
      }
 
    /* Declare a new subrange type
@@ -1790,6 +1789,8 @@ static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
 static symbol_t *pas_GetArrayIndexType(void)
 {
   symbol_t *indexType = NULL;
+  int32_t minValue;
+  int32_t maxValue;
 
   TRACE(g_lstFile,"[pas_GetArrayIndexType]");
 
@@ -1806,20 +1807,22 @@ static symbol_t *pas_GetArrayIndexType(void)
     {
       /* FORM: index-type-list = index-type { ',' index-type }
        * FORM: index-type = ordinal-type
-       *
-       * REVISIT:  At present only integer constants are accepted as
-       * ordinal-type.
        */
 
       getToken();
-      if (g_token != tINT_CONST) error(eINTCONST);
-      else
+      if (g_token == tINT_CONST ||
+         (g_token == sTYPE && g_tknPtr->sParm.t.type == tINT_CONST))
         {
           int32_t saveTknInt = g_tknInt;
-          int32_t minValue;
-          int32_t maxValue;
 
-          /* Check for a sub-range of integer constants */
+          /* Check for a subrange-type of integer constants.
+           *
+           * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
+           * FORM: new-ordinal-type = enumerated-type | subrange-type
+           * FORM: subrange-type = constant '..' constant
+           *
+           * REVISIT:  Probably should be any valid subrange type.
+           */
 
           getToken();
           if (g_token == tSUBRANGE)
@@ -1827,7 +1830,11 @@ static symbol_t *pas_GetArrayIndexType(void)
               /* Get the upper value of the sub-range */
 
               getToken();
-              if (g_token != tINT_CONST) error(eINTCONST);
+              if (g_token != tINT_CONST &&
+                  (g_token != sTYPE || g_tknPtr->sParm.t.type != tINT_CONST))
+                {
+                  error(eINTCONST);
+                }
               else
                 {
                    if (g_tknInt <= saveTknInt) error(eSUBRANGETYPE);
@@ -1839,6 +1846,12 @@ static symbol_t *pas_GetArrayIndexType(void)
                      }
                 }
             }
+
+#if 0
+          /* Some versions of small pascal allow a NON-STANDARD single
+           * integer constant as a 'dimension' of the array.
+           */
+
           else
             {
               if (g_tknInt < 0) error(eINVCONST);
@@ -1849,27 +1862,86 @@ static symbol_t *pas_GetArrayIndexType(void)
                   getToken();
                 }
             }
-
-          /* Verify that the index-type-list is followed by ']' */
-
-          if (g_token != ']') error(eRBRACKET);
-          else getToken();
-
-          /* We have the array size in elements and the base type, now
-           * create the unnamed index-type and convert the size for the
-           * type found
-           *
-           * REVISIT:  This needs to be extended when additional logic is
-           * added to deal with ordinal type names as index-type.
-           */
-
-          indexType = addTypeDefine(NULL, sSUBRANGE, sINT_SIZE, NULL, NULL);
-          if (indexType)
+#else
+          else
             {
-              indexType->sParm.t.subType  = sINT;
-              indexType->sParm.t.minValue = minValue;
-              indexType->sParm.t.maxValue = maxValue;
+              error(eINDEXTYPE);
             }
+#endif
+        }
+
+      /* Check for enumerated-type
+       *
+       * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
+       * FORM: new-ordinal-type = enumerated-type | subrange-type
+       * FORM: enumerated-type = '(' enumerated-constant-list ')'
+       * FORM: enumerated-constant-list = enumerated-constant { ',' enumerated-constant }
+       * FORM: enumerated-constant = identifier
+       */
+
+      else if (g_token == '(')
+        {
+          error(eNOTYET);
+          getToken();
+        }
+
+      /* Check for ordinal-type-identifier
+       *
+       * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
+       * FORM: ordinal-type-identifier = identifier
+       */
+
+      else
+        {
+          uint16_t token = g_token;
+
+          /* If this is a typedef'ed symbol, then get the base type */
+
+          if (token == sTYPE)
+            {
+              token = g_tknPtr->sParm.t.type;
+            }
+
+          /* Check for and ordinal type */
+
+          if (token == sINT ||
+              token == sBOOLEAN ||
+              token == sCHAR ||
+              token == sSCALAR ||
+              token == sSUBRANGE)
+            {
+              error(eNOTYET);
+              getToken();
+            }
+
+          /* Not a recognized index-type */
+
+          else
+            {
+              error(eINDEXTYPE);
+              getToken();
+            }
+        }
+
+      /* Verify that the index-type-list is followed by ']' */
+
+      if (g_token != ']') error(eRBRACKET);
+      else getToken();
+
+      /* We have the array size in elements and the base type, now
+       * create the unnamed index-type and convert the size for the
+       * type found
+       *
+       * REVISIT:  This needs to be extended when additional logic is
+       * added to deal with ordinal type names as index-type.
+       */
+
+      indexType = addTypeDefine(NULL, sSUBRANGE, sINT_SIZE, NULL, NULL);
+      if (indexType)
+        {
+          indexType->sParm.t.subType  = sINT;
+          indexType->sParm.t.minValue = minValue;
+          indexType->sParm.t.maxValue = maxValue;
         }
     }
 
