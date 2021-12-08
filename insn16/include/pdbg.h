@@ -2,7 +2,7 @@
  * pdbg.h
  * External Declarations associated with the P-Code debugger
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,6 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void dbg_run(struct pexec_s *st);
+void dbg_run(struct pexec_s *st);
 
 #endif /* __PDBG_H */

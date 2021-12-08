@@ -1,7 +1,7 @@
 /****************************************************************************
  * pexec.h
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@ union stack_u
   ustack_t *i;
   uint8_t  *b;
 };
-typedef union stack_u stackType;
+typedef union stack_u stackType_t;
 
 /* This structure describes the parameters needed to initialize the p-code
  * interpreter.
@@ -94,7 +94,7 @@ struct pexec_s
 {
   /* This is the emulated P-Machine stack (D-Space) */
 
-  stackType dstack;
+  stackType_t dstack;
 
   /* This is the emulated P-Machine instruction space (I-Space) */
 
@@ -137,16 +137,18 @@ struct pexec_s
 
 #ifdef __cplusplus
 #define EXTERN extern "C"
-extern "C" {
+extern "C"
+{
 #else
 #define EXTERN extern
 #endif
 
-EXTERN FAR struct pexec_s *pload(const char *filename, paddr_t varsize, paddr_t strsize);
-EXTERN FAR struct pexec_s *pexec_init(struct pexec_attr_s *attr);
-EXTERN int pexec(FAR struct pexec_s *st);
-EXTERN void pexec_reset(struct pexec_s *st);
-EXTERN void pexec_release(struct pexec_s *st);
+FAR struct pexec_s *pload(const char *filename, paddr_t varsize,
+                          paddr_t strsize);
+FAR struct pexec_s *pexec_init(struct pexec_attr_s *attr);
+int pexec(FAR struct pexec_s *st);
+void pexec_reset(struct pexec_s *st);
+void pexec_release(struct pexec_s *st);
 
 #undef EXTERN
 #ifdef __cplusplus

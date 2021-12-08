@@ -2,7 +2,7 @@
  * pinsn.h
  * External Declarations associated libinsn.a
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,34 +49,34 @@
 
 /* Opcode generators */
 
-extern void insn_GenerateSimple(enum pcode_e opcode);
-extern void insn_GenerateDataOperation(enum pcode_e opcode, int32_t data);
-extern void insn_GenerateDataSize(uint32_t dwDataSize);
-extern void insn_GenerateFpOperation(uint8_t fpOpcode);
-extern void insn_GenerateIoOperation(uint16_t ioOpcode, uint16_t fileNumber);
-extern void insn_BuiltInFunctionCall(uint16_t libOpcode);
-extern void insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level,
-                                        int32_t offset);
-extern void insn_GenerateProcedureCall(uint16_t level, int32_t offset);
-extern void insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber);
-extern void insn_SetStackLevel(uint32_t level);
+void insn_GenerateSimple(enum pcode_e opcode);
+void insn_GenerateDataOperation(enum pcode_e opcode, int32_t data);
+void insn_GenerateDataSize(uint32_t dwDataSize);
+void insn_GenerateFpOperation(uint8_t fpOpcode);
+void insn_GenerateIoOperation(uint16_t ioOpcode, uint16_t fileNumber);
+void insn_BuiltInFunctionCall(uint16_t libOpcode);
+void insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level,
+                                 int32_t offset);
+void insn_GenerateProcedureCall(uint16_t level, int32_t offset);
+void insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber);
+void insn_SetStackLevel(uint32_t level);
 
 /* Opcode relocation */
 
-extern int  insn_Relocate(OPTYPE *op, uint32_t pcOffset, uint32_t roOffset);
-extern void insn_FixupProcedureCall(uint8_t *progData, uint32_t symValue);
+int  insn_Relocate(opType_t *op, uint32_t pcOffset, uint32_t roOffset);
+void insn_FixupProcedureCall(uint8_t *progData, uint32_t symValue);
 
 /* POFF-wrapped INSNS access helpers */
 
-extern uint32_t insn_GetOpCode(poffHandle_t handle, OPTYPE *ptr);
-extern void insn_ResetOpCodeRead(poffHandle_t handle);
-extern void insn_AddOpCode(poffHandle_t handle, OPTYPE *ptr);
-extern void insn_ResetOpCodeWrite(poffHandle_t handle);
-extern void insn_AddTmpOpCode(poffProgHandle_t progHandle, OPTYPE *ptr);
-extern void insn_ResetTmpOpCodeWrite(poffProgHandle_t progHandle);
+uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr);
+void insn_ResetOpCodeRead(poffHandle_t handle);
+void insn_AddOpCode(poffHandle_t handle, opType_t *ptr);
+void insn_ResetOpCodeWrite(poffHandle_t handle);
+void insn_AddTmpOpCode(poffProgHandle_t progHandle, opType_t *ptr);
+void insn_ResetTmpOpCodeWrite(poffProgHandle_t progHandle);
 
 /* INSN-specific disassembler */
 
-extern void insn_DisassemblePCode(FILE* lfile, OPTYPE *pop);
+void insn_DisassemblePCode(FILE* lfile, opType_t *pop);
 
 #endif /* __PINSN_H */

@@ -290,9 +290,9 @@ static void dumpProgramData(poffHandle_t poffHandle)
   poffLibLineNumber_t *lastln;     /* Previous line number reference */
   poffLibLineNumber_t *ln;         /* Current line number reference */
   uint32_t pc;                     /* Program counter */
-  OPTYPE  op;                      /* Opcode */
-  int     opSize;                  /* Size of the opcode */
-  int     inch;                    /* Input char */
+  opType_t op;                     /* Opcode */
+  int      opSize;                 /* Size of the opcode */
+  int      inch;                   /* Input char */
 
   /* Read the line number entries from the POFF file */
 

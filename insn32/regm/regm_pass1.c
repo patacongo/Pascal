@@ -2,7 +2,7 @@
  * regm_pass1.c
  * Break the pcode data into sections
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -191,7 +191,7 @@ static struct procdata_s *regm_Pass1Node(poffHandle_t hPoff,
 
 static uint32_t regm_CheckSection1 (poffHandle_t hPoff, uint32_t dwOffset)
 {
-  OPTYPE op;
+  opType_t op;
 
   /* Seek to the beginning of the section. */
 

@@ -2,7 +2,7 @@
  * polocal.c
  * P-Code Local Optimizer
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,11 +64,11 @@ static void setupPointer      (void);
  * Public Data
  **********************************************************************/
 
-OPTYPE  ptable [WINDOW];                /* Pcode Table */
-OPTYPE *pptr   [WINDOW];                /* Valid Pcode Pointers */
+opType_t  ptable[WINDOW];               /* Pcode Table */
+opType_t *pptr[WINDOW];                 /* Valid Pcode Pointers */
 
-int     nops    = 0;                    /* No. Valid Pcode Pointers */
-int     end_out = 0;                    /* 1 = oEND pcode has been output */
+int       nops    = 0;                  /* No. Valid Pcode Pointers */
+int       end_out = 0;                  /* 1 = oEND pcode has been output */
 
 /**********************************************************************
  * Private Variables
@@ -193,7 +193,7 @@ static void setupPointer(void)
   TRACE(stderr, "[setupPointer]");
 
   for (pindex = 0; pindex < WINDOW; pindex++)
-    pptr[pindex] = (OPTYPE *) NULL;
+    pptr[pindex] = (opType_t *) NULL;
 
   nops = 0;
   for (pindex = 0; pindex < WINDOW; pindex++)

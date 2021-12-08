@@ -2,7 +2,7 @@
  * podefs.h
  * Logical P-code operation code definitions
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,6 @@
 
 enum pcode_e
 {
-
   /**-------------------------------------------------------------------
    * OPCODES WITH NO ARGUMENTS
    **-------------------------------------------------------------------**/

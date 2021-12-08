@@ -4,7 +4,7 @@
  * indefinite number of registers (arguments, general, and special
  * registers) and with 32-bit immediate size.
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,7 +72,7 @@
 struct regm_opmap_s;
 
 typedef void (*regm_mapper_t)(const struct regm_opmap_s *pEntry,
-                              OPTYPE *pOpCode, struct procdata_s *pNode);
+                              opType_t *pOpCode, struct procdata_s *pNode);
 
 struct regm_opmap_s
 {
@@ -87,107 +87,107 @@ struct regm_opmap_s
  **********************************************************************/
 
 static void regm_NoOperation(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode,
+                             opType_t *pOpCode,
                              struct procdata_s *pNode);
 static void regm_UnaryOperation(const struct regm_opmap_s *pEntry,
-                                OPTYPE *pOpCode,
+                                opType_t *pOpCode,
                                 struct procdata_s *pNode);
 static void regm_BinaryOperation(const struct regm_opmap_s *pEntry,
-                                 OPTYPE *pOpCode,
+                                 opType_t *pOpCode,
                                  struct procdata_s *pNode);
 static void regm_CompareVsZero(const struct regm_opmap_s *pEntry,
-                               OPTYPE *pOpCode,
+                               opType_t *pOpCode,
                                struct procdata_s *pNode);
 static void regm_BinaryComparison(const struct regm_opmap_s *pEntry,
-                                  OPTYPE *pOpCode,
+                                  opType_t *pOpCode,
                                   struct procdata_s *pNode);
 static void regm_LoadImmediate(const struct regm_opmap_s *pEntry,
-                               OPTYPE *pOpCode,
+                               opType_t *pOpCode,
                                struct procdata_s *pNode);
 static void regm_LoadMultiple(uint32_t dwRDest, uint32_t dwRSrc);
 static void regm_LoadMultipleImmediate(const struct regm_opmap_s *pEntry,
-                                       OPTYPE *pOpCode,
+                                       opType_t *pOpCode,
                                        struct procdata_s *pNode);
 static void regm_StoreMultiple(uint32_t dwRDest, uint32_t dwRSrc);
 static void regm_StoreImmediate(const struct regm_opmap_s *pEntry,
-                                OPTYPE *pOpCode,
+                                opType_t *pOpCode,
                                 struct procdata_s *pNode);
 static void regm_StoreMultipleImmediate(const struct regm_opmap_s *pEntry,
-                                        OPTYPE *pOpCode,
+                                        opType_t *pOpCode,
                                         struct procdata_s *pNode);
 static void regm_Duplicate(const struct regm_opmap_s *pEntry,
-                           OPTYPE *pOpCode,
+                           opType_t *pOpCode,
                            struct procdata_s *pNode);
 static void regm_PushImmediate(const struct regm_opmap_s *pEntry,
-                               OPTYPE *pOpCode,
+                               opType_t *pOpCode,
                                struct procdata_s *pNode);
 static void regm_PopSpecial(const struct regm_opmap_s *pEntry,
-                            OPTYPE *pOpCode,
+                            opType_t *pOpCode,
                             struct procdata_s *pNode);
 static void regm_SetDataCount(const struct regm_opmap_s *pEntry,
-                              OPTYPE *pOpCode,
+                              opType_t *pOpCode,
                               struct procdata_s *pNode);
 static void regm_PushSpecial(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode,
+                             opType_t *pOpCode,
                              struct procdata_s *pNode);
 static void regm_Return(const struct regm_opmap_s *pEntry,
-                        OPTYPE *pOpCode,
+                        opType_t *pOpCode,
                         struct procdata_s *pNode);
 static void regm_LoadOffset(const struct regm_opmap_s *pEntry,
-                            OPTYPE *pOpCode,
+                            opType_t *pOpCode,
                             struct procdata_s *pNode);
 static void regm_LoadMultipleOffset(const struct regm_opmap_s *pEntry,
-                                    OPTYPE *pOpCode,
+                                    opType_t *pOpCode,
                                     struct procdata_s *pNode);
 static void regm_StoreOffset(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode,
+                             opType_t *pOpCode,
                              struct procdata_s *pNode);
 static void regm_StoreMultipleOffset(const struct regm_opmap_s *pEntry,
-                                     OPTYPE *pOpCode,
+                                     opType_t *pOpCode,
                                      struct procdata_s *pNode);
 static void regm_LoadIndexed(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode, struct procdata_s *pNode);
+                             opType_t *pOpCode, struct procdata_s *pNode);
 static void regm_LoadMultipleIndexed(const struct regm_opmap_s *pEntry,
-                                     OPTYPE *pOpCode,
+                                     opType_t *pOpCode,
                                      struct procdata_s *pNode);
 static void regm_StoreIndexed(const struct regm_opmap_s *pEntry,
-                              OPTYPE *pOpCode, struct procdata_s *pNode);
+                              opType_t *pOpCode, struct procdata_s *pNode);
 static void regm_StoreMultipleIndexed(const struct regm_opmap_s *pEntry,
-                                      OPTYPE *pOpCode,
+                                      opType_t *pOpCode,
                                       struct procdata_s *pNode);
 static void regm_ConditionalBranchVsZero(const struct regm_opmap_s *pEntry,
-                                         OPTYPE *pOpCode,
+                                         opType_t *pOpCode,
                                          struct procdata_s *pNode);
 static void regm_ConditionalBranchBinary(const struct regm_opmap_s *pEntry,
-                                         OPTYPE *pOpCode,
+                                         opType_t *pOpCode,
                                          struct procdata_s *pNode);
 static void regm_UnconditionalBranch(const struct regm_opmap_s *pEntry,
-                                     OPTYPE *pOpCode,
+                                     opType_t *pOpCode,
                                      struct procdata_s *pNode);
 static void regm_IncrementSpecial(const struct regm_opmap_s *pEntry,
-                                  OPTYPE *pOpCode,
+                                  opType_t *pOpCode,
                                   struct procdata_s *pNode);
 static void regm_LoadAddress(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode, struct procdata_s *pNode);
+                             opType_t *pOpCode, struct procdata_s *pNode);
 static void regm_LoadAddressIndexed(const struct regm_opmap_s *pEntry,
-                                    OPTYPE *pOpCode,
+                                    opType_t *pOpCode,
                                     struct procdata_s *pNode);
 static void regm_SetupOutArgs(uint32_t nParms, const uint32_t *pwArgSize);
 static void regm_MapInRet(uint32_t wRetSize);
 static void regm_PCal(const struct regm_opmap_s *pEntry,
-                      OPTYPE *pOpCode,
+                      opType_t *pOpCode,
                       struct procdata_s *pNode);
 static void regm_SysIo(const struct regm_opmap_s *pEntry,
-                       OPTYPE *pOpCode,
+                       opType_t *pOpCode,
                        struct procdata_s *pNode);
 static void regm_LibCall(const struct regm_opmap_s *pEntry,
-                         OPTYPE *pOpCode,
+                         opType_t *pOpCode,
                          struct procdata_s *pNode);
 static void regm_Float(const struct regm_opmap_s *pEntry,
-                       OPTYPE *pOpCode,
+                       opType_t *pOpCode,
                        struct procdata_s *pNode);
 static void regm_IllegalPCode(const struct regm_opmap_s *pEntry,
-                              OPTYPE *pOpCode,
+                              opType_t *pOpCode,
                               struct procdata_s *pNode);
 
 static void regm_GenerateRegm(struct procdata_s *pNode, void *pvArg);
@@ -470,7 +470,7 @@ static const struct regm_builtin_s *g_prgFopBuiltIns[4] =
 /***********************************************************************/
 
 static void regm_NoOperation(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode, struct procdata_s *pNode)
+                             opType_t *pOpCode, struct procdata_s *pNode)
 {
   TRACE(stderr, "[regm_NoOperation]");
 
@@ -487,7 +487,7 @@ static void regm_NoOperation(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_UnaryOperation(const struct regm_opmap_s *pEntry,
-                                OPTYPE *pOpCode, struct procdata_s *pNode)
+                                opType_t *pOpCode, struct procdata_s *pNode)
 {
   uint32_t dwUnaryRegister = MKCCREG(g_dwStackOffset - 1*sINT_SIZE);
   uint32_t dwCcRegister    = MKCCREG(g_dwStackOffset);
@@ -519,7 +519,7 @@ static void regm_UnaryOperation(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_BinaryOperation(const struct regm_opmap_s *pEntry,
-                                 OPTYPE *pOpCode,
+                                 opType_t *pOpCode,
                                  struct procdata_s *pNode)
 {
   uint32_t dwROperand1 = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -553,7 +553,7 @@ static void regm_BinaryOperation(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_CompareVsZero(const struct regm_opmap_s *pEntry,
-                               OPTYPE *pOpCode,
+                               opType_t *pOpCode,
                                struct procdata_s *pNode)
 {
   uint32_t dwUnaryRegister = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -583,7 +583,7 @@ static void regm_CompareVsZero(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_BinaryComparison(const struct regm_opmap_s *pEntry,
-                                  OPTYPE *pOpCode,
+                                  opType_t *pOpCode,
                                   struct procdata_s *pNode)
 {
   uint32_t dwROperand1  = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -619,7 +619,7 @@ static void regm_BinaryComparison(const struct regm_opmap_s *pEntry,
 /* Load from the address on the stack.  Stack is unchanged */
 
 static void regm_LoadImmediate(const struct regm_opmap_s *pEntry,
-                               OPTYPE *pOpCode,
+                               opType_t *pOpCode,
                                struct procdata_s *pNode)
 {
   uint32_t dwROperand1 = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -663,7 +663,7 @@ static void regm_LoadMultiple(uint32_t dwRDest, uint32_t dwRSrc)
  */
 
 static void regm_LoadMultipleImmediate(const struct regm_opmap_s *pEntry,
-                                       OPTYPE *pOpCode,
+                                       opType_t *pOpCode,
                                        struct procdata_s *pNode)
 {
   uint32_t dwRSrc  = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -688,7 +688,7 @@ static void regm_LoadMultipleImmediate(const struct regm_opmap_s *pEntry,
 /* Store value on stack to address on stack.  Stack is reduced by two */
 
 static void regm_StoreImmediate(const struct regm_opmap_s *pEntry,
-                                OPTYPE *pOpCode,
+                                opType_t *pOpCode,
                                 struct procdata_s *pNode)
 {
   uint32_t dwRSrc      = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -736,7 +736,7 @@ static void regm_StoreMultiple(uint32_t dwRDest, uint32_t dwRSrc)
  */
 
 static void regm_StoreMultipleImmediate(const struct regm_opmap_s *pEntry,
-                                        OPTYPE *pOpCode,
+                                        opType_t *pOpCode,
                                         struct procdata_s *pNode)
 {
   uint32_t dwRDest = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -761,7 +761,7 @@ static void regm_StoreMultipleImmediate(const struct regm_opmap_s *pEntry,
 /* Duplicate the TOS.  stack increases by one */
 
 static void regm_Duplicate(const struct regm_opmap_s *pEntry,
-                           OPTYPE *pOpCode,
+                           opType_t *pOpCode,
                            struct procdata_s *pNode)
 {
   uint32_t dwROperand1 = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -782,7 +782,7 @@ static void regm_Duplicate(const struct regm_opmap_s *pEntry,
 /* Put the immediate value at the top of the stack.  Increment stack */
 
 static void regm_PushImmediate(const struct regm_opmap_s *pEntry,
-                               OPTYPE *pOpCode,
+                               opType_t *pOpCode,
                                struct procdata_s *pNode)
 {
   uint32_t dwRDest = g_dwStackOffset;
@@ -804,7 +804,7 @@ static void regm_PushImmediate(const struct regm_opmap_s *pEntry,
 /* Push the special register onto the stack.  Stack increments by one */
 
 static void regm_PushSpecial(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode,
+                             opType_t *pOpCode,
                              struct procdata_s *pNode)
 {
   uint32_t dwRDest = g_dwStackOffset;
@@ -822,7 +822,7 @@ static void regm_PushSpecial(const struct regm_opmap_s *pEntry,
 /* Pop the TOS into the special register.  Stack decrements by one */
 
 static void regm_PopSpecial(const struct regm_opmap_s *pEntry,
-                            OPTYPE *pOpCode,
+                            opType_t *pOpCode,
                             struct procdata_s *pNode)
 {
   uint32_t dwROperand1 = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -840,7 +840,7 @@ static void regm_PopSpecial(const struct regm_opmap_s *pEntry,
 /* Save the immediate value in the data count register */
 
 static void regm_SetDataCount(const struct regm_opmap_s *pEntry,
-                              OPTYPE *pOpCode,
+                              opType_t *pOpCode,
                               struct procdata_s *pNode)
 {
   /* We don't acutally use the DC register.  It is an artifact just
@@ -854,7 +854,7 @@ static void regm_SetDataCount(const struct regm_opmap_s *pEntry,
 /***********************************************************************/
 
 static void regm_Return(const struct regm_opmap_s *pEntry,
-                        OPTYPE *pOpCode,
+                        opType_t *pOpCode,
                         struct procdata_s *pNode)
 {
   TRACE(stderr, "[regm_Return]");
@@ -868,7 +868,7 @@ static void regm_Return(const struct regm_opmap_s *pEntry,
 /* Load at offset from SPB/LSP.  Stack increases by one */
 
 static void regm_LoadOffset(const struct regm_opmap_s *pEntry,
-                            OPTYPE *pOpCode,
+                            opType_t *pOpCode,
                             struct procdata_s *pNode)
 {
   uint32_t dwRDest = g_dwStackOffset;
@@ -891,7 +891,7 @@ static void regm_LoadOffset(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_LoadMultipleOffset(const struct regm_opmap_s *pEntry,
-                                    OPTYPE *pOpCode,
+                                    opType_t *pOpCode,
                                     struct procdata_s *pNode)
 {
   uint32_t dwRSrc  = MKREG(g_dwStackOffset);
@@ -908,7 +908,7 @@ static void regm_LoadMultipleOffset(const struct regm_opmap_s *pEntry,
 /* Store at offset from SPB/LSP.  Stack decreases by one */
 
 static void regm_StoreOffset(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode,
+                             opType_t *pOpCode,
                              struct procdata_s *pNode)
 {
   uint32_t dwRSrc = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -932,7 +932,7 @@ static void regm_StoreOffset(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_StoreMultipleOffset(const struct regm_opmap_s *pEntry,
-                                     OPTYPE *pOpCode,
+                                     opType_t *pOpCode,
                                      struct procdata_s *pNode)
 {
   uint32_t dwRSrc = MKREG(g_dwStackOffset - g_dwRegisterCount*sINT_SIZE);
@@ -949,7 +949,7 @@ static void regm_StoreMultipleOffset(const struct regm_opmap_s *pEntry,
 /* Load value using index on stack + argument + SPB/LSP. Stack is unchanged */
 
 static void regm_LoadIndexed(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode,
+                             opType_t *pOpCode,
                              struct procdata_s *pNode)
 {
   uint32_t dwRIndex = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -973,7 +973,7 @@ static void regm_LoadIndexed(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_LoadMultipleIndexed(const struct regm_opmap_s *pEntry,
-                                     OPTYPE *pOpCode,
+                                     opType_t *pOpCode,
                                      struct procdata_s *pNode)
 {
   uint32_t dwRIndex = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -1003,7 +1003,7 @@ static void regm_LoadMultipleIndexed(const struct regm_opmap_s *pEntry,
 /* Store value at TOS to index + offset + SPB/LSP.  Stack decreases by two */
 
 static void regm_StoreIndexed(const struct regm_opmap_s *pEntry,
-                              OPTYPE *pOpCode,
+                              opType_t *pOpCode,
                               struct procdata_s *pNode)
 {
   uint32_t dwRSrc   = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -1031,7 +1031,7 @@ static void regm_StoreIndexed(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_StoreMultipleIndexed(const struct regm_opmap_s *pEntry,
-                                      OPTYPE *pOpCode,
+                                      opType_t *pOpCode,
                                       struct procdata_s *pNode)
 {
   uint32_t dwRIndex = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -1062,7 +1062,7 @@ static void regm_StoreMultipleIndexed(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_ConditionalBranchVsZero(const struct regm_opmap_s *pEntry,
-                                         OPTYPE *pOpCode,
+                                         opType_t *pOpCode,
                                          struct procdata_s *pNode)
 {
   uint32_t dwUnaryRegister = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -1086,7 +1086,7 @@ static void regm_ConditionalBranchVsZero(const struct regm_opmap_s *pEntry,
  */
 
 static void regm_ConditionalBranchBinary(const struct regm_opmap_s *pEntry,
-                                         OPTYPE *pOpCode,
+                                         opType_t *pOpCode,
                                          struct procdata_s *pNode)
 {
   uint32_t dwROperand1  = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -1109,7 +1109,7 @@ static void regm_ConditionalBranchBinary(const struct regm_opmap_s *pEntry,
 /* Branch unconditionally.  The stack is not changed */
 
 static void regm_UnconditionalBranch(const struct regm_opmap_s *pEntry,
-                                     OPTYPE *pOpCode,
+                                     opType_t *pOpCode,
                                      struct procdata_s *pNode)
 {
   TRACE(stderr, "[regm_UnconditionalBranch]");
@@ -1120,7 +1120,7 @@ static void regm_UnconditionalBranch(const struct regm_opmap_s *pEntry,
 /* Add constant value to special register.  Stack does not change */
 
 static void regm_IncrementSpecial(const struct regm_opmap_s *pEntry,
-                                  OPTYPE *pOpCode,
+                                  opType_t *pOpCode,
                                   struct procdata_s *pNode)
 {
   int32_t dwIncrement = (int32_t)(GETOP(pOpCode));
@@ -1150,7 +1150,7 @@ static void regm_IncrementSpecial(const struct regm_opmap_s *pEntry,
 /* Load address at offset from special register.  Stack increases by one */
 
 static void regm_LoadAddress(const struct regm_opmap_s *pEntry,
-                             OPTYPE *pOpCode,
+                             opType_t *pOpCode,
                              struct procdata_s *pNode)
 {
   uint32_t dwRDest = g_dwStackOffset;
@@ -1171,7 +1171,7 @@ static void regm_LoadAddress(const struct regm_opmap_s *pEntry,
 /* Load address at indexed offset from special register.  Stack is unchanged */
 
 static void regm_LoadAddressIndexed(const struct regm_opmap_s *pEntry,
-                                    OPTYPE *pOpCode,
+                                    opType_t *pOpCode,
                                     struct procdata_s *pNode)
 {
   uint32_t dwRIndex = MKREG(g_dwStackOffset - 1*sINT_SIZE);
@@ -1241,7 +1241,7 @@ static void regm_MapInRet(uint32_t wRetSize)
 
 /***********************************************************************/
 
-static void regm_PCal(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
+static void regm_PCal(const struct regm_opmap_s *pEntry, opType_t *pOpCode,
                       struct procdata_s *pNode)
 {
   poffLibDebugFuncInfo_t *pFuncInfo = pNode->pFuncInfo;
@@ -1274,7 +1274,7 @@ static void regm_PCal(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
 
 /***********************************************************************/
 
-static void regm_SysIo(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
+static void regm_SysIo(const struct regm_opmap_s *pEntry, opType_t *pOpCode,
                        struct procdata_s *pNode)
 {
   const struct regm_builtin_s *pBuiltIn;
@@ -1309,7 +1309,7 @@ static void regm_SysIo(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
 
 /***********************************************************************/
 
-static void regm_LibCall(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
+static void regm_LibCall(const struct regm_opmap_s *pEntry, opType_t *pOpCode,
                          struct procdata_s *pNode)
 {
   const struct regm_builtin_s *pBuiltIn;
@@ -1344,7 +1344,7 @@ static void regm_LibCall(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
 
 /***********************************************************************/
 
-static void regm_Float(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
+static void regm_Float(const struct regm_opmap_s *pEntry, opType_t *pOpCode,
                        struct procdata_s *pNode)
 {
   static const struct regm_builtin_s *pFopBuiltIns;
@@ -1388,7 +1388,7 @@ static void regm_Float(const struct regm_opmap_s *pEntry, OPTYPE *pOpCode,
 /***********************************************************************/
 
 static void regm_IllegalPCode(const struct regm_opmap_s *pEntry,
-                              OPTYPE *pOpCode,
+                              opType_t *pOpCode,
                               struct procdata_s *pNode)
 {
   TRACE(stderr, "[regm_IllegalPCode]");

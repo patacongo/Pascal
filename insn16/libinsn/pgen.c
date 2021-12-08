@@ -183,7 +183,7 @@ insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2);
 static inline void
 insn16_DisassemblePCode(uint8_t opcode, uint8_t arg1, uint16_t arg2)
 {
-  OPTYPE op;
+  opType_t op;
 
   op.op   = opcode;
   op.arg1 = arg1;

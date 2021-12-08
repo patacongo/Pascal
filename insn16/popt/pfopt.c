@@ -86,7 +86,7 @@
 
 static void pass1(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
 {
-  OPTYPE   op;
+  opType_t op;
   uint32_t pc;
   uint32_t opsize;
 
@@ -221,7 +221,7 @@ static void pass2(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
 
 static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
 {
-  OPTYPE   op;
+  opType_t op;
   uint32_t pc;
   uint32_t opsize;
 

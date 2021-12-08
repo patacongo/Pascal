@@ -2,7 +2,7 @@
  * pgetopcode.c
  * P-Code access utilities
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,7 +72,7 @@ static int16_t g_bEndIn  = 0;  /* 1 = oEND pcode or EOF received */
 
 /**********************************************************************/
 
-uint32_t insn_GetOpCode(poffHandle_t handle, OPTYPE *ptr)
+uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
 {
   uint32_t opsize = 1;
   int c;

@@ -2,7 +2,7 @@
  * include/pdefs.h
  * Common definitions
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,21 +57,21 @@
 /* Target P-Machine Data Storage Sizes */
 
 #ifdef CONFIG_INSN16
-# define sINT_SIZE          2
-# define MAXINT             32767
-# define MININT            -32768
-# define BITS_IN_INTEGER    16
-# define MAXUINT            0xffff
-# define MINUINT            0
+#  define sINT_SIZE         2
+#  define MAXINT            32767
+#  define MININT           -32768
+#  define BITS_IN_INTEGER   16
+#  define MAXUINT           0xffff
+#  define MINUINT           0
 #endif
 
 #ifdef CONFIG_INSN32
-# define sINT_SIZE          4
-# define MAXINT             2147483647
-# define MININT            -2147483648
-# define BITS_IN_INTEGER    32
-# define MAXUINT            0xffffffff
-# define MINUINT            0
+#  define sINT_SIZE         4
+#  define MAXINT            2147483647
+#  define MININT           -2147483648
+#  define BITS_IN_INTEGER   32
+#  define MAXUINT           0xffffffff
+#  define MINUINT           0
 #endif
 
 #define sCHAR_SIZE          1
@@ -96,20 +96,22 @@
 /* Representation of one P-Code */
 
 #ifdef CONFIG_INSN16
-typedef struct P
+struct opType_s
 {
   uint8_t  op;
   uint8_t  arg1;
   uint16_t arg2;
-} OPTYPE;
+};
 #endif
 
 #ifdef CONFIG_INSN32
-typedef struct P
+struct opType_s
 {
   uint8_t  op;
   uint32_t arg;
-} OPTYPE;
+};
 #endif
+
+typedef struct opType_s opType_t;
 
 #endif /* __PDEFS_H */

@@ -477,7 +477,7 @@ static const char *fpName[MAX_FOP] =
 
 /***********************************************************************/
 
-void insn_DisassemblePCode(FILE* lfile, OPTYPE *pop)
+void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 {
   /* Indent, comment or label */
 
@@ -486,12 +486,14 @@ void insn_DisassemblePCode(FILE* lfile, OPTYPE *pop)
     case LABEL_DEC :
       fprintf(lfile, "L%04x:  ", pop->arg2);
       break;
+
     case COMMENT   :
       fprintf(lfile, "; ");
       break;
+
     default   :
       fprintf(lfile, "        ");
-    } /* end switch */
+    }
 
   /* Special Case Comment line format */
 
@@ -503,10 +505,10 @@ void insn_DisassemblePCode(FILE* lfile, OPTYPE *pop)
           fprintf(lfile, "%d", pop->arg1);
           if (pop->op & o16)
             fprintf(lfile, ":%d", pop->arg2);
-        } /* end if */
+        }
       else if (pop->op & o16)
         fprintf(lfile, "%d", pop->arg2);
-    } /* end if */
+    }
 
   /* Print normal opCode mnemonic */
 
@@ -564,14 +566,11 @@ void insn_DisassemblePCode(FILE* lfile, OPTYPE *pop)
             case LABEL_DEC :
             default        :
               break;
-            } /* end switch */
-        } /* end if */
-    } /* end else */
+            }
+        }
+    }
 
   /* Don't forget the newline! */
 
   fputc('\n', lfile);
-
-} /* end dissassemblePcode */
-
-/***********************************************************************/
+}

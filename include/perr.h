@@ -2,7 +2,7 @@
  * perr.h
  * External Declarations associated with perr.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,10 +47,10 @@
  * Public Function Prototypes
  ***********************************************************************/
 
-extern void errmsg(char *fmt, ...);
-extern void warn(uint16_t errcode);
-extern void error(uint16_t errcode);
-extern void fatal(uint16_t errcode);
+void errmsg(char *fmt, ...);
+void warn(uint16_t errcode);
+void error(uint16_t errcode);
+void fatal(uint16_t errcode);
 
 #endif /* __PERR_H */
 

@@ -412,7 +412,7 @@ static uint32_t mergeProgramData(poffHandle_t inHandle,
                                poffHandle_t outHandle,
                                uint32_t pcOffset, uint32_t roOffset)
 {
-  OPTYPE op;
+  opType_t op;
   uint32_t pc;
   uint32_t opSize;
   int endOp;

@@ -2,7 +2,7 @@
  * paddopcode
  * P-Code access utilities
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@
 
 /**********************************************************************/
 
-void insn_AddOpCode(poffHandle_t handle, OPTYPE *ptr)
+void insn_AddOpCode(poffHandle_t handle, opType_t *ptr)
 {
   /* Write the opcode which is always present */
 

@@ -77,6 +77,3 @@
 #define vdbg(...) DEBUG(__VA_ARGS__)
 
 #endif /* __KEYWORDS_H */
-
-
-

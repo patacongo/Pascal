@@ -2,7 +2,7 @@
  * pgen.c
  * P-Code generation logic
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -191,7 +191,7 @@ insn32_Generate(enum pcode_e opcode, uint32_t arg);
 static inline void
 insn32_DisassemblePCode(uint8_t opcode, uint32_t arg)
 {
-  OPTYPE op;
+  opType_t op;
 
   op.op  = opcode;
   op.arg = arg;
@@ -207,7 +207,7 @@ static inline void
 insn32_DisassembleOpcode(uint8_t opcode, uint32_t data)
 {
 #if CONFIG_DEBUG
-  OPTYPE op;
+  opType_t op;
   op.op  = opcode;
   op.arg = data;
   insn32_DisassemblePCode(opcode, 0);

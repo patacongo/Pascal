@@ -2,7 +2,7 @@
  * polocal.h
  * External Declarations associated with polocal.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,10 +64,10 @@ extern void deletePcodePair  (int delIndex1, int delIndex2);
  * Public Datas
  ****************************************************************************/
 
-extern OPTYPE  ptable [WINDOW];        /* Pcode Table */
-extern OPTYPE *pptr   [WINDOW];        /* Valid Pcode Pointers */
+extern opType_t  ptable [WINDOW];      /* Pcode Table */
+extern opType_t *pptr   [WINDOW];      /* Valid Pcode Pointers */
 
-extern int     nops;                   /* No. Valid Pcode Pointers */
-extern int     end_out;                /* 1 = oEND pcode has been output */
+extern int       nops;                 /* No. Valid Pcode Pointers */
+extern int       end_out;              /* 1 = oEND pcode has been output */
 
 #endif /* __PLOCAL_H */

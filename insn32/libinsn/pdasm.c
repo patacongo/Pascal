@@ -2,7 +2,7 @@
  * pdasm.c
  * P-Code Disassembler
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -344,7 +344,7 @@ static const char *fpName[MAX_FOP] =
 
 /***********************************************************************/
 
-void insn_DisassemblePCode(FILE* lfile, OPTYPE *pop)
+void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 {
   const struct optab_s *opTable;
   int idx;

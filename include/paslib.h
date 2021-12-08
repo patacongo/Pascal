@@ -54,13 +54,13 @@
 /* POFF file is always big-endian */
 
 #ifdef CONFIG_ENDIAN_BIG
-# undef  CONFIG_POFF_SWAPNEEDED
-# define poff16(val) (val)
-# define poff32(val) (val)
+#  undef  CONFIG_POFF_SWAPNEEDED
+#  define poff16(val) (val)
+#  define poff32(val) (val)
 #else
-# define CONFIG_POFF_SWAPNEEDED 1
-# define poff16(val) poffSwap16(val)
-# define poff32(val) poffSwap32(val)
+#  define CONFIG_POFF_SWAPNEEDED 1
+#  define poff16(val) poffSwap16(val)
+#  define poff32(val) poffSwap32(val)
 #endif
 
 /***************************************************************************
@@ -69,22 +69,18 @@
 
 /* File name extension helper */
 
-extern bool     extension(const char *inName, const char *ext, char *outName,
-                          bool force_default);
+bool     extension(const char *inName, const char *ext, char *outName,
+                   bool force_default);
 
 /* Math helpers */
 
-extern int32_t  signExtend16(uint16_t arg16);
-extern int32_t  signExtend25(uint32_t arg25);
+int32_t  signExtend16(uint16_t arg16);
+int32_t  signExtend25(uint32_t arg25);
 
 /* Endian-ness helpers */
 
-extern uint16_t poffSwap16(uint16_t val);
-extern uint32_t poffSwap32(uint32_t val);
-
-/***************************************************************************
- * Public Datas
- ***************************************************************************/
+uint16_t poffSwap16(uint16_t val);
+uint32_t poffSwap32(uint32_t val);
 
 #endif /* __PASLIB_H */
 

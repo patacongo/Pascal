@@ -2,7 +2,7 @@
  * plist.c
  * POFF file lister
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -289,10 +289,10 @@ static void dumpProgramData(poffHandle_t poffHandle)
   poffLibLineNumber_t *lastln;     /* Previous line number reference */
   poffLibLineNumber_t *ln;         /* Current line number reference */
   poffLibDebugFuncInfo_t *dfi;     /* Current line debug info */
-  uint32_t pc;                      /* Program counter */
-  int     opSize;                  /* Size of the opcode */
-  int     inch;                    /* Input char */
-  OPTYPE  op;                      /* opcode */
+  uint32_t  pc;                    /* Program counter */
+  int      opSize;                 /* Size of the opcode */
+  int      inch;                   /* Input char */
+  opType_t op;                     /* opcode */
 
   /* Read the line number entries from the POFF file */
 

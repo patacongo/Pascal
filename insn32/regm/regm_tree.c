@@ -2,7 +2,7 @@
  * regm_tree.c
  * Tree managmenet
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -254,7 +254,7 @@ uint32_t regm_ReadNodePCodes(struct procdata_s *pNode, poffHandle_t hPoff,
 
   /* Allocate an inital buffer to hold the instructions */
 
-  pNode->pPCode = (OPTYPE*)
+  pNode->pPCode = (opType_t *)
     malloc(INITIAL_PCODE_ALLOC*sizeof(struct procinsn_s*));
   if (!pNode->pPCode)
     {
@@ -278,8 +278,8 @@ uint32_t regm_ReadNodePCodes(struct procdata_s *pNode, poffHandle_t hPoff,
           /* If not, then reallocate the array */
 
           nAlloc += PCODE_RELLALLOC;
-          pNode->pPCode = (OPTYPE*)
-            realloc(pNode->pPCode, nAlloc*sizeof(OPTYPE));
+          pNode->pPCode = (opType_t *)
+            realloc(pNode->pPCode, nAlloc * sizeof(opType_t));
         }
 
       /* Ready the pcode ito the array */
@@ -316,8 +316,8 @@ uint32_t regm_ReadNodePCodes(struct procdata_s *pNode, poffHandle_t hPoff,
 
   /* Return any unused space in the allocation */
 
-  pNode->pPCode = (OPTYPE*)
-    realloc(pNode->pPCode, nPCodes*sizeof(OPTYPE));
+  pNode->pPCode = (opType_t *)
+    realloc(pNode->pPCode, nPCodes*sizeof(opType_t));
 
   /* Return the actual end offset */
 

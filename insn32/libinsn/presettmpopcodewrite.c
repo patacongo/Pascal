@@ -2,7 +2,7 @@
  * paddtmpopcode
  * P-Code access utilities
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,7 @@
 
 /**********************************************************************/
 
-void insn_AddTmpOpCode(poffProgHandle_t hProg, OPTYPE *ptr)
+void insn_AddTmpOpCode(poffProgHandle_t hProg, opType_t *ptr)
 {
   /* Write the opcode which is always present */
 

@@ -2,7 +2,7 @@
  * plsym.h
  * External Declarations associated with plsym.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,11 +52,11 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern uint32_t         mergeSymbols(poffHandle_t inHandle,
-                                     uint32_t pcOffset, uint32_t symOffset);
-extern void             verifySymbols(void);
-extern void             writeSymbols(poffHandle_t outHandle);
-extern poffLibSymbol_t *getSymbolByIndex(uint32_t symIndex);
-extern void             releaseSymbols(void);
+uint32_t         mergeSymbols(poffHandle_t inHandle, uint32_t pcOffset,
+                              uint32_t symOffset);
+void             verifySymbols(void);
+void             writeSymbols(poffHandle_t outHandle);
+poffLibSymbol_t *getSymbolByIndex(uint32_t symIndex);
+void             releaseSymbols(void);
 
 #endif /* __PLSYM_H */
