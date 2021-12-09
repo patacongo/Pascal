@@ -101,6 +101,8 @@ static exprType_t ptrFactor(void);
 static exprType_t complexPtrFactor(void);
 static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags);
 static exprType_t functionDesignator(void);
+static enum exprType_s
+                  mapSimpleType2ExprType(uint16_t simpleType);
 static void       setAbstractType(symbol_t *sType);
 static void       getSetFactor(void);
 static void       getSetElement(setTypeStruct *s);
@@ -137,7 +139,7 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
   /* match in type.  Save the symbol table sTYPE entry associated */
   /* with the expression. */
 
-  if ((typePtr) && (typePtr->sKind != sTYPE)) error(eINVTYPE);
+  if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
   abstractType = typePtr;
 
   /* FORM <simple expression> [<relational operator> <simple expression>] */
@@ -403,7 +405,7 @@ void arrayIndex(symbol_t *indexTypePtr, int32_t size)
       if (indexTypePtr->sKind != sTYPE)
         {
           error(eINDEXTYPE);
-          indexType = 0; /* Invalid */
+          exprType = exprUnknown;
         }
       else
         {
@@ -415,33 +417,11 @@ void arrayIndex(symbol_t *indexTypePtr, int32_t size)
             {
               indexType = indexTypePtr->sParm.t.subType;
             }
+
+          /* Get the expression type from the index type */
+
+          exprType = mapSimpleType2ExprType(indexType);
         }
-
-      /* Get the expression type from the index type */
-
-      switch (indexType)
-      {
-        case sINT :
-          exprType = exprInteger;
-          break;
-
-        case sCHAR :
-          exprType = exprChar;
-          break;
-
-        case sBOOLEAN :
-          exprType = exprBoolean;
-          break;
-
-        case sSCALAR :
-          exprType = exprUnknown;
-          break;
-
-        default:
-          error(eEXPRTYPE);
-          exprType = exprUnknown;
-          break;
-      }
 
       /* Evaluate index expression */
 
@@ -575,7 +555,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
    * get +/- unary operation
    */
 
-  if ((g_token == '+') || (g_token == '-'))
+  if (g_token == '+' || g_token == '-')
     {
       operation = g_token;
       getToken();
@@ -622,7 +602,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
        * now.
        */
 
-      if ((term1Type == exprString) && (operation == '+'))
+      if (term1Type == exprString && operation == '+')
         {
           /* Duplicate the string on the string stack.  And
            * change the expression type to reflect this.
@@ -637,7 +617,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
        * convert the character to a string.
        */
 
-      else if ((term1Type == exprChar) && (operation == '+'))
+      else if (term1Type == exprChar && operation == '+')
         {
           /* Duplicate the string on the string stack.  And
            * change the expression type to reflect this.
@@ -670,7 +650,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
               /* Handle the case where the 1st argument is REAL and the
                * second is INTEGER. */
 
-              if ((term1Type == exprReal) && (term2Type == exprInteger))
+              if (term1Type == exprReal && term2Type == exprInteger)
                 {
                   arg8FpBits = fpARG2;
                   term2Type = exprReal;
@@ -679,7 +659,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
               /* Handle the case where the 1st argument is Integer and the
                * second is REAL. */
 
-              else if ((term1Type == exprInteger) && (term2Type == exprReal))
+              else if (term1Type == exprInteger && term2Type == exprReal)
                 {
                   arg8FpBits = fpARG1;
                   term1Type = exprReal;
@@ -736,7 +716,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
                */
 
             case exprStkString :
-              if ((term2Type == exprString) || (term2Type == exprStkString))
+              if (term2Type == exprString || term2Type == exprStkString)
                 {
                   /* We are concatenating one string with another.*/
 
@@ -766,12 +746,16 @@ static exprType_t simpleExpression(exprType_t findExprType)
           /* Integer subtraction */
 
           if (term1Type == exprInteger)
-            pas_GenerateSimple(opSUB);
+            {
+              pas_GenerateSimple(opSUB);
+            }
 
            /* Floating point subtraction */
 
           else if (term1Type == exprReal)
-            pas_GenerateFpOperation(fpSUB | arg8FpBits);
+            {
+              pas_GenerateFpOperation(fpSUB | arg8FpBits);
+            }
 
           /* Set 'subtraction' */
 
@@ -790,7 +774,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
         case tOR :
           /* Integer/boolean 'OR' */
 
-          if ((term1Type == exprInteger) || (term1Type == exprBoolean))
+          if (term1Type == exprInteger || term1Type == exprBoolean)
             pas_GenerateSimple(opOR);
 
           /* Otherwise, the 'OR' operation is not permitted */
@@ -979,7 +963,7 @@ static exprType_t term(exprType_t findExprType)
           break;
 
         case tAND :
-          if ((factor1Type == exprInteger) || (factor1Type == exprBoolean))
+          if (factor1Type == exprInteger || factor1Type == exprBoolean)
             {
               pas_GenerateSimple(opAND);
             }
@@ -1168,6 +1152,7 @@ static exprType_t factor(exprType_t findExprType)
        *
        * We get that by just cloning the reference on the top of the stack
        */
+
       pas_GenerateDataSize(g_tknPtr->sParm.v.size);
       pas_GenerateStackReference(opLDSM, g_tknPtr);
       getToken();
@@ -1823,28 +1808,57 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
         {
           /* Get the type of the index.  We will need minimum value of
            * if the index type in order to offset the array index
-           * calcaultion
+           * calculation
            */
 
           symbol_t *indexTypePtr = typePtr->sParm.t.index;
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
+              uint16_t arrayType;
+
               factorFlags         |= INDEXED_FACTOR;
 
               /* Generate the array offset calculation */
 
               arrayIndex(indexTypePtr, typePtr->sParm.t.asize);
 
-              /* Return the parent type */
+              /* Return the parent type of the array */
 
               varPtr->sKind        = typePtr->sParm.t.type;
               varPtr->sParm.v.size = typePtr->sParm.t.asize;
-              factorType           = exprArray;
+
+              /* Return the factortype type for the array in the expression. */
+
+              if (typePtr->sKind != sTYPE || typePtr->sParm.t.type != sARRAY)
+                {
+                  error(eHUH);
+                  factorType = exprUnknown;
+                }
+              else
+                {
+                  /* Get the base type of the array */
+
+                  symbol_t *baseTypePtr = typePtr->sParm.t.parent;
+                  arrayType = baseTypePtr->sParm.t.type;
+
+                  /* REVISIT:  For subranges, we use the base type of the
+                   * subrange.
+                   */
+
+                  if (arrayType == sSUBRANGE)
+                    {
+                      arrayType = baseTypePtr->sParm.t.subType;
+                    }
+
+                  /* Get the expression type from the index type */
+
+                  factorType = mapSimpleType2ExprType(arrayType);
+               }
             }
         }
 
-      /* An ARRAY name name may be a valid factor as the input parameter of
+      /* An ARRAY name may be a valid factor as the input parameter of
        * a function.
        */
 
@@ -1854,7 +1868,10 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
           pas_GenerateStackReference(opLDSM, varPtr);
           factorType = exprArray;
         }
-      else error(eLBRACKET);
+      else
+        {
+          error(eLBRACKET);
+        }
       break;
 
     default :
@@ -2470,6 +2487,44 @@ static exprType_t functionDesignator(void)
 }
 
 /*************************************************************************/
+
+static enum exprType_s mapSimpleType2ExprType(uint16_t simpleType)
+{
+  switch (simpleType)
+    {
+      case sINT :
+        return exprInteger;    /* integer value */
+
+      case sREAL :
+        return exprReal;       /* real value */
+
+      case sCHAR :
+        return exprChar;       /* character value */
+
+      case sBOOLEAN :
+        return exprBoolean;    /* boolean(integer) value */
+
+      case sSCALAR :
+      case sSCALAR_OBJECT :
+        return exprScalar;     /* scalar(integer) value */
+
+      case sSTRING :
+      case sSTRING_CONST :
+        return exprString;     /* variable length string reference */
+
+      case sRSTRING :
+        return exprCString;    /* pointer to C string */
+
+      case sSET_OF :
+        return exprSet;        /* set(integer) value */
+
+      default:
+        error(eEXPRTYPE);
+        return exprUnknown;
+    }
+}
+
+/*************************************************************************/
 /* Determine the expression type associated with a pointer to a type */
 /* symbol */
 
@@ -2993,13 +3048,17 @@ static void getSetElement(setTypeStruct *s)
 
 static bool isOrdinalType(exprType_t testExprType)
 {
-  if ((testExprType == exprInteger) || /* integer value */
-      (testExprType == exprChar) ||    /* character value */
-      (testExprType == exprBoolean) || /* boolean(integer) value */
-      (testExprType == exprScalar))    /* scalar(integer) value */
-    return true;
+  if (testExprType == exprInteger || /* integer value */
+      testExprType == exprChar ||    /* character value */
+      testExprType == exprBoolean || /* boolean(integer) value */
+      testExprType == exprScalar)    /* scalar(integer) value */
+    {
+      return true;
+    }
   else
-    return false;
+    {
+      return false;
+    }
 }
 
 /***************************************************************/
@@ -3010,20 +3069,27 @@ static bool isOrdinalType(exprType_t testExprType)
 
 static bool isAnyStringType(exprType_t testExprType)
 {
-  if ((testExprType == exprString) ||
-      (testExprType == exprStkString) ||
-      (testExprType == exprCString))
-    return true;
+  if (testExprType == exprString ||
+      testExprType == exprStkString ||
+      testExprType == exprCString)
+    {
+      return true;
+    }
   else
-    return false;
+    {
+      return false;
+    }
 }
 
 static bool  isStringReference (exprType_t testExprType)
 {
-  if ((testExprType == exprString) ||
-      (testExprType == exprStkString))
-    return true;
+  if (testExprType == exprString ||
+      testExprType == exprStkString)
+    {
+      return true;
+    }
   else
-    return false;
+    {
+      return false;
+    }
 }
-

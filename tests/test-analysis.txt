@@ -209,24 +209,38 @@ Analysis:
 The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-Line 0:0073 Error 3c Token a0
+Line 0:0089 Error 0c Token 57
 
 Error:
-#define eEXPRTYPE        ((uint16_t) 0x3c)
+#define eFILE            ((uint16_t) 0x0c)
 
 Line:
- 72                    IF DayMap[Day] = S THEN
-Where:
- 60         DayMap: ARRAY[DayType] of DayStrType;
- 64    FUNCTION MapToDay(S: String): DayType;
+            IF eoln(InFile) THEN
 
 Token:
-0xa0 is not a valid token.  Looks like memory corruption.
+#define sVAR_PARM        0x57
+
 
 Analysis:
-This is more unimplemented logic for type 'string'
+This is an error in file handling (or perhaps a non-standard usage in the testfile).
 
-The failure occurs in expression() called from pas_IfStatement().  The expression on the left of the '=' evalues to exprArray but the expression on the right evaluates to exprString.  This mismatch causes the eEXPRTYPE error.
+The compiler currently only accepts file types as arguments to the PROGRAM keyword.  But this is a unit and declares the file as type text:
+
+
+    PROCEDURE ReadDay
+            (VAR InFile: TEXT;                (* Input file read from. *)
+             VAR Day: DayType);                (* Returned day of the week value. *)
+
+            WHILE (Ch = ' ') AND NOT eoln(InFile) DO
+                BEGIN
+                    read(InFile, Ch)
+                END;
+
+This then fails in fileFunc() where a FILE type is expected:
+
+422           if (g_token != sFILE) error(eFILE);
+
+But InFile is sVAR_PARM.
 
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory
