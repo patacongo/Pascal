@@ -91,8 +91,7 @@
 #define sARRAY           0x53
 #define sRECORD          0x54
 #define sRECORD_OBJECT   0x55
-#define sFILE_OF         0x56
-#define sVAR_PARM        0x57
+#define sVAR_PARM        0x56
 
 /* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens */
 

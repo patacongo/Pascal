@@ -213,6 +213,15 @@ struct symRecord_s         /* for sKind == sRECORD_OBJECT */
 };
 typedef struct symRecord_s symRecord_t;
 
+struct symFile_s           /* for sKind == sFILE */
+{
+  uint16_t  fileNumber;    /* File number of file */
+  uint16_t  subType;       /* Sub-type (e.g., sTEXT, sCHAR, etc.) */
+
+  struct symbol_s *parent; /* pointer to parent type (not sTEXT) */
+};
+typedef struct symFile_s symFile_t;
+
 struct symbol_s
 {
   char     *sName;         /* pointer to name in string stack */
@@ -222,9 +231,9 @@ struct symbol_s
   {
     symType_t        t;          /* for type definitions */
     symConst_t       c;          /* for constants */
-    symStringConst_t s;          /* for strings of constant size*/
-    symVarString_t   vs;         /* for strings of variable size*/
-    uint16_t         fileNumber; /* for files */
+    symStringConst_t s;          /* for strings of constant size */
+    symVarString_t   vs;         /* for strings of variable size */
+    symFile_t        f;          /* for files */
     symLabel_t       l;          /* for labels */
     symVar_t         v;          /* for variables */
     symProc_t        p;          /* for functions & procedures */

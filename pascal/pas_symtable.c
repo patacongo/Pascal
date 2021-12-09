@@ -239,7 +239,7 @@ static symbol_t *addSymbol(char *name, int16_t type)
 /***************************************************************/
 
 symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
-                     symbol_t *parent, symbol_t *index)
+                        symbol_t *parent, symbol_t *index)
 {
    symbol_t *typePtr;
 
@@ -328,7 +328,8 @@ symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size)
 
 /***************************************************************/
 
-symbol_t *addFile(char *name, uint16_t fileNumber)
+symbol_t *addFile(char *name, uint16_t fileNumber, uint16_t subType,
+                  struct symbol_s *fileTypePtr)
 {
   symbol_t *filePtr;
 
@@ -341,7 +342,9 @@ symbol_t *addFile(char *name, uint16_t fileNumber)
     {
       /* Add the fileNumber to the symbol table */
 
-      filePtr->sParm.fileNumber = fileNumber;
+      filePtr->sParm.f.fileNumber = fileNumber;
+      filePtr->sParm.f.subType    = subType;
+      filePtr->sParm.f.parent     = fileTypePtr;
     }
 
   /* Return a pointer to the new file symbol */
@@ -505,7 +508,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.maxValue = MAXCHAR;
     }
 
-  typePtr = addTypeDefine("TEXT", sFILE_OF, sCHAR_SIZE, NULL, NULL);
+  typePtr = addTypeDefine("TEXT", sTEXT, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.subType  = sCHAR;
@@ -534,8 +537,8 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard files to the symbol table */
 
-  (void)addFile("INPUT",   INPUT_FILE_NUMBER);
-  (void)addFile("OUTPUT",  OUTPUT_FILE_NUMBER);
+  (void)addFile("INPUT",  INPUT_FILE_NUMBER,  sTEXT, NULL);
+  (void)addFile("OUTPUT", OUTPUT_FILE_NUMBER, sTEXT, NULL);
 
   /* Initialize files table */
 
@@ -653,8 +656,11 @@ void dumpTables(void)
           /* Files */
 
         case sFILE :
-          fprintf(g_lstFile, "fileNumber=%d\n",
-                  g_symbolTable[i].sParm.fileNumber);
+        case sTEXT :
+          fprintf(g_lstFile, "fileNumber=%u subType=%u parent=[%p]\n",
+                  g_symbolTable[i].sParm.f.fileNumber,
+                  g_symbolTable[i].sParm.f.subType,
+                  g_symbolTable[i].sParm.f.parent);
           break;
 
           /* Variables */
@@ -663,12 +669,10 @@ void dumpTables(void)
         case sBOOLEAN :
         case sCHAR  :
         case sREAL :
-        case sTEXT :
         case sARRAY :
         case sPOINTER :
         case sVAR_PARM :
         case sRECORD :
-        case sFILE_OF :
           fprintf(g_lstFile, "offset=%" PRId32 " size=%" PRId32 " flags=%02x "
                   "parent=[%p]\n",
                   g_symbolTable[i].sParm.v.offset,

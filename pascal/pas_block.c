@@ -888,21 +888,25 @@ static symbol_t *pas_DeclareVar(void)
 
 static void pas_DeclareFile(void)
 {
-   int16_t fileNumber = g_tknPtr->sParm.fileNumber;
+   int16_t fileNumber = g_tknPtr->sParm.f.fileNumber;
    symbol_t *filePtr;
 
    TRACE(g_lstFile,"[pas_DeclareFile]");
 
-   /* FORM:  <file identifier> : FILE OF <type> */
-   /* OR:    <file identifier> : <FILE OF type identifier> */
+   /* FORM:  <file identifier> : FILE OF <type>
+    * OR:    <file identifier> : <FILE OF type identifier>
+    */
+
    if (!(fileNumber)) error(eINVFILE);
    else if (g_files[fileNumber].defined) error(eDUPFILE);
    else {
 
      /* Skip over the <file identifier> */
+
      getToken();
 
      /* Verify that a colon follows the <file identifier> */
+
      if (g_token != ':') error(eCOLON);
      else getToken();
 
@@ -912,14 +916,14 @@ static void pas_DeclareFile(void)
 
      /* FORM:  <file identifier> : FILE OF <type> */
 
-     if (g_token == sFILE_OF)
+     if (g_token == sFILE)
        {
          g_files[fileNumber].defined = -1;
          g_files[fileNumber].flevel  = g_level;
          g_files[fileNumber].ftype   = g_tknPtr->sParm.t.type;
          g_files[fileNumber].faddr   = g_dStack;
          g_files[fileNumber].fsize   = g_tknPtr->sParm.t.asize;
-         g_dStack                     += (g_tknPtr->sParm.t.asize);
+         g_dStack                   += (g_tknPtr->sParm.t.asize);
          getToken();
        }
 
@@ -1692,6 +1696,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
       /* File Types
        * FORM: file-type = 'file' 'of' type-denoter
+       * FORM: file-type = 'text'
        */
 
       /* FORM: file-type = 'file' 'of' type-denoter */
@@ -1709,7 +1714,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
       typeIdPtr = pas_TypeDenoter(NULL, 1);
       if (typeIdPtr)
         {
-          typePtr = addTypeDefine(typeName, sFILE_OF, g_dwVarSize,
+          typePtr = addTypeDefine(typeName, sFILE, g_dwVarSize,
                                   typeIdPtr, NULL);
           if (typePtr)
             {
@@ -1719,6 +1724,20 @@ static symbol_t *pas_NewComplexType(char *typeName)
       else
         {
           error(eINVTYPE);
+        }
+      break;
+
+      /* FORM: file-type = 'text' */
+
+    case sTEXT :
+
+      /* Get the type-denoter */
+
+      typeIdPtr = addTypeDefine(typeName, sTEXT, g_dwVarSize,
+                                g_tknPtr, NULL);
+      if (typePtr)
+        {
+          typePtr->sParm.t.subType = typeIdPtr->sParm.t.type;
         }
       break;
 

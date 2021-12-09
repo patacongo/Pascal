@@ -131,6 +131,59 @@ Token:
 Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
 
+########src/601-readfile.pas########
+Line 0:0014 Error 09 Token 01 (assign)
+
+Line:
+ 14    assign(f, 'students.dat');
+
+Line:
+
+Analysis:
+assign() not yet supported
+
+########src/602-writefile.pas########
+Line 0:0014 Error 09 Token 01 (Assign)
+
+Line:
+ 14   Assign(f,'students.dat');
+
+Analysis:
+assign() not yet supported
+
+########src/603-appendfile.pas########
+Line 0:0007 Error 09 Token 01 (assign)
+
+Line:
+ 7   assign(myfile, 'contact.txt');
+
+Analysis:
+assign() not yet supported
+
+########src/604-textfile.pas########
+Line 0:0014 Error 09 Token 01 (assign)
+
+Line:
+ 14   assign(f, 'students.dat');
+
+Analysis:
+assign() not yet supported
+
+########src/605-subprogram.pas########
+Line 0:0018 Error 0c Token 56
+
+Line:
+ 18   rewrite(f, sizeof(data));
+
+Error:
+#define eFILE            ((uint16_t) 0x0c)
+
+Token:
+#define sVAR_PARM        0x56
+
+Analysis:
+Probably the same as DayIO.pas
+
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d
 
@@ -153,8 +206,8 @@ On the second time through simpleFactor
 (gdb) bt
 #0  error (errcode=30) at perr.c:128
 #1  0x0000000100408d6e in simpleFactor (varPtr=0xffffc590, factorFlags=9 '\t') at pexpr.c:1649
-&&&& simpleFactor: token=3d ('=') sKind=57
- 93 #define sVAR_PARM        0x57
+&&&& simpleFactor: token=3d ('=') sKind=56
+ 93 #define sVAR_PARM        0x56
 
 #2  0x0000000100408cbb in simpleFactor (varPtr=0xffffc590, factorFlags=9 '\t') at pexpr.c:1621
 &&&& simpleFactor: token=3d ('=') sKind=4b
@@ -209,7 +262,7 @@ Analysis:
 The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-Line 0:0089 Error 0c Token 57
+Line 0:0089 Error 0c Token 56
 
 Error:
 #define eFILE            ((uint16_t) 0x0c)
@@ -218,7 +271,7 @@ Line:
             IF eoln(InFile) THEN
 
 Token:
-#define sVAR_PARM        0x57
+#define sVAR_PARM        0x56
 
 
 Analysis:

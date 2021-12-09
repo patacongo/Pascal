@@ -417,7 +417,7 @@ static int16_t readProc(void)
 
    if (g_token == sFILE)
      {
-       fileNumber = g_tknPtr->sParm.fileNumber;
+       fileNumber = g_tknPtr->sParm.f.fileNumber;
        getToken();
      }
 
@@ -548,7 +548,7 @@ static void fileProc (uint16_t opcode)
    if (g_token !=  sFILE) error(eFILE);
    else
      {
-       pas_GenerateIoOperation(opcode, g_tknPtr->sParm.fileNumber);
+       pas_GenerateIoOperation(opcode, g_tknPtr->sParm.f.fileNumber);
        getToken();
        if (g_token != ')') error(eRPAREN);
        else getToken();
@@ -573,7 +573,7 @@ static int16_t writeProc(void)
 
    if (g_token == sFILE)
      {
-       fileNumber = g_tknPtr->sParm.fileNumber;
+       fileNumber = g_tknPtr->sParm.f.fileNumber;
        getToken();
      }
 

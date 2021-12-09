@@ -63,6 +63,7 @@ function show_usage ()
     echo "  FILTER=1: Execute only math and runtime libraries"
     echo "  FILTER=2: Execute only string tests"
     echo "  FILTER=5: Execute only multi-file tests"
+    echo "  FILTER=6: File I/O tests"
     echo "  FILTER=8: Execute only Erie pascal programs"
     echo "  FILTER=9: Execute only miscellaneous large programs"
     echo "  FILTER=A: Execute all tests"

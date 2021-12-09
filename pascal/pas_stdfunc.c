@@ -425,7 +425,7 @@ static void fileFunc(uint16_t opcode)
           /* Generate the I/O operation */
 
           pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-          pas_GenerateIoOperation(opcode, g_tknPtr->sParm.fileNumber);
+          pas_GenerateIoOperation(opcode, g_tknPtr->sParm.f.fileNumber);
         }
 
       checkRParen();

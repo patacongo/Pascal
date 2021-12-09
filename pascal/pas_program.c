@@ -121,7 +121,7 @@ void program(void)
           if (g_token == tIDENT)
             {
               if ((++g_nFiles) > MAX_FILES) fatal(eOVF);
-              (void)addFile(g_tokenString, g_nFiles);
+              (void)addFile(g_tokenString, g_nFiles, sTEXT, NULL);
               g_stringSP = g_tokenString;
               getToken();
             }
@@ -131,7 +131,7 @@ void program(void)
            */
 
           else if ((g_token == sFILE) &&
-                   (g_tknPtr->sParm.fileNumber < FIRST_USER_FILE))
+                   (g_tknPtr->sParm.f.fileNumber < FIRST_USER_FILE))
             {
               getToken();
             }

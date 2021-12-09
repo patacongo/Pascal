@@ -65,7 +65,8 @@ symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
 symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
                       symbol_t *parent);
 symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size);
-symbol_t *addFile(char *name, uint16_t fileNumber);
+symbol_t *addFile(char *name, uint16_t fileNumber, uint16_t subType,
+                  struct symbol_s *fileTypePtr);
 symbol_t *addLabel(char *name, uint16_t label);
 symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
                        uint16_t nParms, symbol_t *parent);
