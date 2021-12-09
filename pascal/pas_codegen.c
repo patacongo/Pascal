@@ -1,5 +1,5 @@
 /**********************************************************************
- * pgen.c
+ * pas_codegen.c
  * P-Code generation logic
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -43,21 +43,21 @@
 #include <string.h>
 #include <errno.h>
 
-#include "config.h"   /* Configuration */
-#include "keywords.h" /* Standard types */
-#include "pasdefs.h"  /* Common types */
-#include "ptdefs.h"   /* Token / symbol table definitions */
-#include "podefs.h"   /* Logical opcode definitions */
-#include "pedefs.h"   /* error code definitions */
+#include "config.h"        /* Configuration */
+#include "keywords.h"      /* Standard types */
+#include "pas_defns.h"     /* Common types */
+#include "pas_tkndefs.h"   /* Token / symbol table definitions */
+#include "podefs.h"        /* Logical opcode definitions */
+#include "pedefs.h"        /* error code definitions */
 
-#include "pas.h"      /* Global variables */
-#include "poff.h"     /* For POFF file format */
-#include "pofflib.h"  /* For poff*() functions*/
-#include "pinsn.h"    /* (DEBUG only) */
-#include "perr.h"     /* error() */
+#include "pas_main.h"      /* Global variables */
+#include "poff.h"          /* For POFF file format */
+#include "pofflib.h"       /* For poff*() functions*/
+#include "pinsn.h"         /* (DEBUG only) */
+#include "pas_error.h"     /* error() */
 
-#include "pproc.h"    /* for actualParameterSize */
-#include "pgen.h"     /* (to verify prototypes in this file) */
+#include "pas_procedure.h" /* for actualParameterSize */
+#include "pas_codegen.h"   /* (to verify prototypes in this file) */
 
 /**********************************************************************
  * Pre-processor Definitions

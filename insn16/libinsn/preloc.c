@@ -47,7 +47,7 @@
 #include "pinsn16.h"
 
 #include "pofflib.h"
-#include "perr.h"
+#include "pas_error.h"
 #include "pinsn.h"
 
 /**********************************************************************

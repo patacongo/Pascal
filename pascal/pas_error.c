@@ -1,5 +1,5 @@
 /**********************************************************************
- * perr.c
+ * pas_error.c
  * Error Handlers
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -46,14 +46,14 @@
 
 #include "config.h"
 #include "keywords.h"
-#include "pasdefs.h"
+#include "pas_defns.h"
 #include "pedefs.h"
 
-#include "pas.h"
-#include "ptkn.h"
-#include "perr.h"
+#include "pas_main.h"
+#include "pas_token.h"
+#include "pas_error.h"
 #if CONFIG_DEBUG
-# include "ptbl.h"
+#  include "pas_symtable.h"
 #endif
 
 /**********************************************************************

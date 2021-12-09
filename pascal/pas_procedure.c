@@ -1,6 +1,6 @@
 /****************************************************************************
- * pproc.c
- * Standard procedures (all called in pstm.c)
+ * pas_procedure.c
+ * Standard procedures (all called in pas_statement.c)
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -44,19 +44,19 @@
 #include <string.h>
 
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "podefs.h"
 #include "pedefs.h"
 #include "pxdefs.h"
 
-#include "pas.h"
-#include "pexpr.h"
-#include "pproc.h"
-#include "pgen.h"  /* for pas_Generate*() */
-#include "ptkn.h"
-#include "ptbl.h"  /* For parent symbol references */
-#include "perr.h"
+#include "pas_main.h"
+#include "pas_expression.h"
+#include "pas_procedure.h"
+#include "pas_codegen.h"     /* for pas_Generate*() */
+#include "pas_token.h"
+#include "pas_symtable.h"    /* For parent symbol references */
+#include "pas_error.h"
 
 /****************************************************************************
  * Private Function Prototypes

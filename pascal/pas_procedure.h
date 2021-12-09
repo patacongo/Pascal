@@ -1,6 +1,6 @@
 /***************************************************************************
- * pprgm.h
- * External Declarations associated with pprgm.c
+ * pas_procedure.h
+ * External Declarations associated with pas_procedure.c
  *
  *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,14 +34,16 @@
  *
  ***************************************************************************/
 
-#ifndef __PPRGM_H
-#define __PPRGM_H
+#ifndef __PAS_PROCEDURE_H
+#define __PAS_PROCEDURE_H
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void program(void);
-void usesSection(void);
+void primeBuiltInProcedures(void);
+void builtInProcedure(void);
+int  actualParameterSize(symbol_t *procPtr, int parmNo);
+int  actualParameterList(symbol_t *procPtr);
 
-#endif /* __PPRGM_H */
+#endif /* __PAS_PROCEDURE_H */

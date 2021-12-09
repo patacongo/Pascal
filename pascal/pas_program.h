@@ -1,8 +1,8 @@
 /***************************************************************************
- * pgen.h
- * External Declarations associated with pgen.c
+ * pas_program.h
+ * External Declarations associated with pas_program.c
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,43 +34,14 @@
  *
  ***************************************************************************/
 
-#ifndef __PGEN_H
-#define __PGEN_H
-
-/***************************************************************************
- * Included Files
- ***************************************************************************/
-
-#include <stdint.h>
-#include "podefs.h"
+#ifndef __PAS_PROGRAM_H
+#define __PAS_PROGRAM_H
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-int32_t  pas_GetCurrentStackLevel(void);
-void     pas_InvalidateCurrentStackLevel(void);
-void     pas_SetCurrentStackLevel(int32_t dwLsp);
-uint32_t pas_GetNStackLevelChanges(void);
+void program(void);
+void usesSection(void);
 
-void     pas_GenerateSimple(enum pcode_e eOpCode);
-void     pas_GenerateDataOperation(enum pcode_e eOpCode, int32_t dwData);
-void     pas_GenerateDataSize(int32_t dwDataSize);
-void     pas_GenerateFpOperation(uint8_t fpOpcode);
-void     pas_GenerateIoOperation(uint16_t ioOpcode, uint16_t fileNumber);
-void     pas_BuiltInFunctionCall(uint16_t libOpcode);
-void     pas_GenerateLevelReference(enum pcode_e eOpCode, uint16_t wLevel,
-                                    int32_t dwOffset);
-void     pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *pVarPtr);
-void     pas_GenerateProcedureCall(symbol_t *pProcPtr);
-void     pas_GenerateLineNumber(uint16_t wIncludeNumber,
-                                uint32_t dwLineNumber);
-void     pas_GenerateStackExport(symbol_t *pVarPtr);
-void     pas_GenerateStackImport(symbol_t *pVarPtr);
-void     pas_GenerateProcedureCall(symbol_t *pProcPtr);
-void     pas_GenerateDebugInfo(symbol_t *pProcPtr, uint32_t dwReturnSize);
-void     pas_GenerateProcExport(symbol_t *pProcPtr);
-void     pas_GenerateProcImport(symbol_t *pProcPtr);
-void     pas_GeneratePoffOutput(void);
-
-#endif /* __PGEN_H */
+#endif /* __PAS_PROGRAM_H */

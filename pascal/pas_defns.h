@@ -1,5 +1,5 @@
 /***********************************************************************
- * pascal/pasdefs.h
+ * pas_defns.h
  * General definitions for the Pascal Compiler/Optimizer
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ***********************************************************************/
 
-#ifndef __PASDEFS_H
-#define __PASDEFS_H
+#ifndef __PAS_DEFNS_H
+#define __PAS_DEFNS_H
 
 /***********************************************************************
  * Included Files
@@ -301,4 +301,4 @@ struct fileState_s
 };
 typedef struct fileState_s fileState_t;
 
-#endif /* __PASDEFS_H */
+#endif /* __PAS_DEFNS_H */

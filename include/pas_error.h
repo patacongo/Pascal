@@ -1,6 +1,6 @@
 /**********************************************************************
- * perr.h
- * External Declarations associated with perr.c
+ * pas_error.h
+ * External Declarations associated with pas_error.c
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>

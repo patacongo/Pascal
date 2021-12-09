@@ -46,7 +46,7 @@
 #include "keywords.h"
 #include "pdefs.h"
 #include "pedefs.h"
-#include "perr.h"
+#include "pas_error.h"
 #include "poff.h"
 
 /**********************************************************************

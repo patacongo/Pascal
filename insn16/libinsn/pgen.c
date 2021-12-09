@@ -43,16 +43,16 @@
 #include <string.h>
 #include <errno.h>
 
-#include "config.h"   /* Configuration */
-#include "keywords.h" /* Standard types */
-#include "pdefs.h"    /* Common types */
-#include "pofflib.h"  /* POFF library definitions */
-#include "podefs.h"   /* Logical opcode definitions */
-#include "pedefs.h"   /* Error codes */
-#include "pinsn16.h"  /* 16-bit target INSN opcode definitions */
-#include "perr.h"     /* Error handling logic */
+#include "config.h"    /* Configuration */
+#include "keywords.h"  /* Standard types */
+#include "pdefs.h"     /* Common types */
+#include "pofflib.h"   /* POFF library definitions */
+#include "podefs.h"    /* Logical opcode definitions */
+#include "pedefs.h"    /* Error codes */
+#include "pinsn16.h"   /* 16-bit target INSN opcode definitions */
+#include "pas_error.h" /* Error handling logic */
 
-#include "pinsn.h"    /* (to verify prototypes in this file) */
+#include "pinsn.h"     /* (to verify prototypes in this file) */
 
 /**********************************************************************
  * Definitions

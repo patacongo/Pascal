@@ -51,7 +51,7 @@
 #include "pfdefs.h"
 #include "pedefs.h"
 #include "pofflib.h"
-#include "perr.h"
+#include "pas_error.h"
 
 #include "pinsn32.h"
 #include "builtins.h"

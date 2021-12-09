@@ -1,5 +1,5 @@
 /***************************************************************
- * ptbl.c
+ * pas_symtable.c
  * Table Management Package
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -48,13 +48,13 @@
 
 #include "config.h"
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "pedefs.h"
 
-#include "pas.h"
-#include "ptbl.h"
-#include "perr.h"
+#include "pas_main.h"
+#include "pas_symtable.h"
+#include "pas_error.h"
 
 /***************************************************************
  * Private Function Prototypes
@@ -330,22 +330,23 @@ symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size)
 
 symbol_t *addFile(char *name, uint16_t fileNumber)
 {
-   symbol_t *filePtr;
+  symbol_t *filePtr;
 
-   TRACE(g_lstFile,"[addFile]");
+  TRACE(g_lstFile,"[addFile]");
 
-   /* Get a slot in the symbol table */
-   filePtr = addSymbol(name, sFILE);
-   if (filePtr) {
+  /* Get a slot in the symbol table */
 
-     /* Add the fileNumber to the symbol table */
+  filePtr = addSymbol(name, sFILE);
+  if (filePtr)
+    {
+      /* Add the fileNumber to the symbol table */
 
-     filePtr->sParm.fileNumber = fileNumber;
-   }
+      filePtr->sParm.fileNumber = fileNumber;
+    }
 
-   /* Return a pointer to the new file symbol */
+  /* Return a pointer to the new file symbol */
 
-   return filePtr;
+  return filePtr;
 }
 
 /***************************************************************/

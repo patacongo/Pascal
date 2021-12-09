@@ -1,5 +1,5 @@
 /**********************************************************************
- * pas.c
+ * pas_main.c
  * Main process
  *
  *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
@@ -51,22 +51,23 @@
 
 #include "config.h"
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "podefs.h"
 #include "pedefs.h"
 
-#include "pas.h"
-#include "paslib.h"   /* For extension */
-#include "pproc.h"    /* For primeBuiltInProcedures */
-#include "pfunc.h"    /* For primeBuiltInFunctions */
-#include "ptkn.h"     /* For primeTokenizer */
-#include "ptbl.h"     /* For primeSymbolTable */
-#include "pofflib.h"  /* For poffInitializeForOutput() */
-#include "poff.h"     /* For POFF definitions */
-#include "pprgm.h"    /* for program() */
-#include "punit.h"    /* for unit() */
-#include "perr.h"     /* for error() */
+#include "pofflib.h"       /* For poffInitializeForOutput() */
+#include "poff.h"          /* For POFF definitions */
+
+#include "pas_main.h"
+#include "paslib.h"        /* For extension */
+#include "pas_procedure.h" /* For primeBuiltInProcedures */
+#include "pas_function.h"  /* For primeBuiltInFunctions */
+#include "pas_token.h"     /* For primeTokenizer */
+#include "pas_symtable.h"  /* For primeSymbolTable */
+#include "pas_program.h"   /* for program() */
+#include "pas_unit.h"      /* for unit() */
+#include "pas_error.h"     /* for error() */
 
 /**********************************************************************
  * Public Data

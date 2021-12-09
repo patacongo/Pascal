@@ -1,6 +1,6 @@
 /***************************************************************************
- * pfunc.h
- * External Declarations associated with pfunc.c
+ * pas_statement.h
+ * External Declarations associated with pas_statement.c
  *
  *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,24 +34,14 @@
  *
  ***************************************************************************/
 
-#ifndef __PFUNC_H
-#define __PFUNC_H
-
-/***************************************************************************
- * Included Files
- ***************************************************************************/
-
-#include "pexpr.h" /* For exprType_t */
+#ifndef __PAS_STATEMENT_H
+#define __PAS_STATEMENT_H
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void primeBuiltInFunctions(void);
-exprType_t builtInFunction(void);
-void builtInFunctionOfConstant(void);
+extern void statement(void);          /* Process Statement */
+extern void compoundStatement(void);  /* Compound statement */
 
-void checkLParen(void);
-void checkRParen(void);
-
-#endif /* __PFUNC_H */
+#endif /* __PAS_STATEMENT_H */

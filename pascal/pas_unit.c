@@ -1,5 +1,5 @@
 /**********************************************************************
- * punit.c
+ * pas_unit.c
  * Parse a pascal unit file
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -46,21 +46,22 @@
 #include <errno.h>
 
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "podefs.h"
 #include "pedefs.h"
-#include "poff.h"      /* FHT_ definitions */
 
-#include "pas.h"       /* for globals */
-#include "pblck.h"     /* for block(), constantDefinitionGroup(), etc. */
-#include "pgen.h"      /* for pas_Generate*() */
-#include "ptkn.h"      /* for getToken() */
-#include "ptbl.h"      /* for addFile() */
-#include "pofflib.h"   /* For poff*() functions*/
-#include "perr.h"      /* for error() */
-#include "pprgm.h"     /* for usesSection() */
-#include "punit.h"
+#include "pofflib.h"      /* For poff*() functions*/
+#include "poff.h"         /* FHT_ definitions */
+
+#include "pas_main.h"     /* for globals */
+#include "pas_block.h"    /* for block(), constantDefinitionGroup(), etc. */
+#include "pas_codegen.h"  /* for pas_Generate*() */
+#include "pas_token.h"    /* for getToken() */
+#include "pas_symtable.h" /* for addFile() */
+#include "pas_error.h"    /* for error() */
+#include "pas_program.h"  /* for usesSection() */
+#include "pas_unit.h"
 
 /***********************************************************************
  * Pre-processor Definitions

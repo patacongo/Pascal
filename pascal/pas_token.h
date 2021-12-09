@@ -1,8 +1,8 @@
 /***************************************************************************
- * pstm.h
- * External Declarations associated with pstm.c
+ * pas_token.h
+ * External Declarations associated with pas_token.c
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,14 +34,38 @@
  *
  ***************************************************************************/
 
-#ifndef __PSTM_H
-#define __PSTM_H
+#ifndef __PTKN_H
+#define __PTKN_H
+
+/***************************************************************************
+ * Included Files
+ ***************************************************************************/
+
+#include <stdint.h>
+#include <stdbool.h>
+
+/***************************************************************************
+ * Public Variables
+ ***************************************************************************/
+
+/* String stack access variables */
+
+extern char *g_tokenString;          /* Start of token in string stack */
+extern char *g_stringSP;             /* Top of string stack */
+
+/* Level-related data */
+
+extern int   g_levelSymOffset;       /* Index to symbols for this level */
+extern int   g_levelConstOffset;     /* Index to constants for this level */
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void statement(void);          /* Process Statement */
-extern void compoundStatement(void);  /* Compound statement */
+void    getToken(void);
+void    getLevelToken(void);
+char    getNextCharacter(bool skipWhiteSpace);
+int16_t primeTokenizer(unsigned long stringStackSize);
+int16_t rePrimeTokenizer(void);
 
-#endif /* __PSTM_H */
+#endif /* __PTKN_H */

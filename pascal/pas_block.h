@@ -1,6 +1,6 @@
 /***************************************************************************
- * pblck.h
- * External Declarations associated with pblck.c
+ * pas_block.h
+ * External Declarations associated with pas_block.c
  *
  *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PBLCK_H
-#define __PBLCK_H
+#ifndef __PAS_BLOCK_H
+#define __PAS_BLOCK_H
 
 /***************************************************************************
  * Included Files
@@ -54,4 +54,4 @@ void    typeDefinitionGroup(void);
 void    variableDeclarationGroup(void);
 int16_t formalParameterList(symbol_t *procPtr);
 
-#endif /* __PBLCK_H */
+#endif /* __PAS_BLOCK_H */

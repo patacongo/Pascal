@@ -49,9 +49,10 @@ BINDIR-$(CONFIG_INSN32)	= $(PASCAL)/bin32
 #
 # Objects and targets
 #
-PASSRCS			= pas.c pprgm.c punit.c pblck.c pstm.c pexpr.c \
-			  pcexpr.c pproc.c pffunc.c pcfunc.c pgen.c ptkn.c \
-			  ptbl.c perr.c
+PASSRCS			= pas_main.c pas_program.c pas_unit.c pas_block.c \
+			  pas_statement.c pas_expression.c pas_constexpr.c \
+			  pas_procedure.c pas_stdfunc.c pas_constfunc.c pas_codegen.c \
+			  pas_token.c pas_symtable.c pas_error.c
 PASOBJS			= $(PASSRCS:.c=.o)
 
 OBJS			= $(PASOBJS)

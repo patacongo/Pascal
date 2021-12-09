@@ -48,7 +48,7 @@
 #include "pedefs.h"
 #include "paslib.h"
 #include "pofflib.h"
-#include "perr.h"
+#include "pas_error.h"
 
 #include "regm.h"
 #include "regm_tree.h"

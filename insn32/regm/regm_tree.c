@@ -50,7 +50,7 @@
 #include "pofflib.h"
 #include "paslib.h"
 #include "pinsn.h"     /* Folr insn_GetOpCode */
-#include "perr.h"
+#include "pas_error.h"
 
 #include "pinsn32.h"
 #include "regm.h"

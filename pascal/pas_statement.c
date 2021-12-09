@@ -1,5 +1,5 @@
 /****************************************************************************
- * pstm.c
+ * pas_statement.c
  * Pascal Statements
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -44,27 +44,27 @@
 #include <inttypes.h>
 
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "podefs.h"
 #include "pedefs.h"
 #include "pxdefs.h"
 
-#include "pas.h"
-#include "pstm.h"
-#include "pproc.h"
-#include "pexpr.h"
-#include "pgen.h"
-#include "ptkn.h"
-#include "ptbl.h"
+#include "pas_main.h"
+#include "pas_statement.h"
+#include "pas_procedure.h"
+#include "pas_expression.h"
+#include "pas_codegen.h"
+#include "pas_token.h"
+#include "pas_symtable.h"
 #include "pinsn.h"
-#include "perr.h"
+#include "pas_error.h"
 
 /****************************************************************************
  * Private Definitions
  ****************************************************************************/
 
-/* REVIST: duplicated in pexpr.c and pcexpr.c */
+/* REVIST: duplicated in pas_expression.c and pas_constexpr.c */
 
 #define ADDRESS_DEREFERENCE  0x01
 #define ADDRESS_ASSIGNMENT   0x02
@@ -1006,7 +1006,8 @@ static void pas_ProcStatement(void)
   /* Generate procedure call and stack adjustment (if required)
    * Upon return from the procedure, the level stack pointer (LSP)
    * may also be invalid.  However, we rely on level level logic in
-   * pgen.c to manage this case (as well as the function call case).
+   * pas_codegen.c to manage this case (as well as the function call
+   * case).
    */
 
   pas_GenerateProcedureCall(procPtr);

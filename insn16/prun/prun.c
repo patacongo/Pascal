@@ -52,7 +52,7 @@
 #include "pedefs.h"
 
 #include "paslib.h"
-#include "perr.h"
+#include "pas_error.h"
 #include "pexec.h"
 #include "pdbg.h"
 

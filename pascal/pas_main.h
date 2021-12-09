@@ -1,6 +1,6 @@
 /***************************************************************************
- * pas.h
- * External Declarations associated with pas.c
+ * pas_main.h
+ * External Declarations associated with pas_main.c
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PAS_H
-#define __PAS_H
+#ifndef __PAS_MAIN_H
+#define __PAS_MAIN_H
 
 /***************************************************************************
  * Compilation Switches
@@ -49,7 +49,7 @@
 
 #include <sys/types.h>
 #include <stdint.h>
-#include "pasdefs.h"
+#include "pas_defns.h"
 #include "pofflib.h"
 
 /***************************************************************************
@@ -109,4 +109,4 @@ extern int32_t     g_dStack;               /* Data stack size */
 void openNestedFile(const char *fileName);
 void closeNestedFile(void);
 
-#endif /* __PAS_H */
+#endif /* __PAS_MAIN_H */

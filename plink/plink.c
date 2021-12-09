@@ -51,7 +51,7 @@
 #include "pedefs.h"
 
 #include "paslib.h"
-#include "perr.h"
+#include "pas_error.h"
 #include "plsym.h"
 #include "plreloc.h"
 #include "pinsn.h"

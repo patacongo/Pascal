@@ -1,5 +1,5 @@
 /***************************************************************
- * pexpr.c
+ * pas_expression.c
  * Integer Expression
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -44,29 +44,29 @@
 #include <string.h>
 
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
-#include "podefs.h" /* general operation codes */
-#include "pfdefs.h" /* floating point operations */
-#include "pxdefs.h" /* library operations */
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
+#include "podefs.h"         /* general operation codes */
+#include "pfdefs.h"         /* floating point operations */
+#include "pxdefs.h"         /* library operations */
 #include "pedefs.h"
 
 #include "keywords.h"
-#include "pas.h"
-#include "pstm.h"
-#include "pexpr.h"
-#include "pproc.h" /* for actualParameterList */
-#include "pfunc.h"
-#include "pgen.h"  /* for pas_Generate*() */
-#include "ptkn.h"
+#include "pas_main.h"
+#include "pas_statement.h"
+#include "pas_expression.h"
+#include "pas_procedure.h"  /* for actualParameterList() */
+#include "pas_function.h"
+#include "pas_codegen.h"    /* for pas_Generate*() */
+#include "pas_token.h"
 #include "pinsn.h"
-#include "perr.h"
+#include "pas_error.h"
 
 /***************************************************************
  * Private Definitions
  ***************************************************************/
 
-/* REVIST: duplicated in pstm.c and pcexpr.c */
+/* REVIST: duplicated in pas_statement.c and pas_constexpr.c */
 
 #define ADDRESS_DEREFERENCE 0x01
 #define ADDRESS_FACTOR      0x02

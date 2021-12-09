@@ -45,7 +45,7 @@
 
 #include "keywords.h"
 
-#include "perr.h"
+#include "pas_error.h"
 
 /**********************************************************************
  * Pre-processor Definitions

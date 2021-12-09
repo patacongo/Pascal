@@ -1,8 +1,8 @@
 /***************************************************************************
- * ptbl.h
- * External Declarations associated with ptbl.c
+ * pas_unit.h
+ * External Declarations associated with pas_unit.c
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,49 +34,14 @@
  *
  ***************************************************************************/
 
-#ifndef __PTBL_H
-#define __PTBL_H
-
-/***************************************************************************
- * Included Files
- ***************************************************************************/
-
-#include <stdint.h>
-#include "config.h"
-
-/***************************************************************************
- * Public Datas
- ***************************************************************************/
-
-extern symbol_t    *g_parentInteger;
-extern symbol_t    *g_parentString;
-extern unsigned int g_nSym;          /* Number symbol table entries */
-extern unsigned int g_nConst;        /* Number constant table entries */
+#ifndef __PAS_UNIT_H
+#define __PAS_UNIT_H
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-const reservedWord_t *
-          findReservedWord(char *name);
-symbol_t *findSymbol(char *inName, int tableOffset);
-symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
-                        symbol_t *parent, symbol_t *index);
-symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
-                      symbol_t *parent);
-symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size);
-symbol_t *addFile(char *name, uint16_t fileNumber);
-symbol_t *addLabel(char *name, uint16_t label);
-symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
-                       uint16_t nParms, symbol_t *parent);
-symbol_t *addVariable(char *name, uint8_t type, uint16_t offset,
-                      uint16_t size, symbol_t *parent);
-symbol_t *addField(char *name, symbol_t *record);
-void   primeSymbolTable(unsigned long symbolTableSize);
-void   verifyLabels(int32_t symIndex);
+void unitImplementation(void);
+void unitInterface(void);
 
-#if CONFIG_DEBUG
-void   dumpTables(void);
-#endif
-
-#endif /* __PTBL_H */
+#endif /* __PAS_UNIT_H */

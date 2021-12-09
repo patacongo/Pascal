@@ -152,7 +152,7 @@ mkdir ${installdir}/pcode/libpas || \
 # Copy runtime files
 
 cp -a ${pascaldir}/include/poff.h   ${pascaldir}/include/pofflib.h \
-      ${pascaldir}/include/pedefs.h ${pascaldir}/include/perr.h \
+      ${pascaldir}/include/pedefs.h ${pascaldir}/include/pas_error.h \
       ${pascaldir}/include/pdefs.h  ${pascaldir}/include/pfdefs.h \
       ${pascaldir}/include/pxdefs.h ${pascaldir}/include/paslib.h \
       ${installdir}/pcode/include/. || \

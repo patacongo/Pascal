@@ -1,6 +1,6 @@
 /***********************************************************************
- * pexpr.h
- * External Declarations associated with pexpr.c
+ * pas_expression.h
+ * External Declarations associated with pas_expression.c
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,8 +34,8 @@
  *
  ***********************************************************************/
 
-#ifndef __PEXPR_H
-#define __PEXPR_H
+#ifndef __PAS_EXPRESSION_H
+#define __PAS_EXPRESSION_H
 
 /***********************************************************************
  * Included Files
@@ -116,4 +116,4 @@ exprType_t getExprType(symbol_t *sType);
 
 void constantExpression(void);
 
-#endif /* __PEXPR_H */
+#endif /* __PAS_EXPRESSION_H */

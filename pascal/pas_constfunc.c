@@ -1,5 +1,5 @@
 /***************************************************************
- * pcfunc.c
+ * pas_constfunc.c
  * Standard Function operating on constant values
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -44,18 +44,18 @@
 #include <math.h>
 
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "podefs.h"
 #include "pfdefs.h"
 #include "pedefs.h"
 #include "pxdefs.h"
 
-#include "pas.h"
-#include "pexpr.h"
-#include "pfunc.h"
-#include "ptkn.h"
-#include "perr.h"
+#include "pas_main.h"
+#include "pas_expression.h"
+#include "pas_function.h"
+#include "pas_token.h"
+#include "pas_error.h"
 
 /***************************************************************
  * Private Function Prototypes

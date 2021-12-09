@@ -1,5 +1,5 @@
 /***************************************************************
- * pblck.c
+ * pas_block.c
  * Process a Pascal Block
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -43,20 +43,20 @@
 #include <inttypes.h>
 
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "pedefs.h"
 #include "podefs.h"
 
-#include "pas.h"
-#include "pblck.h"
-#include "pexpr.h"
-#include "pstm.h"
-#include "pgen.h"
-#include "ptkn.h"
-#include "ptbl.h"
+#include "pas_main.h"
+#include "pas_block.h"
+#include "pas_expression.h"
+#include "pas_statement.h"
+#include "pas_codegen.h"
+#include "pas_token.h"
+#include "pas_symtable.h"
 #include "pinsn.h"
-#include "perr.h"
+#include "pas_error.h"
 
 /***************************************************************
  * Private Definitions
@@ -1014,10 +1014,10 @@ static void pas_ProcedureDeclaration(void)
   else getToken();
 
   /* If we are here then we know that we are either in a program file
-   * or the 'implementation' part of a unit file (see punit.c -- At present,
-   * the procedure declarations of the 'interface' section of a unit file
-   * follow a different path).  In the latter case (only), we should export
-   * every procedure declared at level zero.
+   * or the 'implementation' part of a unit file (see pas_unit.c -- At
+   * present, the procedure declarations of the 'interface' section of
+   * a unit file follow a different path).  In the latter case (only), we
+   * should export every procedure declared at level zero.
    */
 
   if ((g_level == 1) && (FP->kind == eIsUnit))
@@ -1164,10 +1164,10 @@ static void pas_FunctionDeclaration(void)
       funcPtr->sParm.p.parent = typePtr;
 
       /* If we are here then we know that we are either in a program file
-       * or the 'implementation' part of a unit file (see punit.c -- At present,
-       * the function declarations of the 'interface' section of a unit file
-       * follow a different path).  In the latter case (only), we should export
-       * every function declared at level zero.
+       * or the 'implementation' part of a unit file (see pas_unit.c -- At
+       * present, the function declarations of the 'interface' section of a
+       * unit file follow a different path).  In the latter case (only), we
+       * should export every function declared at level zero.
        */
 
       if ((g_level == 1) && (FP->kind == eIsUnit))

@@ -50,7 +50,7 @@
 #include "pofflib.h"
 #include "pinsn.h"
 #include "pinsn32.h"
-#include "perr.h"
+#include "pas_error.h"
 
 #include "regm.h"
 #include "regm_tree.h"

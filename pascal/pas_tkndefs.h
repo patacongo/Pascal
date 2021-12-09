@@ -1,5 +1,5 @@
 /***********************************************************************
- * ptdefs.h
+ * pas_tkndefs.h
  * Token and Symbol Table Definitions
  *
  *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.

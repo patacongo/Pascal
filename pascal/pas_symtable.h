@@ -1,6 +1,6 @@
 /***************************************************************************
- * ptkn.h
- * External Declarations associated with ptkn.c
+ * pas_symtable.h
+ * External Declarations associated with pas_symtable.c
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,38 +34,49 @@
  *
  ***************************************************************************/
 
-#ifndef __PTKN_H
-#define __PTKN_H
+#ifndef __PAS_SYMTABLE_H
+#define __PAS_SYMTABLE_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "config.h"
 
 /***************************************************************************
- * Public Variables
+ * Public Datas
  ***************************************************************************/
 
-/* String stack access variables */
-
-extern char *g_tokenString;          /* Start of token in string stack */
-extern char *g_stringSP;             /* Top of string stack */
-
-/* Level-related data */
-
-extern int   g_levelSymOffset;       /* Index to symbols for this level */
-extern int   g_levelConstOffset;     /* Index to constants for this level */
+extern symbol_t    *g_parentInteger;
+extern symbol_t    *g_parentString;
+extern unsigned int g_nSym;          /* Number symbol table entries */
+extern unsigned int g_nConst;        /* Number constant table entries */
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void    getToken(void);
-void    getLevelToken(void);
-char    getNextCharacter(bool skipWhiteSpace);
-int16_t primeTokenizer(unsigned long stringStackSize);
-int16_t rePrimeTokenizer(void);
+const reservedWord_t *
+          findReservedWord(char *name);
+symbol_t *findSymbol(char *inName, int tableOffset);
+symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
+                        symbol_t *parent, symbol_t *index);
+symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
+                      symbol_t *parent);
+symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size);
+symbol_t *addFile(char *name, uint16_t fileNumber);
+symbol_t *addLabel(char *name, uint16_t label);
+symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
+                       uint16_t nParms, symbol_t *parent);
+symbol_t *addVariable(char *name, uint8_t type, uint16_t offset,
+                      uint16_t size, symbol_t *parent);
+symbol_t *addField(char *name, symbol_t *record);
+void   primeSymbolTable(unsigned long symbolTableSize);
+void   verifyLabels(int32_t symIndex);
 
-#endif /* __PTKN_H */
+#if CONFIG_DEBUG
+void   dumpTables(void);
+#endif
+
+#endif /* __PAS_SYMTABLE_H */

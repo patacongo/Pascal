@@ -1,6 +1,6 @@
 /***************************************************************************
- * punit.h
- * External Declarations associated with punit.c
+ * pas_function.h
+ * External Declarations associated with pas_stdfunc.c and pas_constfunc.c
  *
  *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,14 +34,24 @@
  *
  ***************************************************************************/
 
-#ifndef __PUNIT_H
-#define __PUNIT_H
+#ifndef __PAS_FUNCTION_H
+#define __PAS_FUNCTION_H
+
+/***************************************************************************
+ * Included Files
+ ***************************************************************************/
+
+#include "pas_expression.h" /* For exprType_t */
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void unitImplementation(void);
-void unitInterface(void);
+void primeBuiltInFunctions(void);
+exprType_t builtInFunction(void);
+void builtInFunctionOfConstant(void);
 
-#endif /* __PUNIT_H */
+void checkLParen(void);
+void checkRParen(void);
+
+#endif /* __PAS_FUNCTION_H */

@@ -1,5 +1,5 @@
 /***************************************************************
- * pexpr.c
+ * pas_constexpr.c
  * Constant expression evaluation
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -45,23 +45,23 @@
 #include <math.h>
 
 #include "keywords.h"
-#include "pasdefs.h"
-#include "ptdefs.h"
+#include "pas_defns.h"
+#include "pas_tkndefs.h"
 #include "pedefs.h"
 
 #include "keywords.h"
-#include "pas.h"
-#include "pstm.h"
-#include "pexpr.h"
-#include "pfunc.h"
-#include "ptkn.h"
-#include "perr.h"
+#include "pas_main.h"
+#include "pas_statement.h"
+#include "pas_expression.h"
+#include "pas_function.h"
+#include "pas_token.h"
+#include "pas_error.h"
 
 /***************************************************************
  * Pre-processor Definitions
  ***************************************************************/
 
-/* REVIST: duplicated in pstm.c and pexpr.c */
+/* REVIST: duplicated in pas_statement.c and pas_expression.c */
 
 #define ADDRESS_DEREFERENCE 0x01
 #define ADDRESS_FACTOR      0x02

@@ -52,7 +52,7 @@
 #include "pofflib.h"
 #include "paslib.h"
 #include "pinsn.h"
-#include "perr.h"
+#include "pas_error.h"
 #include "plsym.h"
 #include "plreloc.h"
 

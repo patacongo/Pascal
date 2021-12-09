@@ -47,7 +47,7 @@
 #include "keywords.h"  /* Standard types */
 #include "pedefs.h"    /* error code definitions */
 
-#include "perr.h"      /* error() */
+#include "pas_error.h" /* error() */
 #include "pofflib.h"   /* POFF library interface */
 #include "pfprivate.h" /* POFF private definitions */
 
