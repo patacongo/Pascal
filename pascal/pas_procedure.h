@@ -38,11 +38,18 @@
 #define __PAS_PROCEDURE_H
 
 /***************************************************************************
+ * Included Files
+ ***************************************************************************/
+
+#include "pas_defns.h"
+
+/***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
 void primeBuiltInProcedures(void);
 void builtInProcedure(void);
+symbol_t *getFileBaseType(void);
 int  actualParameterSize(symbol_t *procPtr, int parmNo);
 int  actualParameterList(symbol_t *procPtr);
 

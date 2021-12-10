@@ -246,7 +246,8 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0055 Error 2e Token 2c
+Could not read POFF file, errcode=0x71
+
 
 Error:
 #define eRBRACKET        ((uint16_t) 0x2e)
@@ -275,25 +276,38 @@ Token:
 
 
 Analysis:
-This is an error in file handling (or perhaps a non-standard usage in the testfile).
-
-The compiler currently only accepts file types as arguments to the PROGRAM keyword.  But this is a unit and declares the file as type text:
-
+The root problem lies in the representation of the TEXT type parmeter:  There is no way to get the file number.  The root failure occurs in processing this line in DayIO.pas:
 
     PROCEDURE ReadDay
-            (VAR InFile: TEXT;                (* Input file read from. *)
+>>>>        (VAR InFile: TEXT;                (* Input file read from. *)
              VAR Day: DayType);                (* Returned day of the week value. *)
 
-            WHILE (Ch = ' ') AND NOT eoln(InFile) DO
-                BEGIN
-                    read(InFile, Ch)
-                END;
+Relevant logic:
 
-This then fails in fileFunc() where a FILE type is expected:
+- formalParameterList() in pas_block.c parses the formal paramter list.  It calls pas_DeclareParameter() to parse each formal parameter.
+- pas_DeclareParameter() creates an entry in the symbol table like:
 
-422           if (g_token != sFILE) error(eFILE);
+  sName = "InFile"
+  sKind = sVAR_PARM
+  v    = {offset = 0xfffffff6, size = 0x2, flags = 0x0, symIndex = 0x0, parent = 0x80005a380}
 
-But InFile is sVAR_PARM.
+The parent is
+
+  sName = "TEXT"
+  sKind = sTYPE
+  t    = {type = 0x4a, rtype = 0x4a, subType = 0x48, flags = 0x0, asize = 0x1, rsize = 0x1, minValue = 0x0, maxValue = 0xff, parent = 0x0, index = 0x0}
+
+The 0x4a is sTEXT
+
+The failure occurs later when fileFunc is called to handle this line in the pascal file:
+
+    IF eoln(InFile) THEN
+
+fileFunc generates the code for eoln.  It looks up InFile in the symbol table.  Logic in getFileBaseType() attempts to obtain the file type from the InFile symbol table table described above.  It fails and the eFILE error is generated in fileFunc():
+
+430               if (typePtr == NULL) error(eFILE);
+
+The solution probably involves adding the file number to symbol_t somehow.  This is, however, no important to the current failure.  In this case the file number needs to be obtained at runtime since the file is passed as a VAR parameter.
 
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory

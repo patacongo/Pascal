@@ -51,6 +51,7 @@
 
 #include "pas_main.h"
 #include "pas_expression.h"
+#include "pas_procedure.h"
 #include "pas_function.h"
 #include "pas_codegen.h"  /* for pas_Generate*() */
 #include "pas_token.h"
@@ -416,22 +417,45 @@ static void fileFunc(uint16_t opcode)
   getToken();          /* Skip over function name */
   if (g_token == '(')  /* Check for '(' */
     {
-      /* Get the file number argument */
+      /* FORM: EOF|EOLN ({<file number>})
+       * Check if there is a file argument
+       */
 
       getToken();
-      if (g_token != sFILE) error(eFILE);
+      if (g_token != ')')
+        {
+          /* Get the file number argument */
+
+          symbol_t *typePtr = getFileBaseType();
+          if (typePtr == NULL) error(eFILE);
+          else
+            {
+              /* FORM: EOF|EOLN (<file number>)
+               * Generate the I/O operation
+               */
+
+              pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
+              pas_GenerateIoOperation(opcode, typePtr->sParm.f.fileNumber);
+            }
+        }
       else
         {
-          /* Generate the I/O operation */
+          /* FORM: EOF|EOLN ()
+           * Use default INPUT file
+           */
 
           pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-          pas_GenerateIoOperation(opcode, g_tknPtr->sParm.f.fileNumber);
+          pas_GenerateIoOperation(opcode, INPUT_FILE_NUMBER);
         }
 
       checkRParen();
     }
   else
     {
+      /* FORM: EOF|EOLN
+       * Use default INPUT file
+       */
+
       pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
       pas_GenerateIoOperation(opcode, INPUT_FILE_NUMBER);
     }

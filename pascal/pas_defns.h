@@ -236,15 +236,15 @@ struct symbol_s
   uint8_t   sLevel;        /* static nesting level */
   union
   {
-    symType_t        t;          /* for type definitions */
-    symConst_t       c;          /* for constants */
-    symStringConst_t s;          /* for strings of constant size */
-    symVarString_t   vs;         /* for strings of variable size */
-    symFile_t        f;          /* for files */
-    symLabel_t       l;          /* for labels */
-    symVar_t         v;          /* for variables */
-    symProc_t        p;          /* for functions & procedures */
-    symRecord_t      r;          /* for files of RECORDS */
+    symType_t        t;    /* for type definitions */
+    symConst_t       c;    /* for constants */
+    symStringConst_t s;    /* for strings of constant size */
+    symVarString_t   vs;   /* for strings of variable size */
+    symFile_t        f;    /* for files */
+    symLabel_t       l;    /* for labels */
+    symVar_t         v;    /* for variables */
+    symProc_t        p;    /* for functions & procedures */
+    symRecord_t      r;    /* for files of RECORDS */
   } sParm;
 };
 typedef struct symbol_s symbol_t;

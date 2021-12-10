@@ -177,6 +177,62 @@ void builtInProcedure(void)
 
 /***********************************************************************/
 
+symbol_t *getFileBaseType(void)
+{
+  symbol_t *typePtr = g_tknPtr;
+  symbol_t fake;
+
+  /* Check if this is a VAR parameter */
+
+  if (typePtr->sKind == sVAR_PARM)
+    {
+      /* Use the parent type.  The parent of a a VAR parameter is a type */
+
+      typePtr = typePtr->sParm.v.parent;
+    }
+
+  /* Is this a typedef'ed type? */
+
+  while (typePtr->sKind == sTYPE)
+    {
+      /* This is the final type if it has no parent.
+       */
+
+      symbol_t *tmpPtr = typePtr->sParm.t.parent;
+      if (tmpPtr != NULL)
+        {
+          typePtr = tmpPtr;
+        }
+      else
+        {
+          break;
+        }
+    }
+
+  /* Is this a dereferenced pointer to a file type? */
+  /* REVISIT:  No implemented. */
+
+  /* We should have the base type..  Is it a file? */
+
+  if (typePtr->sKind == sFILE || typePtr->sKind == sTEXT)
+    {
+      return typePtr;
+    }
+
+  /* Is this a file type? */
+
+  if (typePtr->sKind == sTYPE)
+    {
+      /* Typedef'ed symbols look different from sKind or sFILE.
+       * I suppose we need to create a fake file symbol?
+       */
+    }
+
+  return NULL;
+}
+
+/***********************************************************************/
+
 int actualParameterSize(symbol_t *procPtr, int parmNo)
 {
   /* These sizes must agree with the sizes used in actualParameterListg()
@@ -399,7 +455,8 @@ static void haltProc (void)
 
 static int16_t readProc(void)
 {
-  uint16_t fileNumber = INPUT_FILE_NUMBER;
+  uint16_t fileNumber;
+  symbol_t *filePtr;
 
   TRACE(g_lstFile, "[readProc]");
 
@@ -415,32 +472,37 @@ static int16_t readProc(void)
 
   /* Get file number */
 
-   if (g_token == sFILE || g_token == sTEXT)
-     {
-       fileNumber = g_tknPtr->sParm.f.fileNumber;
-       getToken();
-     }
+  filePtr = getFileBaseType();
+  if (filePtr == NULL)
+    {
+      fileNumber = INPUT_FILE_NUMBER;
+    }
+  else
+    {
+      fileNumber = g_tknPtr->sParm.f.fileNumber;
 
-   if (g_token == ',') getToken();
+      getToken();
+      if (g_token == ',') getToken();
+    }
 
-   /* Determine if this is a text or binary file */
+  /* Determine if this is a text or binary file */
 
-   if (!(g_files[fileNumber].defined)) error (eUNDEFILE);
-   else if (g_files[fileNumber].ftype == sCHAR)
-     {
-       readText(fileNumber);
-     }
-   else
-     {
-       pas_GenerateLevelReference(opLAS, g_files[fileNumber].flevel, g_files [fileNumber].faddr);
-       pas_GenerateDataOperation(opPUSH, g_files[fileNumber].fsize);
-       pas_GenerateIoOperation(xREAD_BINARY, fileNumber);
-     }
+  if (!(g_files[fileNumber].defined)) error (eUNDEFILE);
+  else if (g_files[fileNumber].ftype == sCHAR)
+    {
+      readText(fileNumber);
+    }
+  else
+    {
+      pas_GenerateLevelReference(opLAS, g_files[fileNumber].flevel, g_files [fileNumber].faddr);
+      pas_GenerateDataOperation(opPUSH, g_files[fileNumber].fsize);
+      pas_GenerateIoOperation(xREAD_BINARY, fileNumber);
+    }
 
-   if (g_token != ')') error (eRPAREN);
-   else getToken();
+  if (g_token != ')') error (eRPAREN);
+  else getToken();
 
-   return fileNumber;
+  return fileNumber;
 }
 
 /***********************************************************************/

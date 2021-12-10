@@ -2462,9 +2462,11 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr)
 }
 
 /***************************************************************/
-/* Process VAR/value Parameter Declaration */
-/* NOTE:  This function increments the global variable g_nParms */
-/* as a side-effect */
+/* Process VAR/value Parameter Declaration
+ *
+ * NOTE:  This function increments the global variable g_nParms
+ * as a side-effect
+ */
 
 static symbol_t *pas_DeclareParameter(bool pointerType)
 {
