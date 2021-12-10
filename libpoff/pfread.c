@@ -46,24 +46,12 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "keywords.h"  /* Standard types */
-#include "pedefs.h"    /* Pascal error definitions */
+#include "keywords.h"     /* Standard types */
+#include "pas_errcodes.h" /* Pascal error definitions */
 
-#include "pas_error.h" /* error() */
-#include "pofflib.h"   /* POFF library interface */
-#include "pfprivate.h" /* POFF private definitions */
-
-/**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
+#include "pas_error.h"    /* error() */
+#include "pofflib.h"      /* POFF library interface */
+#include "pfprivate.h"    /* POFF private definitions */
 
 /***********************************************************************
  * Private Function Prototypes

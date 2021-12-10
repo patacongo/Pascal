@@ -1,5 +1,5 @@
 /***********************************************************************
- * pedefs.h
+ * pas_errcodes.h
  * Definitions of error codes
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ***********************************************************************/
 
-#ifndef __PEDEFS_H
-#define __PEDEFS_H
+#ifndef __PAS_ERRCODES_H
+#define __PAS_ERRCODES_H
 
 /***********************************************************************
  * Included Files
@@ -284,4 +284,4 @@
 #define eINTEGEROVERFLOW ((uint16_t) 0x89)
 #define eFAILEDLIBCALL   ((uint16_t) 0x8a)
 
-#endif /* __PEDEFS_H */
+#endif /* __PAS_ERRCODES_H */

@@ -47,7 +47,7 @@
 #include "keywords.h"
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 
 #include "keywords.h"
 #include "pas_main.h"

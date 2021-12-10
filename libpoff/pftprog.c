@@ -43,27 +43,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "keywords.h"  /* Standard types */
-#include "pedefs.h"    /* Pascal error codes */
+#include "keywords.h"     /* Standard types */
+#include "pas_errcodes.h" /* Pascal error codes */
 
-#include "pfprivate.h" /* POFF private definitions */
-#include "pofflib.h"   /* Public interfaces */
-
-/**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-/***********************************************************************
- * Private Function Prototypes
- ***********************************************************************/
+#include "pfprivate.h"    /* POFF private definitions */
+#include "pofflib.h"      /* Public interfaces */
 
 /***********************************************************************
  * Private Functions

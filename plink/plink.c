@@ -48,7 +48,7 @@
 #include "keywords.h"
 #include "pdefs.h"
 #include "podefs.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 
 #include "paslib.h"
 #include "pas_error.h"

@@ -46,7 +46,7 @@
 #include "keywords.h"
 #include "pdefs.h"     /* Types needed for unused protos in pinsn.h */
 #include "podefs.h"    /* Types needed for unused protos in pinsh.h */
-#include "pedefs.h"
+#include "pas_errcodes.h"
 #include "pofflib.h"
 #include "paslib.h"
 #include "pinsn.h"     /* Folr insn_GetOpCode */

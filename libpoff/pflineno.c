@@ -44,11 +44,11 @@
 #include <string.h>
 #include <errno.h>
 
-#include "keywords.h"  /* Standard types */
-#include "pedefs.h"    /* error code definitions */
+#include "keywords.h"     /* Standard types */
+#include "pas_errcodes.h" /* error code definitions */
 
-#include "pas_error.h" /* error() */
-#include "pofflib.h"   /* POFF library interface */
+#include "pas_error.h"    /* error() */
+#include "pofflib.h"      /* POFF library interface */
 
 /**********************************************************************
  * Pre-processor Definitions

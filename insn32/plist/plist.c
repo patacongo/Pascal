@@ -52,7 +52,7 @@
 #include "pdefs.h"
 #include "podefs.h"
 #include "pinsn32.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 
 #include "pofflib.h"
 
@@ -109,7 +109,7 @@ int main (int argc, char *argv[], char *envp[])
   FILE    *object;                 /* Object file pointer */
   poffHandle_t poffHandle;         /* Handle for POFF object */
   char     fileName[FNAME_SIZE+1]; /* Object file name */
-  uint16_t errCode;                /* See pedefs.h */
+  uint16_t errCode;                /* See pas_errcodes.h */
 
   /* Parse the command line arguments */
 

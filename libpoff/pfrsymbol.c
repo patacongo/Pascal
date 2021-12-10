@@ -44,28 +44,12 @@
 #include <string.h>
 #include <errno.h>
 
-#include "keywords.h"  /* Standard types */
-#include "pedefs.h"    /* error code definitions */
+#include "keywords.h"     /* Standard types */
+#include "pas_errcodes.h" /* error code definitions */
 
-#include "pas_error.h" /* error() */
-#include "pofflib.h"   /* POFF library interface */
-#include "pfprivate.h" /* POFF private definitions */
-
-/**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-/***********************************************************************
- * Private Function Prototypes
- ***********************************************************************/
+#include "pas_error.h"    /* error() */
+#include "pofflib.h"      /* POFF library interface */
+#include "pfprivate.h"    /* POFF private definitions */
 
 /***********************************************************************
  * Private Functions

@@ -49,7 +49,7 @@
 #include "podefs.h"         /* general operation codes */
 #include "pfdefs.h"         /* floating point operations */
 #include "pxdefs.h"         /* library operations */
-#include "pedefs.h"
+#include "pas_errcodes.h"
 
 #include "keywords.h"
 #include "pas_main.h"

@@ -47,7 +47,7 @@
 #include "config.h"
 #include "keywords.h"
 #include "pas_defns.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 
 #include "pas_main.h"
 #include "pas_token.h"

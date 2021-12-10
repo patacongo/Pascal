@@ -49,7 +49,7 @@
 #include "pdefs.h"
 #include "pxdefs.h"
 #include "pfdefs.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 #include "pofflib.h"
 #include "pas_error.h"
 

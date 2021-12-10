@@ -48,7 +48,7 @@
 #include "pas_defns.h"     /* Common types */
 #include "pas_tkndefs.h"   /* Token / symbol table definitions */
 #include "podefs.h"        /* Logical opcode definitions */
-#include "pedefs.h"        /* error code definitions */
+#include "pas_errcodes.h"  /* error code definitions */
 
 #include "pas_main.h"      /* Global variables */
 #include "poff.h"          /* For POFF file format */

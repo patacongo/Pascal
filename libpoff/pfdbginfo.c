@@ -42,19 +42,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "keywords.h"  /* Standard types */
-#include "pedefs.h"    /* error code definitions */
+#include "keywords.h"     /* Standard types */
+#include "pas_errcodes.h" /* error code definitions */
 
-#include "pas_error.h" /* error() */
-#include "pofflib.h"   /* POFF library interface */
-
-/**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
+#include "pas_error.h"    /* error() */
+#include "pofflib.h"      /* POFF library interface */
 
 /**********************************************************************
  * Private Variables

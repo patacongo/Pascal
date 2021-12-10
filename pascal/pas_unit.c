@@ -49,7 +49,7 @@
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "podefs.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 
 #include "pofflib.h"      /* For poff*() functions*/
 #include "poff.h"         /* FHT_ definitions */

@@ -47,7 +47,7 @@
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "podefs.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 #include "pxdefs.h"
 
 #include "pas_main.h"

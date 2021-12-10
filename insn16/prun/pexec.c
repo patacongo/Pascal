@@ -50,7 +50,7 @@
 #include "pinsn16.h"
 #include "pfdefs.h"
 #include "pxdefs.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 
 #include "paslib.h"
 #include "pexec.h"

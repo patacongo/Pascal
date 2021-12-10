@@ -43,7 +43,7 @@
 #include <errno.h>
 
 #include "keywords.h"
-#include "pedefs.h"
+#include "pas_errcodes.h"
 #include "pofflib.h"
 #include "pas_error.h"
 #include "pexec.h"
