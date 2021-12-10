@@ -1,5 +1,5 @@
 /***********************************************************************
- * podefs.h
+ * pas_pcode.h"
  * Logical P-code operation code definitions
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ***********************************************************************/
 
-#ifndef __PODEFS_H
-#define __PODEFS_H
+#ifndef __PAS_PCODE_H
+#define __PAS_PCODE_H
 
 /* These definitions represent logical operations as needed by the
  * the compiler.  The specific INSN generation layer must interpret
@@ -200,4 +200,4 @@ enum pcode_e
   NUM_OPCODES
 };
 
-#endif /* __PODEFS_H */
+#endif /* __PAS_PCODE_H */

@@ -41,7 +41,7 @@
 #include <stdio.h>
 
 #include "keywords.h"
-#include "podefs.h"
+#include "pas_pcode.h"
 #include "pinsn32.h"
 
 #include "pofflib.h"

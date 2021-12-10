@@ -46,12 +46,11 @@
 #include "keywords.h"
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
-#include "podefs.h"         /* general operation codes */
+#include "pas_pcode.h"      /* general operation codes */
 #include "pfdefs.h"         /* floating point operations */
 #include "pxdefs.h"         /* library operations */
 #include "pas_errcodes.h"
 
-#include "keywords.h"
 #include "pas_main.h"
 #include "pas_statement.h"
 #include "pas_expression.h"

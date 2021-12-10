@@ -47,7 +47,7 @@
 #include "keywords.h"      /* Standard types */
 #include "pas_defns.h"     /* Common types */
 #include "pas_tkndefs.h"   /* Token / symbol table definitions */
-#include "podefs.h"        /* Logical opcode definitions */
+#include "pas_pcode.h"     /* Logical opcode definitions */
 #include "pas_errcodes.h"  /* error code definitions */
 
 #include "pas_main.h"      /* Global variables */

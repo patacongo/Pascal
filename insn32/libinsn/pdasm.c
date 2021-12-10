@@ -42,7 +42,7 @@
 #include <stdio.h>
 
 #include "keywords.h"
-#include "podefs.h"
+#include "pas_pcode.h"
 #include "pinsn32.h"
 #include "pfdefs.h"
 #include "pxdefs.h"

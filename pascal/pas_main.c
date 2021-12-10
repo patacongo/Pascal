@@ -53,7 +53,7 @@
 #include "keywords.h"
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
-#include "podefs.h"
+#include "pas_pcode.h"
 #include "pas_errcodes.h"
 
 #include "pofflib.h"       /* For poffInitializeForOutput() */

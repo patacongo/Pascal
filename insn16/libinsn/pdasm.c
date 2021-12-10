@@ -43,7 +43,7 @@
 #include <inttypes.h>
 
 #include "keywords.h"
-#include "podefs.h"
+#include "pas_pcode.h"
 #include "pinsn16.h"
 #include "pfdefs.h"
 #include "pxdefs.h"

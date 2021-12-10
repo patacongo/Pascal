@@ -44,7 +44,7 @@
 #include <unistd.h>
 
 #include "keywords.h"
-#include "podefs.h"
+#include "pas_pcode.h"
 #include "pas_errcodes.h"
 #include "paslib.h"
 #include "pofflib.h"

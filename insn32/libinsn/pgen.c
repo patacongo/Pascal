@@ -47,7 +47,7 @@
 #include "keywords.h"     /* Standard types */
 #include "pdefs.h"        /* Common types */
 #include "pofflib.h"      /* POFF library definitions */
-#include "podefs.h"       /* Logical opcode definitions */
+#include "pas_pcode.h"    /* Logical opcode definitions */
 #include "pas_errcodes.h" /* Error codes */
 #include "pinsn32.h"      /* 32-bit target INSN opcode definitions */
 #include "pas_error.h"    /* Error handling logic */

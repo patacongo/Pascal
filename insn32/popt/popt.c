@@ -43,7 +43,7 @@
 #include <unistd.h>
 
 #include "keywords.h"
-#include "podefs.h"
+#include "pas_pcode.h"
 #include "paslib.h"
 #include "pofflib.h"
 
