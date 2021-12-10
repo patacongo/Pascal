@@ -399,7 +399,7 @@ static void haltProc (void)
 
 static int16_t readProc(void)
 {
-  uint16_t fileNumber = 0;
+  uint16_t fileNumber = INPUT_FILE_NUMBER;
 
   TRACE(g_lstFile, "[readProc]");
 
@@ -415,7 +415,7 @@ static int16_t readProc(void)
 
   /* Get file number */
 
-   if (g_token == sFILE)
+   if (g_token == sFILE || g_token == sTEXT)
      {
        fileNumber = g_tknPtr->sParm.f.fileNumber;
        getToken();
@@ -440,7 +440,7 @@ static int16_t readProc(void)
    if (g_token != ')') error (eRPAREN);
    else getToken();
 
-   return (fileNumber);
+   return fileNumber;
 }
 
 /***********************************************************************/

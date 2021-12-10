@@ -64,7 +64,7 @@
  * Private Definitions
  ****************************************************************************/
 
-/* REVIST: duplicated in pas_expression.c and pas_constexpr.c */
+/* REVIST: duplicated in pas_expression.h */
 
 #define ADDRESS_DEREFERENCE  0x01
 #define ADDRESS_ASSIGNMENT   0x02
@@ -550,7 +550,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
               /* Special case:  The record is a VAR parameter. */
 
-              if (assignFlags == (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE | VAR_PARM_ASSIGNMENT))
+              if (assignFlags == (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
+                                  VAR_PARM_ASSIGNMENT))
                 {
                   pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
                   pas_GenerateSimple(opADD);
@@ -571,14 +572,17 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         {
           /* Special case:  The record is a VAR parameter. */
 
-          if (assignFlags == (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE | VAR_PARM_ASSIGNMENT))
+          if (assignFlags == (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
+                              VAR_PARM_ASSIGNMENT))
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opADD);
               pas_LargeAssignment(opSTIM, exprRecord, varPtr, typePtr);
             }
           else
-            pas_LargeAssignment(opSTSM, exprRecord, varPtr, typePtr);
+            {
+              pas_LargeAssignment(opSTSM, exprRecord, varPtr, typePtr);
+            }
         }
       break;
 

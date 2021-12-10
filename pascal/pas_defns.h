@@ -85,6 +85,13 @@
 #define BOOLEAN_TRUE        (-1)
 #define BOOLEAN_FALSE       (0)
 
+/* Flags used to manage treatment of variables */
+
+#define ADDRESS_DEREFERENCE 0x01
+#define ADDRESS_FACTOR      0x02
+#define INDEXED_FACTOR      0x04
+#define VAR_PARM_FACTOR     0x08
+
 /***********************************************************************
  * Public Enumeration Types
  ***********************************************************************/

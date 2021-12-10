@@ -65,27 +65,22 @@
  * Private Definitions
  ***************************************************************/
 
-/* REVIST: duplicated in pas_statement.c and pas_constexpr.c */
-
-#define ADDRESS_DEREFERENCE 0x01
-#define ADDRESS_FACTOR      0x02
-#define INDEXED_FACTOR      0x04
-#define VAR_PARM_FACTOR     0x08
-
 #define intTrunc(x) ((x) & (~(sINT_SIZE)))
 
 /***************************************************************
  * Private Type Declarations
  ***************************************************************/
 
-typedef struct
+struct setType_s
 {
   uint8_t    setType;
   bool       typeFound;
   int16_t    minValue;
   int16_t    maxValue;
   symbol_t  *typePtr;
-} setTypeStruct;
+};
+
+typedef struct setType_s setType_t;
 
 /***************************************************************
  * Private Function Prototypes
@@ -104,7 +99,7 @@ static enum exprType_s
                   mapSimpleType2ExprType(uint16_t simpleType);
 static void       setAbstractType(symbol_t *sType);
 static void       getSetFactor(void);
-static void       getSetElement(setTypeStruct *s);
+static void       getSetElement(setType_t *s);
 static bool       isOrdinalType(exprType_t testExprType);
 static bool       isAnyStringType(exprType_t testExprType);
 static bool       isStringReference(exprType_t testExprType);
@@ -118,7 +113,7 @@ static bool       isStringReference(exprType_t testExprType);
  * sTYPE entry associated with the expression.
  */
 
-static symbol_t *abstractType;
+static symbol_t *g_abstractType;
 
 /***************************************************************/
 /* Evaluate (boolean) Expression */
@@ -139,7 +134,7 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
   /* with the expression. */
 
   if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
-  abstractType = typePtr;
+  g_abstractType = typePtr;
 
   /* FORM <simple expression> [<relational operator> <simple expression>] */
   /* Get the first <simple expression> */
@@ -188,15 +183,15 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
       break;
 
     case tIN :
-      if (!abstractType ||
-          (abstractType->sParm.t.type != sSCALAR &&
-           abstractType->sParm.t.type != sSUBRANGE))
+      if (!g_abstractType ||
+          (g_abstractType->sParm.t.type != sSCALAR &&
+           g_abstractType->sParm.t.type != sSUBRANGE))
         {
           error(eEXPRTYPE);
         }
-      else if (abstractType->sParm.t.minValue)
+      else if (g_abstractType->sParm.t.minValue)
         {
-          pas_GenerateDataOperation(opPUSH, abstractType->sParm.t.minValue);
+          pas_GenerateDataOperation(opPUSH, g_abstractType->sParm.t.minValue);
           pas_GenerateSimple(opSUB);
         }
 
@@ -368,7 +363,7 @@ exprType_t varParm(exprType_t varExprType, symbol_t *typePtr)
    */
 
   if ((typePtr) && (typePtr->sKind != sTYPE)) error(eINVTYPE);
-  abstractType = typePtr;
+  g_abstractType = typePtr;
 
   /* This function is really just an interface to the
    * static function ptrFactor with some extra error
@@ -377,7 +372,9 @@ exprType_t varParm(exprType_t varExprType, symbol_t *typePtr)
 
   factorType = ptrFactor();
   if ((varExprType != exprUnknown) && (factorType != varExprType))
-     error(eINVVARPARM);
+    {
+      error(eINVVARPARM);
+    }
 
   return factorType;
 }
@@ -1050,13 +1047,13 @@ static exprType_t factor(exprType_t findExprType)
       break;
 
     case sSCALAR_OBJECT :
-      if (abstractType)
+      if (g_abstractType)
         {
-          if (g_tknPtr->sParm.c.parent != abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.c.parent != g_abstractType) error(eSCALARTYPE);
         }
       else
         {
-         abstractType = g_tknPtr->sParm.c.parent;
+         g_abstractType = g_tknPtr->sParm.c.parent;
         }
 
       pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.c.val.i);
@@ -1159,13 +1156,13 @@ static exprType_t factor(exprType_t findExprType)
       break;
 
     case sSCALAR :
-      if (abstractType)
+      if (g_abstractType)
         {
-          if (g_tknPtr->sParm.v.parent != abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.v.parent != g_abstractType) error(eSCALARTYPE);
         }
       else
         {
-          abstractType = g_tknPtr->sParm.v.parent;
+          g_abstractType = g_tknPtr->sParm.v.parent;
         }
 
       pas_GenerateStackReference(opLDS, g_tknPtr);
@@ -1174,18 +1171,18 @@ static exprType_t factor(exprType_t findExprType)
       break;
 
     case sSET_OF :
-      /* If an abstractType is specified then it should either be the */
+      /* If an g_abstractType is specified then it should either be the */
       /* same SET OF <object> -OR- the same <object> */
 
-      if (abstractType)
+      if (g_abstractType)
         {
-          if ((g_tknPtr->sParm.v.parent != abstractType) &&
-              (g_tknPtr->sParm.v.parent->sParm.t.parent != abstractType))
+          if ((g_tknPtr->sParm.v.parent != g_abstractType) &&
+              (g_tknPtr->sParm.v.parent->sParm.t.parent != g_abstractType))
             error(eSET);
         }
       else
         {
-          abstractType = g_tknPtr->sParm.v.parent;
+          g_abstractType = g_tknPtr->sParm.v.parent;
         }
 
       pas_GenerateStackReference(opLDS, g_tknPtr);
@@ -1224,7 +1221,7 @@ static exprType_t factor(exprType_t findExprType)
 
     case '(' :
       getToken();
-      factorType = expression(exprUnknown, abstractType);
+      factorType = expression(exprUnknown, g_abstractType);
       if (g_token == ')') getToken();
       else error (eRPAREN);
       break;
@@ -1488,11 +1485,11 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sSCALAR :
-      if (!abstractType)
+      if (!g_abstractType)
         {
-          abstractType = typePtr;
+          g_abstractType = typePtr;
         }
-      else if (typePtr != abstractType)
+      else if (typePtr != g_abstractType)
         {
           error(eSCALARTYPE);
         }
@@ -1538,12 +1535,12 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sSET_OF :
-      if (!abstractType)
+      if (!g_abstractType)
         {
-          abstractType = typePtr;
+          g_abstractType = typePtr;
         }
-      else if ((typePtr != abstractType) &&
-               (typePtr->sParm.v.parent != abstractType))
+      else if ((typePtr != g_abstractType) &&
+               (typePtr->sParm.v.parent != g_abstractType))
         {
           error(eSCALARTYPE);
         }
@@ -1588,10 +1585,52 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
         }
       break;
 
-      /* NOPE... recurse until it becomes a simple factor */
+    case sFILE :
+    case sTEXT :
+      if ((factorFlags & INDEXED_FACTOR) != 0)
+        {
+          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+              pas_GenerateSimple(opLDI);
+              factorType = exprFile;
+            }
+          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+              factorType = exprFilePtr;
+            }
+          else
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+              factorType = exprFile;
+            }
+        }
+      else
+        {
+          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+              pas_GenerateSimple(opLDI);
+              factorType = exprFile;
+            }
+          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+              factorType = exprFilePtr;
+            }
+           else
+             {
+              pas_GenerateStackReference(opLDS, varPtr);
+               factorType = exprFile;
+             }
+        }
+      break;
+
+    /* NOPE... recurse until it becomes a simple factor */
 
     case sSUBRANGE :
-      if (!abstractType) abstractType = typePtr;
+      if (!g_abstractType) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.subType;
       factorType = simpleFactor(varPtr, factorFlags);
       break;
@@ -1618,7 +1657,9 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
         {
           if (((factorFlags & ADDRESS_DEREFERENCE) != 0) &&
               ((factorFlags & VAR_PARM_FACTOR) == 0))
-            error(ePOINTERTYPE);
+            {
+              error(ePOINTERTYPE);
+            }
 
           /* Skip over the period. */
 
@@ -1644,7 +1685,8 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               /* Special case:  The record is a VAR parameter. */
 
-              if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE | VAR_PARM_FACTOR))
+              if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
+                                  VAR_PARM_FACTOR))
                 {
                   pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
                   pas_GenerateSimple(opADD);
@@ -1660,11 +1702,12 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
       /* A RECORD name name be a valid factor -- as the input */
       /* parameter of a function or in an assignment */
 
-      else if (abstractType == typePtr)
+      else if (g_abstractType == typePtr)
         {
           /* Special case:  The record is a VAR parameter. */
 
-          if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE | VAR_PARM_FACTOR))
+          if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
+                              VAR_PARM_FACTOR))
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opADD);
@@ -1794,8 +1837,8 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
 
     case sVAR_PARM :
       if (factorFlags != 0) error(eVARPARMTYPE);
-      factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
 
+      factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
       varPtr->sKind = typePtr->sParm.t.type;
       factorType    = simpleFactor(varPtr, factorFlags);
       break;
@@ -1861,7 +1904,7 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
        * a function.
        */
 
-      else if (abstractType == varPtr)
+      else if (g_abstractType == varPtr)
         {
           pas_GenerateDataSize(varPtr->sParm.v.size);
           pas_GenerateStackReference(opLDSM, varPtr);
@@ -1923,13 +1966,13 @@ static exprType_t ptrFactor(void)
         break;
 
       case sSCALAR :
-        if (abstractType)
+        if (g_abstractType)
           {
-            if (g_tknPtr->sParm.v.parent != abstractType) error(eSCALARTYPE);
+            if (g_tknPtr->sParm.v.parent != g_abstractType) error(eSCALARTYPE);
           }
         else
           {
-           abstractType = g_tknPtr->sParm.v.parent;
+           g_abstractType = g_tknPtr->sParm.v.parent;
           }
 
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -1938,21 +1981,21 @@ static exprType_t ptrFactor(void)
         break;
 
       case sSET_OF :
-        /* If an abstractType is specified then it should either be the
+        /* If an g_abstractType is specified then it should either be the
          * same SET OF <object> -OR- the same <object>
          */
 
-        if (abstractType)
+        if (g_abstractType)
           {
-            if ((g_tknPtr->sParm.v.parent != abstractType)
-            &&   (g_tknPtr->sParm.v.parent->sParm.t.parent != abstractType))
+            if ((g_tknPtr->sParm.v.parent != g_abstractType)
+            &&   (g_tknPtr->sParm.v.parent->sParm.t.parent != g_abstractType))
               {
                  error(eSET);
               }
           }
         else
           {
-             abstractType = g_tknPtr->sParm.v.parent;
+             g_abstractType = g_tknPtr->sParm.v.parent;
           }
 
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -2153,11 +2196,11 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sSCALAR :
-      if (!abstractType)
+      if (!g_abstractType)
         {
-          abstractType = typePtr;
+          g_abstractType = typePtr;
         }
-      else if (typePtr != abstractType)
+      else if (typePtr != g_abstractType)
         {
           error(eSCALARTYPE);
         }
@@ -2191,12 +2234,12 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sSET_OF :
-      if (!abstractType)
+      if (!g_abstractType)
         {
-          abstractType = typePtr;
+          g_abstractType = typePtr;
         }
-      else if ((typePtr != abstractType) &&
-               (typePtr->sParm.v.parent != abstractType))
+      else if ((typePtr != g_abstractType) &&
+               (typePtr->sParm.v.parent != g_abstractType))
         {
           error(eSCALARTYPE);
         }
@@ -2229,10 +2272,40 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
         }
       break;
 
-      /* NOPE... recurse until it becomes a simple factor */
+    case sFILE :
+    case sTEXT :
+      if ((factorFlags & INDEXED_FACTOR) != 0)
+        {
+          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+              factorType = exprFile;
+            }
+          else
+            {
+              pas_GenerateStackReference(opLASX, varPtr);
+              factorType = exprFilePtr;
+            }
+        }
+      else
+        {
+          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+              factorType = exprFile;
+            }
+          else
+            {
+              pas_GenerateStackReference(opLAS, varPtr);
+              factorType = exprFilePtr;
+            }
+        }
+      break;
+
+    /* NOPE... recurse until it becomes a simple factor */
 
     case sSUBRANGE :
-      if (!abstractType) abstractType = typePtr;
+      if (!g_abstractType) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.subType;
       factorType = simplePtrFactor(varPtr, factorFlags);
       break;
@@ -2369,8 +2442,8 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
 
     case sVAR_PARM :
       if (factorFlags != 0) error(eVARPARMTYPE);
-      factorFlags  |= ADDRESS_DEREFERENCE;
 
+      factorFlags  |= ADDRESS_DEREFERENCE;
       varPtr->sKind = typePtr->sParm.t.type;
       factorType    = simplePtrFactor(varPtr, factorFlags);
       break;
@@ -2543,23 +2616,23 @@ static void setAbstractType(symbol_t *sType)
     switch (sType->sParm.t.type)
       {
         case sSCALAR :
-          if (abstractType)
+          if (g_abstractType)
             {
-              if (sType != abstractType) error(eSCALARTYPE);
+              if (sType != g_abstractType) error(eSCALARTYPE);
             }
           else
             {
-              abstractType = sType;
+              g_abstractType = sType;
             }
           break;
 
         case sSUBRANGE :
-          if (!abstractType)
+          if (!g_abstractType)
             {
-              abstractType = sType;
+              g_abstractType = sType;
             }
-          else if ((abstractType->sParm.t.type != sSUBRANGE)
-          ||        (abstractType->sParm.t.subType != sType->sParm.t.subType))
+          else if ((g_abstractType->sParm.t.type != sSUBRANGE)
+          ||        (g_abstractType->sParm.t.subType != sType->sParm.t.subType))
             {
               error(eSUBRANGETYPE);
             }
@@ -2571,7 +2644,7 @@ static void setAbstractType(symbol_t *sType)
                 break;
 
               case sSCALAR :
-                if (abstractType != sType) error(eSUBRANGETYPE);
+                if (g_abstractType != sType) error(eSUBRANGETYPE);
                 break;
 
               default :
@@ -2590,7 +2663,7 @@ static void setAbstractType(symbol_t *sType)
 /***************************************************************/
 static void getSetFactor(void)
 {
-   setTypeStruct s;
+   setType_t s;
 
    TRACE(g_lstFile,"[getSetFactor]");
 
@@ -2598,17 +2671,24 @@ static void getSetFactor(void)
    /* ASSUMPTION:  The first '[' has already been processed */
 
    /* First, verify that a scalar expression type has been specified */
-   /* If the abstractType is a SET, then we will need to get the TYPE */
+   /* If the g_abstractType is a SET, then we will need to get the TYPE */
    /* that it is a SET OF */
 
-   if (abstractType) {
-     if (abstractType->sParm.t.type == sSET_OF)
-       s.typePtr = abstractType->sParm.t.parent;
-     else
-       s.typePtr = abstractType;
-   }
+   if (g_abstractType)
+     {
+       if (g_abstractType->sParm.t.type == sSET_OF)
+         {
+           s.typePtr = g_abstractType->sParm.t.parent;
+         }
+       else
+         {
+           s.typePtr = g_abstractType;
+         }
+     }
    else
-     s.typePtr   = NULL;
+     {
+       s.typePtr   = NULL;
+     }
 
    /* Now, get the associated type and MIN/MAX values */
 
@@ -2654,7 +2734,7 @@ static void getSetFactor(void)
 }
 
 /***************************************************************/
-static void getSetElement(setTypeStruct *s)
+static void getSetElement(setType_t *s)
 {
    uint16_t setValue;
    int16_t firstValue;

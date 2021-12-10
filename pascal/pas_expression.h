@@ -56,6 +56,15 @@
 #define EXPRTYPE_POINTER       0x80
 #define IS_POINTER_EXPRTYPE(t) (((uint8_t)(t) & EXPRTYPE_POINTER) != 0)
 
+/* Factor treatment flags */
+
+/* REVIST: duplicated in pas_statement.c and pas_constexpr.c */
+
+#define ADDRESS_DEREFERENCE 0x01
+#define ADDRESS_FACTOR      0x02
+#define INDEXED_FACTOR      0x04
+#define VAR_PARM_FACTOR     0x08
+
 /***********************************************************************
  * Type Definitions
  ***********************************************************************/
@@ -79,8 +88,9 @@ enum exprType_s
   exprStkString  = 0x09,    /* TOS = reference to string on string stack */
   exprCString    = 0x0a,    /* TOS = pointer to C string */
   exprSet        = 0x0b,    /* TOS = set(integer) value */
-  exprArray      = 0x0c,    /* TOS = array */
-  exprRecord     = 0x0d,    /* TOS = record */
+  exprFile       = 0x0c,    /* TOS = file */
+  exprArray      = 0x0d,    /* TOS = array */
+  exprRecord     = 0x0e,    /* TOS = record */
 
   /* Expressions that evaluate to pointers to standard type */
 
@@ -90,8 +100,9 @@ enum exprType_s
   exprBooleanPtr = 0x86,    /* TOS = pointer to a boolean value */
   exprScalarPtr  = 0x87,    /* TOS = pointer to a scalar value */
   exprSetPtr     = 0x8b,    /* TOS = pointer to a set value */
-  exprArrayPtr   = 0x8c,    /* TOS = pointer to an array */
-  exprRecordPtr  = 0x8d     /* TOS = pointer to a record */
+  exprFilePtr    = 0x8c,    /* TOS = pointer to a file */
+  exprArrayPtr   = 0x8d,    /* TOS = pointer to an array */
+  exprRecordPtr  = 0x8e     /* TOS = pointer to a record */
 };
 
 typedef enum exprType_s exprType_t;

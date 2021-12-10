@@ -404,7 +404,7 @@ static void fileFunc(uint16_t opcode)
 {
   TRACE(g_lstFile,"[fileFunc]");
 
-  /* FORM: EOF|EOLN (<file number>)
+  /* FORM: EOF|EOLN {({<file number>})}
    *
    * The optional <file number> parameter is a reference to a file variable.
    * If the optional parameter is supplied then the eof function tests the

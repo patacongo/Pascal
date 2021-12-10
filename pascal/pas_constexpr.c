@@ -61,13 +61,6 @@
  * Pre-processor Definitions
  ***************************************************************/
 
-/* REVIST: duplicated in pas_statement.c and pas_expression.c */
-
-#define ADDRESS_DEREFERENCE 0x01
-#define ADDRESS_FACTOR      0x02
-#define INDEXED_FACTOR      0x04
-#define VAR_PARM_FACTOR     0x08
-
 #define intTrunc(x) ((x) & (~(sINT_SIZE)))
 
 #define isRelationalOperator(t) \

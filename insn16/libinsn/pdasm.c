@@ -129,14 +129,14 @@ static const struct
 
 /* Load (One) or Store (Two stack argument) */
 
-/* 0x20 */ { "LDI ", NOARG16 },
-/* 0x21 */ { "LDIH", NOARG16 },
-/* 0x22 */ { "LDIB", NOARG16 },
-/* 0x23 */ { "LDIM", NOARG16 },
-/* 0x24 */ { "STI ", NOARG16 },
-/* 0x25 */ { "STIH", NOARG16 },
-/* 0x26 */ { "STIB", NOARG16 },
-/* 0x27 */ { "STIM", NOARG16 },
+/* 0x20 */ { "LDI ",  NOARG16 },
+/* 0x21 */ { "LDIH",  NOARG16 },
+/* 0x22 */ { "LDIB",  NOARG16 },
+/* 0x23 */ { "LDIM",  NOARG16 },
+/* 0x24 */ { "STI ",  NOARG16 },
+/* 0x25 */ { "STIH",  NOARG16 },
+/* 0x26 */ { "STIB",  NOARG16 },
+/* 0x27 */ { "STIM",  NOARG16 },
 
 /* Data stack operations */
 

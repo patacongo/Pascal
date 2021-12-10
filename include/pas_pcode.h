@@ -1,5 +1,5 @@
 /***********************************************************************
- * pas_pcode.h"
+ * pas_pcode.h
  * Logical P-code operation code definitions
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.

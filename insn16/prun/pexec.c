@@ -179,7 +179,6 @@ static uint16_t pexec_sysio(struct pexec_s *st, uint8_t fno, uint16_t subfunc)
 {
   ustack_t uparm1;
   fparg_t  fp;
-
   uint8_t *ptr;
 
   switch (subfunc)
@@ -284,7 +283,6 @@ static uint16_t pexec_sysio(struct pexec_s *st, uint8_t fno, uint16_t subfunc)
 
     default :
       return eBADSYSIOFUNC;
-
     }
 
   return eNOERROR;
