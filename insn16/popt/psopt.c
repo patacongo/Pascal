@@ -55,7 +55,7 @@
 #include "pdefs.h"
 #include "pas_errcodes.h"
 #include "pinsn16.h"
-#include "pxdefs.h"
+#include "pas_sysio.h"
 
 #include "popt.h"
 #include "psopt.h"

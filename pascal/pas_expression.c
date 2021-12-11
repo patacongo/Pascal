@@ -48,7 +48,7 @@
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"      /* general operation codes */
 #include "pfdefs.h"         /* floating point operations */
-#include "pxdefs.h"         /* library operations */
+#include "pas_sysio.h"      /* library operations */
 #include "pas_errcodes.h"
 
 #include "pas_main.h"

@@ -154,7 +154,7 @@ mkdir ${installdir}/pcode/libpas || \
 cp -a ${pascaldir}/include/poff.h         ${pascaldir}/include/pofflib.h \
       ${pascaldir}/include/pas_errcodes.h ${pascaldir}/include/pas_error.h \
       ${pascaldir}/include/pdefs.h        ${pascaldir}/include/pfdefs.h \
-      ${pascaldir}/include/pxdefs.h       ${pascaldir}/include/paslib.h \
+      ${pascaldir}/include/pas_sysio.h    ${pascaldir}/include/paslib.h \
       ${installdir}/pcode/include/. || \
   { echo "Failed to copy ${pascaldir}/include" ; exit 1; }
 

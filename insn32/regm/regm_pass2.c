@@ -47,7 +47,7 @@
 
 #include "keywords.h"
 #include "pdefs.h"
-#include "pxdefs.h"
+#include "pas_sysio.h"
 #include "pfdefs.h"
 #include "pas_errcodes.h"
 #include "pofflib.h"

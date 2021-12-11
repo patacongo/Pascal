@@ -1,5 +1,5 @@
 /***********************************************************************
- * pxdefs.h
+ * pas_sysio.h
  * Definitions of the arguments of the oSYSIO opcode
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.

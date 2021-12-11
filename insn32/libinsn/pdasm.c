@@ -45,7 +45,7 @@
 #include "pas_pcode.h"
 #include "pinsn32.h"
 #include "pfdefs.h"
-#include "pxdefs.h"
+#include "pas_sysio.h"
 #include "paslib.h"
 
 #include "pinsn.h"

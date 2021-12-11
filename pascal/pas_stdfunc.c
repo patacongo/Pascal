@@ -47,7 +47,7 @@
 #include "pas_pcode.h"
 #include "pfdefs.h"
 #include "pas_errcodes.h"
-#include "pxdefs.h"
+#include "pas_sysio.h"
 
 #include "pas_main.h"
 #include "pas_expression.h"

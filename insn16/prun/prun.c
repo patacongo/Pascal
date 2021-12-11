@@ -48,7 +48,7 @@
 #include "keywords.h"
 #include "pdefs.h"
 #include "pinsn16.h"
-#include "pxdefs.h"
+#include "pas_sysio.h"
 #include "pas_errcodes.h"
 
 #include "paslib.h"
