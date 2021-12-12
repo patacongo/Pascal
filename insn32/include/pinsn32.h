@@ -137,7 +137,7 @@
  * xr11 0111  ---        SDC   uu
  * xr11 1000  ---        ---
  * xr11 1001  ---        PCAL  ilbl
- * xr11 1010  ---        SYSIO fn,sop
+ * xr11 1010  ---        SYSIO sop
  * xr11 1011  ---        LIB   lop
  * xr11 1100  ---        FLOAT fop
  * xr11 1101  ---       *LABEL ilbl
@@ -148,7 +148,7 @@
  *   r      = Reserved bit (must be zero)
  *   fn     = 8-bit file number
  *   lvl    = 8-bit static nexting level
- *   sop    = 17-bit sysio operation
+ *   sop    = 16-bit sysio operation
  *   lineno = 17-bit line number
  *   nn     = 32-bit constant value (signed)
  *   uu     = 32-bit constant value (unsigned)
@@ -402,7 +402,9 @@
 
 #define oPCAL  (o32|0x39)
 
-/* System calls:   arg = file number | sub-function code */
+/* System calls:  arg = 32-bit file sub-function code
+ *                File number on stack
+ */
 
 #define oSYSIO (o32|0x3a)
 

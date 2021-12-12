@@ -105,7 +105,7 @@
 
 /* Store a byte to an absolute (byte) stack position */
 
-#define PUTBSTACK(st, src,dest) \
+#define PUTBSTACK(st, src, dest) \
   do { \
     (st)->dstack.b[dest] = dest; \
   } while (0)
@@ -148,10 +148,11 @@ typedef union fparg_u fparg_t;
  * Private Function Prototypes
  ****************************************************************************/
 
-static uint16_t pexec_sysio(struct pexec_s *st, uint8_t fno, uint16_t subfunc);
+static uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc);
 static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc);
 static uint16_t pexec_execfp(struct pexec_s *st, uint8_t fpop);
-static void     pexec_getfparguments(struct pexec_s *st, uint8_t fpop, fparg_t *arg1, fparg_t *arg2);
+static void     pexec_getfparguments(struct pexec_s *st, uint8_t fpop,
+                                     fparg_t *arg1, fparg_t *arg2);
 static ustack_t pexec_readinteger(uint8_t *ioptr);
 static void     pexec_readreal(uint16_t *dest, uint8_t *ioptr);
 static ustack_t pexec_getbaseaddress(struct pexec_s *st, level_t leveloffset);
@@ -175,109 +176,182 @@ static uint8_t ioline[LINE_SIZE+1];
  *
  ****************************************************************************/
 
-static uint16_t pexec_sysio(struct pexec_s *st, uint8_t fno, uint16_t subfunc)
+static uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 {
-  ustack_t uparm1;
   fparg_t  fp;
+  uint16_t fileNumber;
+  uint16_t size;
+  uint16_t address;
+  uint16_t value;
   uint8_t *ptr;
 
   switch (subfunc)
     {
+    /* EOF: TOS = File number */
+
     case xEOF :
+      POP(st, fileNumber);  /* File number from stack */
+
 /* FINISH ME -- > */
       break;
+
+    /* EOLN: TOS = File number */
+
     case xEOLN :
+      POP(st, fileNumber);  /* File number from stack */
+
 /* FINISH ME -- > */
       break;
+
+    /* RESET: TOS = File number */
+
     case xRESET :
+      POP(st, fileNumber);  /* File number from stack */
 /* FINISH ME -- > */
       break;
+
+    /* REWRITE: TOS = File number */
+
     case xREWRITE :
+      POP(st, fileNumber);  /* File number from stack */
 /* FINISH ME -- > */
       break;
+
+    /* READLN: TOS = File number */
 
     case xREADLN :
+      POP(st, fileNumber);  /* File number from stack */
 /* FINISH ME -- > */
       break;
+
+    /* READ_BINARY: TOS   = Read size
+     *              TOS+1 = Read address
+     *              TOS+2 = File number
+     */
+
     case xREAD_BINARY :
+      POP(st, size);        /* Read size */
+      POP(st, address);     /* Read address */
+      POP(st, fileNumber);  /* File number from stack */
 /* FINISH ME -- > */
       break;
 
-      /* xREAD_INT:
-       * STACK INPUTS: TOS(st, 0) = address to store integer */
+    /* READ_INT: TOS   = Read address
+     *           TOS+1 = File number
+     */
+
     case xREAD_INT :
+
+      POP(st, address);     /* Read address */
+      POP(st, fileNumber);  /* File number from stack */
       (void)fgets((char*)ioline, LINE_SIZE, stdin);
-      PUTSTACK(st, pexec_readinteger(ioline),TOS(st, 0));
+      PUTSTACK(st, pexec_readinteger(ioline), address);
       break;
 
-      /* xREAD_CHAR:
-       * STACK INPUTS: TOS(st, 0) = address to store integer */
+    /* READ_CHAR: TOS   = Read address
+     *            TOS+1 = File number
+     */
 
     case xREAD_CHAR:
+      POP(st, address);     /* Read address */
+      POP(st, fileNumber);  /* File number from stack */
       (void)fgets((char*)ioline, LINE_SIZE, stdin);
-      PUTBSTACK(st, ioline[0],TOS(st, 0));
+      PUTBSTACK(st, ioline[0], address);
       break;
 
-      /* XREAD_STRING:
+    /* READ_STRING: TOS   = Read size
+     *              TOS+1 = Read address
+     *              TOS+2 = File number
+     */
 
-       * STACK INPUTS:
-       *   TOS = Number of bytes to read
-       *   TOS-1 = Address to store byte(s) */
     case xREAD_STRING :
-      (void)fgets((char*)ATSTACK(st, TOS(st, 1)), TOS(st, 0), stdin);
+      POP(st, size);        /* Read size */
+      POP(st, address);     /* Read address */
+      POP(st, fileNumber);  /* File number from stack */
+      (void)fgets((char*)&st->dstack.b[address], size, stdin);
       break;
 
-      /* xREAD_REAL:
-       * STACK INPUTS: TOS = address to store REAL */
+    /* READ_REAL: TOS   = Read address
+     *            TOS+1 = File number
+     */
 
     case xREAD_REAL :
+      POP(st, address);     /* Read address */
+      POP(st, fileNumber);  /* File number from stack */
       (void)fgets((char*)ioline, LINE_SIZE, stdin);
-      pexec_readreal((uint16_t*)ATSTACK(st, TOS(st, 0)), ioline);
+      pexec_readreal((uint16_t*)&st->dstack.b[address], ioline);
       break;
 
+    /* WRITELN: TOS = File number */
+
     case xWRITELN :
+      POP(st, fileNumber);  /* File number from stack */
       putchar('\n');
       break;
+
+    /* WRITE_PAGE: TOS = File number */
+
     case xWRITE_PAGE :
+      POP(st, fileNumber);  /* File number from stack */
       putchar('\f');
       break;
+
+    /* WRITE_BINARY: TOS   = Write size
+     *               TOS+1 = Write address
+     *               TOS+2 = File number
+     */
+
     case xWRITE_BINARY :
+      POP(st, size);        /* Write size */
+      POP(st, address);     /* Write address */
+      POP(st, fileNumber);  /* File number from stack */
 /* FINISH ME -- > */
       break;
 
-      /* xWRITE_INT:
-       * STACK INPUTS: TOS = integer value to write. */
+    /* WRITE_INT: TOS   = Write value
+     *            TOS+1 = File number
+     */
 
     case xWRITE_INT :
-      printf("%" PRId32, signExtend16(TOS(st, 0)));
+      POP(st, value);       /* Write address */
+      POP(st, fileNumber);  /* File number from stack */
+      printf("%" PRId32, signExtend16(value));
       break;
 
-      /* xWRITE_CHAR:
-       * STACK INPUTS: TOS = char value to write. */
+    /* WRITE_CHAR: TOS   = Write value
+     *             TOS+1 = File number
+     */
 
     case xWRITE_CHAR :
-      putchar(TOS(st, 0));
+      POP(st, value);       /* Write value */
+      POP(st, fileNumber);  /* File number from stack */
+      putchar(value);
       break;
 
-      /* xWRITE_STRING:
-       * STACK INPUTS:
-       *   TOS = Number of bytes to write
-       *   TOS-1 = Address of src data */
+    /* WRITE_STRING: TOS   = Write size
+     *               TOS+1 = Write address
+     *               TOS+2 = File number
+     */
 
     case xWRITE_STRING :
-      uparm1 = TOS(st, 0);
-      for (ptr = (uint8_t*)ATSTACK(st, TOS(st, 1)); uparm1; uparm1--, ptr++)
-        putchar(*ptr);
+      POP(st, size);        /* Write size */
+      POP(st, address);     /* Write address */
+      POP(st, fileNumber);  /* File number from stack */
+      for (ptr = (uint8_t*)&st->dstack.b[address]; size; size--, ptr++)
+        {
+          putchar(*ptr);
+        }
       break;
 
-      /* xWRITE_REAL:
-       * STACK INPUTS: TOS = value of double */
+    /* WRITE_CHAR: TOS-TOS+3 = Write value
+     *             TOS+4     = File number
+     */
 
     case xWRITE_REAL :
-      fp.hw[0] = TOS(st, 3);
-      fp.hw[1] = TOS(st, 2);
-      fp.hw[2] = TOS(st, 1);
-      fp.hw[3] = TOS(st, 0);;
+      POP(st, fp.hw[3]);    /* Write value */
+      POP(st, fp.hw[2]);
+      POP(st, fp.hw[1]);
+      POP(st, fp.hw[0]);
       printf("%f", fp.f);
       break;
 
@@ -286,8 +360,7 @@ static uint16_t pexec_sysio(struct pexec_s *st, uint8_t fno, uint16_t subfunc)
     }
 
   return eNOERROR;
-
-} /* end pexec_sysio */
+}
 
 /****************************************************************************
  * Name: pexec_libcall
@@ -1695,6 +1768,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJNEQZ :
       POP(st, sparm1);
       if (sparm1 != 0)
@@ -1702,6 +1776,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJLTZ  :
       POP(st, sparm1);
       if (sparm1 < 0)
@@ -1709,6 +1784,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJGTEZ :
       POP(st, sparm1);
       if (sparm1 >= 0)
@@ -1716,6 +1792,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJGTZ  :
       POP(st, sparm1);
       if (sparm1 > 0)
@@ -1723,6 +1800,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJLTEZ :
       POP(st, sparm1);
       if (sparm1 <= 0)
@@ -1741,6 +1819,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJNEQ :
       POP(st, sparm1);
       POP(st, sparm2);
@@ -1749,6 +1828,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJLT  :
       POP(st, sparm1);
       POP(st, sparm2);
@@ -1757,6 +1837,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJGTE :
       POP(st, sparm1);
       POP(st, sparm2);
@@ -1765,6 +1846,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJGT  :
       POP(st, sparm1);
       POP(st, sparm2);
@@ -1773,6 +1855,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
           goto branch_out;
         }
       break;
+
     case oJLTE :
       POP(st, sparm1);
       POP(st, sparm2);
@@ -1789,14 +1872,17 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       PUSH(st, GETSTACK(st, uparm1));
       PUSH(st, GETSTACK(st, uparm1 + BPERI));
       break;
+
     case oLDH :
       uparm1 = st->spb + imm16;
       PUSH(st, GETSTACK(st, uparm1));
       break;
+
     case oLDB :
       uparm1 = st->spb + imm16;
       PUSH(st, GETBSTACK(st, uparm1));
       break;
+
     case oLDM :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
@@ -1827,16 +1913,19 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       POP(st, uparm2);
       PUTSTACK(st, uparm2, uparm1);
       break;
+
     case oSTH   :
       uparm1  = st->spb + imm16;
       POP(st, uparm2);
       PUTSTACK(st, uparm2, uparm1);
       break;
+
     case oSTB  :
       uparm1  = st->spb + imm16;
       POP(st, uparm2);
       PUTBSTACK(st, uparm2, uparm1);
       break;
+
     case oSTM :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);                /* Size */
@@ -1864,19 +1953,23 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
 
       DISCARD(st, ROUNDBTOI(uparm3));
       break;
+
     case oLDX  :
       uparm1 = st->spb + imm16 + TOS(st, 0);
       TOS(st, 0) = GETSTACK(st, uparm1);
       PUSH(st, GETSTACK(st, uparm1 + BPERI));
       break;
+
     case oLDXH  :
       uparm1 = st->spb + imm16 + TOS(st, 0);
       TOS(st, 0) = GETSTACK(st, uparm1);
       break;
+
     case oLDXB :
       uparm1 = st->spb + imm16 + TOS(st, 0);
       TOS(st, 0) = GETBSTACK(st, uparm1);
       break;
+
     case oLDXM  :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
@@ -1907,12 +2000,14 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       uparm2 += st->spb + imm16;
       PUTSTACK(st, uparm1,uparm2);
       break;
+
     case oSTXB :
       POP(st, uparm1);
       POP(st, uparm2);
       uparm2 += st->spb + imm16;
       PUTBSTACK(st, uparm1, uparm2);
       break;
+
     case oSTXM :
 /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);                /* Size */
@@ -1947,6 +2042,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       uparm1 = st->spb + imm16;
       PUSH(st, uparm1);
       break;
+
     case oLAX :
       TOS(st, 0) = st->spb + imm16 + TOS(st, 0);
       break;
@@ -1956,6 +2052,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
     case oPUSH  :
       PUSH(st, imm16);
       break;
+
     case oINDS  :
       st->sp += signExtend16(imm16);
       break;
@@ -1966,6 +2063,15 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
 
     case oLIB  :
       ret = pexec_libcall(st, imm16);
+      break;
+
+      /* System Functions:
+       * For SYSIO:   imm16 = sub-function code
+       *              File number on stack
+       */
+
+    case oSYSIO  :
+      ret = pexec_sysio(st, imm16);
       break;
 
       /* Program control:  imm16 = unsigned label (no stack arguments) */
@@ -2013,14 +2119,17 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       PUSH(st, GETSTACK(st, uparm1));
       PUSH(st, GETSTACK(st, uparm1 + BPERI));
       break;
+
     case oLDSH :
       uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
       PUSH(st, GETSTACK(st, uparm1));
       break;
+
     case oLDSB :
       uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
       PUSH(st, GETBSTACK(st, uparm1));
       break;
+
     case oLDSM :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
@@ -2049,11 +2158,13 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       POP(st, uparm2);
       PUTSTACK(st, uparm2, uparm1);
       break;
+
     case oSTSB  :
       uparm1  = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
       POP(st, uparm2);
       PUTBSTACK(st, uparm2, uparm1);
       break;
+
     case oSTSM :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);            /* Size */
@@ -2081,19 +2192,23 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
 
       DISCARD(st, ROUNDBTOI(uparm3));
       break;
+
     case oLDSX  :
       uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
       TOS(st, 0) = GETSTACK(st, uparm1);
       PUSH(st, GETSTACK(st, uparm1 + BPERI));
       break;
+
     case oLDSXH  :
       uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
       TOS(st, 0) = GETSTACK(st, uparm1);
       break;
+
     case oLDSXB :
       uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
       TOS(st, 0) = GETBSTACK(st, uparm1);
       break;
+
     case oLDSXM  :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
@@ -2124,12 +2239,14 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       uparm2 += pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
       PUTSTACK(st, uparm1,uparm2);
       break;
+
     case oSTSXB :
       POP(st, uparm1);
       POP(st, uparm2);
       uparm2 += pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
       PUTBSTACK(st, uparm1, uparm2);
       break;
+
     case oSTSXM :
 /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);                /* Size */
@@ -2164,6 +2281,7 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
       PUSH(st, uparm1);
       break;
+
     case oLASX :
       TOS(st, 0) = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
       break;
@@ -2180,14 +2298,6 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       st->fp = uparm1;
       st->pc = (paddr_t)imm16;
       return eNOERROR;
-
-      /* System Functions:
-       * For SYSIO:   imm8 = file number; imm16 = sub-function code
-       */
-
-    case oSYSIO  :
-      ret = pexec_sysio(st, imm8, imm16);
-      break;
 
       /* Pseudo-operations:  (No stack arguments)
        * For LINE:    imm8 = file number; imm16 = line number

@@ -76,7 +76,6 @@ extern uint16_t    g_tknSubType;           /* Extended token type */
 extern int32_t     g_tknInt;               /* Integer token value */
 extern double      g_tknReal;              /* Real token value */
 extern symbol_t   *g_tknPtr;               /* Pointer to symbol token */
-extern fileTable_t g_files[MAX_FILES + 1]; /* File Table */
 extern fileState_t g_fileState[MAX_INCL];  /* State of all open files */
 
 /* g_sourceFileName : Source file name from command line

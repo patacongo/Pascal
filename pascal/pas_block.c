@@ -87,7 +87,6 @@ static void      pas_DeclareConst          (void);
 static symbol_t *pas_DeclareType           (char *typeName);
 static symbol_t *pas_DeclareOrdinalType    (char *typeName);
 static symbol_t *pas_DeclareVar            (void);
-static void      pas_DeclareFile           (void);
 static void      pas_ProcedureDeclaration  (void);
 static void      pas_FunctionDeclaration   (void);
 
@@ -142,7 +141,6 @@ void block()
   unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
   unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
   unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
-  register int16_t i;
 
   TRACE(g_lstFile,"[block]");
 
@@ -156,7 +154,7 @@ void block()
    * in the POFF file.
    */
 
-  if ((g_level == 0) && (FP0->kind == eIsProgram))
+  if (g_level == 0 && FP0->kind == eIsProgram)
     {
       poffSetEntryPoint(poffHandle, g_label);
     }
@@ -222,20 +220,6 @@ void block()
   /* Make sure all declared labels were defined in the block */
 
   verifyLabels(saveNSym);
-
-  /* Re-initialize file table -- clear files defined in this level */
-
-  for (i = 0; i <= MAX_FILES; i++)
-    {
-      if ((g_files[i].defined) && (g_files[i].flevel >= g_level))
-        {
-          g_files[i].defined = 0;
-          g_files[i].flevel  = 0;
-          g_files[i].ftype   = 0;
-          g_files[i].faddr   = 0;
-          g_files[i].fsize   = 0;
-        }
-    }
 
   /* "Pop" declarations local to this block */
 
@@ -486,24 +470,11 @@ void variableDeclarationGroup(void)
     * variable-declaration list.
     */
 
-  for (; ; )
+  while (g_token == tIDENT)
     {
-      if (g_token == tIDENT)
-        {
-          (void)pas_DeclareVar();
-          if (g_token != ';') break;
-          else getToken();
-        }
-      else if (g_token == sFILE)
-        {
-          pas_DeclareFile();
-          if (g_token != ';') break;
-          else getToken();
-        }
-      else
-        {
-          break;
-        }
+      (void)pas_DeclareVar();
+      if (g_token != ';') break;
+      else getToken();
     }
 }
 
@@ -881,74 +852,6 @@ static symbol_t *pas_DeclareVar(void)
     }
 
   return typePtr;
-}
-
-/***************************************************************/
-/* Process VAR FILE OF declaration */
-
-static void pas_DeclareFile(void)
-{
-   int16_t fileNumber = g_tknPtr->sParm.f.fileNumber;
-   symbol_t *filePtr;
-
-   TRACE(g_lstFile,"[pas_DeclareFile]");
-
-   /* FORM:  <file identifier> : FILE OF <type>
-    * OR:    <file identifier> : <FILE OF type identifier>
-    */
-
-   if (!(fileNumber)) error(eINVFILE);
-   else if (g_files[fileNumber].defined) error(eDUPFILE);
-   else {
-
-     /* Skip over the <file identifier> */
-
-     getToken();
-
-     /* Verify that a colon follows the <file identifier> */
-
-     if (g_token != ':') error(eCOLON);
-     else getToken();
-
-     /* Make sure that the data stack is aligned to INTEGER boundaries */
-
-     g_dStack = intAlign(g_dStack);
-
-     /* FORM:  <file identifier> : FILE OF <type> */
-
-     if (g_token == sFILE)
-       {
-         g_files[fileNumber].defined = -1;
-         g_files[fileNumber].flevel  = g_level;
-         g_files[fileNumber].ftype   = g_tknPtr->sParm.t.type;
-         g_files[fileNumber].faddr   = g_dStack;
-         g_files[fileNumber].fsize   = g_tknPtr->sParm.t.asize;
-         g_dStack                   += (g_tknPtr->sParm.t.asize);
-         getToken();
-       }
-
-     /* FORM:  <file identifier> : <FILE OF type identifier> */
-
-     else
-       {
-         if (g_token != tFILE) error(eFILE);
-         else getToken();
-
-         if (g_token != tOF) error(eOF);
-         else getToken();
-
-         filePtr = pas_TypeIdentifier(1);
-         if (filePtr)
-           {
-             g_files[fileNumber].defined = -1;
-             g_files[fileNumber].flevel  = g_level;
-             g_files[fileNumber].ftype   = filePtr->sParm.t.type;
-             g_files[fileNumber].faddr   = g_dStack;
-             g_files[fileNumber].fsize   = g_dwVarSize;
-             g_dStack                   += g_dwVarSize;
-           }
-       }
-    }
 }
 
 /***************************************************************/

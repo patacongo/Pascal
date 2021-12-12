@@ -114,8 +114,8 @@
  * xx11 0110  ---        ---            ---            ---
  * xx11 0111  ---        ---            ---            ---
  * xx11 1000  ---        ---            LAX uoffs      LASX lvl,offs
- * xx11 1001  ---        ---            LIB lop        SYSIO fn,sop
- * xx11 1010  ---        ---            ---            ---
+ * xx11 1001  ---        ---            LIB lop        ---
+ * xx11 1010  ---        ---            SYSIO fn,sop   ---
  * xx11 1011  ---        ---            ---            ---
  * xx11 1100  ---        ---            ---            ---
  * xx11 1101  ---        ---            ---            ---
@@ -193,17 +193,17 @@
 
 /* Load Immediate */
 
-#define oLDI   (0x20)	/* (One 16-bit stack argument) */
-#define oLDIH  (0x21)	/* (One 16-bit stack argument) */
-#define oLDIB  (0x22)   /* (One 16-bit stack argument) */
-#define oLDIM  (0x23)	/* (Two 16-bit stack arguments) */
+#define oLDI   (0x20)    /* (One 16-bit stack argument) */
+#define oLDIH  (0x21)    /* (One 16-bit stack argument) */
+#define oLDIB  (0x22)    /* (One 16-bit stack argument) */
+#define oLDIM  (0x23)    /* (Two 16-bit stack arguments) */
 
 /* Store Immediate */
 
-#define oSTI   (0x24)	/* (One 32-bit and one 16-bit stack arguments) */
-#define oSTIH  (0x25)	/* (Two 16-bit stack arguments) */
-#define oSTIB  (0x26)   /* (Two 16-bit stack arguments) */
-#define oSTIM  (0x27)	/* (Two + n 16-bit stack arguments) */
+#define oSTI   (0x24)    /* (One 32-bit and one 16-bit stack arguments) */
+#define oSTIH  (0x25)    /* (Two 16-bit stack arguments) */
+#define oSTIB  (0x26)    /* (Two 16-bit stack arguments) */
+#define oSTIM  (0x27)    /* (Two + n 16-bit stack arguments) */
 
 /* Data stack */
 
@@ -332,7 +332,14 @@
 
 #define oLIB   (o16|0x39)
 
-/* (o16|0x3a)-(o16|0x3e) -- unassigned */
+/* System calls:
+ * For SYSIO:        arg16 = sub-function code
+ *                   TOS   = file number
+ */
+
+#define oSYSIO  (o16|0x3a)
+
+/* (o16|0x3b)-(o16|0x3e) -- unassigned */
 
 /* Program control:  arg16 = unsigned label (no stack arguments) */
 
@@ -358,22 +365,22 @@
 
 /* Load:  arg8 = level; arg16 = signed frame offset */
 
-#define oLDS   (o16|o8|0x20)	/* (no stack arguments) */
-#define oLDSH  (o16|o8|0x21)	/* (no stack arguments) */
+#define oLDS   (o16|o8|0x20)    /* (no stack arguments) */
+#define oLDSH  (o16|o8|0x21)    /* (no stack arguments) */
 #define oLDSB  (o16|o8|0x22)    /* (no stack arguments) */
-#define oLDSM  (o16|o8|0x23)	/* (One 16-bit stack argument) */
+#define oLDSM  (o16|o8|0x23)    /* (One 16-bit stack argument) */
 
 /* Store: arg8 = level; arg16 = signed frame offset */
 
-#define oSTS   (o16|o8|0x24)	/* (One 32-bit stack argument) */
-#define oSTSH  (o16|o8|0x25)	/* (One 16-bit stack argument) */
+#define oSTS   (o16|o8|0x24)    /* (One 32-bit stack argument) */
+#define oSTSH  (o16|o8|0x25)    /* (One 16-bit stack argument) */
 #define oSTSB  (o16|o8|0x26)    /* (One 16-bit stack argument) */
-#define oSTSM  (o16|o8|0x27)	/* (One+n 16-bit stack arguments) */
+#define oSTSM  (o16|o8|0x27)    /* (One+n 16-bit stack arguments) */
 
 /* Load Indexed: arg8 = level; arg16 = signed frame offset */
 
-#define oLDSX  (o16|o8|0x28)	/* (One 16-bit stack argument) */
-#define oLDSXH (o16|o8|0x29)	/* (One 16-bit stack argument) */
+#define oLDSX  (o16|o8|0x28)    /* (One 16-bit stack argument) */
+#define oLDSXH (o16|o8|0x29)    /* (One 16-bit stack argument) */
 #define oLDSXB (o16|o8|0x2a)    /* (One 16-bit stack argument) */
 #define oLDSXM (o16|o8|0x2b)    /* (Two 16-bit stack arguments) */
 
@@ -390,12 +397,6 @@
 
 #define oLAS   (o16|o8|0x30)
 #define oLASX  (o16|o8|0x38)
-
-/* System calls:
- * For SYSIO:        arg8 = file number; arg16 = sub-function code
- */
-
-#define oSYSIO  (o16|o8|0x39)
 
 /* (o16|o8|0x3a)-(o8|o16|0x3e) -- unassigned */
 

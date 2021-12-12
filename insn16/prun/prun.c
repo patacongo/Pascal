@@ -217,7 +217,7 @@ static void prun(struct pexec_s *st)
 {
   int errcode;
 
-  for (;;)
+  for (; ; )
     {
       /* Execute the instruction; Check for exceptional conditions */
 
@@ -260,7 +260,8 @@ int main(int argc, char *argv[], char *envp[])
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);
       exit(1);
-    } /* end if */
+    }
+
   printf("%s Loaded\n", fileName);
 
   /* And start program execution in the specified mode */

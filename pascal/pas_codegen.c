@@ -262,9 +262,9 @@ void pas_GenerateFpOperation(uint8_t fpOpcode)
 /***********************************************************************/
 /* Generate an IO operation */
 
-void pas_GenerateIoOperation(uint16_t ioOpcode, uint16_t fileNumber)
+void pas_GenerateIoOperation(uint16_t ioOpcode)
 {
-  insn_GenerateIoOperation(ioOpcode, fileNumber);
+  insn_GenerateIoOperation(ioOpcode);
 }
 
 /***********************************************************************/

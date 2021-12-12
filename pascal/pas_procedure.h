@@ -50,6 +50,7 @@
 void primeBuiltInProcedures(void);
 void builtInProcedure(void);
 symbol_t *getFileBaseType(void);
+uint16_t generateFileNumber(uint16_t defaultFileNumber, uint16_t *pFileSize);
 int  actualParameterSize(symbol_t *procPtr, int parmNo);
 int  actualParameterList(symbol_t *procPtr);
 

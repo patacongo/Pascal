@@ -1349,11 +1349,11 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
               pas_GenerateStackReference(opLDS, varPtr);
               factorType = exprIntegerPtr;
             }
-           else
-             {
+          else
+            {
               pas_GenerateStackReference(opLDS, varPtr);
-               factorType = exprInteger;
-             }
+              factorType = exprInteger;
+            }
         }
       break;
 
@@ -2760,22 +2760,29 @@ static void getSetElement(setType_t *s)
 
      case tINT_CONST : /* An integer subrange constant ? */
        firstValue = g_tknInt;
-       if (!s->typeFound) {
-         s->typeFound = true;
-         s->setType   = sINT;
-       }
+       if (!s->typeFound)
+         {
+           s->typeFound = true;
+           s->setType   = sINT;
+         }
        else if (s->setType != sINT)
-         error(eSET);
+         {
+           error(eSET);
+         }
+
        goto addBit;
 
      case tCHAR_CONST : /* A character subrange constant */
        firstValue = g_tknInt;
-       if (!s->typeFound) {
-         s->typeFound = true;
-         s->setType   = sCHAR;
-       }
+       if (!s->typeFound)
+         {
+           s->typeFound = true;
+           s->setType   = sCHAR;
+         }
        else if (s->setType != sCHAR)
-         error(eSET);
+         {
+           error(eSET);
+         }
 
      addBit:
        /* Check if the constant set element is the first value in a */

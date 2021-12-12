@@ -328,10 +328,10 @@ static const struct
 /* 0xb7 */ { invOp,   NOARG16 },
 /* 0xb8 */ { "LAX  ", UDECIMAL },
 
-/* System operations: arg16 = 16-bit library function identifer */
+/* System operations: arg16 = 16-bit operation identifer */
 
 /* 0xb9 */ { "LIB  ", lbOP,   },
-/* 0xba */ { invOp,   NOARG16 },
+/* 0xba */ { "SYSIO", xOP,    },
 /* 0xbb */ { invOp,   NOARG16 },
 /* 0xbc */ { invOp,   NOARG16 },
 /* 0xbd */ { invOp,   NOARG16 },
@@ -422,10 +422,11 @@ static const struct
 /* 0xf8 */ { "LASX ", DECIMAL },
 
 /* System Functions:  (No stack arguments)
- * For SYSIO:        arg8 = file number; arg16 = sub-function code
+ * For SYSIO:        arg16 = sub-function code
+ *                   TOS   = File number
  */
 
-/* 0xf9 */ { "SYSIO", xOP,    },
+/* 0xf9 */ { invOp,   NOARG16 },
 /* 0xfa */ { invOp,   NOARG16 },
 /* 0xfb */ { invOp,   NOARG16 },
 /* 0xfc */ { invOp,   NOARG16 },
@@ -544,16 +545,16 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 
             case fpOP       :
               if ((pop->arg1 & fpMASK) < MAX_FOP)
-                fprintf(lfile, " %s", fpName[(pop->arg1 & 0x3f)]);
+                fprintf(lfile, "%s", fpName[(pop->arg1 & 0x3f)]);
               else
-                fprintf(lfile, " %s", invFpOp);
+                fprintf(lfile, "%s", invFpOp);
               break;
 
             case xOP       :
               if (pop->arg2 < MAX_XOP)
-                fprintf(lfile, ", %s", xName[pop->arg2]);
+                fprintf(lfile, "%s", xName[pop->arg2]);
               else
-                fprintf(lfile, ", %s", invXOp);
+                fprintf(lfile, "%s", invXOp);
               break;
 
             case lbOP :

@@ -417,37 +417,15 @@ static void fileFunc(uint16_t opcode)
   getToken();          /* Skip over function name */
   if (g_token == '(')  /* Check for '(' */
     {
-      /* FORM: EOF|EOLN ({<file number>})
-       * Check if there is a file argument
-       */
+      /* Push the file number argument on the stack */
 
       getToken();
-      if (g_token != ')')
-        {
-          /* Get the file number argument */
+      (void)generateFileNumber(INPUT_FILE_NUMBER, NULL);
 
-          symbol_t *typePtr = getFileBaseType();
-          if (typePtr == NULL) error(eFILE);
-          else
-            {
-              /* FORM: EOF|EOLN (<file number>)
-               * Generate the I/O operation
-               */
+      /* FORM: EOF|EOLN ({<file number>}) */
+      /* Generate the file operation */
 
-              pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-              pas_GenerateIoOperation(opcode, typePtr->sParm.f.fileNumber);
-            }
-        }
-      else
-        {
-          /* FORM: EOF|EOLN ()
-           * Use default INPUT file
-           */
-
-          pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-          pas_GenerateIoOperation(opcode, INPUT_FILE_NUMBER);
-        }
-
+      pas_GenerateIoOperation(opcode);
       checkRParen();
     }
   else
@@ -456,8 +434,8 @@ static void fileFunc(uint16_t opcode)
        * Use default INPUT file
        */
 
-      pas_GenerateDataOperation(opINDS, sBOOLEAN_SIZE);
-      pas_GenerateIoOperation(opcode, INPUT_FILE_NUMBER);
+      pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
+      pas_GenerateIoOperation(opcode);
     }
 }
 

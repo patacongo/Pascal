@@ -7,19 +7,22 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     - For testing purposes, the filename type has been changed to the string type.
     - According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
       not sure how standard that unit is.
- 2. Currently a set is limited to 32-bits so that they can be represented internally
+ 2. Similarly, one test (rc/605-subprogram.pas) uses the non-standard,
+    unimplemented sizeof() function.  sizeof() should return the storage size,
+    in bytes, of either a Variable or Type.
+ 3. Currently a set is limited to 32-bits so that they can be represented internally
     as a 32-bit bit set.
- 3. Operations on type 'string' are not yet supported
- 4. I/O operations on most types of arrays and VAR arrays are not fully
+ 4. Operations on type 'string' are not yet supported
+ 5. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See src/107-quicksort.pas
- 5. Forward references to variables before they are defined to not work.  See
+ 6. Forward references to variables before they are defined to not work.  See
     failure in src/108-pointerrecode.pas.
- 6. Unit files with data declarations, but no implementation.
+ 7. Unit files with data declarations, but no implementation.
 
 Successful test results are not shown.
 
 ########src/104-primes.pas########
-Line 0:0012 Error 48 Token 3b
+Line 0:0012 Error 4c Token 3b
 
 Line (in var section):
  12   sieve, primes : array[0..w] of set of 0..maxbit;
@@ -89,10 +92,10 @@ Line 0:0004 Error 1e Token 01 (RECDATA)
 Line:
 type
   rptr = ^recdata; <<< HERE
-  recdata = record 
-    number : integer; 
-    code : string; 
-    nextrecord : rptr 
+  recdata = record
+    number : integer;
+    code : string;
+    nextrecord : rptr
   end;
 
 Error:
@@ -167,22 +170,23 @@ Line:
  14   assign(f, 'students.dat');
 
 Analysis:
+Analysis:
 assign() not yet supported
 
 ########src/605-subprogram.pas########
-Line 0:0018 Error 0c Token 56
+Line 0:0018 Error 2f Token 56
 
 Line:
  18   rewrite(f, sizeof(data));
 
 Error:
-#define eFILE            ((uint16_t) 0x0c)
+#define eRPAREN          ((uint16_t) 0x2f)
 
 Token:
 #define sVAR_PARM        0x56
 
 Analysis:
-Probably the same as DayIO.pas
+This is probably failing because the sizeof() function is not implemented.  sizeof() should return the torage size, in bytes, of either a Variable or Type.
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d

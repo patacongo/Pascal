@@ -71,6 +71,8 @@ extern FILE *g_lstFile;         /* LIST file pointer */
  * Private Variables
  **********************************************************************/
 
+/* Indexed by enum pcode_e in pas_pcode.h.  Order must match indexing. */
+
 static const uint8_t opmap[NUM_OPCODES] =
 {
   oNOP,    /* opNOP */
@@ -142,6 +144,7 @@ static const uint8_t opmap[NUM_OPCODES] =
   oINDS,   /* opINDS */
   oLAX,    /* opLAX */
   oLIB,    /* opLIB */
+  oSYSIO,  /* opSYSIO */
   oLABEL,  /* opLABEL */
   oPCAL,   /* opPCAL */
   oLDS,    /* opLDS */
@@ -159,7 +162,6 @@ static const uint8_t opmap[NUM_OPCODES] =
   oSTSXM,  /* opSTSXM */
   oLAS,    /* opLAS */
   oLASX,   /* opLASX */
-  oSYSIO,  /* opSYSIO */
   oLINE,   /* opLINE */
 };
 
@@ -326,10 +328,9 @@ insn_GenerateFpOperation(uint8_t fpOpcode)
 /***********************************************************************/
 
 void
-insn_GenerateIoOperation(uint16_t ioOpcode, uint16_t fileNumber)
+insn_GenerateIoOperation(uint16_t ioOpcode)
 {
-  uint32_t arg = (uint32_t)fileNumber << 16 | (uint32_t)ioOpcode;
-  insn32_GenerateDataOperation(oSYSIO, arg);
+  insn32_GenerateDataOperation(oSYSIO, (uint32_t)ioOpcode);
 }
 
 /***********************************************************************/

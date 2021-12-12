@@ -287,7 +287,7 @@ static const struct optab_s g_sArg32OpTable[64] =
 
   /* 0xb9 */ { "PCAL ", HEX },
 
-  /* System calls:   arg = file number | sub-function code */
+  /* System calls:   arg = file sub-function code, file number on stack */
 
   /* 0xba */ { "SYSIO", xOP },
 
@@ -410,9 +410,7 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 
         case xOP       :
           {
-            unsigned fileno = pop->arg >> 16;
             unsigned xop    = pop->arg & 0xffff;
-            fprintf(lfile, "%d, ", fileno);
             if (xop < MAX_XOP)
               fprintf(lfile, "%s", xName[xop]);
             else

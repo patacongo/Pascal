@@ -57,7 +57,7 @@ void     pas_GenerateSimple(enum pcode_e eOpCode);
 void     pas_GenerateDataOperation(enum pcode_e eOpCode, int32_t dwData);
 void     pas_GenerateDataSize(int32_t dwDataSize);
 void     pas_GenerateFpOperation(uint8_t fpOpcode);
-void     pas_GenerateIoOperation(uint16_t ioOpcode, uint16_t fileNumber);
+void     pas_GenerateIoOperation(uint16_t ioOpcode);
 void     pas_BuiltInFunctionCall(uint16_t libOpcode);
 void     pas_GenerateLevelReference(enum pcode_e eOpCode, uint16_t wLevel,
                                     int32_t dwOffset);

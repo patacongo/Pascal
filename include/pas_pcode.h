@@ -147,9 +147,9 @@ enum pcode_e
 
   opLAX,
 
-  /* System functions: arg = 16-bit library call identifier */
+  /* System functions: arg = 16-bit library/system call identifier */
 
-  opLIB,
+  opLIB, opSYSIO,
 
   /* Program control:  arg = unsigned label (no stack arguments) */
 
@@ -184,12 +184,6 @@ enum pcode_e
    */
 
   opLAS, opLASX,
-
-  /* System calls:
-   * For SYSIO:        arg1 = file number; arg2 = sub-function code
-   */
-
-  opSYSIO,
 
   /* Pseudo-operations:
    * For LINE:         arg1 = file number; arg2 = line number

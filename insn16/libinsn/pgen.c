@@ -65,6 +65,8 @@ extern FILE *g_lstFile;         /* LIST file pointer */
  * Private Variables
  **********************************************************************/
 
+/* Indexed by enum pcode_e in pas_pcode.h.  Order must match indexing. */
+
 static const uint16_t opmap[NUM_OPCODES] =
 {
   oNOP,    /* opNOP */
@@ -136,6 +138,7 @@ static const uint16_t opmap[NUM_OPCODES] =
   oINDS,   /* opINDS */
   oLAX,    /* opLAX */
   oLIB,    /* opLIB */
+  oSYSIO,  /* opSYSIO */
   oLABEL,  /* opLABEL */
   oPCAL,   /* opPCAL */
   oLDSH,   /* opLDS -- integer store maps to 16-bit load */
@@ -153,8 +156,7 @@ static const uint16_t opmap[NUM_OPCODES] =
   oSTSXM,  /* opSTSXM */
   oLAS,    /* opLAS */
   oLASX,   /* opLASX */
-  oSYSIO,  /* opSYSIO */
-  oLINE,   /* opLINE */
+  oLINE    /* opLINE */
 };
 
 /***********************************************************************
@@ -206,21 +208,20 @@ insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2)
     {
       if (arg1 > 0xff) error(eINTOVF);
       poffAddProgByte(poffHandle, (uint8_t)arg1);
-    } /* End if */
+    }
 
   if (insn_opcode & o16)
     {
-      if ((arg2 < -32768) || (arg2 > 65535)) error(eINTOVF);
+      if (arg2 < -32768 || arg2 > 65535) error(eINTOVF);
       arg16 = (uint16_t)arg2;
       poffAddProgByte(poffHandle, (uint8_t)(arg16 >> 8));
       poffAddProgByte(poffHandle, (uint8_t)(arg16 & 0xff));
-    } /* End if */
+    }
 
   /* Now, add the disassembled PCode to the list file. */
 
   insn16_DisassemblePCode(insn_opcode, arg1, arg2);
-
-} /* end insn16_Generate */
+}
 
 /***********************************************************************
  * Public Functions
@@ -261,9 +262,9 @@ insn_GenerateFpOperation(uint8_t fpOpcode)
 /***********************************************************************/
 
 void
-insn_GenerateIoOperation(uint16_t ioOpcode, uint16_t fileNumber)
+insn_GenerateIoOperation(uint16_t ioOpcode)
 {
-  insn16_Generate(opSYSIO, fileNumber, (int32_t)ioOpcode);
+  insn16_Generate(opSYSIO, 0, (int32_t)ioOpcode);
 }
 
 /***********************************************************************/

@@ -78,7 +78,6 @@ uint16_t    g_tknSubType;            /* Extended token type */
 int32_t     g_tknInt;                /* Integer token value */
 double      g_tknReal;               /* Real token value */
 symbol_t   *g_tknPtr;                /* Pointer to symbol token*/
-fileTable_t g_files[MAX_FILES + 1];  /* File Table */
 fileState_t g_fileState[MAX_INCL];   /* State of all open files */
 
 /* g_sourceFileName : Program name from command line
@@ -348,15 +347,6 @@ int main(int argc, char *argv[])
   /* Save the soure file name in the POFF output file */
 
   FP->include = poffAddFileName(poffHandle, filename);
-
-  /* Define standard input/output file characteristics */
-
-  g_files[0].defined = -1;
-  g_files[0].flevel  = g_level;
-  g_files[0].ftype   = sCHAR;
-  g_files[0].faddr   = g_dStack;
-  g_files[0].fsize   = sCHAR_SIZE;
-  g_dStack          += sCHAR_SIZE;
 
   /* We need the following in order to calculate relative stack positions. */
 

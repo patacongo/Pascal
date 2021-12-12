@@ -217,7 +217,7 @@ static symbol_t *addSymbol(char *name, int16_t type)
 
    if (g_nSym >= MAX_SYM)
      {
-      fatal(eOVF);
+       fatal(eOVF);
        return (symbol_t *)NULL;
      }
    else
@@ -461,7 +461,6 @@ void primeSymbolTable(unsigned long symbolTableSize)
   int32_t falseValue  = BOOLEAN_FALSE;
   int32_t maxintValue = MAXINT;
   symbol_t *typePtr;
-  int16_t i;
 
   TRACE(g_lstFile,"[primeSymbolTable]");
 
@@ -539,17 +538,6 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   (void)addFile("INPUT",  INPUT_FILE_NUMBER,  sTEXT, NULL);
   (void)addFile("OUTPUT", OUTPUT_FILE_NUMBER, sTEXT, NULL);
-
-  /* Initialize files table */
-
-  for (i = 0; i <= MAX_FILES; i++)
-    {
-      g_files[i].defined = 0;
-      g_files[i].flevel  = 0;
-      g_files[i].ftype   = 0;
-      g_files[i].faddr   = 0;
-      g_files[i].fsize   = 0;
-    }
 }
 
 /***************************************************************/
