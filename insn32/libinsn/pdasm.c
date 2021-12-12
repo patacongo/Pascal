@@ -44,7 +44,7 @@
 #include "keywords.h"
 #include "pas_pcode.h"
 #include "pinsn32.h"
-#include "pfdefs.h"
+#include "pas_fpops.h"
 #include "pas_sysio.h"
 #include "paslib.h"
 

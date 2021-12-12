@@ -1,5 +1,5 @@
 /***********************************************************************
- * pfdefs.h
+ * pas_fpops.h
  * Floating point operation codes
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ***********************************************************************/
 
-#ifndef __PFDEFS_H
-#define __PFDEFS_H
+#ifndef __PAS_FPOPS_H
+#define __PAS_FPOPS_H
 
 /***********************************************************************
  * FLOATING POINT SUB-OPCODES
@@ -90,4 +90,4 @@
 
 #define MAX_FOP (0x19) /* Number of floating point operations */
 
-#endif /* __PFDEFS_H */
+#endif /* __PAS_FPOPS_H */
