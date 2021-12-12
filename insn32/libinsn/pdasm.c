@@ -312,8 +312,8 @@ static const struct optab_s g_sArg32OpTable[64] =
 static const char invXOp[] = "Invalid SYSIO";
 static const char *xName[MAX_XOP] =
 { /* SYSIO opcode mnemonics */
-/* 0x00 */ invXOp,      "EOF",       "EOLN",       "RESET",
-/* 0x04 */ "REWRITE",   invXOp,      invXOp,       invXOp,
+/* 0x00 */ invXOp,      "EOF",       "EOLN",       "ASSIGNFILE",
+/* 0x04 */ "RESET",     "REWRITE",   "APPEND",     "CLOSEFILE",
 /* 0x08 */ invXOp,      invXOp,      invXOp,       invXOp,
 /* 0x0c */ invXOp,      invXOp,      invXOp,       invXOp,
 /* 0x10 */ "READLN",    "READPG",    "READBIN",    "READINT",

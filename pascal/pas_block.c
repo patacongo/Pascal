@@ -1632,11 +1632,11 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
       /* FORM: file-type = 'text' */
 
-    case sTEXT :
+    case sTEXTFILE :
 
       /* Get the type-denoter */
 
-      typeIdPtr = addTypeDefine(typeName, sTEXT, g_dwVarSize,
+      typeIdPtr = addTypeDefine(typeName, sTEXTFILE, g_dwVarSize,
                                 g_tknPtr, NULL);
       if (typePtr)
         {

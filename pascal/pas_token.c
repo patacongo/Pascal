@@ -221,6 +221,10 @@ char getNextCharacter(bool skipWhiteSpace)
 
 void getToken(void)
 {
+  /* Reset a few globals that may be left in a bad state */
+
+  g_tknPtr = NULL;
+
   /* Skip over leading spaces and comments */
 
   while (isspace(inChar)) getCharacter();
@@ -464,6 +468,7 @@ void getLevelToken(void)
 static void identifier(void)
 {
   const reservedWord_t *rptr;        /* Pointer to reserved word */
+  const char *aliasedName;           /* Pointer to alias */
 
   g_tknSubType = txNONE;             /* Initialize */
 
@@ -478,9 +483,16 @@ static void identifier(void)
 
   *g_stringSP++ = '\0';                       /* make ASCIIZ string */
 
-  /* Check if the identifier is a reserved word */
+  /* Check if the identifier that we found has an alias.  We do this in order
+   * to support compatibility to slightly different naming used by different
+   * pascall compilers.
+   */
 
-  rptr = findReservedWord(g_tokenString);
+  aliasedName = mapToAlias(g_tokenString);
+
+  /* Check if the (possibly aliased) identifier is a reserved word */
+
+  rptr = findReservedWord(aliasedName);
   if (rptr)
     {
       g_token      = rptr->rtype;             /* get type from rsw table */
@@ -488,11 +500,13 @@ static void identifier(void)
       g_stringSP   = g_tokenString;           /* pop token from stack */
     }
 
-  /* Check if the indentifier is a previously defined symbol */
+  /* Check if the (possibly aliased) inentifier is a previously defined
+   * symbol.
+   */
 
   else
     {
-      g_tknPtr = findSymbol(g_tokenString, g_symStart);
+      g_tknPtr = findSymbol(aliasedName, g_symStart);
       if (g_tknPtr)
         {
           g_token    = g_tknPtr->sKind;       /* get type from symbol table */

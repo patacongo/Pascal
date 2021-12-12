@@ -12,12 +12,15 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     in bytes, of either a Variable or Type.
  3. Currently a set is limited to 32-bits so that they can be represented internally
     as a 32-bit bit set.
- 4. Operations on type 'string' are not yet supported
+ 4. Not all operations on type 'string' are not yet supported.
  5. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See src/107-quicksort.pas
- 6. Forward references to variables before they are defined to not work.  See
+ 6. Not all file I/O functions have been implemented.
+ 7. Forward references to variables before they are defined to not work.  See
     failure in src/108-pointerrecode.pas.
- 7. Unit files with data declarations, but no implementation.
+ 8. Unit files with data declarations, but no implementation.
+ 9. There appears be be a general problem accessing record fields. See for
+    example src/601-readfile.pas, src/602-writefile.pas
 
 Successful test results are not shown.
 
@@ -135,43 +138,64 @@ Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
 
 ########src/601-readfile.pas########
-Line 0:0014 Error 09 Token 01 (assign)
+Line 0:0019 Error 2f Token 54
 
 Line:
- 14    assign(f, 'students.dat');
+ 19       read(f,Student);
 
-Line:
+Error:
+225 #define eRPAREN          ((uint16_t) 0x2f)
+
+Token:
+ 92 #define sRECORD          0x54
 
 Analysis:
-assign() not yet supported
+Seems to be an issue accessing records where expression is expected.
 
 ########src/602-writefile.pas########
-Line 0:0014 Error 09 Token 01 (Assign)
+Line 0:0016 Error 1e Token 09
 
 Line:
- 14   Assign(f,'students.dat');
+ 16   Student.s_name := 'John Smith';
+
+Error:
+207 #define eINVTYPE         ((uint16_t) 0x1e)
+
+Token:
+ 53 #define tASSIGN          0x09
 
 Analysis:
-assign() not yet supported
+Probably another issue accessing record fields
 
 ########src/603-appendfile.pas########
-Line 0:0007 Error 09 Token 01 (assign)
+Line 0:0020 Error 2c Token 4b
 
 Line:
- 7   assign(myfile, 'contact.txt');
+ 20      readln(myfile, info);
 
+Error:
+222 #define ePTRADR          ((uint16_t) 0x2c)
+
+Token:
+ 83 #define sSTRING          0x4b /* String storage type */
+ 
 Analysis:
-assign() not yet supported
+Not yet analyzed.  Perhaps an issue related to string types.
 
 ########src/604-textfile.pas########
-Line 0:0014 Error 09 Token 01 (assign)
+Line 0:0019 Error 2f Token 54
 
 Line:
- 14   assign(f, 'students.dat');
+ 19      read(f,Student);
+
+Error:
+225 #define eRPAREN          ((uint16_t) 0x2f)
+
+Token:
+ 92 #define sRECORD          0x54
 
 Analysis:
-Analysis:
-assign() not yet supported
+Same as src/601-readfile.pas
 
 ########src/605-subprogram.pas########
 Line 0:0018 Error 2f Token 56
@@ -301,7 +325,7 @@ The parent is
   sKind = sTYPE
   t    = {type = 0x4a, rtype = 0x4a, subType = 0x48, flags = 0x0, asize = 0x1, rsize = 0x1, minValue = 0x0, maxValue = 0xff, parent = 0x0, index = 0x0}
 
-The 0x4a is sTEXT
+The 0x4a is sTEXTFILE
 
 The failure occurs later when fileFunc is called to handle this line in the pascal file:
 

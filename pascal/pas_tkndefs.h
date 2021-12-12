@@ -75,11 +75,11 @@
 #define sLABEL           0x43
 #define sTYPE            0x44
 #define sFILE            0x45
-#define sINT             0x46
-#define sBOOLEAN         0x47
-#define sCHAR            0x48
-#define sREAL            0x49
-#define sTEXT            0x4a
+#define sTEXTFILE        0x46
+#define sINT             0x47
+#define sBOOLEAN         0x48
+#define sCHAR            0x49
+#define sREAL            0x4a
 #define sSTRING          0x4b /* String storage type */
 #define sRSTRING         0x4c /* String reference type */
 #define sSTRING_CONST    0x4d
@@ -173,19 +173,18 @@
 #define txARCTAN         0x02
 #define txCHR            0x03
 #define txCOS            0x04
-#define txEOF            0x05
-#define txEOLN           0x06
-#define txEXP            0x07
-#define txLN             0x08
-#define txODD            0x09
-#define txORD            0x0a
-#define txPRED           0x0b
-#define txROUND          0x0c
-#define txSIN            0x0d
-#define txSQR            0x0e
-#define txSQRT           0x0f
-#define txSUCC           0x10
-#define txTRUNC          0x11
+#define txEOLN           0x05
+#define txEXP            0x06
+#define txLN             0x07
+#define txODD            0x08
+#define txORD            0x09
+#define txPRED           0x0a
+#define txROUND          0x0b
+#define txSIN            0x0c
+#define txSQR            0x0d
+#define txSQRT           0x0e
+#define txSUCC           0x0f
+#define txTRUNC          0x10
 
 /* "Less than standard" Functions 0x20-0x7f */
 
@@ -199,13 +198,21 @@
 #define txPACK           0x83
 #define txPAGE           0x84
 #define txPUT            0x85
-#define txREAD           0x86
-#define txREADLN         0x87
-#define txRESET          0x88
-#define txREWRITE        0x89
-#define txUNPACK         0x8a
-#define txWRITE          0x8b
-#define txWRITELN        0x8c
+#define txUNPACK         0x86
+
+/* File I/O */
+
+#define txEOF            0x87
+#define txASSIGNFILE     0x88
+#define txRESET          0x89
+#define txREWRITE        0x8a
+#define txAPPEND         0x8b
+#define txCLOSEFILE      0x8c
+#define txREAD           0x8d
+#define txREADLN         0x8e
+#define txWRITE          0x8f
+
+#define txWRITELN        0x90
 
 /* "Less than standard" Procedures 0xc0-0xff */
 

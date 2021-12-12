@@ -71,7 +71,8 @@ static void readProcCommon(bool text,           /* READ[LN] common logic */
                            uint16_t fileSize);
 static void readText(void);                     /* READ text file */
 static void readBinary(uint16_t fileSize);      /* READ binary file */
-static void fileProc(uint16_t opcode);          /* RESET/REWRITE/PAGE procedure */
+static void fileProc(uint16_t opcode);          /* File procedure with 1 arg*/
+static void assignFileProc(void);               /* ASSIGNFILE procedure */
 static void writeProc(void);                    /* WRITE procedure */
 static void writelnProc (void);                 /* WRITELN procedure */
 static void writeProcCommon(bool text,          /* WRITE[LN] common logic */
@@ -131,6 +132,29 @@ void builtInProcedure(void)
           fileProc(xWRITE_PAGE);
           break;
 
+        /* Not implemented */
+
+        case txGET :
+        case txNEW :
+        case txPACK :
+        case txPUT :
+        case txUNPACK :
+          error(eNOTYET);
+          getToken();
+          break;
+
+          /* less-than-standard procedures */
+
+        case txVAL :
+          valProc();
+          break;
+
+        /* File I/O */
+
+        case txASSIGNFILE :
+          assignFileProc();
+          break;
+
         case txREAD :
           readProc();
           break;
@@ -147,27 +171,20 @@ void builtInProcedure(void)
           fileProc(xREWRITE);
           break;
 
+        case txCLOSEFILE :
+          fileProc(xCLOSEFILE);
+          break;
+
+        case txAPPEND :
+          fileProc(xAPPEND);
+          break;
+
         case txWRITE :
           writeProc();
           break;
 
         case txWRITELN :
           writelnProc();
-          break;
-
-        case txGET :
-        case txNEW :
-        case txPACK :
-        case txPUT :
-        case txUNPACK :
-          error(eNOTYET);
-          getToken();
-          break;
-
-          /* less-than-standard procedures */
-
-        case txVAL :
-          valProc();
           break;
 
           /* Its not a recognized procedure */
@@ -203,7 +220,7 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
           *pFileSize = sCHAR_SIZE;
         }
 
-      return sTEXT;
+      return sTEXTFILE;
     }
 
   /* Check if this is a VAR parameter */
@@ -243,9 +260,9 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
   /* Is this a dereferenced pointer to a file type? */
   /* REVISIT:  Not implemented. */
 
-  /* Is this a symbol of type FILE or TEXT? */
+  /* Is this a symbol of type binary or text FILE? */
 
-  if (typePtr->sKind == sFILE || typePtr->sKind == sTEXT)
+  if (typePtr->sKind == sFILE || typePtr->sKind == sTEXTFILE)
     {
       fileType = typePtr->sKind;
       fileSize = varPtr->sParm.v.size;
@@ -290,12 +307,12 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
 #endif
 
   /* Not a file-type variable.  Use the default file number (which we assume
-   * to be of type sTEXT)
+   * to be of type sTEXTFILE)
    */
 
   else
     {
-      fileType   = sTEXT;
+      fileType   = sTEXTFILE;
       fileSize   = sCHAR_SIZE;
       pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
     }
@@ -532,7 +549,7 @@ static void haltProc (void)
 
 static void readProc(void)          /* READLN procedure */
 {
-  uint16_t fileType;  /* sFILE or sTEXT */
+  uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
   TRACE(g_lstFile, "[readProc]");
@@ -570,7 +587,7 @@ static void readProc(void)          /* READLN procedure */
 
   /* Process the rest of the write-parameter-list */
 
-  readProcCommon((fileType == sTEXT), fileSize);
+  readProcCommon((fileType == sTEXTFILE), fileSize);
 
   /* Discard the extra file number argument on the stack.  NOTE that the
    * file number is retained for READLN to handle the move to end-of-line
@@ -589,7 +606,7 @@ static void readProc(void)          /* READLN procedure */
 
 static void readlnProc(void)          /* READLN procedure */
 {
-  uint16_t fileType;  /* sFILE or sTEXT */
+  uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
   TRACE(g_lstFile, "[readlnProc]");
@@ -634,7 +651,7 @@ static void readlnProc(void)          /* READLN procedure */
 
           /* READLN for a binary file does not make sense */
 
-          if (fileType != sTEXT) error(eINVFILE);
+          if (fileType != sTEXTFILE) error(eINVFILE);
 
           /* Process the rest of the write-parameter-list */
 
@@ -672,7 +689,7 @@ static void readlnProc(void)          /* READLN procedure */
  *
  * REVISIT:  Only entire-variable supported
  *
- * file-variable:  As an optional first parameter a TEXT file  can be
+ * file-variable:  As an optional first parameter a TEXTFILE file  can be
  *                 specified where data are read from. Read is additionally
  *                 capable of reading from a typed file variable (FILE OF
  *                 recordType).  If no source is specified, input is assumed.
@@ -767,6 +784,15 @@ static void readText(void)
          */
 
       default :
+        /* Get TOS = file number by duplicating the one that is already
+         * there (but that also need to preserve).
+         */
+
+        pas_GenerateSimple(opDUP);
+
+        /* varParm() will place a pointer to the variable to read at the
+         * TOS and return the address of the pointer.
+         */
 
         switch (varParm(exprUnknown, NULL))
           {
@@ -775,8 +801,6 @@ static void readText(void)
              */
 
             case exprIntegerPtr :
-              pas_GenerateSimple(opDUP);
-              pas_GenerateStackReference(opLAS, g_tknPtr);
               pas_GenerateIoOperation(xREAD_INT);
               break;
 
@@ -785,7 +809,6 @@ static void readText(void)
              */
 
             case exprCharPtr :
-              pas_GenerateSimple(opDUP);
               pas_GenerateIoOperation(xREAD_CHAR);
               break;
 
@@ -794,7 +817,6 @@ static void readText(void)
              */
 
             case exprRealPtr :
-              pas_GenerateSimple(opDUP);
               pas_GenerateIoOperation(xREAD_REAL);
               break;
 
@@ -804,7 +826,7 @@ static void readText(void)
              */
 
             case exprString :
-              error(eNOTYET);
+              pas_GenerateIoOperation(xREAD_STRING);
               break;
 
             default :
@@ -900,38 +922,122 @@ static void readBinary(uint16_t fileSize)
 }
 
 /****************************************************************************/
-/* REWRITE/RESET/PAGE procedure call -- REWRITE sets the file pointer to the
- * beginning of the file and prepares the file for write access; RESET is
- * similar except that it prepares the file for read access; PAGE simply
- * writes a form-feed to the file (no check is made, but is meaningful only
- * for a text file). */
+/* All file I/O procedures that have a single, file number argument.
+ * Includes PAGE, REWRITE, RESET, APPEND, and CLOSEFILE procedure calls
+ *
+ * - PAGE simply writes a form-feed to the file (no check is made, but is
+ *   meaningful only for a text file).
+ * - REWRITE sets the file pointer to the beginning of the file and prepares
+ *   the file for write access;
+ * - RESET is similar except that it prepares the file for read access;
+ * - APPEND prepars the file for appeand access.
+ * - CLOSEFILE closes a previously opened file
+ */
 
 static void fileProc (uint16_t opcode)
 {
   TRACE(g_lstFile, "[fileProc]");
 
-  /* FORM: RESET|REWRITE(<file number>) */
+  /* FORM: function-name(<file number>)
+   * FORM: function-name = PAGE | REWRITE | RESET | APPEND | CLOSEFILE
+   *
+   * On entry, g_token refers to the reserved procedure name.  It may
+   * be followed with a argument list.
+   */
 
   getToken();
-  if (g_token != '(') error(eLPAREN);
-  else getToken();
-
-  if (g_token != ')') error(eRPAREN);
-  else
+  if (g_token == '(')
     {
-      (void)generateFileNumber(INPUT_FILE_NUMBER, NULL);
+      /* Push the file-number at the top of the stack */
+
+      getToken();
+      (void)generateFileNumber(OUTPUT_FILE_NUMBER, NULL);
+
+      /* And generate the opcode */
+
       pas_GenerateIoOperation(opcode);
+
+      /* Verify the closing right parenthesis */
 
       if (g_token != ')') error(eRPAREN);
       else getToken();
     }
+  else
+    {
+      /* Assume the standard OUTPUT file? */
+
+      pas_GenerateDataOperation(opPUSH, OUTPUT_FILE_NUMBER);
+
+      /* And generate the opcode */
+
+      pas_GenerateIoOperation(opcode);
+    }
+}
+
+/****************************************************************************/
+
+static void assignFileProc(void)       /* ASSIGNFILE procedure */
+{
+  uint32_t fileType;
+  uint32_t exprType;
+
+  TRACE(g_lstFile, "[assignFileProc]");
+
+  /* FORM: ASSIGNFILE|ASSIGN assignfile-parameter-list ';'
+   * FORM: assignfile-parameter-list = '(' file-variable ',' file-name ')'
+   * FORM: file-variable = file-variable | typed-file-variable | textfile-variable
+   * FORM: file-name = string-variable
+   *
+   * On entry g_token refers to the ASSIGNFILE|ASSIGN reserved word
+   */
+
+   getToken();
+   if (g_token != '(') error(eLPAREN);
+   else
+     {
+       /* Skip to the file-variable token */
+
+       getToken();
+
+       /* Get TOS     = Pointer to string
+        *     TOS + 1 = 0:binary 1:text
+        *     TOS + 2 = File number
+        */
+
+       /* Push the file number onto the TOS */
+
+       fileType = generateFileNumber(OUTPUT_FILE_NUMBER, NULL);
+
+       /* The file variable must be followed by a comma. */
+
+       if (g_token != ',') error(eCOMMA);
+       else getToken();
+
+       /* Push the file type:  binary or text */
+
+       pas_GenerateDataOperation(opPUSH, (uint16_t)(fileType == sTEXTFILE));
+
+       /* Push the file name reference onto the stack. */
+
+       exprType = expression(exprUnknown, NULL);
+       if (exprType != exprString) error(eSTRING);
+
+       /* And generate the SYSIO operation */
+
+       pas_GenerateIoOperation(txASSIGNFILE);
+
+       /* Make sure that the matching right parenthesis is present */
+
+       if (g_token != ')') error(eRPAREN);
+       else getToken();
+     }
 }
 
 /****************************************************************************/
 
 static void writeProc(void)            /* WRITE procedure */
 {
-  uint16_t fileType;  /* sFILE or sTEXT */
+  uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
    TRACE(g_lstFile, "[writeProc]");
@@ -966,7 +1072,7 @@ static void writeProc(void)            /* WRITE procedure */
 
   /* Process the rest of the write-parameter-list */
 
-  writeProcCommon((fileType == sTEXT), fileSize);
+  writeProcCommon((fileType == sTEXTFILE), fileSize);
 
   /* Discard the extra file number argument on the stack.  NOTE that the
    * file number is retained for READLN to handle the move to end-of-line
@@ -985,7 +1091,7 @@ static void writeProc(void)            /* WRITE procedure */
 
 static void writelnProc(void)         /* WRITELN procedure */
 {
-  uint16_t fileType;  /* sFILE or sTEXT */
+  uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
   TRACE(g_lstFile, "[writelnProc]");
@@ -1026,7 +1132,7 @@ static void writelnProc(void)         /* WRITELN procedure */
 
           /* WRITELN for a binary file does not make sense */
 
-          if (fileType != sTEXT) error(eINVFILE);
+          if (fileType != sTEXTFILE) error(eINVFILE);
 
           /* Process the rest of the write-parameter-list */
 

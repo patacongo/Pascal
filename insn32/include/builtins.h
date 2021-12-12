@@ -64,10 +64,25 @@
 #define xEOLN_INIT \
     { "_xeoln", sBOOLEAN_SIZE, 1, { sINT_SIZE }}
 
+/* void _xassignfile(int fileno, const char *filename); */
+
+#define xASSIGNFILE_INIT \
+    { "_xassignfile", 0, 3, { sINT_SIZE, sINT_SIZE, sPTR_SIZE }}
+
 /* void _xreset(int fileno); */
 
 #define xRESET_INIT \
     { "_xreset", 0, 1, { sINT_SIZE }}
+
+/* void _xappend(int fileno); */
+
+#define xAPPEND_INIT \
+    { "_xappend", 0, 1, { sINT_SIZE }}
+
+/* void _xclosefile(int fileno); */
+
+#define xCLOSEFILE_INIT \
+    { "_xclosefile", 0, 1, { sINT_SIZE }}
 
 /* void _xrewrite(int fileno); */
 

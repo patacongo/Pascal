@@ -106,7 +106,6 @@
  * eTOorDOWNTO          Expected 'TO' or 'DOWNTO' in for statement
  * eTRUNC               String truncated
  * eUNDECLABEL          Attempt to define an undeclared label.
- * eUNDEFILE            Undefined file buffer
  * eUNDEFLABEL          A declared label was not defined.
  * eUNDEFSYM            Undefined symbol
  * eUNTIL               Expected 'UNTIL'
@@ -233,7 +232,7 @@
 #define eTOorDOWNTO      ((uint16_t) 0x35)
 #define eTRUNC           ((uint16_t) 0x36)
 #define eUNDECLABEL      ((uint16_t) 0x37)
-#define eUNDEFILE        ((uint16_t) 0x38)
+/* 0x38 Available */
 #define eUNDEFLABEL      ((uint16_t) 0x39)
 #define eUNDEFSYM        ((uint16_t) 0x3a)
 #define eUNTIL           ((uint16_t) 0x3b)

@@ -43,26 +43,29 @@
  * through 0xffff.
  */
 
-#define xEOF            (0x0001)
-#define xEOLN           (0x0002)
-#define xRESET          (0x0003)
-#define xREWRITE        (0x0004)
+#define xEOF            (0x0001)  /* Test for end of file */
+#define xEOLN           (0x0002)  /* Test for end of line */
+#define xASSIGNFILE     (0x0003)  /* Assign a name and type to the file */
+#define xRESET          (0x0004)  /* Open the file for reading */
+#define xREWRITE        (0x0005)  /* Open the file for writing */
+#define xAPPEND         (0x0006)  /* Open the file for appending */
+#define xCLOSEFILE      (0x0007)  /* Close the file */
 
-#define xREADLN         (0x0010)
-#define xREAD_PAGE      (0x0011)
-#define xREAD_BINARY    (0x0012)
-#define xREAD_INT       (0x0013)
-#define xREAD_CHAR      (0x0014)
-#define xREAD_STRING    (0x0015)
-#define xREAD_REAL      (0x0016)
+#define xREADLN         (0x0010)  /* Move to the next line */
+#define xREAD_PAGE      (0x0011)  /* Move to the next page */
+#define xREAD_BINARY    (0x0012)  /* Read from a binary file */
+#define xREAD_INT       (0x0013)  /* Read an integer from a text file */
+#define xREAD_CHAR      (0x0014)  /* Read an character from a text file */
+#define xREAD_STRING    (0x0015)  /* Read an string from a text file */
+#define xREAD_REAL      (0x0016)  /* Read an real value from a text file */
 
-#define xWRITELN        (0x0020)
-#define xWRITE_PAGE     (0x0021)
-#define xWRITE_BINARY   (0x0022)
-#define xWRITE_INT      (0x0023)
-#define xWRITE_CHAR     (0x0024)
-#define xWRITE_STRING   (0x0025)
-#define xWRITE_REAL     (0x0026)
+#define xWRITELN        (0x0020)  /* Move to the next line */
+#define xWRITE_PAGE     (0x0021)  /* Move to the next page */
+#define xWRITE_BINARY   (0x0022)  /* Write to a binary file */
+#define xWRITE_INT      (0x0023)  /* Write an integer to a text file */
+#define xWRITE_CHAR     (0x0024)  /* Write an character to a text file */
+#define xWRITE_STRING   (0x0025)  /* Write an string to a text file */
+#define xWRITE_REAL     (0x0026)  /* Write an real value to a text file */
 
 #define MAX_XOP         (0x0027)
 

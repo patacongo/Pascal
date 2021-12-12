@@ -57,13 +57,25 @@
 #include "pas_error.h"
 
 /***************************************************************
+ * Private Types
+ ***************************************************************/
+
+struct symbolAlias_s
+{
+  const char *alt;
+  const char *rsw;
+};
+
+typedef struct symbolAlias_s symbolAlias_t;
+
+/***************************************************************
  * Private Function Prototypes
  ***************************************************************/
 
 static symbol_t *addSymbol(char *name, int16_t type);
 
 /***************************************************************
- * Public Variables
+ * Public Data
  ***************************************************************/
 
 symbol_t    *g_parentInteger = NULL;
@@ -72,7 +84,7 @@ unsigned int g_nSym          = 0;    /* Number symbol table entries */
 unsigned int g_nConst        = 0;    /* Number constant table entries */
 
 /***************************************************************
- * Private Variables
+ * Private Data
  ***************************************************************/
 
 /* NOTES in the following:
@@ -84,112 +96,171 @@ unsigned int g_nConst        = 0;    /* Number constant table entries */
  * (6) Extended (or non-standard) Pascal procedure
  */
 
-static const reservedWord_t g_rsw[] =                      /* Reserved word list */
+static const reservedWord_t g_rsw[] =                /* Reserved word list */
 {
-  {"ABS",            tFUNC,           txABS},     /* (2) */
-  {"AND",            tAND,            txNONE},    /* (1) */
-  {"ARCTAN",         tFUNC,           txARCTAN},  /* (2) */
-  {"ARRAY",          tARRAY,          txNONE},    /* (1) */
-  {"BEGIN",          tBEGIN,          txNONE},    /* (1) */
-  {"CASE",           tCASE,           txNONE},    /* (1) */
-  {"CHR",            tFUNC,           txCHR},     /* (2) */
-  {"CONST",          tCONST,          txNONE},    /* (1) */
-  {"COS",            tFUNC,           txCOS},     /* (2) */
-  {"DIV",            tDIV,            txNONE},    /* (1) */
-  {"DO",             tDO,             txNONE},    /* (1) */
-  {"DOWNTO",         tDOWNTO,         txNONE},    /* (1) */
-  {"ELSE",           tELSE,           txNONE},    /* (1) */
-  {"END",            tEND,            txNONE},    /* (1) */
-  {"EOF",            tFUNC,           txEOF},     /* (2) */
-  {"EOLN",           tFUNC,           txEOLN},    /* (2) */
-  {"EXP",            tFUNC,           txEXP},     /* (2) */
-  {"FILE",           tFILE,           txNONE},    /* (1) */
-  {"FOR",            tFOR,            txNONE},    /* (1) */
-  {"FUNCTION",       tFUNCTION,       txNONE},    /* (1) */
-  {"GET",            tPROC,           txGET},     /* (3) */
-  {"GETENV",         tFUNC,           txGETENV},  /* (5) */
-  {"GOTO",           tGOTO,           txNONE},    /* (1) */
-  {"HALT",           tPROC,           txHALT},    /* (3) */
-  {"IF",             tIF,             txNONE},    /* (1) */
-  {"IMPLEMENTATION", tIMPLEMENTATION, txNONE},    /* (4) */
-  {"IN",             tIN,             txNONE},    /* (1) */
-  {"INTERFACE",      tINTERFACE,      txNONE},    /* (4) */
-  {"LABEL",          tLABEL,          txNONE},    /* (1) */
-  {"LN",             tFUNC,           txLN},      /* (2) */
-  {"MOD",            tMOD,            txNONE},    /* (1) */
-  {"NEW",            tPROC,           txNEW},     /* (3) */
-  {"NOT",            tNOT,            txNONE},    /* (1) */
-  {"ODD",            tFUNC,           txODD},     /* (2) */
-  {"OF",             tOF,             txNONE},    /* (1) */
-  {"OR",             tOR,             txNONE},    /* (1) */
-  {"ORD",            tFUNC,           txORD},     /* (2) */
-  {"PACK",           tPROC,           txPACK},    /* (3) */
-  {"PACKED",         tPACKED,         txNONE},    /* (1) */
-  {"PAGE",           tPROC,           txPAGE},    /* (3) */
-  {"PRED",           tFUNC,           txPRED},    /* (2) */
-  {"PROCEDURE",      tPROCEDURE,      txNONE},    /* (1) */
-  {"PROGRAM",        tPROGRAM,        txNONE},    /* (1) */
-  {"PUT",            tPROC,           txPUT},     /* (3) */
-  {"READ",           tPROC,           txREAD},    /* (3) */
-  {"READLN",         tPROC,           txREADLN},  /* (3) */
-  {"RECORD",         tRECORD,         txNONE},    /* (1) */
-  {"REPEAT",         tREPEAT,         txNONE},    /* (1) */
-  {"RESET",          tPROC,           txRESET},   /* (3) */
-  {"REWRITE",        tPROC,           txREWRITE}, /* (3) */
-  {"ROUND",          tFUNC,           txROUND},   /* (2) */
-  {"SET",            tSET,            txNONE},    /* (1) */
-  {"SHL",            tSHL,            txNONE},    /* (4) */
-  {"SHR",            tSHR,            txNONE},    /* (4) */
-  {"SIN",            tFUNC,           txSIN},     /* (2) */
-  {"SQR",            tFUNC,           txSQR},     /* (2) */
-  {"SQRT",           tFUNC,           txSQRT},    /* (2) */
-  {"SUCC",           tFUNC,           txSUCC},    /* (2) */
-  {"THEN",           tTHEN,           txNONE},    /* (1) */
-  {"TO",             tTO,             txNONE},    /* (1) */
-  {"TRUNC",          tFUNC,           txTRUNC},   /* (2) */
-  {"TYPE",           tTYPE,           txNONE},    /* (1) */
-  {"UNIT",           tUNIT,           txNONE},    /* (4) */
-  {"UNPACK",         tPROC,           txUNPACK},  /* (3) */
-  {"UNTIL",          tUNTIL,          txNONE},    /* (1) */
-  {"USES",           tUSES,           txNONE},    /* (4) */
-  {"VAL",            tPROC,           txVAL},     /* (6) */
-  {"VAR",            tVAR,            txNONE},    /* (1) */
-  {"WHILE",          tWHILE,          txNONE},    /* (1) */
-  {"WITH",           tWITH,           txNONE},    /* (1) */
-  {"WRITE",          tPROC,           txWRITE},   /* (3) */
-  {"WRITELN",        tPROC,           txWRITELN}, /* (3) */
-  {NULL,             0,               txNONE}     /* List terminator */
+  {"ABS",            tFUNC,           txABS},        /* (2) */
+  {"AND",            tAND,            txNONE},       /* (1) */
+  {"APPEND",         tPROC,           txAPPEND},     /* (3) */
+  {"ARCTAN",         tFUNC,           txARCTAN},     /* (2) */
+  {"ARRAY",          tARRAY,          txNONE},       /* (1) */
+  {"ASSIGNFILE",     tPROC,           txASSIGNFILE}, /* (3) */
+  {"BEGIN",          tBEGIN,          txNONE},       /* (1) */
+  {"CASE",           tCASE,           txNONE},       /* (1) */
+  {"CHR",            tFUNC,           txCHR},        /* (2) */
+  {"CLOSEFILE",      tPROC,           txCLOSEFILE},  /* (3) */
+  {"CONST",          tCONST,          txNONE},       /* (1) */
+  {"COS",            tFUNC,           txCOS},        /* (2) */
+  {"DIV",            tDIV,            txNONE},       /* (1) */
+  {"DO",             tDO,             txNONE},       /* (1) */
+  {"DOWNTO",         tDOWNTO,         txNONE},       /* (1) */
+  {"ELSE",           tELSE,           txNONE},       /* (1) */
+  {"END",            tEND,            txNONE},       /* (1) */
+  {"EOF",            tFUNC,           txEOF},        /* (2) */
+  {"EOLN",           tFUNC,           txEOLN},       /* (2) */
+  {"EXP",            tFUNC,           txEXP},        /* (2) */
+  {"FILE",           tFILE,           txNONE},       /* (1) */
+  {"FOR",            tFOR,            txNONE},       /* (1) */
+  {"FUNCTION",       tFUNCTION,       txNONE},       /* (1) */
+  {"GET",            tPROC,           txGET},        /* (3) */
+  {"GETENV",         tFUNC,           txGETENV},     /* (5) */
+  {"GOTO",           tGOTO,           txNONE},       /* (1) */
+  {"HALT",           tPROC,           txHALT},       /* (3) */
+  {"IF",             tIF,             txNONE},       /* (1) */
+  {"IMPLEMENTATION", tIMPLEMENTATION, txNONE},       /* (4) */
+  {"IN",             tIN,             txNONE},       /* (1) */
+  {"INTERFACE",      tINTERFACE,      txNONE},       /* (4) */
+  {"LABEL",          tLABEL,          txNONE},       /* (1) */
+  {"LN",             tFUNC,           txLN},         /* (2) */
+  {"MOD",            tMOD,            txNONE},       /* (1) */
+  {"NEW",            tPROC,           txNEW},        /* (3) */
+  {"NOT",            tNOT,            txNONE},       /* (1) */
+  {"ODD",            tFUNC,           txODD},        /* (2) */
+  {"OF",             tOF,             txNONE},       /* (1) */
+  {"OR",             tOR,             txNONE},       /* (1) */
+  {"ORD",            tFUNC,           txORD},        /* (2) */
+  {"PACK",           tPROC,           txPACK},       /* (3) */
+  {"PACKED",         tPACKED,         txNONE},       /* (1) */
+  {"PAGE",           tPROC,           txPAGE},       /* (3) */
+  {"PRED",           tFUNC,           txPRED},       /* (2) */
+  {"PROCEDURE",      tPROCEDURE,      txNONE},       /* (1) */
+  {"PROGRAM",        tPROGRAM,        txNONE},       /* (1) */
+  {"PUT",            tPROC,           txPUT},        /* (3) */
+  {"READ",           tPROC,           txREAD},       /* (3) */
+  {"READLN",         tPROC,           txREADLN},     /* (3) */
+  {"RECORD",         tRECORD,         txNONE},       /* (1) */
+  {"REPEAT",         tREPEAT,         txNONE},       /* (1) */
+  {"RESET",          tPROC,           txRESET},      /* (3) */
+  {"REWRITE",        tPROC,           txREWRITE},    /* (3) */
+  {"ROUND",          tFUNC,           txROUND},      /* (2) */
+  {"SET",            tSET,            txNONE},       /* (1) */
+  {"SHL",            tSHL,            txNONE},       /* (4) */
+  {"SHR",            tSHR,            txNONE},       /* (4) */
+  {"SIN",            tFUNC,           txSIN},        /* (2) */
+  {"SQR",            tFUNC,           txSQR},        /* (2) */
+  {"SQRT",           tFUNC,           txSQRT},       /* (2) */
+  {"SUCC",           tFUNC,           txSUCC},       /* (2) */
+  {"THEN",           tTHEN,           txNONE},       /* (1) */
+  {"TO",             tTO,             txNONE},       /* (1) */
+  {"TRUNC",          tFUNC,           txTRUNC},      /* (2) */
+  {"TYPE",           tTYPE,           txNONE},       /* (1) */
+  {"UNIT",           tUNIT,           txNONE},       /* (4) */
+  {"UNPACK",         tPROC,           txUNPACK},     /* (3) */
+  {"UNTIL",          tUNTIL,          txNONE},       /* (1) */
+  {"USES",           tUSES,           txNONE},       /* (4) */
+  {"VAL",            tPROC,           txVAL},        /* (6) */
+  {"VAR",            tVAR,            txNONE},       /* (1) */
+  {"WHILE",          tWHILE,          txNONE},       /* (1) */
+  {"WITH",           tWITH,           txNONE},       /* (1) */
+  {"WRITE",          tPROC,           txWRITE},      /* (3) */
+  {"WRITELN",        tPROC,           txWRITELN},    /* (3) */
+  {NULL,             0,               txNONE}        /* List terminator */
 };
 
-static symbol_t *g_symbolTable;                   /* Symbol Table */
+static symbol_t *g_symbolTable;                      /* Symbol Table */
+
+/* The g_aliasTable[] allows support for different versions of
+ * pascal source files that differ only in naming.
+ */
+
+static const symbolAlias_t g_aliasTable[] =
+{
+    {"ASSIGN", "ASSIGNFILE"},
+    {"CLOSE",  "CLOSEFILE"},
+    {"TEXT",   "TEXTFILE"},
+    {NULL,     NULL}
+};
 
 /**************************************************************/
 
-const reservedWord_t *findReservedWord (char *name)
+const char *mapToAlias(const char *name)
 {
-  const reservedWord_t *ptr;              /* Point into reserved word list */
+  const symbolAlias_t *ptr;               /* Point into symbol alias list */
   int16_t cmp;                            /* 0=equal; >0=past it */
 
-  for (ptr = g_rsw; (ptr->rname); ptr++)  /* Try each each reserved word */
+  /* Try each alias */
+
+  for (ptr = g_aliasTable; ptr->alt != NULL; ptr++)
     {
-      cmp = strcasecmp(ptr->rname, name); /* Check if names match */
-      if (!cmp)                           /* Check if names match */
+      /* Check if the identifier matches a reserved alias */
+
+      cmp = strcasecmp(ptr->alt, name);
+      if (!cmp)
         {
-          return ptr;                     /* Return pointer to entry if match */
+          /* Return the mapped reserved word */
+
+          return ptr->rsw;
         }
-      else if (cmp > 0)                   /* Exit early if we are past it */
+
+      /* Exit early if we are past the possible matches */
+
+      else if (cmp > 0)
         {
           break;
         }
     }
 
-  return (reservedWord_t *)NULL;          /* return NULL pointer if no match */
+  /* Return the original name if no match */
 
-} /* fnd findReservedWord */
+  return name;
+}
+
+/**************************************************************/
+
+const reservedWord_t *findReservedWord(const char *name)
+{
+  const reservedWord_t *ptr;              /* Point into reserved word list */
+  int16_t cmp;                            /* 0=equal; >0=past it */
+
+  /* Try each each reserved word */
+
+  for (ptr = g_rsw; ptr->rname != NULL; ptr++)
+    {
+      /* Check if the identifier matches a reserved word */
+
+      cmp = strcasecmp(ptr->rname, name);
+      if (!cmp)
+        {
+          /* Return pointer to entry if match */
+
+          return ptr;
+        }
+
+      /* Exit early if we are past the possible matches */
+
+      else if (cmp > 0)
+        {
+          break;
+        }
+    }
+
+  /* return NULL pointer if no match */
+
+  return (reservedWord_t *)NULL;
+}
 
 /***************************************************************/
 
-symbol_t *findSymbol(char *inName, int tableOffset)
+symbol_t *findSymbol(const char *inName, int tableOffset)
 {
   int i;
 
@@ -507,7 +578,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.maxValue = MAXCHAR;
     }
 
-  typePtr = addTypeDefine("TEXT", sTEXT, sCHAR_SIZE, NULL, NULL);
+  typePtr = addTypeDefine("TEXTFILE", sTEXTFILE, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.subType  = sCHAR;
@@ -536,8 +607,8 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard files to the symbol table */
 
-  (void)addFile("INPUT",  INPUT_FILE_NUMBER,  sTEXT, NULL);
-  (void)addFile("OUTPUT", OUTPUT_FILE_NUMBER, sTEXT, NULL);
+  (void)addFile("INPUT",  INPUT_FILE_NUMBER,  sTEXTFILE, NULL);
+  (void)addFile("OUTPUT", OUTPUT_FILE_NUMBER, sTEXTFILE, NULL);
 }
 
 /***************************************************************/
@@ -644,7 +715,7 @@ void dumpTables(void)
           /* Files */
 
         case sFILE :
-        case sTEXT :
+        case sTEXTFILE :
           fprintf(g_lstFile, "fileNumber=%u subType=%u parent=[%p]\n",
                   g_symbolTable[i].sParm.f.fileNumber,
                   g_symbolTable[i].sParm.f.subType,

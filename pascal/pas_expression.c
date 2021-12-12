@@ -1586,7 +1586,7 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sFILE :
-    case sTEXT :
+    case sTEXTFILE :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
@@ -2273,7 +2273,7 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sFILE :
-    case sTEXT :
+    case sTEXTFILE :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)

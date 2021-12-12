@@ -53,6 +53,7 @@
 #include "pas_errcodes.h"
 
 #include "paslib.h"
+#include "pfile.h"
 #include "pexec.h"
 
 #ifdef CONFIG_HAVE_LIBM
@@ -203,18 +204,45 @@ static uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 /* FINISH ME -- > */
       break;
 
+    /* ASSIGNFILE: TOS     = File name pointer
+     *             TOS + 1 = 0:binary 1:textfile
+     *             TOS + 2 = File number
+     */
+
+    case xASSIGNFILE :
+      POP(st, fileNumber);  /* File number from stack */
+      POP(st, value);       /* Binary/text boolean from stack */
+      POP(st, address);     /* File name address from stack */
+      pexec_assignfile(fileNumber, (bool)value,
+                       (const char *)&st->dstack.b[address]);
+      break;
+
     /* RESET: TOS = File number */
 
     case xRESET :
       POP(st, fileNumber);  /* File number from stack */
-/* FINISH ME -- > */
+      pexec_openfile(fileNumber, eOPEN_READ);
       break;
 
     /* REWRITE: TOS = File number */
 
     case xREWRITE :
       POP(st, fileNumber);  /* File number from stack */
-/* FINISH ME -- > */
+      pexec_openfile(fileNumber, eOPEN_WRITE);
+      break;
+
+    /* APPEND: TOS = File number */
+
+    case xAPPEND :
+      POP(st, fileNumber);  /* File number from stack */
+      pexec_openfile(fileNumber, eOPEN_APPEND);
+      break;
+
+    /* CLOSEFILE: TOS = File number */
+
+    case xCLOSEFILE :
+      POP(st, fileNumber);  /* File number from stack */
+      pexec_closefile(fileNumber);
       break;
 
     /* READLN: TOS = File number */

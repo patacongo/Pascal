@@ -120,8 +120,7 @@ void program(void)
           getToken();
           if (g_token == tIDENT)
             {
-              if ((++g_nFiles) > MAX_FILES) fatal(eOVF);
-              (void)addFile(g_tokenString, g_nFiles, sTEXT, NULL);
+              (void)addFile(g_tokenString, ++g_nFiles, sTEXTFILE, NULL);
               g_stringSP = g_tokenString;
               getToken();
             }

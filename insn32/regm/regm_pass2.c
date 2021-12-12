@@ -355,9 +355,9 @@ static const struct regm_opmap_s vrgOpMap2[64] =
 static const struct regm_builtin_s g_rgSysIoBuiltIns[MAX_XOP] =
 {
   /* 0x00 */ ILLEGAL_BUILTIN_INIT,      xEOF_INIT,
-  /* 0x02 */ xEOLN_INIT,                xRESET_INIT,
-  /* 0x04 */ xREWRITE_INIT,             ILLEGAL_BUILTIN_INIT,
-  /* 0x06 */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,
+  /* 0x02 */ xEOLN_INIT,                xASSIGN_FILE_INIT,
+  /* 0x04 */ xRESET_INIT,               xREWRITE_INIT,
+  /* 0x06 */ xAPPEND_INIT,              xCLOSEFILE_INIT,
   /* 0x08 */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,
   /* 0x0a */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,
   /* 0x0c */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,

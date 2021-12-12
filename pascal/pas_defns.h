@@ -59,7 +59,6 @@
 #define MAX_SYM           (4096)
 #define MAX_STRINGS       (65536)
 #define MAX_INCL           3        /* Max number of nested include files */
-#define MAX_FILES          8        /* Max number of opened files */
 #define FNAME_SIZE         40       /* Max size file name */
 #define MAX_INCPATHES      8        /* Max number of include pathes */
 
@@ -223,9 +222,9 @@ typedef struct symRecord_s symRecord_t;
 struct symFile_s           /* for sKind == sFILE */
 {
   uint16_t  fileNumber;    /* File number of file */
-  uint16_t  subType;       /* Sub-type (e.g., sTEXT, sCHAR, etc.) */
+  uint16_t  subType;       /* Sub-type (e.g., sTEXTFILE, sCHAR, etc.) */
 
-  struct symbol_s *parent; /* pointer to parent type (not sTEXT) */
+  struct symbol_s *parent; /* pointer to parent type (not sTEXTFILE) */
 };
 typedef struct symFile_s symFile_t;
 

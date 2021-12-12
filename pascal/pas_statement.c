@@ -1572,7 +1572,7 @@ static void pas_ForStatement(void)
 
        /* Generate the assignment to the integer variable */
 
-       pas_Assignment(opSTS, exprInteger, g_tknPtr, g_tknPtr->sParm.v.parent);
+       pas_Assignment(opSTS, exprInteger, varPtr, varPtr->sParm.v.parent);
 
        /* Determine if this is a TO or a DOWNTO loop and set up the opCodes
         * to generate appropriately.
@@ -1591,7 +1591,9 @@ static void pas_ForStatement(void)
            getToken();
          }
        else
-         error (eTOorDOWNTO);
+         {
+           error (eTOorDOWNTO);
+         }
 
        /* Evaluate <expression> DO */
 

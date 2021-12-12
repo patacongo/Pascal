@@ -1,8 +1,8 @@
 /***************************************************************************
- * pas_symtable.h
- * External Declarations associated with pas_symtable.c
+ * file.h
+ * External Declarations associated with the run-time file table
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,51 +34,43 @@
  *
  ***************************************************************************/
 
-#ifndef __PAS_SYMTABLE_H
-#define __PAS_SYMTABLE_H
+#ifndef __PFILES_H
+#define __PFILES_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
-#include <stdint.h>
-#include "config.h"
+#include "stdint.h"
+#include "stdbool.h"
 
 /***************************************************************************
- * Public Datas
+ * Pre-processor Definitions
  ***************************************************************************/
 
-extern symbol_t    *g_parentInteger;
-extern symbol_t    *g_parentString;
-extern unsigned int g_nSym;          /* Number symbol table entries */
-extern unsigned int g_nConst;        /* Number constant table entries */
+/* Maximum number of files that can be opened at run-time */
+
+#define MAX_OPEN_FILES 8
+
+/***************************************************************************
+ * Public Types
+ ***************************************************************************/
+
+enum openMode_e
+{
+  eOPEN_READ = 0,
+  eOPEN_WRITE,
+  eOPEN_APPEND
+};
+
+typedef enum openMode_e openMode_t;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-const char *mapToAlias(const char *name);
-const reservedWord_t *
-          findReservedWord(const char *name);
-symbol_t *findSymbol(const char *inName, int tableOffset);
-symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
-                        symbol_t *parent, symbol_t *index);
-symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
-                      symbol_t *parent);
-symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size);
-symbol_t *addFile(char *name, uint16_t fileNumber, uint16_t subType,
-                  struct symbol_s *fileTypePtr);
-symbol_t *addLabel(char *name, uint16_t label);
-symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
-                       uint16_t nParms, symbol_t *parent);
-symbol_t *addVariable(char *name, uint8_t type, uint16_t offset,
-                      uint16_t size, symbol_t *parent);
-symbol_t *addField(char *name, symbol_t *record);
-void   primeSymbolTable(unsigned long symbolTableSize);
-void   verifyLabels(int32_t symIndex);
+void pexec_assignfile(uint16_t fileNumber, bool text, const char *filename);
+void pexec_openfile(uint16_t fileNumber, openMode_t openMode);
+void pexec_closefile(uint16_t fileNumber);
 
-#if CONFIG_DEBUG
-void   dumpTables(void);
-#endif
-
-#endif /* __PAS_SYMTABLE_H */
+#endif /* __PFILES_H */
