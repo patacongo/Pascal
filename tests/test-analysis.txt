@@ -1,9 +1,13 @@
-testall.sh compiles all (most) of the pascal source files in the src/ sub-directory.  The src/ sub-directory contains various pascal programs found by scouring the internet (most not attributed here.. sorry).  As of this writing, the following errors are reported when testall.sh is ran:
+testall.sh compiles all (most) of the pascal source files in the src/ sub-
+directory.  The src/ sub-directory contains various pascal programs found by
+scouring the internet (most not attributed here.. sorry).  As of this
+writing, the following errors are reported when testall.sh is ran:
 
  1. Several test cases found on the internet failed because they involved the
-    use of non-standard Pascal types('filename', 'list', 'word') and undefined
-    functions, and  procedures (fsplit, addr).
-    - Test cases using the list type probably have been removed;
+    use of non-standard Pascal types('filename', 'list', 'word', 'longword) and
+    undefined functions, and  procedures (fsplit, addr).
+    - Test cases using the list type probably have been removed (src/901-pageutils.pas
+      which used longword has not yet been removed)
     - For testing purposes, the filename type has been changed to the string type.
     - According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
       not sure how standard that unit is.
@@ -17,7 +21,8 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
       function Length ( const  SourceArray : array ) : Integer;
     The Length function returns either the number of characters in SourceString,
     or the number of elements in SourceArray. (See units/DayIO.pas)
-It is often used to loop around all characters in a string or elements in an array.
+    It is often used to loop around all characters in a string or elements in
+    an array.
  3. Currently a set is limited to 32-bits so that they can be represented internally
     as a 32-bit bit set.
  4. Not all operations on type 'string' are not yet supported.  An invalid type
@@ -29,6 +34,12 @@ It is often used to loop around all characters in a string or elements in an arr
  7. Forward references to variables before they are defined to not work.  See
     failure in src/108-pointerrecode.pas.
  8. Unit files with data declarations, but no implementation.
+ 9. There are a couple of files with initialization like:
+      input = 1;
+      output = 2;
+    I am not sure what these mean and have just commented them out for now.
+    Assignment of a numeric value to a file is not supported.
+
 
 Successful test results are not shown.
 
@@ -45,7 +56,8 @@ Error:
 244 #define eSETRANGE        ((uint16_t) 0x48)
 
 Analysis:
-This is a consequence of the fact that sets are currently limited to 32-bits:
+This is a consequence of the fact that sets are implemented as bitsets and
+the bitset is currently limited to 32-bits:
 
 ########src/106-bubblesort.pas########
 Line 0:0025 Error 17 Token 29
@@ -278,7 +290,8 @@ The problem is that operations on the 'string' are not yet implemented.
 Line 0:0654 Error 0f Token 45
 
 Line:
- 654 input = 1;
+In TYPE definition section:
+ 954 ulong = longword;
 
 Error:
 184 #define eIMPLEMENTATION  ((uint16_t) 0x0f)
@@ -287,7 +300,7 @@ Token:
  75 #define sFILE            0x45
 
 Analysis:
-This is a unit with constant/variable/procedure definitions.  It has no implementation section at the end as does a normal program file.
+Type longword is not supported.
 
 ########sinecos.pas########
 ########unit-cosine.pas########

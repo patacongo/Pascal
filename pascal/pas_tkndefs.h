@@ -121,36 +121,38 @@
 #define tELSE            0x88
 #define tEND             0x89
 #define tFILE            0x8a
-#define tFOR             0x8b
-#define tFUNCTION        0x8c
-#define tGOTO            0x8d
-#define tIF              0x8e
-#define tIMPLEMENTATION  0x8f /* Extended pascal */
-#define tIN              0x90
-#define tINTERFACE       0x91 /* Extended pascal */
-#define tLABEL           0x92
-#define tMOD             0x93
-#define tNIL             0x94
-#define tNOT             0x95
-#define tOF              0x96
-#define tOR              0x97
-#define tPACKED          0x98
-#define tPROCEDURE       0x99
-#define tPROGRAM         0x9a
-#define tRECORD          0x9b
-#define tREPEAT          0x9c
-#define tSET             0x9d
-#define tSHL             0x9e
-#define tSHR             0x9f
-#define tTHEN            0xa0
-#define tTO              0xa1
-#define tTYPE            0xa2
-#define tUNIT            0xa3 /* Extended pascal */
-#define tUNTIL           0xa4
-#define tUSES            0xa5 /* Extended pascal */
-#define tVAR             0xa6
-#define tWHILE           0xa7
-#define tWITH            0xa8
+#define tFINALIZATION    0x8b /* Extended pascal */
+#define tFOR             0x8c
+#define tFUNCTION        0x8d
+#define tGOTO            0x8e
+#define tIF              0x8f
+#define tIMPLEMENTATION  0x90 /* Extended pascal */
+#define tIN              0x91
+#define tINITIALIZATION  0x92 /* Extended pascal */
+#define tINTERFACE       0x93 /* Extended pascal */
+#define tLABEL           0x94
+#define tMOD             0x95
+#define tNIL             0x96
+#define tNOT             0x97
+#define tOF              0x98
+#define tOR              0x99
+#define tPACKED          0x9a
+#define tPROCEDURE       0x9b
+#define tPROGRAM         0x9c
+#define tRECORD          0x9d
+#define tREPEAT          0x9e
+#define tSET             0x9f
+#define tSHL             0xa0
+#define tSHR             0xa1
+#define tTHEN            0xa2
+#define tTO              0xa3
+#define tTYPE            0xa4
+#define tUNIT            0xa5 /* Extended pascal */
+#define tUNTIL           0xa6
+#define tUSES            0xa7 /* Extended pascal */
+#define tVAR             0xa8
+#define tWHILE           0xa9
+#define tWITH            0xaa
 
 /* The following codes indicate that the token is a built-in procedure
  * or function recognized by the compiler.  An additional code will be

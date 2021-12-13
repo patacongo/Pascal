@@ -138,48 +138,67 @@ void unitImplementation(void)
 
   interfaceSection();
 
-  /* Verify that the implementation section is present
-   * FORM: implementation-section =
-   *       'implementation' [ uses-section ] declaration-group
-   */
+  /* Check for the presence of an implementation section */
 
-  if (g_token != tIMPLEMENTATION) error(eIMPLEMENTATION);
-  else getToken();
-
-  FP->section = eIsImplementationSection;
-
-  /* Check for the presence of an optional uses-section */
-
-  if (g_token == tUSES)
+  if (g_token == tIMPLEMENTATION)
     {
-      /* Process the uses-section */
+      /* Verify that the implementation section is present
+       * FORM: implementation-section =
+       *       'implementation' [ uses-section ] declaration-group
+       */
 
+      /* Skip over the implementation key word */
+
+      FP->section = eIsImplementationSection;
       getToken();
-      usesSection();
+
+      /* Check for the presence of an optional uses-section */
+
+      if (g_token == tUSES)
+        {
+          /* Process the uses-section */
+
+          getToken();
+          usesSection();
+        }
+
+      /* Now, process the declaration-group */
+
+      declarationGroup(0);
     }
 
-  /* Now, process the declaration-group
+  /* Check for the presence of an initialization section
    *
-   * FORM: implementation-section =
-   *       'implementation' [ uses-section ] declaration-group
-   * FORM: init-section =
-   *       'initialization statement-sequence
-   *       ['finalization' statement-sequence] 'end' |
-   *       compound-statement | 'end'
+   * FORM: init-section = 'initialization' statement-sequence
    */
 
-  declarationGroup(0);
+  if (g_token == tINITIALIZATION)
+    {
+      FP->section = eIsInitializationSection;
+      getToken();
 
-  /* Process the init-section
-   * FORM: init-section =
-   *       'initialization statement-sequence
-   *       ['finalization' statement-sequence] 'end' |
-   *       compound-statement | 'end'
+      /* REVISIT:  Initialization section is not implemented */
+
+      error(eNOTYET);
+    }
+
+  /* Check for the presence of an finalization section
    *
-   * Not yet... for now, we only require the 'end'
+   * FORM: finalization-section = 'finalization' statement-sequence
    */
 
-  FP->section = eIsInitializationSection;
+  if (g_token == tFINALIZATION)
+    {
+      FP->section = eIsInitializationSection;
+      getToken();
+
+      /* REVISIT:  Finalization section is not implemented */
+
+      error(eNOTYET);
+    }
+
+  /* And this shoud all be terminated with END and a period */
+
   if (g_token != tEND) error(eEND);
   else getToken();
 

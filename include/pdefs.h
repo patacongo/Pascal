@@ -81,10 +81,10 @@
 #define sRETURN_SIZE       (3*sPTR_SIZE)
 
 #define sSTRING_HDR_SIZE    2
-#define sSTRING_SIZE        256                    /* size(2) + string(255) */
+#define sSTRING_SIZE        256                    /* size(2) + string(254) */
 #define sSTRING_MAX_SIZE   (sSTRING_SIZE - 2)      /* string storage size(254) */
 #define sRSTRING_SIZE      (sPTR_SIZE + sINT_SIZE) /* ptr + size */
-#define sCSTRING_SIZE      (sizeof(void*))         /* absolute C pointer */
+#define sCSTRING_SIZE      (sizeof(void *))        /* absolute C pointer */
 
 #define MAXCHAR             255
 #define MINCHAR             0

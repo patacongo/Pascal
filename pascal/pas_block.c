@@ -1316,136 +1316,176 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
 
   /* FORM: enumerated-type = '(' enumerated-constant-list ')' */
 
-   if (g_token == '(')
+  if (g_token == '(')
+    {
+      int32_t nObjects;
+      nObjects = 0;
+      typePtr = addTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL, NULL);
+
+      /* Now declare each instance of the scalar */
+
+      do
+        {
+          getToken();
+          if (g_token != tIDENT) error(eIDENT);
+          else
+            {
+              (void)addConstant(g_tokenString, sSCALAR_OBJECT, &nObjects, typePtr);
+              nObjects++;
+              getToken();
+            }
+        }
+      while (g_token == ',');
+
+      /* Save the number of objects associated with the scalar type (the
+       * maximum ORD is nObjects - 1).
+       */
+
+      typePtr->sParm.t.maxValue = nObjects - 1;
+
+      if (g_token != ')') error(eRPAREN);
+      else getToken();
+    }
+
+  /* Declare a new subrange type
+   * FORM: subrange-type = constant '..' constant
+   * FORM: constant =
+   *    [ sign ] integer-number |  [ sign ] real-number |
+   *    [ sign ] constant-identifier | character-literal | string-literal
+   *
+   * Case 1: <constant> is INTEGER
+   */
+
+  else if (g_token == tINT_CONST ||
+           g_token == '-' ||
+           g_token == '+')
+    {
+      int16_t  value = g_tknInt;
+
+      if (g_token == '-' || g_token == '+')
+        {
+          uint16_t unary = g_token;
+
+          getToken();
+          if (g_token != tINT_CONST) error(eINTCONST);
+          else
+            {
+              value = (unary == '-') ? -g_tknInt : g_tknInt;
+            }
+        }
+
+      /* Create the new INTEGER subrange type */
+
+      typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL, NULL);
+      typePtr->sParm.t.subType  = sINT;
+      typePtr->sParm.t.minValue = value;
+      typePtr->sParm.t.maxValue = MAXINT;
+
+      /* Verify that ".." separates the two constants */
+
+      getToken();
+      if (g_token != tSUBRANGE) error(eSUBRANGE);
+      else getToken();
+
+      /* Verify that the ".." is following by an INTEGER constant */
+
+      if (g_token == tINT_CONST)
+        {
+          value = g_tknInt;
+        }
+      else if (g_token == '-' || g_token == '+')
+        {
+          uint16_t unary = g_token;
+
+          getToken();
+          if (g_token != tINT_CONST) error(eINTCONST);
+          else
+            {
+              value = (unary == '-') ? -g_tknInt : g_tknInt;
+            }
+        }
+      else
+        {
+          error(eINTCONST);
+        }
+
+      if (value < typePtr->sParm.t.minValue)
+        {
+          error(eSUBRANGETYPE);
+        }
+      else
+        {
+          typePtr->sParm.t.maxValue = value;
+        }
+
+      getToken();
+    }
+
+  /* Case 2: <constant> is CHAR */
+
+  else if (g_token == tCHAR_CONST)
+    {
+      /* Create the new CHAR subrange type */
+
+      typePtr = addTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL, NULL);
+      typePtr->sParm.t.subType  = sCHAR;
+      typePtr->sParm.t.minValue = g_tknInt;
+      typePtr->sParm.t.maxValue = MAXCHAR;
+
+      /* Verify that ".." separates the two constants */
+
+      getToken();
+      if (g_token != tSUBRANGE) error(eSUBRANGE);
+      else getToken();
+
+      /* Verify that the ".." is following by a CHAR constant */
+
+      if ((g_token != tCHAR_CONST) || (g_tknInt < typePtr->sParm.t.minValue))
+        {
+          error(eSUBRANGETYPE);
+        }
+      else
+        {
+          typePtr->sParm.t.maxValue = g_tknInt;
+          getToken();
+        }
+    }
+
+  /* Case 3: <constant> is a SCALAR type */
+
+  else if (g_token == sSCALAR_OBJECT)
      {
-       int32_t nObjects;
-       nObjects = 0;
-       typePtr = addTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL, NULL);
+      /* Create the new SCALAR subrange type */
 
-       /* Now declare each instance of the scalar */
+      typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr, NULL);
+      typePtr->sParm.t.subType  = g_token;
+      typePtr->sParm.t.minValue = g_tknInt;
+      typePtr->sParm.t.maxValue = MAXINT;
 
-       do {
-         getToken();
-         if (g_token != tIDENT) error(eIDENT);
-         else
-           {
-             (void)addConstant(g_tokenString, sSCALAR_OBJECT, &nObjects, typePtr);
-             nObjects++;
-             getToken();
-           }
-       } while (g_token == ',');
+      /* Verify that ".." separates the two constants */
 
-       /* Save the number of objects associated with the scalar type (the
-        * maximum ORD is nObjects - 1). */
+      getToken();
+      if (g_token != tSUBRANGE) error(eSUBRANGE);
+      else getToken();
 
-       typePtr->sParm.t.maxValue = nObjects - 1;
+      /* Verify that the ".." is following by a SCALAR constant of the same
+       * type as the one which preceded it
+       */
 
-       if (g_token != ')') error(eRPAREN);
-       else getToken();
-     }
+      if ((g_token != sSCALAR_OBJECT) ||
+          (g_tknPtr != typePtr->sParm.t.parent) ||
+          (g_tknPtr->sParm.c.val.i < typePtr->sParm.t.minValue))
+        {
+          error(eSUBRANGETYPE);
+        }
+      else
+        {
+          typePtr->sParm.t.maxValue = g_tknPtr->sParm.c.val.i;
+          getToken();
+        }
+    }
 
-   /* Declare a new subrange type
-    * FORM: subrange-type = constant '..' constant
-    * FORM: constant =
-    *    [ sign ] integer-number |  [ sign ] real-number |
-    *    [ sign ] constant-identifier | character-literal | string-literal
-    *
-    * Case 1: <constant> is INTEGER
-    */
-
-   else if (g_token == tINT_CONST)
-     {
-       /* Create the new INTEGER subrange type */
-
-       typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL, NULL);
-       typePtr->sParm.t.subType  = sINT;
-       typePtr->sParm.t.minValue = g_tknInt;
-       typePtr->sParm.t.maxValue = MAXINT;
-
-       /* Verify that ".." separates the two constants */
-
-       getToken();
-       if (g_token != tSUBRANGE) error(eSUBRANGE);
-       else getToken();
-
-       /* Verify that the ".." is following by an INTEGER constant */
-
-       if ((g_token != tINT_CONST) || (g_tknInt < typePtr->sParm.t.minValue))
-         {
-           error(eSUBRANGETYPE);
-         }
-       else
-         {
-           typePtr->sParm.t.maxValue = g_tknInt;
-           getToken();
-         }
-     }
-
-   /* Case 2: <constant> is CHAR */
-
-   else if (g_token == tCHAR_CONST)
-     {
-       /* Create the new CHAR subrange type */
-
-       typePtr = addTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL, NULL);
-       typePtr->sParm.t.subType  = sCHAR;
-       typePtr->sParm.t.minValue = g_tknInt;
-       typePtr->sParm.t.maxValue = MAXCHAR;
-
-       /* Verify that ".." separates the two constants */
-
-       getToken();
-       if (g_token != tSUBRANGE) error(eSUBRANGE);
-       else getToken();
-
-       /* Verify that the ".." is following by a CHAR constant */
-
-       if ((g_token != tCHAR_CONST) || (g_tknInt < typePtr->sParm.t.minValue))
-         {
-           error(eSUBRANGETYPE);
-         }
-       else
-         {
-           typePtr->sParm.t.maxValue = g_tknInt;
-           getToken();
-         }
-     }
-
-   /* Case 3: <constant> is a SCALAR type */
-
-   else if (g_token == sSCALAR_OBJECT)
-     {
-       /* Create the new SCALAR subrange type */
-
-       typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr, NULL);
-       typePtr->sParm.t.subType  = g_token;
-       typePtr->sParm.t.minValue = g_tknInt;
-       typePtr->sParm.t.maxValue = MAXINT;
-
-       /* Verify that ".." separates the two constants */
-
-       getToken();
-       if (g_token != tSUBRANGE) error(eSUBRANGE);
-       else getToken();
-
-       /* Verify that the ".." is following by a SCALAR constant of the same
-        * type as the one which preceded it
-        */
-
-       if ((g_token != sSCALAR_OBJECT) ||
-           (g_tknPtr != typePtr->sParm.t.parent) ||
-           (g_tknPtr->sParm.c.val.i < typePtr->sParm.t.minValue))
-         {
-           error(eSUBRANGETYPE);
-         }
-       else
-         {
-           typePtr->sParm.t.maxValue = g_tknPtr->sParm.c.val.i;
-           getToken();
-         }
-     }
-
-   return typePtr;
+  return typePtr;
 }
 
 /***************************************************************/
@@ -1947,7 +1987,8 @@ static symbol_t *pas_DeclareRecord(char *recordName)
 {
   symbol_t *recordPtr;
   int16_t recordOffset;
-  int recordCount, symbolIndex;
+  int recordCount;
+  int symbolIndex;
 
   TRACE(g_lstFile,"[pas_DeclareRecord]");
 

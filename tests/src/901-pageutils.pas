@@ -651,8 +651,10 @@ keyed_delete_dc = 23;
 keyed_rewrite_dc = 24;
 maxfiles = 200;
 minkey_short = -9999;
+{
 input = 1;
 output = 2;
+}
 value_undefined_char = 128;
 taris_time_array_len = 8;
 no_year_low = 1900;
