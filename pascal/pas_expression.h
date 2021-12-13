@@ -124,7 +124,6 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr);
 exprType_t varParm(exprType_t varExprType, symbol_t *typePtr);
 void       arrayIndex(symbol_t *indexTypePtr, int32_t size);
 exprType_t getExprType(symbol_t *sType);
-
-void constantExpression(void);
+void       constantExpression(void);
 
 #endif /* __PAS_EXPRESSION_H */

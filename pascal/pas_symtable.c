@@ -94,87 +94,89 @@ unsigned int g_nConst        = 0;    /* Number constant table entries */
  * (4) Extended (or non-standard) Pascal reserved word
  * (5) Extended (or non-standard) Pascal function
  * (6) Extended (or non-standard) Pascal procedure
+ * (7) Built-In Function
  */
 
 static const reservedWord_t g_rsw[] =                /* Reserved word list */
 {
-  {"ABS",            tFUNC,           txABS},        /* (2) */
+  {"ABS",            tSTDFUNC,        txABS},        /* (2) */
   {"AND",            tAND,            txNONE},       /* (1) */
-  {"APPEND",         tPROC,           txAPPEND},     /* (3) */
-  {"ARCTAN",         tFUNC,           txARCTAN},     /* (2) */
+  {"APPEND",         tSTDPROC,        txAPPEND},     /* (3) */
+  {"ARCTAN",         tSTDFUNC,        txARCTAN},     /* (2) */
   {"ARRAY",          tARRAY,          txNONE},       /* (1) */
-  {"ASSIGNFILE",     tPROC,           txASSIGNFILE}, /* (3) */
+  {"ASSIGNFILE",     tSTDPROC,        txASSIGNFILE}, /* (3) */
   {"BEGIN",          tBEGIN,          txNONE},       /* (1) */
   {"CASE",           tCASE,           txNONE},       /* (1) */
-  {"CHR",            tFUNC,           txCHR},        /* (2) */
-  {"CLOSEFILE",      tPROC,           txCLOSEFILE},  /* (3) */
+  {"CHR",            tSTDFUNC,        txCHR},        /* (2) */
+  {"CLOSEFILE",      tSTDPROC,        txCLOSEFILE},  /* (3) */
   {"CONST",          tCONST,          txNONE},       /* (1) */
-  {"COS",            tFUNC,           txCOS},        /* (2) */
+  {"COS",            tSTDFUNC,        txCOS},        /* (2) */
   {"DIV",            tDIV,            txNONE},       /* (1) */
   {"DO",             tDO,             txNONE},       /* (1) */
   {"DOWNTO",         tDOWNTO,         txNONE},       /* (1) */
   {"ELSE",           tELSE,           txNONE},       /* (1) */
   {"END",            tEND,            txNONE},       /* (1) */
-  {"EOF",            tFUNC,           txEOF},        /* (2) */
-  {"EOLN",           tFUNC,           txEOLN},       /* (2) */
-  {"EXP",            tFUNC,           txEXP},        /* (2) */
+  {"EOF",            tSTDFUNC,        txEOF},        /* (2) */
+  {"EOLN",           tSTDFUNC,        txEOLN},       /* (2) */
+  {"EXP",            tSTDFUNC,        txEXP},        /* (2) */
   {"FILE",           tFILE,           txNONE},       /* (1) */
   {"FINALIZATION",   tFINALIZATION,   txNONE},       /* (4) */
   {"FOR",            tFOR,            txNONE},       /* (1) */
   {"FUNCTION",       tFUNCTION,       txNONE},       /* (1) */
-  {"GET",            tPROC,           txGET},        /* (3) */
-  {"GETENV",         tFUNC,           txGETENV},     /* (5) */
+  {"GET",            tSTDPROC,        txGET},        /* (3) */
+  {"GETENV",         tSTDFUNC,        txGETENV},     /* (5) */
   {"GOTO",           tGOTO,           txNONE},       /* (1) */
-  {"HALT",           tPROC,           txHALT},       /* (3) */
+  {"HALT",           tSTDPROC,        txHALT},       /* (3) */
   {"IF",             tIF,             txNONE},       /* (1) */
   {"IMPLEMENTATION", tIMPLEMENTATION, txNONE},       /* (4) */
   {"IN",             tIN,             txNONE},       /* (1) */
   {"INITIALIZATION", tINITIALIZATION, txNONE},       /* (4) */
   {"INTERFACE",      tINTERFACE,      txNONE},       /* (4) */
   {"LABEL",          tLABEL,          txNONE},       /* (1) */
-  {"LN",             tFUNC,           txLN},         /* (2) */
+  {"LN",             tSTDFUNC,        txLN},         /* (2) */
   {"MOD",            tMOD,            txNONE},       /* (1) */
-  {"NEW",            tPROC,           txNEW},        /* (3) */
+  {"NEW",            tSTDPROC,        txNEW},        /* (3) */
   {"NOT",            tNOT,            txNONE},       /* (1) */
-  {"ODD",            tFUNC,           txODD},        /* (2) */
+  {"ODD",            tSTDFUNC,        txODD},        /* (2) */
   {"OF",             tOF,             txNONE},       /* (1) */
   {"OR",             tOR,             txNONE},       /* (1) */
-  {"ORD",            tFUNC,           txORD},        /* (2) */
-  {"PACK",           tPROC,           txPACK},       /* (3) */
+  {"ORD",            tSTDFUNC,        txORD},        /* (2) */
+  {"PACK",           tSTDPROC,        txPACK},       /* (3) */
   {"PACKED",         tPACKED,         txNONE},       /* (1) */
-  {"PAGE",           tPROC,           txPAGE},       /* (3) */
-  {"PRED",           tFUNC,           txPRED},       /* (2) */
+  {"PAGE",           tSTDPROC,        txPAGE},       /* (3) */
+  {"PRED",           tSTDFUNC,        txPRED},       /* (2) */
   {"PROCEDURE",      tPROCEDURE,      txNONE},       /* (1) */
   {"PROGRAM",        tPROGRAM,        txNONE},       /* (1) */
-  {"PUT",            tPROC,           txPUT},        /* (3) */
-  {"READ",           tPROC,           txREAD},       /* (3) */
-  {"READLN",         tPROC,           txREADLN},     /* (3) */
+  {"PUT",            tSTDPROC,        txPUT},        /* (3) */
+  {"READ",           tSTDPROC,        txREAD},       /* (3) */
+  {"READLN",         tSTDPROC,        txREADLN},     /* (3) */
   {"RECORD",         tRECORD,         txNONE},       /* (1) */
   {"REPEAT",         tREPEAT,         txNONE},       /* (1) */
-  {"RESET",          tPROC,           txRESET},      /* (3) */
-  {"REWRITE",        tPROC,           txREWRITE},    /* (3) */
-  {"ROUND",          tFUNC,           txROUND},      /* (2) */
+  {"RESET",          tSTDPROC,        txRESET},      /* (3) */
+  {"REWRITE",        tSTDPROC,        txREWRITE},    /* (3) */
+  {"ROUND",          tSTDFUNC,        txROUND},      /* (2) */
   {"SET",            tSET,            txNONE},       /* (1) */
   {"SHL",            tSHL,            txNONE},       /* (4) */
   {"SHR",            tSHR,            txNONE},       /* (4) */
-  {"SIN",            tFUNC,           txSIN},        /* (2) */
-  {"SQR",            tFUNC,           txSQR},        /* (2) */
-  {"SQRT",           tFUNC,           txSQRT},       /* (2) */
-  {"SUCC",           tFUNC,           txSUCC},       /* (2) */
+  {"SIN",            tSTDFUNC,        txSIN},        /* (2) */
+  {"SIZEOF",         tBUILTIN,        txSIZEOF},     /* (7) */
+  {"SQR",            tSTDFUNC,        txSQR},        /* (2) */
+  {"SQRT",           tSTDFUNC,        txSQRT},       /* (2) */
+  {"SUCC",           tSTDFUNC,        txSUCC},       /* (2) */
   {"THEN",           tTHEN,           txNONE},       /* (1) */
   {"TO",             tTO,             txNONE},       /* (1) */
-  {"TRUNC",          tFUNC,           txTRUNC},      /* (2) */
+  {"TRUNC",          tSTDFUNC,        txTRUNC},      /* (2) */
   {"TYPE",           tTYPE,           txNONE},       /* (1) */
   {"UNIT",           tUNIT,           txNONE},       /* (4) */
-  {"UNPACK",         tPROC,           txUNPACK},     /* (3) */
+  {"UNPACK",         tSTDPROC,        txUNPACK},     /* (3) */
   {"UNTIL",          tUNTIL,          txNONE},       /* (1) */
   {"USES",           tUSES,           txNONE},       /* (4) */
-  {"VAL",            tPROC,           txVAL},        /* (6) */
+  {"VAL",            tSTDPROC,        txVAL},        /* (6) */
   {"VAR",            tVAR,            txNONE},       /* (1) */
   {"WHILE",          tWHILE,          txNONE},       /* (1) */
   {"WITH",           tWITH,           txNONE},       /* (1) */
-  {"WRITE",          tPROC,           txWRITE},      /* (3) */
-  {"WRITELN",        tPROC,           txWRITELN},    /* (3) */
+  {"WRITE",          tSTDPROC,        txWRITE},      /* (3) */
+  {"WRITELN",        tSTDPROC,        txWRITELN},    /* (3) */
   {NULL,             0,               txNONE}        /* List terminator */
 };
 

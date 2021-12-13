@@ -160,8 +160,9 @@
  * procedure or function applies.
  */
 
-#define tFUNC            0xb0
-#define tPROC            0xb1
+#define tSTDFUNC         0xb0
+#define tSTDPROC         0xb1
+#define tBUILTIN         0xb2
 
 /***********************************************************************/
 
@@ -215,6 +216,10 @@
 #define txWRITE          0x8f
 
 #define txWRITELN        0x90
+
+/* Built-in, compile-time operations */
+
+#define txSIZEOF         0x91
 
 /* "Less than standard" Procedures 0xc0-0xff */
 

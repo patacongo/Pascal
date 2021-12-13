@@ -61,8 +61,8 @@
 
 #include "pas_main.h"
 #include "paslib.h"        /* For extension */
-#include "pas_procedure.h" /* For primeBuiltInProcedures */
-#include "pas_function.h"  /* For primeBuiltInFunctions */
+#include "pas_procedure.h" /* For pas_PrimeStandardProcedures */
+#include "pas_function.h"  /* For pas_PrimeStandardFunctions */
 #include "pas_token.h"     /* For primeTokenizer */
 #include "pas_symtable.h"  /* For primeSymbolTable */
 #include "pas_program.h"   /* for program() */
@@ -334,8 +334,8 @@ int main(int argc, char *argv[])
 
   primeSignalHandlers();
   primeSymbolTable(MAX_SYM);
-  primeBuiltInProcedures();
-  primeBuiltInFunctions();
+  pas_PrimeStandardProcedures();
+  pas_PrimeStandardFunctions();
   primeTokenizer(MAX_STRINGS);
 
   /* Initialize the POFF object */

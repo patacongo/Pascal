@@ -270,9 +270,9 @@ void pas_GenerateIoOperation(uint16_t ioOpcode)
 /***********************************************************************/
 /* Generate a pseudo call to a built-in, standard pascal function */
 
-void pas_BuiltInFunctionCall(uint16_t libOpcode)
+void pas_StandardFunctionCall(uint16_t libOpcode)
 {
-  insn_BuiltInFunctionCall(libOpcode);
+  insn_StandardFunctionCall(libOpcode);
 }
 
 /***********************************************************************/

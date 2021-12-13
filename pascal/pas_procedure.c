@@ -96,7 +96,7 @@ static symbol_t valSymbol[4];
 
 /****************************************************************************/
 
-void primeBuiltInProcedures(void)
+void pas_PrimeStandardProcedures(void)
 {
   /* procedure val(const S : string; var V; var Code : word);  */
 
@@ -111,13 +111,13 @@ void primeBuiltInProcedures(void)
 
 /***********************************************************************/
 
-void builtInProcedure(void)
+void pas_StandardProcedure(void)
 {
-  TRACE(g_lstFile, "[builtInProcedure]");
+  TRACE(g_lstFile, "[pas_StandardProcedure]");
 
   /* Is the token a procedure? */
 
-  if (g_token == tPROC)
+  if (g_token == tSTDPROC)
     {
       /* Yes, process it procedure according to the extended token type */
 
@@ -555,7 +555,7 @@ static void haltProc (void)
    *   halt
    */
 
-  pas_BuiltInFunctionCall(lbHALT);
+  pas_StandardFunctionCall(lbHALT);
 }
 
 /****************************************************************************/
@@ -1364,6 +1364,7 @@ static void writeText(void)
           pas_GenerateStackReference(opLAS, wPtr);
           pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.size);
           pas_GenerateIoOperation(xWRITE_STRING);
+          getToken();
           break;
         }
 
@@ -1496,6 +1497,8 @@ static void writeBinary(uint16_t fileSize)
       pas_GenerateDataOperation(opPUSH, size);
       pas_GenerateIoOperation(xWRITE_BINARY);
     }
+
+  getToken();
 }
 
 /****************************************************************************/
@@ -1536,7 +1539,7 @@ static void valProc(void)         /* VAL procedure */
    * having to generate the INDS here.
    */
 
-  pas_BuiltInFunctionCall(lbVAL);
+  pas_StandardFunctionCall(lbVAL);
 }
 
 /***********************************************************************/

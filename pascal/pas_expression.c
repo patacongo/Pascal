@@ -272,7 +272,7 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
         {
           if (strOpCode != opNOP)
             {
-              pas_BuiltInFunctionCall(lbSTRCMP);
+              pas_StandardFunctionCall(lbSTRCMP);
               pas_GenerateSimple(strOpCode);
             }
           else
@@ -604,7 +604,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
            * change the expression type to reflect this.
            */
 
-          pas_BuiltInFunctionCall(lbMKSTKSTR);
+          pas_StandardFunctionCall(lbMKSTKSTR);
           term1Type = exprStkString;
         }
 
@@ -619,7 +619,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
            * change the expression type to reflect this.
            */
 
-          pas_BuiltInFunctionCall(lbMKSTKC);
+          pas_StandardFunctionCall(lbMKSTKC);
           term1Type = exprStkString;
         }
 
@@ -716,13 +716,13 @@ static exprType_t simpleExpression(exprType_t findExprType)
                 {
                   /* We are concatenating one string with another.*/
 
-                  pas_BuiltInFunctionCall(lbSTRCAT);
+                  pas_StandardFunctionCall(lbSTRCAT);
                 }
               else if (term2Type == exprChar)
                 {
                   /* We are concatenating a character to the end of a string */
 
-                  pas_BuiltInFunctionCall(lbSTRCATC);
+                  pas_StandardFunctionCall(lbSTRCATC);
                 }
               else
                 {
@@ -1261,10 +1261,14 @@ static exprType_t factor(exprType_t findExprType)
       pas_GenerateSimple(opNOT);
       break;
 
-      /* Built-in function? */
+      /* Standard or Built-in function? */
 
-    case tFUNC:
-      factorType = builtInFunction();
+    case tSTDFUNC:
+      factorType = pas_StandardFunction();
+      break;
+
+    case tBUILTIN:
+      factorType = pas_BuiltInFunction();
       break;
 
       /* Hmmm... Try the standard functions */
@@ -2519,7 +2523,7 @@ static exprType_t functionDesignator(void)
     {
       /* Create and empty string reference */
 
-      pas_BuiltInFunctionCall(lbMKSTK);
+      pas_StandardFunctionCall(lbMKSTK);
     }
   else
     {

@@ -47,9 +47,10 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void primeBuiltInFunctions(void);
-exprType_t builtInFunction(void);
-void builtInFunctionOfConstant(void);
+void pas_PrimeStandardFunctions(void);
+exprType_t pas_StandardFunction(void);
+void pas_StandardFunctionOfConstant(void);
+exprType_t pas_BuiltInFunction(void);
 
 void checkLParen(void);
 void checkRParen(void);

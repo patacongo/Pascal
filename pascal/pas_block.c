@@ -793,8 +793,10 @@ static symbol_t *pas_DeclareVar(void)
 
       /* Determine if alignment to INTEGER boundaries is necessary */
 
-      if ((!isIntAligned(g_dStack)) && (pas_IntAlignRequired(typePtr)))
-        g_dStack = intAlign(g_dStack);
+      if (!isIntAligned(g_dStack) && pas_IntAlignRequired(typePtr))
+        {
+          g_dStack = intAlign(g_dStack);
+	}
 
       /* Add the new variable to the symbol table */
 

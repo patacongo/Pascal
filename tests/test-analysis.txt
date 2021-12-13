@@ -11,12 +11,7 @@ writing, the following errors are reported when testall.sh is ran:
     - For testing purposes, the filename type has been changed to the string type.
     - According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
       not sure how standard that unit is.
- 2. Similarly, one test (src/605-subprogram.pas) uses the non-standard,
-    unimplemented sizeof() function.
-    sizeof() should return the storage size, in bytes, of either a Variable or Type.
-      function SizeOf ( Variable : Any type ) : Integer;
-      function SizeOf ( Type ) : Integer;
-    Smart Pascal uses a related Length function:
+ 2. Smart Pascal has a Length function:
       function Length ( const SourceString : string ) : Integer;
       function Length ( const  SourceArray : array ) : Integer;
     The Length function returns either the number of characters in SourceString,
@@ -26,8 +21,8 @@ writing, the following errors are reported when testall.sh is ran:
  3. Currently a set is limited to 32-bits so that they can be represented internally
     as a 32-bit bit set.
  4. Not all operations on type 'string' are not yet supported.  An invalid type
-    error is reported from simpleFactor() for any place an expression is expected
-    and a string type is found.
+    error is reported from simpleFactor() (or ptrFactor()) for any place an
+    expression is expected and a string type is found.
  5. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See src/107-quicksort.pas
  6. Not all file I/O functions have been implemented.
@@ -238,19 +233,30 @@ Analysis:
 Same as src/601-readfile.pas
 
 ########src/605-subprogram.pas########
-Line 0:0018 Error 3a Token 01 (sizeof)
+Line 0:0052 Error 2c Token 4b
 
 Line:
- 18   rewrite(f, sizeof(data));
+ 52    readln(filename);
+Where:O
+  9    filename: string;
 
 Error:
-237 #define eUNDEFSYM        ((uint16_t) 0x3a)
+#define ePTRVAL          ((uint16_t) 0x2d)
 
 Token:
- 44 #define tIDENT           0x01
+#define sSTRING          0x4b /* String storage type */
 
 Analysis:
-This is probably failing because the sizeof() function is not implemented.  sizeof() should return the storage size, in bytes, of either a Variable or Type.
+This is another case of missing string handling logic.  The error is
+generated in ptrFactor() while parsing the filename argume to the
+readln functions:
+
+2036          default :
+2037            error(ePTRADR);
+2038            break;
+
+filename has a type of string and the string type is not handled in
+the switch statement leading up to the error.
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d

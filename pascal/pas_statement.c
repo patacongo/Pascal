@@ -211,7 +211,7 @@ void statement(void)
     case tWITH         : pas_WithStatement(); break;
 
       /* None of the above, try standard procedures */
-    default            : builtInProcedure(); break;
+    default            : pas_StandardProcedure(); break;
   }
 
   /* Generate the POPS that matches the PUSHS generated at the begining
@@ -805,7 +805,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
             *   TOS(2)=pointer to source string
             */
 
-           pas_BuiltInFunctionCall(lbSTR2RSTR);
+           pas_StandardFunctionCall(lbSTR2RSTR);
          }
        else if (stringKind == exprCString)
          {
@@ -816,7 +816,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
             *   TOS(2)=LS 16-bits of 32-bit C source string pointer
             */
 
-           pas_BuiltInFunctionCall(lbCSTR2RSTR);
+           pas_StandardFunctionCall(lbCSTR2RSTR);
          }
      }
    else
@@ -836,7 +836,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
             *   TOS(2)=pointer to source string
             */
 
-           pas_BuiltInFunctionCall(lbSTR2STR);
+           pas_StandardFunctionCall(lbSTR2STR);
          }
        else if (stringKind == exprCString)
          {
@@ -847,7 +847,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
             *   TOS(2)=LS 16-bits of 32-bit C source string pointer
             */
 
-           pas_BuiltInFunctionCall(lbCSTR2STR);
+           pas_StandardFunctionCall(lbCSTR2STR);
          }
      }
 

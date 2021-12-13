@@ -85,22 +85,22 @@ static exprType_t getenvFunc (void);    /* Get environment string value */
  * Public Functions
  ***************************************************************/
 
-void primeBuiltInFunctions(void)
+void pas_PrimeStandardFunctions(void)
 {
 }
 
 /***************************************************************/
 /* Process a standard Pascal function call */
 
-exprType_t builtInFunction(void)
+exprType_t pas_StandardFunction(void)
 {
   exprType_t funcType = exprUnknown;
 
-  TRACE(g_lstFile,"[builtInFunction]");
+  TRACE(g_lstFile,"[pas_StandardFunction]");
 
   /* Is the token a function? */
 
-  if (g_token == tFUNC)
+  if (g_token == tSTDFUNC)
     {
       /* Yes, process it procedure according to the extended token type */
 
@@ -468,7 +468,7 @@ static exprType_t getenvFunc(void)
       error(eINVARG);
     }
 
-  pas_BuiltInFunctionCall(lbGETENV);
+  pas_StandardFunctionCall(lbGETENV);
   checkRParen();
   return exprCString;
 }

@@ -516,7 +516,7 @@ void constantTerm(void)
 }
 
 /***************************************************************/
-/* Process a FACTOR */
+/* Process a constant FACTOR */
 
 static void constantFactor(void)
 {
@@ -559,10 +559,14 @@ static void constantFactor(void)
       constantInt = ~constantInt;
       break;
 
-      /* Built-in function? */
+      /* Standard or Built-in function? */
 
-    case tFUNC:
-      builtInFunctionOfConstant();
+    case tSTDFUNC:
+      pas_StandardFunctionOfConstant();
+      break;
+
+    case tBUILTIN:
+      (void)pas_BuiltInFunction();
       break;
 
       /* Hmmm... Try the standard functions */

@@ -270,7 +270,7 @@ insn_GenerateIoOperation(uint16_t ioOpcode)
 /***********************************************************************/
 
 void
-insn_BuiltInFunctionCall(uint16_t libOpcode)
+insn_StandardFunctionCall(uint16_t libOpcode)
 {
   insn16_Generate(opLIB, 0, (int32_t)libOpcode);
 }
