@@ -71,6 +71,8 @@ static void readProcCommon(bool text,           /* READ[LN] common logic */
                            uint16_t fileSize);
 static void readText(void);                     /* READ text file */
 static void readBinary(uint16_t fileSize);      /* READ binary file */
+static void openFileProc(uint16_t opcode1,      /* File procedure with 1 arg*/
+                         uint16_t opcode2);
 static void fileProc(uint16_t opcode);          /* File procedure with 1 arg*/
 static void assignFileProc(void);               /* ASSIGNFILE procedure */
 static void writeProc(void);                    /* WRITE procedure */
@@ -164,19 +166,19 @@ void builtInProcedure(void)
           break;
 
         case txRESET  :
-          fileProc(xRESET);
+          openFileProc(xRESET, xRESETR);
           break;
 
         case txREWRITE :
-          fileProc(xREWRITE);
-          break;
-
-        case txCLOSEFILE :
-          fileProc(xCLOSEFILE);
+          openFileProc(xREWRITE, xREWRITER);
           break;
 
         case txAPPEND :
           fileProc(xAPPEND);
+          break;
+
+        case txCLOSEFILE :
+          fileProc(xCLOSEFILE);
           break;
 
         case txWRITE :
@@ -201,8 +203,9 @@ void builtInProcedure(void)
 uint16_t generateFileNumber(uint16_t defaultFileNumber,
                             uint16_t *pFileSize)
 {
-  symbol_t *varPtr  = g_tknPtr;
-  symbol_t *typePtr = g_tknPtr;
+  symbol_t *varPtr   = g_tknPtr; /* Remember the variable symbol */
+  symbol_t *typePtr  = g_tknPtr; /* The base type may be in a different symbol */
+  uint16_t tknType   = g_token;  /* The base type may not be a symbol */
   uint16_t fileType;
   uint16_t fileSize;
   uint16_t fileFlags = 0;
@@ -212,7 +215,7 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
    * string.
    */
 
-  if (varPtr == NULL)
+  if (typePtr == NULL)
     {
       pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
       if (pFileSize != NULL)
@@ -225,31 +228,41 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
 
   /* Check if this is a VAR parameter */
 
-  if (varPtr->sKind == sVAR_PARM)
+  if (typePtr->sKind == sVAR_PARM)
     {
       /* Use the parent type.  The parent of a a VAR parameter is a type */
 
-      varPtr     = typePtr->sParm.v.parent;
-      fileFlags |= ADDRESS_DEREFERENCE;
+      typePtr    = typePtr->sParm.v.parent;
+      tknType    = typePtr->sKind;
+      fileFlags |= VAR_PARM_FACTOR;
     }
 
-#if 0 /* Needs more thought */
-  if (varPtr->sKind == sARRAY)
+#if 0
+  if (typePtr->sKind == sARRAY)
     {
       fileFlags  |= INDEXED_FACTOR;
+    }
+
+  if (typePtr->sKind == sPOINTER)
+    {
+      fileFlags  |= ADDRESS_FACTOR;
     }
 #endif
 
   /* Is this a symbole whose type is typedef'ed? */
 
-  while (varPtr->sKind == sTYPE)
+  while (typePtr->sKind == sTYPE)
     {
+      /* Get the type of the parent */
+
+      tknType = typePtr->sParm.t.type;
+
       /* This is the final type if it has no parent. */
 
-      symbol_t *tmpPtr = typePtr->sParm.t.parent;
+      symbol_t *tmpPtr = varPtr->sParm.t.parent;
       if (tmpPtr != NULL)
         {
-          typePtr = tmpPtr;
+          varPtr = tmpPtr;
         }
       else
         {
@@ -262,13 +275,16 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
 
   /* Is this a symbol of type binary or text FILE? */
 
-  if (typePtr->sKind == sFILE || typePtr->sKind == sTEXTFILE)
+  if (tknType == sFILE || tknType == sTEXTFILE)
     {
-      fileType = typePtr->sKind;
-      fileSize = varPtr->sParm.v.size;
+      fileType = varPtr->sKind;
+      fileSize = typePtr->sParm.v.size;
 
-#if 0
-      if ((fileFlags & ADDRESS_DEREFERENCE) != 0)
+      /* If this is a VAR parameter, then we need to push the address of the
+       * file variable and dereference that address.
+       */
+
+      if ((fileFlags & VAR_PARM_FACTOR) != 0)
         {
           pas_GenerateStackReference(opLDS, varPtr);
           pas_GenerateSimple(opLDI);
@@ -277,9 +293,6 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
         {
           pas_GenerateStackReference(opLDS, varPtr);
         }
-#else
-      pas_GenerateDataOperation(opPUSH, varPtr->sParm.f.fileNumber);
-#endif
 
       /* Skip over the variable identifer */
 
@@ -289,10 +302,10 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
 #if 0 /* Needs more thought */
   /* Is this a file type? */
 
-  else if (varPtr->sKind == sTYPE)
+  else if (typePtr->sKind == sTYPE)
     {
-      fileType   = typePtr->sParm.t.type;
-      fileSize   = typePtr->sParm.t.asize;
+      fileType   = varPtr->sParm.t.type;
+      fileSize   = varPtr->sParm.t.asize;
       pas_GenerateDataOperation(opPUSH, g_tokenPtr->sParm.f.fileNumber);
 
       if (dereference)
@@ -919,27 +932,99 @@ static void readBinary(uint16_t fileSize)
       pas_GenerateDataOperation(opPUSH, size);
       pas_GenerateIoOperation(xREAD_BINARY);
     }
+
+  /* Skip over the variable-access */
+
+  getToken();
+}
+
+/****************************************************************************/
+/* This function handles file procedure calls that have a file number
+ * argument followed by an integer argument:
+ *
+ *  FORM: open-procedure-name '(' file-variable {, record-size} ')'
+ *
+ * Includes RESET and REWRITE:
+ *
+ * - REWRITE sets the file pointer to the beginning of the file and prepares
+ *   the file for write access.  It will also reset the record size if the
+ *   record-size argument is present.
+ * - RESET is similar to REWRITE except that it prepares the file for read
+ *   access;
+ *
+ * APPEND also opens a file, but is handled by fileProc().  This function is
+ * almost identical to fileProc(), differing only in that it accepts two
+ * opcodes and handles the option record-size.
+ */
+
+static void openFileProc(uint16_t opcode1, uint16_t opcode2)
+{
+  uint16_t opcode = opcode1;
+
+  TRACE(g_lstFile, "[fileProc]");
+
+  /* FORM: open-procedure-name '(' file-variable {, record-size} ')'
+   * FORM: open-procedure-name = REWRITE | RESET
+   *
+   * On entry, g_token refers to the reserved procedure name.  It may
+   * be followed with a argument list.
+   */
+
+  getToken();
+  if (g_token == '(')
+    {
+      /* Push the file-number at the top of the stack */
+
+      getToken();
+      (void)generateFileNumber(OUTPUT_FILE_NUMBER, NULL);
+
+      /* Check for the option record-size */
+
+      if (g_token == ',')
+        {
+          getToken();
+          (void)expression(exprInteger, NULL);
+          opcode = opcode2;
+        }
+
+      /* And generate the opcode */
+
+      pas_GenerateIoOperation(opcode);
+
+      /* Verify the closing right parenthesis */
+
+      if (g_token != ')') error(eRPAREN);
+      else getToken();
+    }
+  else
+    {
+      /* Assume the standard OUTPUT file? */
+
+      pas_GenerateDataOperation(opPUSH, OUTPUT_FILE_NUMBER);
+
+      /* And generate the opcode1 */
+
+      pas_GenerateIoOperation(opcode);
+    }
 }
 
 /****************************************************************************/
 /* All file I/O procedures that have a single, file number argument.
- * Includes PAGE, REWRITE, RESET, APPEND, and CLOSEFILE procedure calls
+ * Includes PAGE, APPEND, and CLOSEFILE procedure calls
  *
  * - PAGE simply writes a form-feed to the file (no check is made, but is
  *   meaningful only for a text file).
- * - REWRITE sets the file pointer to the beginning of the file and prepares
- *   the file for write access;
- * - RESET is similar except that it prepares the file for read access;
- * - APPEND prepars the file for appeand access.
+ * - APPEND prepars the file for appeand access.  It is similar to RESET and
+ *   REWRITE but has no optional record-size argument.
  * - CLOSEFILE closes a previously opened file
  */
 
-static void fileProc (uint16_t opcode)
+static void fileProc(uint16_t opcode)
 {
   TRACE(g_lstFile, "[fileProc]");
 
   /* FORM: function-name(<file number>)
-   * FORM: function-name = PAGE | REWRITE | RESET | APPEND | CLOSEFILE
+   * FORM: function-name = PAGE | APPEND | CLOSEFILE
    *
    * On entry, g_token refers to the reserved procedure name.  It may
    * be followed with a argument list.

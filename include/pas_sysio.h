@@ -47,9 +47,13 @@
 #define xEOLN           (0x0002)  /* Test for end of line */
 #define xASSIGNFILE     (0x0003)  /* Assign a name and type to the file */
 #define xRESET          (0x0004)  /* Open the file for reading */
-#define xREWRITE        (0x0005)  /* Open the file for writing */
-#define xAPPEND         (0x0006)  /* Open the file for appending */
-#define xCLOSEFILE      (0x0007)  /* Close the file */
+#define xRESETR         (0x0005)  /* Open the file for reading and reset
+                                   * record size */
+#define xREWRITE        (0x0006)  /* Open the file for writing */
+#define xREWRITER       (0x0007)  /* Open the file for writing and reset
+                                   * record size */
+#define xAPPEND         (0x0008)  /* Open the file for appending */
+#define xCLOSEFILE      (0x0009)  /* Close the file */
 
 #define xREADLN         (0x0010)  /* Move to the next line */
 #define xREAD_PAGE      (0x0011)  /* Move to the next page */

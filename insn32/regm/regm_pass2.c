@@ -356,9 +356,9 @@ static const struct regm_builtin_s g_rgSysIoBuiltIns[MAX_XOP] =
 {
   /* 0x00 */ ILLEGAL_BUILTIN_INIT,      xEOF_INIT,
   /* 0x02 */ xEOLN_INIT,                xASSIGN_FILE_INIT,
-  /* 0x04 */ xRESET_INIT,               xREWRITE_INIT,
-  /* 0x06 */ xAPPEND_INIT,              xCLOSEFILE_INIT,
-  /* 0x08 */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,
+  /* 0x04 */ xRESET_INIT,               xRESETR_INIT,
+  /* 0x06 */ xREWRITE_INIT,             xREWRITER_INIT,
+  /* 0x08 */ xAPPEND_INIT,              xCLOSEFILE_INIT,
   /* 0x0a */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,
   /* 0x0c */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,
   /* 0x0e */ ILLEGAL_BUILTIN_INIT,      ILLEGAL_BUILTIN_INIT,

@@ -224,11 +224,33 @@ static uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       pexec_openfile(fileNumber, eOPEN_READ);
       break;
 
+    /* RESETR: TOS   = New record size
+     *         TOS+1 = File number
+     */
+
+    case xRESETR :
+      POP(st, size);  /* File number from stack */
+      POP(st, fileNumber);  /* File number from stack */
+      pexec_openfile(fileNumber, eOPEN_READ);
+      pexec_recordsize(fileNumber, size);
+      break;
+
     /* REWRITE: TOS = File number */
 
     case xREWRITE :
       POP(st, fileNumber);  /* File number from stack */
       pexec_openfile(fileNumber, eOPEN_WRITE);
+      break;
+
+    /* RESETR: TOS   = New record size
+     *         TOS+1 = File number
+     */
+
+    case xREWRITER :
+      POP(st, size);  /* File number from stack */
+      POP(st, fileNumber);  /* File number from stack */
+      pexec_openfile(fileNumber, eOPEN_WRITE);
+      pexec_recordsize(fileNumber, size);
       break;
 
     /* APPEND: TOS = File number */

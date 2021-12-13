@@ -1282,20 +1282,20 @@ static exprType_t factor(exprType_t findExprType)
 
 static exprType_t complexFactor(void)
 {
-   symbol_t symbolSave;
+  symbol_t symbolSave;
 
-   TRACE(g_lstFile,"[complexFactor]");
+  TRACE(g_lstFile,"[complexFactor]");
 
-   /* First, make a copy of the symbol table entry because the call to */
-   /* simpleFactor() will modify it. */
+  /* First, make a copy of the symbol table entry because the call to */
+  /* simpleFactor() will modify it. */
 
-   symbolSave = *g_tknPtr;
-   getToken();
+  symbolSave = *g_tknPtr;
+  getToken();
 
-   /* Then process the complex factor until it is reduced to a simple */
-   /* factor (like int, char, etc.) */
+  /* Then process the complex factor until it is reduced to a simple */
+  /* factor (like int, char, etc.) */
 
-   return simpleFactor(&symbolSave, 0);
+  return simpleFactor(&symbolSave, 0);
 }
 
 /***********************************************************************/
@@ -2663,465 +2663,526 @@ static void setAbstractType(symbol_t *sType)
 /***************************************************************/
 static void getSetFactor(void)
 {
-   setType_t s;
+  setType_t s;
 
-   TRACE(g_lstFile,"[getSetFactor]");
+  TRACE(g_lstFile,"[getSetFactor]");
 
-   /* FORM: [[<constant>[,<constant>[, ...]]]] */
-   /* ASSUMPTION:  The first '[' has already been processed */
+  /* FORM: [[<constant>[,<constant>[, ...]]]] */
+  /* ASSUMPTION:  The first '[' has already been processed */
 
-   /* First, verify that a scalar expression type has been specified */
-   /* If the g_abstractType is a SET, then we will need to get the TYPE */
-   /* that it is a SET OF */
+  /* First, verify that a scalar expression type has been specified */
+  /* If the g_abstractType is a SET, then we will need to get the TYPE */
+  /* that it is a SET OF */
 
-   if (g_abstractType)
-     {
-       if (g_abstractType->sParm.t.type == sSET_OF)
-         {
-           s.typePtr = g_abstractType->sParm.t.parent;
-         }
-       else
-         {
-           s.typePtr = g_abstractType;
-         }
-     }
-   else
-     {
-       s.typePtr   = NULL;
-     }
+  if (g_abstractType)
+    {
+      if (g_abstractType->sParm.t.type == sSET_OF)
+        {
+          s.typePtr = g_abstractType->sParm.t.parent;
+        }
+      else
+        {
+          s.typePtr = g_abstractType;
+        }
+    }
+  else
+    {
+      s.typePtr   = NULL;
+    }
 
-   /* Now, get the associated type and MIN/MAX values */
+  /* Now, get the associated type and MIN/MAX values */
 
-   if ((s.typePtr) && (s.typePtr->sParm.t.type == sSCALAR)) {
-     s.typeFound = true;
-     s.setType   = sSCALAR;
-     s.minValue  = s.typePtr->sParm.t.minValue;
-     s.maxValue  = s.typePtr->sParm.t.maxValue;
-   }
-   else if ((s.typePtr) && (s.typePtr->sParm.t.type == sSUBRANGE)) {
-     s.typeFound = true;
-     s.setType   = s.typePtr->sParm.t.subType;
-     s.minValue  = s.typePtr->sParm.t.minValue;
-     s.maxValue  = s.typePtr->sParm.t.maxValue;
-   }
-   else {
-     error(eSET);
-     s.typeFound = false;
-     s.typePtr   = NULL;
-     s.minValue  = 0;
-     s.maxValue  = BITS_IN_INTEGER-1;
-   }
+  if (s.typePtr && s.typePtr->sParm.t.type == sSCALAR)
+    {
+      s.typeFound = true;
+      s.setType   = sSCALAR;
+      s.minValue  = s.typePtr->sParm.t.minValue;
+      s.maxValue  = s.typePtr->sParm.t.maxValue;
+    }
+  else if (s.typePtr && s.typePtr->sParm.t.type == sSUBRANGE)
+    {
+      s.typeFound = true;
+      s.setType   = s.typePtr->sParm.t.subType;
+      s.minValue  = s.typePtr->sParm.t.minValue;
+      s.maxValue  = s.typePtr->sParm.t.maxValue;
+    }
+  else
+    {
+      error(eSET);
+      s.typeFound = false;
+      s.typePtr   = NULL;
+      s.minValue  = 0;
+      s.maxValue  = BITS_IN_INTEGER - 1;
+    }
 
-   /* Get the first element of the set */
+  /* Get the first element of the set */
 
-   getSetElement(&s);
+  getSetElement(&s);
 
-   /* Incorporate each additional element into the set */
-   /* NOTE:  The optimizer will combine sets of constant elements into a */
-   /* single PUSH! */
+  /* Incorporate each additional element into the set */
+  /* NOTE:  The optimizer will combine sets of constant elements into a */
+  /* single PUSH! */
 
-   while (g_token == ',') {
+  while (g_token == ',')
+    {
+      /* Get the next element of the set */
 
-     /* Get the next element of the set */
+      getToken();
+      getSetElement(&s);
 
-     getToken();
-     getSetElement(&s);
+      /* OR it with the previous element */
 
-     /* OR it with the previous element */
-
-     pas_GenerateSimple(opOR);
-   }
+      pas_GenerateSimple(opOR);
+    }
 }
 
 /***************************************************************/
 static void getSetElement(setType_t *s)
 {
-   uint16_t setValue;
-   int16_t firstValue;
-   int16_t lastValue;
-   symbol_t  *setPtr;
+  uint16_t setValue;
+  int16_t firstValue;
+  int16_t lastValue;
+  symbol_t  *setPtr;
 
-   TRACE(g_lstFile,"[getSetElement]");
+  TRACE(g_lstFile,"[getSetElement]");
 
-   switch (g_token) {
-     case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-       firstValue = g_tknPtr->sParm.c.val.i;
-       if (!s->typeFound) {
-         s->typeFound = true;
-         s->typePtr   = g_tknPtr->sParm.c.parent;
-         s->setType   = sSCALAR;
-         s->minValue  = s->typePtr->sParm.t.minValue;
-         s->maxValue  = s->typePtr->sParm.t.maxValue;
-       }
-       else if ((s->setType != sSCALAR)
-       ||        (s->typePtr != g_tknPtr->sParm.c.parent))
-         error(eSET);
-       goto addBit;
+  switch (g_token)
+    {
+      case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
+        firstValue = g_tknPtr->sParm.c.val.i;
+        if (!s->typeFound)
+          {
+            s->typeFound = true;
+            s->typePtr   = g_tknPtr->sParm.c.parent;
+            s->setType   = sSCALAR;
+            s->minValue  = s->typePtr->sParm.t.minValue;
+            s->maxValue  = s->typePtr->sParm.t.maxValue;
+          }
+        else if (s->setType != sSCALAR ||
+                 s->typePtr != g_tknPtr->sParm.c.parent)
+          {
+            error(eSET);
+          }
 
-     case tINT_CONST : /* An integer subrange constant ? */
-       firstValue = g_tknInt;
-       if (!s->typeFound)
-         {
-           s->typeFound = true;
-           s->setType   = sINT;
-         }
-       else if (s->setType != sINT)
-         {
-           error(eSET);
-         }
+        goto addBit;
 
-       goto addBit;
+      case tINT_CONST : /* An integer subrange constant ? */
+        firstValue = g_tknInt;
+        if (!s->typeFound)
+          {
+            s->typeFound = true;
+            s->setType   = sINT;
+          }
+        else if (s->setType != sINT)
+          {
+            error(eSET);
+          }
 
-     case tCHAR_CONST : /* A character subrange constant */
-       firstValue = g_tknInt;
-       if (!s->typeFound)
-         {
-           s->typeFound = true;
-           s->setType   = sCHAR;
-         }
-       else if (s->setType != sCHAR)
-         {
-           error(eSET);
-         }
+        goto addBit;
 
-     addBit:
-       /* Check if the constant set element is the first value in a */
-       /* subrange of values */
+      case tCHAR_CONST : /* A character subrange constant */
+        firstValue = g_tknInt;
+        if (!s->typeFound)
+          {
+            s->typeFound = true;
+            s->setType   = sCHAR;
+          }
+        else if (s->setType != sCHAR)
+          {
+            error(eSET);
+          }
 
-       getToken();
-       if (g_token != tSUBRANGE) {
+      addBit:
+        /* Check if the constant set element is the first value in a
+         * subrange of values.
+         */
 
-         /* Verify that the new value is in range */
+        getToken();
+        if (g_token != tSUBRANGE)
+          {
+            /* Verify that the new value is in range */
 
-         if ((firstValue < s->minValue) || (firstValue > s->maxValue)) {
-           error(eSETRANGE);
-           setValue = 0;
-         }
-         else
-           setValue = (1 << (firstValue - s->minValue));
-
-         /* Now, generate P-Code to push the set value onto the stack */
-
-         pas_GenerateDataOperation(opPUSH, setValue);
-
-       }
-       else {
-         if (!s->typeFound) error(eSUBRANGETYPE);
-
-         /* Skip over the tSUBRANGE token */
-
-         getToken();
-
-         /* TYPE check */
-
-         switch (g_token) {
-           case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-             lastValue = g_tknPtr->sParm.c.val.i;
-             if ((s->setType != sSCALAR)
-             ||   (s->typePtr != g_tknPtr->sParm.c.parent))
-               error(eSET);
-             goto addLottaBits;
-
-           case tINT_CONST : /* An integer subrange constant ? */
-             lastValue = g_tknInt;
-             if (s->setType != sINT) error(eSET);
-             goto addLottaBits;
-
-           case tCHAR_CONST : /* A character subrange constant */
-             lastValue = g_tknInt;
-             if (s->setType != sCHAR) error(eSET);
-
-           addLottaBits :
-             /* Verify that the first value is in range */
-             if (firstValue < s->minValue) {
+            if (firstValue < s->minValue || firstValue > s->maxValue)
+              {
                error(eSETRANGE);
-               firstValue = s->minValue;
-             }
-             else if (firstValue > s->maxValue) {
-               error(eSETRANGE);
-               firstValue = s->maxValue;
-             }
+               setValue = 0;
+              }
+            else
+              {
+                setValue = (1 << (firstValue - s->minValue));
+              }
 
-             /* Verify that the last value is in range */
-             if (lastValue < firstValue) {
-               error(eSETRANGE);
-               lastValue = firstValue;
-             }
-             else if (lastValue > s->maxValue) {
-               error(eSETRANGE);
-               lastValue = s->maxValue;
-             }
+            /* Now, generate P-Code to push the set value onto the stack */
 
-             /* Set all bits from firstValue through lastValue */
+            pas_GenerateDataOperation(opPUSH, setValue);
+          }
+        else
+          {
+            if (!s->typeFound) error(eSUBRANGETYPE);
 
-             setValue  = (0xffff << (firstValue - s->minValue));
-             setValue &= (0xffff >> ((BITS_IN_INTEGER-1) - (lastValue - s->minValue)));
+            /* Skip over the tSUBRANGE token */
 
-             /* Now, generate P-Code to push the set value onto the stack */
+            getToken();
 
-             pas_GenerateDataOperation(opPUSH, setValue);
+            /* TYPE check */
+
+            switch (g_token)
+              {
+                case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
+                  lastValue = g_tknPtr->sParm.c.val.i;
+                  if (s->setType != sSCALAR ||
+                      s->typePtr != g_tknPtr->sParm.c.parent)
+                    {
+                      error(eSET);
+                    }
+
+                  goto addLottaBits;
+
+                case tINT_CONST : /* An integer subrange constant ? */
+                   lastValue = g_tknInt;
+                   if (s->setType != sINT) error(eSET);
+                   goto addLottaBits;
+
+                case tCHAR_CONST : /* A character subrange constant */
+                   lastValue = g_tknInt;
+                   if (s->setType != sCHAR) error(eSET);
+
+                addLottaBits :
+                   /* Verify that the first value is in range */
+
+                    if (firstValue < s->minValue)
+                      {
+                        error(eSETRANGE);
+                        firstValue = s->minValue;
+                      }
+                    else if (firstValue > s->maxValue)
+                      {
+                        error(eSETRANGE);
+                        firstValue = s->maxValue;
+                      }
+
+                    /* Verify that the last value is in range */
+
+                    if (lastValue < firstValue)
+                      {
+                        error(eSETRANGE);
+                        lastValue = firstValue;
+                      }
+                    else if (lastValue > s->maxValue)
+                      {
+                        error(eSETRANGE);
+                        lastValue = s->maxValue;
+                      }
+
+                    /* Set all bits from firstValue through lastValue */
+
+                    setValue  = (0xffff << (firstValue - s->minValue));
+                    setValue &= (0xffff >> ((BITS_IN_INTEGER - 1) -
+                                            (lastValue - s->minValue)));
+
+                    /* Now, generate P-Code to push the set value onto the
+                     * stack.
+                     */
+
+                    pas_GenerateDataOperation(opPUSH, setValue);
                     break;
 
-           case sSCALAR :
-             if ((!s->typePtr)
-             ||   (s->typePtr != g_tknPtr->sParm.v.parent)) {
+                 case sSCALAR :
+                    if (!s->typePtr ||
+                        s->typePtr != g_tknPtr->sParm.v.parent)
+                      {
+                        error(eSET);
+
+                        if (!s->typePtr)
+                          {
+                            s->typeFound = true;
+                            s->typePtr   = g_tknPtr->sParm.v.parent;
+                            s->setType   = sSCALAR;
+                            s->minValue  = s->typePtr->sParm.t.minValue;
+                            s->maxValue  = s->typePtr->sParm.t.maxValue;
+                          }
+                      }
+
+                    goto addVarToBits;
+
+                  case sINT : /* An integer subrange variable ? */
+                  case sCHAR : /* A character subrange variable? */
+                    if (s->setType != g_token) error(eSET);
+                    goto addVarToBits;
+
+                  case sSUBRANGE :
+                    if (!s->typePtr || s->typePtr != g_tknPtr->sParm.v.parent)
+                      {
+                        if (g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR ||
+                            g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType)
+                          {
+                            error(eSET);
+                          }
+
+                        if (!s->typePtr)
+                          {
+                            s->typeFound = true;
+                            s->typePtr   = g_tknPtr->sParm.v.parent;
+                            s->setType   = s->typePtr->sParm.t.subType;
+                            s->minValue  = s->typePtr->sParm.t.minValue;
+                            s->maxValue  = s->typePtr->sParm.t.maxValue;
+                          }
+                      }
+
+                  addVarToBits:
+                    /* Verify that the first value is in range */
+
+                    if (firstValue < s->minValue)
+                      {
+                        error(eSETRANGE);
+                        firstValue = s->minValue;
+                      }
+                    else if (firstValue > s->maxValue)
+                      {
+                        error(eSETRANGE);
+                        firstValue = s->maxValue;
+                      }
+
+                    /* Set all bits from firstValue through maxValue */
+
+                    setValue  = (0xffff >> ((BITS_IN_INTEGER -1 ) -
+                                            (s->maxValue - s->minValue)));
+                    setValue &= (0xffff << (firstValue - s->minValue));
+
+                    /* Generate run-time logic to get all bits from firstValue
+                     * through last value, i.e., need to generate logic to get:
+                     * 0xffff >> ((BITS_IN_INTEGER - 1) - (lastValue - minValue))
+                     */
+
+                    pas_GenerateDataOperation(opPUSH, 0xffff);
+                    pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER - 1) +
+                                                        s->minValue));
+                    pas_GenerateStackReference(opLDS, g_tknPtr);
+                    pas_GenerateSimple(opSUB);
+                    pas_GenerateSimple(opSRL);
+
+                    /* Then AND this with the setValue */
+
+                    if (setValue != 0xffff)
+                      {
+                        pas_GenerateDataOperation(opPUSH, setValue);
+                        pas_GenerateSimple(opAND);
+                      }
+
+                    getToken();
+                    break;
+
+                  default :
+                    error(eSET);
+                    pas_GenerateDataOperation(opPUSH, 0);
+                    break;
+              }
+          }
+          break;
+
+      case sSCALAR :
+        if (s->typeFound)
+          {
+            if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
+              {
                error(eSET);
+              }
+          }
+        else
+          {
+            s->typeFound = true;
+            s->typePtr   = g_tknPtr->sParm.v.parent;
+            s->setType   = sSCALAR;
+            s->minValue  = s->typePtr->sParm.t.minValue;
+            s->maxValue  = s->typePtr->sParm.t.maxValue;
+          }
 
-               if (!s->typePtr) {
-                 s->typeFound = true;
-                 s->typePtr   = g_tknPtr->sParm.v.parent;
-                 s->setType   = sSCALAR;
-                 s->minValue  = s->typePtr->sParm.t.minValue;
-                 s->maxValue  = s->typePtr->sParm.t.maxValue;
-               }
-             }
-             goto addVarToBits;
+        goto addVar;
 
-           case sINT : /* An integer subrange variable ? */
-           case sCHAR : /* A character subrange variable? */
-             if (s->setType != g_token) error(eSET);
-             goto addVarToBits;
+      case sINT : /* An integer subrange variable ? */
+      case sCHAR : /* A character subrange variable? */
+        if (!s->typeFound)
+          {
+            s->typeFound = true;
+            s->setType   = g_token;
+          }
+        else if (s->setType != g_token)
+          {
+            error(eSET);
+          }
 
-           case sSUBRANGE :
-             if ((!s->typePtr)
-             ||   (s->typePtr != g_tknPtr->sParm.v.parent)) {
+         goto addVar;
 
-               if ((g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR)
-               ||   (g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType))
+      case sSUBRANGE :
+        if (s->typeFound)
+          {
+             if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
+               {
                  error(eSET);
-
-               if (!s->typePtr) {
-                 s->typeFound = true;
-                 s->typePtr   = g_tknPtr->sParm.v.parent;
-                 s->setType   = s->typePtr->sParm.t.subType;
-                 s->minValue  = s->typePtr->sParm.t.minValue;
-                 s->maxValue  = s->typePtr->sParm.t.maxValue;
                }
-             }
+          }
+        else
+          {
+            s->typeFound = true;
+            s->typePtr   = g_tknPtr->sParm.v.parent;
+            s->setType   = s->typePtr->sParm.t.subType;
+            s->minValue  = s->typePtr->sParm.t.minValue;
+            s->maxValue  = s->typePtr->sParm.t.maxValue;
+          }
 
-           addVarToBits:
-             /* Verify that the first value is in range */
+      addVar:
+        /* Check if the variable set element is the first value in a */
+        /* subrange of values */
 
-             if (firstValue < s->minValue) {
-               error(eSETRANGE);
-               firstValue = s->minValue;
-             }
-             else if (firstValue > s->maxValue) {
-               error(eSETRANGE);
-               firstValue = s->maxValue;
-             }
+        setPtr = g_tknPtr;
+        getToken();
+        if (g_token != tSUBRANGE)
+          {
+            /* Generate P-Code to push the set value onto the stack */
+            /* FORM:  1 << (firstValue - minValue) */
 
-             /* Set all bits from firstValue through maxValue */
+            pas_GenerateDataOperation(opPUSH, 1);
+            pas_GenerateStackReference(opLDS, setPtr);
+            pas_GenerateDataOperation(opPUSH, s->minValue);
+            pas_GenerateSimple(opSUB);
+            pas_GenerateSimple(opSLL);
+          }
+        else
+          {
+            if (!s->typeFound) error(eSUBRANGETYPE);
 
-             setValue  = (0xffff >> ((BITS_IN_INTEGER-1) - (s->maxValue - s->minValue)));
-             setValue &= (0xffff << (firstValue - s->minValue));
+            /* Skip over the tSUBRANGE token */
 
-             /* Generate run-time logic to get all bits from firstValue */
-             /* through last value, i.e., need to generate logic to get: */
-             /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue - minValue)) */
+            getToken();
 
-             pas_GenerateDataOperation(opPUSH, 0xffff);
-             pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER-1) + s->minValue));
-             pas_GenerateStackReference(opLDS, g_tknPtr);
-             pas_GenerateSimple(opSUB);
-             pas_GenerateSimple(opSRL);
+            /* TYPE check */
 
-             /* Then AND this with the setValue */
+            switch (g_token)
+              {
+                case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
+                  lastValue = g_tknPtr->sParm.c.val.i;
+                  if (s->setType != sSCALAR ||
+                      s->typePtr != g_tknPtr->sParm.c.parent)
+                    {
+                      error(eSET);
+                    }
 
-             if (setValue != 0xffff) {
-               pas_GenerateDataOperation(opPUSH, setValue);
-               pas_GenerateSimple(opAND);
-             }
+                  goto addBitsToVar;
 
-             getToken();
-             break;
+                case tINT_CONST : /* An integer subrange constant ? */
+                  lastValue = g_tknInt;
+                  if (s->setType != sINT) error(eSET);
+                  goto addBitsToVar;
 
-           default :
-             error(eSET);
-             pas_GenerateDataOperation(opPUSH, 0);
-             break;
+                case tCHAR_CONST : /* A character subrange constant */
+                  lastValue = g_tknInt;
+                  if (s->setType != sCHAR) error(eSET);
 
-         }
-       }
-       break;
+                addBitsToVar :
+                  /* Verify that the last value is in range */
 
-     case sSCALAR :
-       if (s->typeFound) {
-         if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
-           error(eSET);
-       }
-       else {
-         s->typeFound = true;
-         s->typePtr   = g_tknPtr->sParm.v.parent;
-         s->setType   = sSCALAR;
-         s->minValue  = s->typePtr->sParm.t.minValue;
-         s->maxValue  = s->typePtr->sParm.t.maxValue;
-       }
-       goto addVar;
+                  if (lastValue < s->minValue)
+                    {
+                      error(eSETRANGE);
+                      lastValue = s->minValue;
+                    }
+                  else if (lastValue > s->maxValue)
+                    {
+                      error(eSETRANGE);
+                      lastValue = s->maxValue;
+                    }
 
-     case sINT : /* An integer subrange variable ? */
-     case sCHAR : /* A character subrange variable? */
-       if (!s->typeFound) {
-         s->typeFound = true;
-         s->setType   = g_token;
-       }
-       else if (s->setType != g_token)
-         error(eSET);
-       goto addVar;
+                  /* Set all bits from minValue through lastValue */
 
-     case sSUBRANGE :
-       if (s->typeFound) {
-         if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
-           error(eSET);
-       }
-       else {
-         s->typeFound = true;
-         s->typePtr   = g_tknPtr->sParm.v.parent;
-         s->setType   = s->typePtr->sParm.t.subType;
-         s->minValue  = s->typePtr->sParm.t.minValue;
-         s->maxValue  = s->typePtr->sParm.t.maxValue;
-       }
+                  setValue  = (0xffff >> ((BITS_IN_INTEGER - 1) -
+                                        (lastValue - s->minValue)));
 
-     addVar:
-       /* Check if the variable set element is the first value in a */
-       /* subrange of values */
+                  /* Now, generate P-Code to push the set value onto the stack */
+                  /* First generate: 0xffff << (firstValue - minValue) */
 
-       setPtr = g_tknPtr;
-       getToken();
-       if (g_token != tSUBRANGE) {
+                  pas_GenerateDataOperation(opPUSH, 0xffff);
+                  pas_GenerateStackReference(opLDS, setPtr);
+                  if (s->minValue)
+                    {
+                      pas_GenerateDataOperation(opPUSH, s->minValue);
+                      pas_GenerateSimple(opSUB);
+                   }
 
-         /* Generate P-Code to push the set value onto the stack */
-         /* FORM:  1 << (firstValue - minValue) */
+                   pas_GenerateSimple(opSLL);
 
-         pas_GenerateDataOperation(opPUSH, 1);
-         pas_GenerateStackReference(opLDS, setPtr);
-         pas_GenerateDataOperation(opPUSH, s->minValue);
-         pas_GenerateSimple(opSUB);
-         pas_GenerateSimple(opSLL);
+                  /* Then and this with the pre-computed constant set value */
 
-       }
-       else {
-         if (!s->typeFound) error(eSUBRANGETYPE);
+                  if (setValue != 0xffff)
+                    {
+                      pas_GenerateDataOperation(opPUSH, setValue);
+                      pas_GenerateSimple(opAND);
+                    }
 
-         /* Skip over the tSUBRANGE token */
+                  getToken();
+                  break;
 
-         getToken();
+                case sINT : /* An integer subrange variable ? */
+                case sCHAR : /* A character subrange variable? */
+                  if (s->setType != g_token) error(eSET);
+                  goto addVarToVar;
 
-         /* TYPE check */
+                case sSCALAR :
+                  if (s->typePtr != g_tknPtr->sParm.v.parent) error(eSET);
+                  goto addVarToVar;
 
-         switch (g_token) {
-           case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-             lastValue = g_tknPtr->sParm.c.val.i;
-             if ((s->setType != sSCALAR)
-             ||   (s->typePtr != g_tknPtr->sParm.c.parent))
-               error(eSET);
-             goto addBitsToVar;
+                case sSUBRANGE :
+                  if (s->typePtr != g_tknPtr->sParm.v.parent &&
+                     (g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR ||
+                      g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType))
+                    {
+                      error(eSET);
+                    }
 
-           case tINT_CONST : /* An integer subrange constant ? */
-             lastValue = g_tknInt;
-             if (s->setType != sINT) error(eSET);
-             goto addBitsToVar;
+                addVarToVar:
 
-           case tCHAR_CONST : /* A character subrange constant */
-             lastValue = g_tknInt;
-             if (s->setType != sCHAR) error(eSET);
+                  /* Generate run-time logic to get all bits from firstValue */
+                  /* through lastValue */
+                  /* First generate: 0xffff << (firstValue - minValue) */
 
-           addBitsToVar :
-             /* Verify that the last value is in range */
+                  pas_GenerateDataOperation(opPUSH, 0xffff);
+                  pas_GenerateStackReference(opLDS, setPtr);
+                  if (s->minValue)
+                    {
+                      pas_GenerateDataOperation(opPUSH, s->minValue);
+                      pas_GenerateSimple(opSUB);
+                    }
 
-             if (lastValue < s->minValue) {
-               error(eSETRANGE);
-               lastValue = s->minValue;
-             }
-             else if (lastValue > s->maxValue) {
-               error(eSETRANGE);
-               lastValue = s->maxValue;
-             }
+                  pas_GenerateSimple(opSLL);
 
-             /* Set all bits from minValue through lastValue */
+                  /* Generate logic to get: */
+                  /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue - minValue)) */
 
-             setValue  = (0xffff >> ((BITS_IN_INTEGER-1) - (lastValue - s->minValue)));
+                  pas_GenerateDataOperation(opPUSH, 0xffff);
+                  pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER - 1) + s->minValue));
+                  pas_GenerateStackReference(opLDS, g_tknPtr);
+                  pas_GenerateSimple(opSUB);
+                  pas_GenerateSimple(opSRL);
 
-             /* Now, generate P-Code to push the set value onto the stack */
-             /* First generate: 0xffff << (firstValue - minValue) */
+                  /* Then AND the two values */
 
-             pas_GenerateDataOperation(opPUSH, 0xffff);
-             pas_GenerateStackReference(opLDS, setPtr);
-             if (s->minValue) {
-               pas_GenerateDataOperation(opPUSH, s->minValue);
-               pas_GenerateSimple(opSUB);
-             }
-             pas_GenerateSimple(opSLL);
+                  pas_GenerateSimple(opAND);
 
-             /* Then and this with the pre-computed constant set value */
+                  getToken();
+                  break;
 
-             if (setValue != 0xffff) {
-               pas_GenerateDataOperation(opPUSH, setValue);
-               pas_GenerateSimple(opAND);
-             }
+                default :
+                  error(eSET);
+                  pas_GenerateDataOperation(opPUSH, 0);
+                  break;
+              }
+          }
+          break;
 
-             getToken();
-             break;
-
-           case sINT : /* An integer subrange variable ? */
-           case sCHAR : /* A character subrange variable? */
-             if (s->setType != g_token) error(eSET);
-             goto addVarToVar;
-
-           case sSCALAR :
-             if (s->typePtr != g_tknPtr->sParm.v.parent) error(eSET);
-             goto addVarToVar;
-
-           case sSUBRANGE :
-             if ((s->typePtr != g_tknPtr->sParm.v.parent)
-             &&   ((g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR)
-             ||     (g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType)))
-               error(eSET);
-
-           addVarToVar:
-
-             /* Generate run-time logic to get all bits from firstValue */
-             /* through lastValue */
-             /* First generate: 0xffff << (firstValue - minValue) */
-
-             pas_GenerateDataOperation(opPUSH, 0xffff);
-             pas_GenerateStackReference(opLDS, setPtr);
-             if (s->minValue) {
-               pas_GenerateDataOperation(opPUSH, s->minValue);
-               pas_GenerateSimple(opSUB);
-             }
-             pas_GenerateSimple(opSLL);
-
-             /* Generate logic to get: */
-             /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue - minValue)) */
-
-             pas_GenerateDataOperation(opPUSH, 0xffff);
-             pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER-1) + s->minValue));
-             pas_GenerateStackReference(opLDS, g_tknPtr);
-             pas_GenerateSimple(opSUB);
-             pas_GenerateSimple(opSRL);
-
-             /* Then AND the two values */
-
-             pas_GenerateSimple(opAND);
-
-             getToken();
-             break;
-
-           default :
-             error(eSET);
-             pas_GenerateDataOperation(opPUSH, 0);
-             break;
-
-         }
-       }
-       break;
-
-     default :
-       error(eSET);
-       pas_GenerateDataOperation(opPUSH, 0);
-       break;
-   }
+      default :
+        error(eSET);
+        pas_GenerateDataOperation(opPUSH, 0);
+        break;
+    }
 }
 
 /***************************************************************/

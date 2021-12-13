@@ -7,20 +7,28 @@ testall.sh compiles all (most) of the pascal source files in the src/ sub-direct
     - For testing purposes, the filename type has been changed to the string type.
     - According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
       not sure how standard that unit is.
- 2. Similarly, one test (rc/605-subprogram.pas) uses the non-standard,
-    unimplemented sizeof() function.  sizeof() should return the storage size,
-    in bytes, of either a Variable or Type.
+ 2. Similarly, one test (src/605-subprogram.pas) uses the non-standard,
+    unimplemented sizeof() function.
+    sizeof() should return the storage size, in bytes, of either a Variable or Type.
+      function SizeOf ( Variable : Any type ) : Integer;
+      function SizeOf ( Type ) : Integer;
+    Smart Pascal uses a related Length function:
+      function Length ( const SourceString : string ) : Integer;
+      function Length ( const  SourceArray : array ) : Integer;
+    The Length function returns either the number of characters in SourceString,
+    or the number of elements in SourceArray. (See units/DayIO.pas)
+It is often used to loop around all characters in a string or elements in an array.
  3. Currently a set is limited to 32-bits so that they can be represented internally
     as a 32-bit bit set.
- 4. Not all operations on type 'string' are not yet supported.
+ 4. Not all operations on type 'string' are not yet supported.  An invalid type
+    error is reported from simpleFactor() for any place an expression is expected
+    and a string type is found.
  5. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See src/107-quicksort.pas
  6. Not all file I/O functions have been implemented.
  7. Forward references to variables before they are defined to not work.  See
     failure in src/108-pointerrecode.pas.
  8. Unit files with data declarations, but no implementation.
- 9. There appears be be a general problem accessing record fields. See for
-    example src/601-readfile.pas, src/602-writefile.pas
 
 Successful test results are not shown.
 
@@ -138,25 +146,39 @@ Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
 
 ########src/601-readfile.pas########
-Line 0:0019 Error 2f Token 54
+Line 0:0020 Error 1e Token 29
 
 Line:
- 19       read(f,Student);
+ 20       writeln('Name: ',Student.s_name);
+Where:
+  2 type
+  3    StudentRecord = Record
+  4       s_name: String;
+  5       s_addr: String;
+  6       s_batchcode: String;
+  7    end;
 
 Error:
-225 #define eRPAREN          ((uint16_t) 0x2f)
+207 #define eINVTYPE         ((uint16_t) 0x1e)
 
-Token:
- 92 #define sRECORD          0x54
+Token: ')'
 
 Analysis:
-Seems to be an issue accessing records where expression is expected.
+There is no logic to support type sTRING in simpleFactor().  Any place an expression is expected and a string type is provided will fail.
 
 ########src/602-writefile.pas########
 Line 0:0016 Error 1e Token 09
 
 Line:
  16   Student.s_name := 'John Smith';
+Where:
+  2 type
+  3    StudentRecord = Record
+  4       s_name: String;
+  5       s_addr: String;
+  6       s_batchcode: String;
+  7    end;
+
 
 Error:
 207 #define eINVTYPE         ((uint16_t) 0x1e)
@@ -165,7 +187,7 @@ Token:
  53 #define tASSIGN          0x09
 
 Analysis:
-Probably another issue accessing record fields
+Probably another issue related to missing string handling.
 
 ########src/603-appendfile.pas########
 Line 0:0020 Error 2c Token 4b
@@ -178,39 +200,45 @@ Error:
 
 Token:
  83 #define sSTRING          0x4b /* String storage type */
- 
+
 Analysis:
 Not yet analyzed.  Perhaps an issue related to string types.
 
 ########src/604-textfile.pas########
-Line 0:0019 Error 2f Token 54
+Line 0:0020 Error 1e Token 29
 
 Line:
- 19      read(f,Student);
+ 20       writeln('Name: ',Student.s_name);
+Where
+  2 type
+  3    StudentRecord = Record
+  4       s_name: String;
+  5       s_addr: String;
+  6       s_batchcode: String;
+  7    end;
 
 Error:
-225 #define eRPAREN          ((uint16_t) 0x2f)
+207 #define eINVTYPE         ((uint16_t) 0x1e)
 
-Token:
- 92 #define sRECORD          0x54
+Token: ')'
 
 Analysis:
 Same as src/601-readfile.pas
 
 ########src/605-subprogram.pas########
-Line 0:0018 Error 2f Token 56
+Line 0:0018 Error 3a Token 01 (sizeof)
 
 Line:
  18   rewrite(f, sizeof(data));
 
 Error:
-#define eRPAREN          ((uint16_t) 0x2f)
+237 #define eUNDEFSYM        ((uint16_t) 0x3a)
 
 Token:
-#define sVAR_PARM        0x56
+ 44 #define tIDENT           0x01
 
 Analysis:
-This is probably failing because the sizeof() function is not implemented.  sizeof() should return the torage size, in bytes, of either a Variable or Type.
+This is probably failing because the sizeof() function is not implemented.  sizeof() should return the storage size, in bytes, of either a Variable or Type.
 
 ########src/803-redirect.pas########
 Line 0:0065 Error 1e Token 3d
@@ -291,51 +319,19 @@ Analysis:
 The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-Line 0:0089 Error 0c Token 56
+Line 0:0122 Error 3a Token 01 (Length)
 
 Error:
-#define eFILE            ((uint16_t) 0x0c)
+237 #define eUNDEFSYM        ((uint16_t) 0x3a)
 
 Line:
-            IF eoln(InFile) THEN
+122                     WHILE (Ch <> ' ') AND (Length(DayStr) < DaySize) DO
 
 Token:
-#define sVAR_PARM        0x56
-
+ 44 #define tIDENT           0x01
 
 Analysis:
-The root problem lies in the representation of the TEXT type parmeter:  There is no way to get the file number.  The root failure occurs in processing this line in DayIO.pas:
-
-    PROCEDURE ReadDay
->>>>        (VAR InFile: TEXT;                (* Input file read from. *)
-             VAR Day: DayType);                (* Returned day of the week value. *)
-
-Relevant logic:
-
-- formalParameterList() in pas_block.c parses the formal paramter list.  It calls pas_DeclareParameter() to parse each formal parameter.
-- pas_DeclareParameter() creates an entry in the symbol table like:
-
-  sName = "InFile"
-  sKind = sVAR_PARM
-  v    = {offset = 0xfffffff6, size = 0x2, flags = 0x0, symIndex = 0x0, parent = 0x80005a380}
-
-The parent is
-
-  sName = "TEXT"
-  sKind = sTYPE
-  t    = {type = 0x4a, rtype = 0x4a, subType = 0x48, flags = 0x0, asize = 0x1, rsize = 0x1, minValue = 0x0, maxValue = 0xff, parent = 0x0, index = 0x0}
-
-The 0x4a is sTEXTFILE
-
-The failure occurs later when fileFunc is called to handle this line in the pascal file:
-
-    IF eoln(InFile) THEN
-
-fileFunc generates the code for eoln.  It looks up InFile in the symbol table.  Logic in getFileBaseType() attempts to obtain the file type from the InFile symbol table table described above.  It fails and the eFILE error is generated in fileFunc():
-
-430               if (typePtr == NULL) error(eFILE);
-
-The solution probably involves adding the file number to symbol_t somehow.  This is, however, no important to the current failure.  In this case the file number needs to be obtained at runtime since the file is passed as a VAR parameter.
+Function Length() is not defined.  This appears to be a part of Smart Pascal?
 
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory

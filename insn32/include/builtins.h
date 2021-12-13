@@ -2,7 +2,7 @@
  * builtins.h
  * Definitions of built-in function calls.
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,6 +74,21 @@
 #define xRESET_INIT \
     { "_xreset", 0, 1, { sINT_SIZE }}
 
+/* void _resetr(int fileno, int recordSize); */
+
+#define xRESETR_INIT \
+    { "_xresetr", 0, 2, { sINT_SIZE, sINT_SIZE }}
+
+/* void _xrewrite(int fileno); */
+
+#define xREWRITE_INIT \
+    { "_xrewrite", 0, 1, { sINT_SIZE }}
+
+/* void _xrewriter(int fileno, int recordSize); */
+
+#define xREWRITER_INIT \
+    { "_xrewriter", 0, 2, { sINT_SIZE, sINT_SIZE }}
+
 /* void _xappend(int fileno); */
 
 #define xAPPEND_INIT \
@@ -83,11 +98,6 @@
 
 #define xCLOSEFILE_INIT \
     { "_xclosefile", 0, 1, { sINT_SIZE }}
-
-/* void _xrewrite(int fileno); */
-
-#define xREWRITE_INIT \
-    { "_xrewrite", 0, 1, { sINT_SIZE }}
 
 /* void _xreadln(int fileno); */
 

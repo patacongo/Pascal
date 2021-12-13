@@ -443,16 +443,16 @@ static const struct
 static const char invXOp[] = "Invalid SYSIO";
 static const char *xName[MAX_XOP] =
 { /* SYSIO opcode mnemonics */
-/* 0x00 */ invXOp,      "EOF",       "EOLN",       "ASSIGNFILE",
-/* 0x04 */ "RESET",     "REWRITE",   "APPEND",     "CLOSEFILE",
-/* 0x08 */ invXOp,      invXOp,      invXOp,       invXOp,
-/* 0x0c */ invXOp,      invXOp,      invXOp,       invXOp,
-/* 0x10 */ "READLN",    "READPG",    "READBIN",    "READINT",
-/* 0x14 */ "READCHR",   "READSTR",   "READRL",     invXOp,
-/* 0x18 */ invXOp,      invXOp,      invXOp,       invXOp,
-/* 0x1c */ invXOp,      invXOp,      invXOp,       invXOp,
-/* 0x20 */ "WRITELN",   "WRITEPG",   "WRITEBIN",   "WRITEINT",
-/* 0x24 */ "WRITECHR",  "WRITESTR",  "WRITERL"
+/* 0x00 */ invXOp,      "EOF",        "EOLN",       "ASSIGNFILE",
+/* 0x04 */ "RESET",     "RESETR",     "REWRITE",    "REWRITER",
+/* 0x08 */ "APPEND",     "CLOSEFILE", invXOp,      invXOp,
+/* 0x0c */ invXOp,      invXOp,       invXOp,       invXOp,
+/* 0x10 */ "READLN",    "READPG",     "READBIN",    "READINT",
+/* 0x14 */ "READCHR",   "READSTR",    "READRL",     invXOp,
+/* 0x18 */ invXOp,      invXOp,       invXOp,       invXOp,
+/* 0x1c */ invXOp,      invXOp,       invXOp,       invXOp,
+/* 0x20 */ "WRITELN",   "WRITEPG",    "WRITEBIN",   "WRITEINT",
+/* 0x24 */ "WRITECHR",  "WRITESTR",   "WRITERL"
 };
 
 static const char invLbOp[] = "Invalid runtime code";

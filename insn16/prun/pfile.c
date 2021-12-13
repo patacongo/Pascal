@@ -65,6 +65,7 @@ struct pexecFileTable_s
   char fileName[MAX_FILE_NAME];
   FILE *stream;
   openMode_t openMode;
+  uint16_t recordSize;
   bool text;
 };
 
@@ -162,3 +163,14 @@ void pexec_closefile(uint16_t fileNumber)
     }
 }
 
+void pexec_recordsize(uint16_t fileNumber, uint16_t size)
+{
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+       fprintf(stderr, "ERROR: bad file number: %u\n", fileNumber);
+    }
+  else
+    {
+      g_fileTable[fileNumber].recordSize = size;
+    }
+}

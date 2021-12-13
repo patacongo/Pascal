@@ -72,5 +72,6 @@ typedef enum openMode_e openMode_t;
 void pexec_assignfile(uint16_t fileNumber, bool text, const char *filename);
 void pexec_openfile(uint16_t fileNumber, openMode_t openMode);
 void pexec_closefile(uint16_t fileNumber);
+void pexec_recordsize(uint16_t fileNumber, uint16_t size);
 
 #endif /* __PFILES_H */
