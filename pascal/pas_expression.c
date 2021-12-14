@@ -43,7 +43,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"      /* general operation codes */
@@ -58,7 +58,7 @@
 #include "pas_function.h"
 #include "pas_codegen.h"    /* for pas_Generate*() */
 #include "pas_token.h"
-#include "pinsn.h"
+#include "pas_insn.h"
 #include "pas_error.h"
 
 /***************************************************************

@@ -1,6 +1,6 @@
 /***********************************************************************
- * include/pdefs.h
- * Common definitions
+ * pas_machine.h
+ * Characteristics of the PCODE machine
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,8 +34,8 @@
  *
  ***********************************************************************/
 
-#ifndef __PDEFS_H
-#define __PDEFS_H
+#ifndef __PAS_MACHINE_H
+#define __PAS_MACHINE_H
 
 /***********************************************************************
  * Included Files
@@ -114,4 +114,4 @@ struct opType_s
 
 typedef struct opType_s opType_t;
 
-#endif /* __PDEFS_H */
+#endif /* __PAS_MACHINE_H */

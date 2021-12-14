@@ -43,13 +43,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "keywords.h"
-#include "pdefs.h"        /* Types needed for unused protos in pinsn.h */
-#include "pas_pcode.h"    /* Types needed for unused protos in pinsh.h */
+#include "pas_debug.h"
+#include "pas_machine.h"  /* Types needed for unused protos in pas_insn.h */
+#include "pas_pcode.h"    /* Types needed for unused protos in pas_insn.h */
 #include "pas_errcodes.h"
 #include "pofflib.h"
 #include "paslib.h"
-#include "pinsn.h"        /* Folr insn_GetOpCode */
+#include "pas_insn.h"     /* Folr insn_GetOpCode */
 #include "pas_error.h"
 
 #include "pinsn32.h"

@@ -45,8 +45,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "keywords.h"
-#include "pdefs.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
 #include "pas_sysio.h"
 #include "pas_fpops.h"
 #include "pas_errcodes.h"

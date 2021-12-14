@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "keywords.h"  /* Standard types */
+#include "pas_debug.h" /* Standard types */
 
 #include "pofflib.h"   /* POFF library interface */
 #include "pfprivate.h" /* POFF private definitions */

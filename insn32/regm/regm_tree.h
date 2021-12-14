@@ -42,7 +42,7 @@
  ***************************************************************************/
 
 #include <stdint.h>
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pofflib.h"
 #include "rinsn32.h"
 

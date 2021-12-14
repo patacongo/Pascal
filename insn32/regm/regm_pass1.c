@@ -43,12 +43,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
 #include "paslib.h"
 #include "pofflib.h"
-#include "pinsn.h"
+#include "pas_insn.h"
 #include "pinsn32.h"
 #include "pas_error.h"
 

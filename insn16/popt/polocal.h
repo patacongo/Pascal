@@ -42,8 +42,8 @@
 ****************************************************************************/
 
 #include <stdint.h>
-#include "keywords.h"
-#include "pdefs.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
 #include "pofflib.h"
 
 /***************************************************************************

@@ -44,15 +44,15 @@
 #include <errno.h>
 
 #include "config.h"       /* Configuration */
-#include "keywords.h"     /* Standard types */
-#include "pdefs.h"        /* Common types */
+#include "pas_debug.h"    /* Standard types */
+#include "pas_machine.h"  /* Common types */
 #include "pofflib.h"      /* POFF library definitions */
 #include "pas_pcode.h"    /* Logical opcode definitions */
 #include "pas_errcodes.h" /* Error codes */
 #include "pinsn16.h"      /* 16-bit target INSN opcode definitions */
 #include "pas_error.h"    /* Error handling logic */
 
-#include "pinsn.h"        /* (to verify prototypes in this file) */
+#include "pas_insn.h"     /* (to verify prototypes in this file) */
 
 /**********************************************************************
  * Public Data

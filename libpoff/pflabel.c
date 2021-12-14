@@ -43,8 +43,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "keywords.h"
-#include "pdefs.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
 #include "pas_errcodes.h"
 #include "pas_error.h"
 #include "poff.h"

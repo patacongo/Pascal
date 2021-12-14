@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_errcodes.h"
 #include "pofflib.h"
 #include "pas_error.h"

@@ -45,7 +45,7 @@
 #include <inttypes.h>
 
 #include "config.h"
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_defns.h"
 #include "pas_errcodes.h"
 

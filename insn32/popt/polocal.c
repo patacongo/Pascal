@@ -40,13 +40,13 @@
 
 #include <stdio.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_pcode.h"
 #include "pinsn32.h"
 
 #include "pofflib.h"
 #include "paslib.h"
-#include "pinsn.h"
+#include "pas_insn.h"
 #include "pcopt.h"
 #include "plopt.h"
 #include "pjopt.h"

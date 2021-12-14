@@ -43,7 +43,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pofflib.h"
 #include "pas_errcodes.h"
 #include "pas_error.h"

@@ -41,10 +41,10 @@
  * Included Files
  ***************************************************************************/
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "stdint.h"
 #include "stdbool.h"
-#include "pdefs.h"
+#include "pas_machine.h"
 #include "pofflib.h"
 
 /***************************************************************************

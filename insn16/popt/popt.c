@@ -42,12 +42,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_pcode.h"
 #include "paslib.h"
 #include "pofflib.h"
 
-#include "pinsn.h"
+#include "pas_insn.h"
 #include "popt.h"
 #include "psopt.h"
 #include "polocal.h"

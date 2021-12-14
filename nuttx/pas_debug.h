@@ -1,5 +1,5 @@
 /*************************************************************
- * keywords.h
+ * pas_debug.h
  * This file defines the pascal compilation environment
  *
  *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
@@ -33,8 +33,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *************************************************************/
 
-#ifndef __KEYWORDS_H
-#define __KEYWORDS_H
+#ifndef __PAS_DEBUG_H
+#define __PAS_DEBUG_H
 
 /*************************************************************
  * Included Files
@@ -64,4 +64,4 @@
 #  define TRACE dbg
 #endif
 
-#endif /* __KEYWORDS_H */
+#endif /* __PAS_DEBUG_H */

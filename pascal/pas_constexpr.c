@@ -44,12 +44,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "pas_errcodes.h"
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_main.h"
 #include "pas_statement.h"
 #include "pas_expression.h"

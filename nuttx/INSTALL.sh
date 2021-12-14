@@ -153,7 +153,7 @@ mkdir ${installdir}/pcode/libpas || \
 
 cp -a ${pascaldir}/include/poff.h         ${pascaldir}/include/pofflib.h \
       ${pascaldir}/include/pas_errcodes.h ${pascaldir}/include/pas_error.h \
-      ${pascaldir}/include/pdefs.h        ${pascaldir}/include/pas_fpops.h \
+      ${pascaldir}/include/pas_machine.h  ${pascaldir}/include/pas_fpops.h \
       ${pascaldir}/include/pas_sysio.h    ${pascaldir}/include/paslib.h \
       ${installdir}/pcode/include/. || \
   { echo "Failed to copy ${pascaldir}/include" ; exit 1; }
@@ -171,8 +171,8 @@ echo "#endif /* __CONFIG_H */" >>${installdir}/pcode/include/config.h
 cp -a ${pascaldir}/nuttx/Makefile ${installdir}/pcode/. || \
   { echo "Failed to copy ${pascaldir}/nuttx/Makefile" ; exit 1; }
 
-cp -a ${pascaldir}/nuttx/keywords.h ${installdir}/pcode/include/. || \
-  { echo "Failed to copy ${pascaldir}/nuttx/keywords.h" ; exit 1; }
+cp -a ${pascaldir}/nuttx/pas_debug.h ${installdir}/pcode/include/. || \
+  { echo "Failed to copy ${pascaldir}/nuttx/pas_debug.h" ; exit 1; }
 
 cp -a ${pascaldir}/libpoff/*.c ${pascaldir}/libpoff/*.h \
       ${pascaldir}/libpoff/Make.defs ${installdir}/pcode/libpoff/. || \

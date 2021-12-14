@@ -42,14 +42,14 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_pcode.h"
 #include "pinsn16.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"
 #include "paslib.h"
 
-#include "pinsn.h"
+#include "pas_insn.h"
 
 /***********************************************************************
  * Pre-processor Definitions
@@ -69,7 +69,7 @@
 
 /* The following table defines everything that is needed to disassemble
  * a P-Code.  NOTE:  The order of definition in this table must exactly
- * match the declaration sequence in pinsn.h. */
+ * match the declaration sequence in pas_insn.h. */
 
 static const char invOp[] = "Invalid Opcode";
 static const struct

@@ -1,5 +1,5 @@
 /*************************************************************
- * keywords.h
+ * pas_debug.h
  * This file defines the pascal compilation environment
  *
  *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  *************************************************************/
 
-#ifndef __KEYWORDS_H
-#define __KEYWORDS_H
+#ifndef __PAS_DEBUG_H
+#define __PAS_DEBUG_H
 
 /*************************************************************
  * Included Files
@@ -76,4 +76,4 @@
 #define dbg(...) fprintf(stderr, __VA_ARGS__)
 #define vdbg(...) DEBUG(__VA_ARGS__)
 
-#endif /* __KEYWORDS_H */
+#endif /* __PAS_DEBUG_H */

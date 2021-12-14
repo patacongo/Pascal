@@ -45,8 +45,8 @@
 #include <inttypes.h>
 #include <ctype.h>
 
-#include "keywords.h"
-#include "pdefs.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
 #include "pinsn16.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"

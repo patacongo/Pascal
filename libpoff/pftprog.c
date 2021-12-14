@@ -43,7 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "keywords.h"     /* Standard types */
+#include "pas_debug.h"    /* Standard types */
 #include "pas_errcodes.h" /* Pascal error codes */
 
 #include "pfprivate.h"    /* POFF private definitions */

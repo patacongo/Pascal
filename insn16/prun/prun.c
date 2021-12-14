@@ -45,8 +45,8 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include "keywords.h"
-#include "pdefs.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
 #include "pinsn16.h"
 #include "pas_sysio.h"
 #include "pas_errcodes.h"

@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "keywords.h"     /* Standard types */
+#include "pas_debug.h"    /* Standard types */
 #include "pas_errcodes.h" /* error code definitions */
 
 #include "pas_error.h"    /* error() */

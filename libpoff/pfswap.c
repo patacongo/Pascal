@@ -40,7 +40,7 @@
 
 #include <stdint.h>
 
-#include "keywords.h"  /* Standard types */
+#include "pas_debug.h" /* Standard types */
 #include "paslib.h"    /* Common library */
 #include "pfprivate.h" /* POFF private definitions */
 

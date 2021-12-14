@@ -43,7 +43,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 
 #include "pas_error.h"
 

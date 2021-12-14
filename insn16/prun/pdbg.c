@@ -45,15 +45,15 @@
 #include <getopt.h>
 #include <ctype.h>
 
-#include "keywords.h"
-#include "pdefs.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
 #include "pas_pcode.h"
 #include "pinsn16.h"
 #include "pas_sysio.h"
 #include "pas_errcodes.h"
 
 #include "paslib.h"
-#include "pinsn.h"
+#include "pas_insn.h"
 #include "pexec.h"
 #include "pdbg.h"
 

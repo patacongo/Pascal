@@ -41,8 +41,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "keywords.h"
-#include "pdefs.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
 #include "pinsn16.h"
 
 #include "paslib.h"

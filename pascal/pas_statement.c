@@ -43,7 +43,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"
@@ -57,7 +57,7 @@
 #include "pas_codegen.h"
 #include "pas_token.h"
 #include "pas_symtable.h"
-#include "pinsn.h"
+#include "pas_insn.h"
 #include "pas_error.h"
 
 /****************************************************************************

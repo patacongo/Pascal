@@ -43,7 +43,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"

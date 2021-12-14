@@ -43,7 +43,7 @@
  ***************************************************************************/
 
 #include <stdint.h>
-#include "keywords.h"
+#include "pas_debug.h"
 #include "poff.h"
 #include "paslib.h"    /* Endian-ness support */
 

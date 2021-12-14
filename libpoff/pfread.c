@@ -46,7 +46,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "keywords.h"     /* Standard types */
+#include "pas_debug.h"    /* Standard types */
 #include "pas_errcodes.h" /* Pascal error definitions */
 
 #include "pas_error.h"    /* error() */

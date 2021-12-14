@@ -44,9 +44,9 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>   /* for FILE */
+#include <stdio.h>        /* for FILE */
 #include <config.h>
-#include "pdefs.h"   /* Common definitions */
+#include "pas_machine.h"  /* Common definitions */
 
 /***********************************************************************
  * Pre-processor Definitions

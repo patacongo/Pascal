@@ -37,7 +37,7 @@ This directory contains:
     to use your own custom apps/ directory, then this Makefile may
     require some modifications.
 
-  keywords.h -- A version that adjusts build context for the NuttX
+  pas_debug.h -- A version that adjusts build context for the NuttX
     build environment.
 
 

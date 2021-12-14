@@ -44,7 +44,7 @@
 #include <errno.h>
 
 #include "config.h"        /* Configuration */
-#include "keywords.h"      /* Standard types */
+#include "pas_debug.h"     /* Standard types */
 #include "pas_defns.h"     /* Common types */
 #include "pas_tkndefs.h"   /* Token / symbol table definitions */
 #include "pas_pcode.h"     /* Logical opcode definitions */
@@ -53,7 +53,7 @@
 #include "pas_main.h"      /* Global variables */
 #include "poff.h"          /* For POFF file format */
 #include "pofflib.h"       /* For poff*() functions*/
-#include "pinsn.h"         /* (DEBUG only) */
+#include "pas_insn.h"      /* (DEBUG only) */
 #include "pas_error.h"     /* error() */
 
 #include "pas_procedure.h" /* for actualParameterSize */

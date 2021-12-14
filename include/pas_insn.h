@@ -1,5 +1,5 @@
 /***************************************************************************
- * pinsn.h
+ * pas_insn.h
  * External Declarations associated libinsn.a
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PINSN_H
-#define __PINSN_H
+#ifndef __PAS_INSN_H
+#define __PAS_INSN_H
 
 /***************************************************************************
  * Included Files
@@ -79,4 +79,4 @@ void insn_ResetTmpOpCodeWrite(poffProgHandle_t progHandle);
 
 void insn_DisassemblePCode(FILE* lfile, opType_t *pop);
 
-#endif /* __PINSN_H */
+#endif /* __PAS_INSN_H */

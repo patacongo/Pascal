@@ -40,13 +40,13 @@
 
 #include <stdint.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_pcode.h"
 #include "pinsn16.h"
 
 #include "paslib.h"
 #include "pofflib.h"
-#include "pinsn.h"
+#include "pas_insn.h"
 
 /**********************************************************************
  * Public Data

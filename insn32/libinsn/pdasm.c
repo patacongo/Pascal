@@ -41,14 +41,14 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "keywords.h"
+#include "pas_debug.h"
 #include "pas_pcode.h"
 #include "pinsn32.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"
 #include "paslib.h"
 
-#include "pinsn.h"
+#include "pas_insn.h"
 
 /**********************************************************************
  * Private Types
@@ -68,7 +68,7 @@ enum {
 
 /* The following table defines everything that is needed to disassemble
  * a P-Code.  NOTE:  The order of definition in this table must exactly
- * match the declaration sequence in pinsn.h. */
+ * match the declaration sequence in pas_insn.h. */
 
 static const char invOp[] = "Invalid Opcode";
 struct optab_s
