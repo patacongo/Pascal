@@ -110,7 +110,7 @@ char   *constantStart;
 /***************************************************************/
 /* Evaluate a simple expression of constant values */
 
-void constantExpression(void)
+void pas_ConstantExression(void)
 {
   TRACE(g_lstFile,"[constantExpression]");
 

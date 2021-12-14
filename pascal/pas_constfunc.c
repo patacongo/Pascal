@@ -214,7 +214,7 @@ static void constantAbsFunc(void)
    /* FORM:  ABS (<simple integer/real expression>) */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
 
    if (constantToken == tINT_CONST)
      {
@@ -247,7 +247,7 @@ static void constantOrdFunc(void)
    /* FORM:  ORD (<scalar type>) */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
    isOrdinalConstant();
    checkRParen();
 }
@@ -261,7 +261,7 @@ static void constantPredFunc(void)
    /* FORM:  PRED (<simple integer expression>) */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
    isOrdinalConstant();
    constantInt--;
    checkRParen();
@@ -276,7 +276,7 @@ static void constantSqrFunc(void)
    /* FORM:  SQR (<simple integer OR real expression>) */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
    if (constantToken == tINT_CONST)
      {
        constantInt *= constantInt;
@@ -302,11 +302,15 @@ static void constantRealFunc(uint8_t fpOpCode)
    /* FORM:  <function identifier> (<real/integer expression>) */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
    if (constantToken == tINT_CONST)
-     constantReal = (double)constantInt;
+     {
+       constantReal = (double)constantInt;
+     }
    else
-     error(eINVARG);
+     {
+       error(eINVARG);
+     }
 
    checkRParen();
 }
@@ -320,7 +324,7 @@ static void constantSuccFunc(void)
    /* FORM:  SUCC (<simple integer expression>) */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
    isOrdinalConstant();
    constantInt++;
    checkRParen();
@@ -335,10 +339,10 @@ static void constantOddFunc(void)
    /* FORM:  ODD (<simple integer expression>) */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
    isOrdinalConstant();
    constantInt &= 1;
-   expression(exprAnyOrdinal, NULL);
+   pas_Exression(exprAnyOrdinal, NULL);
    checkRParen();
 }
 
@@ -356,7 +360,7 @@ static void constantChrFunc(void)
     * let the returned value exceed the range of type char. */
 
    checkLParen();
-   constantExpression();
+   pas_ConstantExression();
    if (constantToken == tINT_CONST)
      {
        constantToken = tCHAR_CONST;

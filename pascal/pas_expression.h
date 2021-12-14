@@ -42,6 +42,7 @@
  ***********************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /***********************************************************************
  * Pre-processor Definitions
@@ -69,7 +70,7 @@
  * Type Definitions
  ***********************************************************************/
 
-enum exprType_s
+enum exprType_e
 {
   /* General expression type */
 
@@ -89,8 +90,7 @@ enum exprType_s
   exprCString    = 0x0a,    /* TOS = pointer to C string */
   exprSet        = 0x0b,    /* TOS = set(integer) value */
   exprFile       = 0x0c,    /* TOS = file */
-  exprArray      = 0x0d,    /* TOS = array */
-  exprRecord     = 0x0e,    /* TOS = record */
+  exprRecord     = 0x0d,    /* TOS = record */
 
   /* Expressions that evaluate to pointers to standard type */
 
@@ -101,11 +101,10 @@ enum exprType_s
   exprScalarPtr  = 0x87,    /* TOS = pointer to a scalar value */
   exprSetPtr     = 0x8b,    /* TOS = pointer to a set value */
   exprFilePtr    = 0x8c,    /* TOS = pointer to a file */
-  exprArrayPtr   = 0x8d,    /* TOS = pointer to an array */
-  exprRecordPtr  = 0x8e     /* TOS = pointer to a record */
+  exprRecordPtr  = 0x8d     /* TOS = pointer to a record */
 };
 
-typedef enum exprType_s exprType_t;
+typedef enum exprType_e exprType_t;
 
 /***********************************************************************
  * Public Datas
@@ -120,10 +119,12 @@ extern char   *constantStart;
  * Public Function Protothypes
  ***********************************************************************/
 
-exprType_t expression(exprType_t findExprType, symbol_t *typePtr);
-exprType_t varParm(exprType_t varExprType, symbol_t *typePtr);
-void       arrayIndex(symbol_t *indexTypePtr, int32_t size);
-exprType_t getExprType(symbol_t *sType);
-void       constantExpression(void);
+exprType_t pas_Exression(exprType_t findExprType, symbol_t *typePtr);
+exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr);
+void       pas_ArrayIndex(symbol_t *indexTypePtr, int32_t size);
+exprType_t pas_GetExpressionType(symbol_t *sType);
+exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal);
+exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal);
+void       pas_ConstantExression(void);
 
 #endif /* __PAS_EXPRESSION_H */

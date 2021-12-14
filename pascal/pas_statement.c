@@ -712,23 +712,55 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sARRAY :
-      /* FORM: <array identifier> := <expression>
-       * OR:   <pointer array identifier>[<index>]^ := <expression>
-       * OR:   <pointer array identifier>[<index>] := <pointer expression>
-       * OR:   <record array identifier>[<index>].<field identifier> := <expression>
-       * OR:   etc., etc., etc.
-       */
+      {
+        symbol_t *arrayType;
+        symbol_t *nextType;
+        uint16_t arrayKind;
+        uint16_t size;
 
-      if (assignFlags != 0) error(eARRAYTYPE);
-      assignFlags |= INDEXED_ASSIGNMENT;
+        /* FORM: <array identifier> := <expression>
+         * OR:   <pointer array identifier>[<index>]^ := <expression>
+         * OR:   <pointer array identifier>[<index>] := <pointer expression>
+         * OR:   <record array identifier>[<index>].<field identifier> := <expression>
+         * OR:   etc., etc., etc.
+         */
 
-      indexTypePtr = typePtr->sParm.t.index;
-      if (indexTypePtr == NULL) error(eHUH);
+        if (assignFlags != 0) error(eARRAYTYPE);
+        assignFlags |= INDEXED_ASSIGNMENT;
 
-      arrayIndex(indexTypePtr, typePtr->sParm.t.asize);
-      varPtr->sKind        = typePtr->sParm.t.type;
-      varPtr->sParm.v.size = typePtr->sParm.t.asize;
-      pas_SimpleAssignment(varPtr, assignFlags);
+        indexTypePtr = typePtr->sParm.t.index;
+        if (indexTypePtr == NULL) error(eHUH);
+
+        /* Handle the array index */
+
+        pas_ArrayIndex(indexTypePtr, typePtr->sParm.t.asize);
+
+        /* Get the base type of the array */
+
+        size      = 0;
+        arrayKind = typePtr->sKind;
+        arrayType = typePtr;
+        nextType  = typePtr->sParm.t.parent;
+
+        while (nextType != NULL && arrayType->sKind == sTYPE)
+          {
+            arrayType = nextType;
+            size      = arrayType->sParm.t.asize;
+            arrayKind = arrayType->sParm.t.type;
+            nextType  = arrayType->sParm.t.parent;
+          }
+
+        /* REVISIT:  For subranges, we use the base type of the subrange. */
+
+        if (arrayKind == sSUBRANGE)
+          {
+            arrayKind = arrayType->sParm.t.subType;
+          }
+
+        varPtr->sKind        = arrayKind;
+        varPtr->sParm.v.size = size;
+        pas_SimpleAssignment(varPtr, assignFlags);
+      }
       break;
 
     default :
@@ -750,7 +782,7 @@ static void pas_Assignment(uint16_t storeOp, exprType_t assignType,
    if (g_token != tASSIGN) error (eASSIGN);
    else getToken();
 
-   expression(assignType, typePtr);
+   pas_Exression(assignType, typePtr);
    pas_GenerateStackReference(storeOp, varPtr);
 }
 
@@ -776,7 +808,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
     * to exprString records upon assignment.
     */
 
-   stringKind = expression(exprAnyString, typePtr);
+   stringKind = pas_Exression(exprAnyString, typePtr);
 
    /* Place the address of the destination string structure instance on the
     * stack.
@@ -851,7 +883,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
          }
      }
 
-   /* else ... type mismatch error already reported by expression() */
+   /* else ... type mismatch error already reported by pas_Exression() */
 }
 
 /***********************************************************************/
@@ -867,7 +899,7 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType_t assignType,
    if (g_token != tASSIGN) error (eASSIGN);
    else getToken();
 
-   expression(assignType, typePtr);
+   pas_Exression(assignType, typePtr);
    pas_GenerateDataSize(varPtr->sParm.v.size);
    pas_GenerateStackReference(storeOp, varPtr);
 }
@@ -1040,7 +1072,7 @@ static void pas_IfStatement(void)
 
   /* Evaluate the boolean expression */
 
-  expression(exprBoolean, NULL);
+  pas_Exression(exprBoolean, NULL);
 
   /* Make sure that the boolean expression is followed by the THEN token */
 
@@ -1183,7 +1215,7 @@ void pas_RepeatStatement ()
 
    /* Generate UNTIL <expression> */
 
-   expression(exprBoolean, NULL);
+   pas_Exression(exprBoolean, NULL);
 
    /* Generate conditional branch to the top of loop */
 
@@ -1220,7 +1252,7 @@ static void pas_WhileStatement(void)
    /* Evaluate the WHILE <expression> */
 
    nLspChanges = pas_GetNStackLevelChanges();
-   expression(exprBoolean, NULL);
+   pas_Exression(exprBoolean, NULL);
 
    /* Generate a conditional jump to the end of the loop */
 
@@ -1359,7 +1391,7 @@ static void pas_CaseStatement(void)
 
    /* Evaluate the CASE <expression> */
 
-   expression(exprAnyOrdinal, NULL);
+   pas_Exression(exprAnyOrdinal, NULL);
 
    /* Verify that CASE <expression> is followed with the OF token */
 
@@ -1597,7 +1629,7 @@ static void pas_ForStatement(void)
 
        /* Evaluate <expression> DO */
 
-       expression(exprInteger, varPtr->sParm.v.parent);
+       pas_Exression(exprInteger, varPtr->sParm.v.parent);
 
        /* Verify that the <expression> is followed by the DO token */
 

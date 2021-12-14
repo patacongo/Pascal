@@ -381,8 +381,9 @@ int actualParameterSize(symbol_t *procPtr, int parmNo)
 int actualParameterList(symbol_t *procPtr)
 {
   symbol_t *typePtr;
-  register int nParms = 0;
+  exprType_t exprType;
   bool lparen = false;
+  int parmIndex = 0;
   int size = 0;
 
   TRACE(g_lstFile,"[actualParameterList]");
@@ -429,54 +430,86 @@ int actualParameterList(symbol_t *procPtr)
        * agree with actualParameterSize() above);
        */
 
-      for (nParms = 1; nParms <= procPtr->sParm.p.nParms; nParms++)
+      for (parmIndex = 1;
+           parmIndex <= procPtr->sParm.p.nParms;
+           parmIndex++)
         {
-          typePtr = procPtr[nParms].sParm.v.parent;
-          switch (procPtr[nParms].sKind)
+          typePtr = procPtr[parmIndex].sParm.v.parent;
+          switch (procPtr[parmIndex].sKind)
             {
             case sINT :
-              expression(exprInteger, typePtr);
+              pas_Exression(exprInteger, typePtr);
               size += sINT_SIZE;
               break;
 
             case sCHAR :
-              expression(exprChar, typePtr);
+              pas_Exression(exprChar, typePtr);
               size += sCHAR_SIZE;
               break;
 
             case sREAL :
-              expression(exprReal, typePtr);
+              pas_Exression(exprReal, typePtr);
               size += sREAL_SIZE;
               break;
 
             case sSTRING :
             case sRSTRING :
-              expression(exprString, typePtr);
+              pas_Exression(exprString, typePtr);
               size += sRSTRING_SIZE;
               break;
 
             case sSUBRANGE :
-              expression(exprInteger, typePtr);
+              pas_Exression(exprInteger, typePtr);
               size += sINT_SIZE;
               break;
 
             case sSCALAR :
-              expression(exprScalar, typePtr);
+              pas_Exression(exprScalar, typePtr);
               size += sINT_SIZE;
               break;
 
             case sSET_OF :
-              expression(exprSet, typePtr);
+              pas_Exression(exprSet, typePtr);
               size += sINT_SIZE;
               break;
 
             case sARRAY :
-              expression(exprArray, typePtr);
-              size += typePtr->sParm.t.asize;
+              {
+                symbol_t *arrayType;
+                uint16_t  arrayKind;
+
+                /* Get the base type of the array */
+
+                arrayKind = typePtr->sKind;
+                arrayType = typePtr->sParm.v.parent;
+
+                while (arrayType != NULL && arrayType->sKind == sTYPE)
+                  {
+                    arrayKind = arrayType->sParm.t.type;
+                    arrayType = arrayType->sParm.t.parent;
+                  }
+
+                /* REVISIT:  For subranges, we use the base type of
+                 * the subrange.
+                 */
+
+                if (arrayKind == sSUBRANGE)
+                  {
+                    arrayKind = arrayType->sParm.t.subType;
+                  }
+
+                /* Then get the expression type associated with the
+                 * base type
+                 */
+
+                exprType = pas_MapVariable2ExprType(arrayKind, false);
+                pas_Exression(exprType, typePtr);
+                size += typePtr->sParm.t.asize;
+              }
               break;
 
             case sRECORD :
-              expression(exprRecord, typePtr);
+              pas_Exression(exprRecord, typePtr);
               size += typePtr->sParm.t.asize;
               break;
 
@@ -486,32 +519,62 @@ int actualParameterList(symbol_t *procPtr)
                   switch (typePtr->sParm.t.type)
                     {
                     case sINT :
-                      varParm(exprIntegerPtr, typePtr);
+                      pas_VarParameter(exprIntegerPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
 
                     case sBOOLEAN :
-                      varParm(exprBooleanPtr, typePtr);
+                      pas_VarParameter(exprBooleanPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
 
                     case sCHAR :
-                      varParm(exprCharPtr, typePtr);
+                      pas_VarParameter(exprCharPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
 
                     case sREAL :
-                      varParm(exprRealPtr, typePtr);
+                      pas_VarParameter(exprRealPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
 
                     case sARRAY :
-                      varParm(exprArrayPtr, typePtr);
-                      size += sPTR_SIZE;
+                      {
+                        symbol_t *arrayType;
+                        uint16_t arrayKind;
+
+                        /* Get the base type of the array */
+
+                        arrayKind = typePtr->sKind;
+                        arrayType = typePtr->sParm.v.parent;
+
+                        while (arrayType != NULL && arrayType->sKind == sTYPE)
+                          {
+                            arrayKind = arrayType->sParm.t.type;
+                            arrayType = arrayType->sParm.t.parent;
+                          }
+
+                        /* REVISIT:  For subranges, we use the base type of
+                         * the subrange.
+                         */
+
+                        if (arrayKind == sSUBRANGE)
+                          {
+                            arrayKind = arrayType->sParm.t.subType;
+                          }
+
+                        /* Then get the expression type associated with the
+                         * base type
+                         */
+
+                        exprType = pas_MapVariable2ExprType(arrayKind, false);
+                        pas_VarParameter(exprType, typePtr);
+                        size += sPTR_SIZE;
+                      }
                       break;
 
                     case sRECORD :
-                      varParm(exprRecordPtr, typePtr);
+                      pas_VarParameter(exprRecordPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
 
@@ -530,7 +593,7 @@ int actualParameterList(symbol_t *procPtr)
               error (eVARPARMTYPE);
             }
 
-          if (nParms < procPtr->sParm.p.nParms)
+          if (parmIndex < procPtr->sParm.p.nParms)
             {
               if (g_token != ',') error (eCOMMA);
               else getToken();
@@ -765,6 +828,7 @@ static void readProcCommon(bool text, uint16_t fileSize)
 
 static void readText(void)
 {
+  exprType_t exprType;
   symbol_t *rPtr;
 
   TRACE(g_lstFile, "[readText]");
@@ -803,11 +867,12 @@ static void readText(void)
 
         pas_GenerateSimple(opDUP);
 
-        /* varParm() will place a pointer to the variable to read at the
+        /* pas_VarParameter() will place a pointer to the variable to read at the
          * TOS and return the address of the pointer.
          */
 
-        switch (varParm(exprUnknown, NULL))
+        exprType = pas_VarParameter(exprUnknown, NULL);
+        switch (exprType)
           {
             /* READ_INT: TOS   = Read address
              *           TOS+1 = File number
@@ -983,7 +1048,7 @@ static void openFileProc(uint16_t opcode1, uint16_t opcode2)
       if (g_token == ',')
         {
           getToken();
-          (void)expression(exprInteger, NULL);
+          (void)pas_Exression(exprInteger, NULL);
           opcode = opcode2;
         }
 
@@ -1104,7 +1169,7 @@ static void assignFileProc(void)       /* ASSIGNFILE procedure */
 
        /* Push the file name reference onto the stack. */
 
-       exprType = expression(exprUnknown, NULL);
+       exprType = pas_Exression(exprUnknown, NULL);
        if (exprType != exprString) error(eSTRING);
 
        /* And generate the SYSIO operation */
@@ -1376,7 +1441,7 @@ static void writeText(void)
       /* Put the file number and value on the stack */
 
       pas_GenerateSimple(opDUP);
-      writeType = expression(exprUnknown, NULL);
+      writeType = pas_Exression(exprUnknown, NULL);
 
       /* Then generate the operation */
 

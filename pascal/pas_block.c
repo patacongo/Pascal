@@ -641,7 +641,7 @@ static void pas_DeclareConst(void)
 
   /* Handle constant expressions */
 
-  constantExpression();
+  pas_ConstantExression();
 
   /* Add the constant to the symbol table based on the type of
    * the constant found following the '= [ sign ]'

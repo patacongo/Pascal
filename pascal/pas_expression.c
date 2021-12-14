@@ -1,4 +1,4 @@
-/***************************************************************
+/****************************************************************************
  * pas_expression.c
  * Integer Expression
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************/
+ ****************************************************************************/
 
-/***************************************************************
+/****************************************************************************
  * Included Files
- ***************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -61,15 +61,15 @@
 #include "pas_insn.h"
 #include "pas_error.h"
 
-/***************************************************************
+/****************************************************************************
  * Private Definitions
- ***************************************************************/
+ ****************************************************************************/
 
 #define intTrunc(x) ((x) & (~(sINT_SIZE)))
 
-/***************************************************************
+/****************************************************************************
  * Private Type Declarations
- ***************************************************************/
+ ****************************************************************************/
 
 struct setType_s
 {
@@ -82,9 +82,9 @@ struct setType_s
 
 typedef struct setType_s setType_t;
 
-/***************************************************************
+/****************************************************************************
  * Private Function Prototypes
- ***************************************************************/
+ ****************************************************************************/
 
 static exprType_t simpleExpression(exprType_t findExprType);
 static exprType_t term(exprType_t findExprType);
@@ -95,8 +95,6 @@ static exprType_t ptrFactor(void);
 static exprType_t complexPtrFactor(void);
 static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags);
 static exprType_t functionDesignator(void);
-static enum exprType_s
-                  mapSimpleType2ExprType(uint16_t simpleType);
 static void       setAbstractType(symbol_t *sType);
 static void       getSetFactor(void);
 static void       getSetElement(setType_t *s);
@@ -104,9 +102,9 @@ static bool       isOrdinalType(exprType_t testExprType);
 static bool       isAnyStringType(exprType_t testExprType);
 static bool       isStringReference(exprType_t testExprType);
 
-/***************************************************************
+/****************************************************************************
  * Private Variables
- ***************************************************************/
+ ****************************************************************************/
 
 /* The abstract types - SETs, RECORDS, etc - require an exact
  * match in type.  This variable points to the symbol table
@@ -115,10 +113,10 @@ static bool       isStringReference(exprType_t testExprType);
 
 static symbol_t *g_abstractType;
 
-/***************************************************************/
+/****************************************************************************/
 /* Evaluate (boolean) Expression */
 
-exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
+exprType_t pas_Exression(exprType_t findExprType, symbol_t *typePtr)
 {
   uint8_t    operation;
   uint16_t   intOpCode;
@@ -350,10 +348,10 @@ exprType_t expression(exprType_t findExprType, symbol_t *typePtr)
   return simple1Type;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Provide VAR parameter assignments */
 
-exprType_t varParm(exprType_t varExprType, symbol_t *typePtr)
+exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
 {
   exprType_t factorType;
 
@@ -362,7 +360,7 @@ exprType_t varParm(exprType_t varExprType, symbol_t *typePtr)
    * with the expression.
    */
 
-  if ((typePtr) && (typePtr->sKind != sTYPE)) error(eINVTYPE);
+  if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
   g_abstractType = typePtr;
 
   /* This function is really just an interface to the
@@ -371,7 +369,7 @@ exprType_t varParm(exprType_t varExprType, symbol_t *typePtr)
    */
 
   factorType = ptrFactor();
-  if ((varExprType != exprUnknown) && (factorType != varExprType))
+  if (varExprType != exprUnknown && factorType != varExprType)
     {
       error(eINVVARPARM);
     }
@@ -379,10 +377,10 @@ exprType_t varParm(exprType_t varExprType, symbol_t *typePtr)
   return factorType;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 /* Process Array Index */
 
-void arrayIndex(symbol_t *indexTypePtr, int32_t size)
+void pas_ArrayIndex(symbol_t *indexTypePtr, int32_t size)
 {
   TRACE(g_lstFile,"[arrayIndex]");
 
@@ -394,7 +392,7 @@ void arrayIndex(symbol_t *indexTypePtr, int32_t size)
   else
     {
       uint16_t indexType;
-      enum exprType_s exprType;
+      exprType_t exprType;
 
       /* Get the type of the index */
 
@@ -416,13 +414,13 @@ void arrayIndex(symbol_t *indexTypePtr, int32_t size)
 
           /* Get the expression type from the index type */
 
-          exprType = mapSimpleType2ExprType(indexType);
+          exprType = pas_MapVariable2ExprType(indexType, true);
         }
 
       /* Evaluate index expression */
 
       getToken();
-      expression(exprType, NULL);
+      pas_Exression(exprType, NULL);
 
       /* Correct for size of array element */
 
@@ -452,52 +450,62 @@ void arrayIndex(symbol_t *indexTypePtr, int32_t size)
 /* Determine the expression type associated with a pointer to a type */
 /* symbol */
 
-exprType_t getExprType(symbol_t *sType)
+exprType_t pas_GetExpressionType(symbol_t *sType)
 {
   exprType_t factorType = sINT;
 
   TRACE(g_lstFile,"[getExprType]");
 
-  if ((sType) && (sType->sKind == sTYPE))
+  if (sType != NULL && sType->sKind == sTYPE)
     {
       switch (sType->sParm.t.type)
         {
         case sINT :
           factorType = exprInteger;
           break;
+
         case sBOOLEAN :
           factorType = exprBoolean;
           break;
+
         case sCHAR :
           factorType = exprChar;
           break;
+
         case sREAL :
           factorType = exprReal;
           break;
+
         case sSCALAR :
           factorType = exprScalar;
           break;
+
         case sSTRING :
         case sRSTRING :
           factorType = exprString;
           break;
+
         case sSUBRANGE :
           switch (sType->sParm.t.subType)
             {
             case sINT :
               factorType = exprInteger;
               break;
+
             case sCHAR :
               factorType = exprChar;
               break;
+
             case sSCALAR :
               factorType = exprScalar;
               break;
+
             default :
               error(eSUBRANGETYPE);
               break;
             }
           break;
+
         case sPOINTER :
           sType = sType->sParm.t.parent;
           if (sType)
@@ -507,24 +515,30 @@ exprType_t getExprType(symbol_t *sType)
                 case sINT :
                   factorType = exprIntegerPtr;
                   break;
+
                 case sBOOLEAN :
                   factorType = exprBooleanPtr;
                   break;
+
                 case sCHAR :
                   factorType = exprCharPtr;
                   break;
+
                 case sREAL :
                   factorType = exprRealPtr;
                   break;
+
                 case sSCALAR :
                   factorType = exprScalarPtr;
                   break;
+
                 default :
                   error(eINVTYPE);
                   break;
                 }
             }
           break;
+
         default :
           error(eINVTYPE);
           break;
@@ -534,7 +548,87 @@ exprType_t getExprType(symbol_t *sType)
   return factorType;
 }
 
-/***************************************************************/
+/*************************************************************************/
+
+exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
+{
+  switch (varType)
+    {
+      /* Ordinal type mappings */
+
+      case sINT :
+        return exprInteger;           /* integer value */
+
+      case sCHAR :
+        return exprChar;              /* character value */
+
+      case sBOOLEAN :
+        return exprBoolean;           /* boolean(integer) value */
+
+      case sSCALAR :
+      case sSCALAR_OBJECT :
+        return exprScalar;            /* scalar(integer) value */
+
+      case sSET_OF :
+        return exprSet;               /* set(integer) value */
+
+      case sTYPE :                    /* Variable is defined type */
+        return exprUnknown;           /* REVISIT */
+
+      default:
+        if (!ordinal)
+          {
+            switch (varType)
+              {
+                case sREAL :
+                  return exprReal;    /* real value */
+
+                case sSTRING :
+                case sSTRING_CONST :
+                  return exprString;  /* variable length string reference */
+
+                case sFILE :
+                case sTEXTFILE :
+                  return exprFile;    /* File number */
+
+                case sRSTRING :
+                  return exprCString; /* pointer to C string */
+
+                case sRECORD :
+                case sRECORD_OBJECT :
+                  return exprRecord;  /* record */
+
+                case sARRAY :         /* REVISIT: array of something */
+                case sPOINTER :       /* REVISIT: pointer to something */
+                default:
+                  error(eEXPRTYPE);
+                  return exprUnknown;
+              }
+          }
+        else
+          {
+            error(eEXPRTYPE);
+            return exprUnknown;
+          }
+    }
+}
+
+/****************************************************************************/
+
+exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal)
+{
+  exprType_t exprType;
+
+  exprType = pas_MapVariable2ExprType(varType, ordinal);
+  if (exprType != exprUnknown)
+    {
+      exprType = (exprType_t)((unsigned int)exprType | EXPRTYPE_POINTER);
+    }
+
+  return exprType;
+}
+
+/****************************************************************************/
 /* Process Simple Expression */
 
 static exprType_t simpleExpression(exprType_t findExprType)
@@ -582,7 +676,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
     {
       /* Check for binary operator */
 
-      if ((g_token == '+') || (g_token == '-') || (g_token == tOR))
+      if (g_token == '+' || g_token == '-' || g_token == tOR)
         {
           operation = g_token;
         }
@@ -784,7 +878,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
   return term1Type;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Evaluate a TERM */
 
 static exprType_t term(exprType_t findExprType)
@@ -996,7 +1090,7 @@ static exprType_t term(exprType_t findExprType)
   return factor1Type;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process a FACTOR */
 
 static exprType_t factor(exprType_t findExprType)
@@ -1221,7 +1315,7 @@ static exprType_t factor(exprType_t findExprType)
 
     case '(' :
       getToken();
-      factorType = expression(exprUnknown, g_abstractType);
+      factorType = pas_Exression(exprUnknown, g_abstractType);
       if (g_token == ')') getToken();
       else error (eRPAREN);
       break;
@@ -1281,7 +1375,7 @@ static exprType_t factor(exprType_t findExprType)
   return factorType;
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Process a complex factor */
 
 static exprType_t complexFactor(void)
@@ -1302,7 +1396,7 @@ static exprType_t complexFactor(void)
   return simpleFactor(&symbolSave, 0);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Process a complex factor (recursively) until it becomes a */
 /* simple factor */
 
@@ -1867,7 +1961,7 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               /* Generate the array offset calculation */
 
-              arrayIndex(indexTypePtr, typePtr->sParm.t.asize);
+              pas_ArrayIndex(indexTypePtr, typePtr->sParm.t.asize);
 
               /* Return the parent type of the array */
 
@@ -1883,10 +1977,18 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
                 }
               else
                 {
+                  symbol_t *baseTypePtr = typePtr;
+
                   /* Get the base type of the array */
 
-                  symbol_t *baseTypePtr = typePtr->sParm.t.parent;
-                  arrayType = baseTypePtr->sParm.t.type;
+                  arrayType   = varPtr->sKind;
+                  baseTypePtr = varPtr->sParm.v.parent;
+
+                  while (baseTypePtr != NULL && baseTypePtr->sKind == sTYPE)
+                    {
+                      arrayType   = baseTypePtr->sParm.t.type;
+                      baseTypePtr = baseTypePtr->sParm.t.parent;
+                    }
 
                   /* REVISIT:  For subranges, we use the base type of the
                    * subrange.
@@ -1897,9 +1999,9 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
                       arrayType = baseTypePtr->sParm.t.subType;
                     }
 
-                  /* Get the expression type from the index type */
+                  /* Get the expression type of the array base type */
 
-                  factorType = mapSimpleType2ExprType(arrayType);
+                  factorType = pas_MapVariable2ExprType(arrayType, false);
                }
             }
         }
@@ -1912,7 +2014,7 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
         {
           pas_GenerateDataSize(varPtr->sParm.v.size);
           pas_GenerateStackReference(opLDSM, varPtr);
-          factorType = exprArray;
+          factorType = pas_MapVariable2ExprType(varPtr->sParm.t.type, false);
         }
       else
         {
@@ -2041,7 +2143,7 @@ static exprType_t ptrFactor(void)
   return factorType;
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Process a complex factor */
 
 static exprType_t complexPtrFactor(void)
@@ -2064,7 +2166,7 @@ static exprType_t complexPtrFactor(void)
   return simplePtrFactor(&symbolSave, 0);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Process a complex factor (recursively) until it becomes a simple
  * factor.
  */
@@ -2469,11 +2571,14 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
+              symbol_t *arrayPtr;
+              uint16_t  arrayKind;
+
               factorFlags         |= INDEXED_FACTOR;
 
               /* Generate the array offset calculation */
 
-              arrayIndex(indexTypePtr, typePtr->sParm.t.asize);
+              pas_ArrayIndex(indexTypePtr, typePtr->sParm.t.asize);
 
               /* Return the parent type */
 
@@ -2481,7 +2586,30 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
               varPtr->sParm.v.size = typePtr->sParm.t.asize;
 
               pas_GenerateStackReference(opLAS, varPtr);
-              factorType = exprArrayPtr;
+
+              /* Get the expression type associated with the base
+               * type of the array.
+               */
+
+              arrayKind = varPtr->sKind;
+              arrayPtr  = varPtr->sParm.v.parent;
+
+              while (arrayPtr != NULL && arrayPtr->sKind == sTYPE)
+                {
+                  arrayKind = arrayPtr->sParm.t.type;
+                  arrayPtr  = arrayPtr->sParm.t.parent;
+                }
+
+              /* REVISIT:  For subranges, we use the base type of the subrange. */
+
+              if (arrayKind == sSUBRANGE)
+                {
+                  arrayKind = indexTypePtr->sParm.t.subType;
+                }
+
+              /* Get the pointer expression type of the array base type */
+
+              factorType = pas_MapVariable2ExprPtrType(arrayKind, false);
             }
         }
       break;
@@ -2495,7 +2623,7 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
   return factorType;
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static exprType_t functionDesignator(void)
 {
@@ -2534,7 +2662,7 @@ static exprType_t functionDesignator(void)
 
   /* Get the type of the function */
 
-  factorType = getExprType(typePtr);
+  factorType = pas_GetExpressionType(typePtr);
   setAbstractType(typePtr);
 
    /* Skip over the function-identifier */
@@ -2560,44 +2688,6 @@ static exprType_t functionDesignator(void)
     }
 
   return factorType;
-}
-
-/*************************************************************************/
-
-static enum exprType_s mapSimpleType2ExprType(uint16_t simpleType)
-{
-  switch (simpleType)
-    {
-      case sINT :
-        return exprInteger;    /* integer value */
-
-      case sREAL :
-        return exprReal;       /* real value */
-
-      case sCHAR :
-        return exprChar;       /* character value */
-
-      case sBOOLEAN :
-        return exprBoolean;    /* boolean(integer) value */
-
-      case sSCALAR :
-      case sSCALAR_OBJECT :
-        return exprScalar;     /* scalar(integer) value */
-
-      case sSTRING :
-      case sSTRING_CONST :
-        return exprString;     /* variable length string reference */
-
-      case sRSTRING :
-        return exprCString;    /* pointer to C string */
-
-      case sSET_OF :
-        return exprSet;        /* set(integer) value */
-
-      default:
-        error(eEXPRTYPE);
-        return exprUnknown;
-    }
 }
 
 /*************************************************************************/
@@ -2664,7 +2754,7 @@ static void setAbstractType(symbol_t *sType)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 static void getSetFactor(void)
 {
   setType_t s;
@@ -2740,7 +2830,7 @@ static void getSetFactor(void)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 static void getSetElement(setType_t *s)
 {
   uint16_t setValue;
@@ -3189,7 +3279,7 @@ static void getSetElement(setType_t *s)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 /* Check if this is a ordinal type.  This is what is needed, for
  * example, as an argument to ord(), pred(), succ(), or odd().
@@ -3212,7 +3302,7 @@ static bool isOrdinalType(exprType_t testExprType)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* This is a hack to handle calls to system functions that return
  * exprCString pointers that must be converted to exprString
  * records upon assignment.

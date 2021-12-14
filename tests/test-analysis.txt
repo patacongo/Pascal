@@ -18,8 +18,8 @@ writing, the following errors are reported when testall.sh is ran:
     or the number of elements in SourceArray. (See units/DayIO.pas)
     It is often used to loop around all characters in a string or elements in
     an array.
- 3. Currently a set is limited to 32-bits so that they can be represented internally
-    as a 32-bit bit set.
+ 3. Currently a set is limited to 32 elements so that they can be represented
+    internally as a 32-bit bit set.
  4. Not all operations on type 'string' are not yet supported.  An invalid type
     error is reported from simpleFactor() (or ptrFactor()) for any place an
     expression is expected and a string type is found.
@@ -55,54 +55,57 @@ This is a consequence of the fact that sets are implemented as bitsets and
 the bitset is currently limited to 32-bits:
 
 ########src/106-bubblesort.pas########
-Line 0:0025 Error 17 Token 29
-
-Line:
- 25                readln(a[size]);
+Runtime error 0x80 -- Execution Stopped
 
 Analysis:
-Same as for src/107-quicksort.pas
+Compiles without eror but experiences a run-time failure:
+
+  #define eBADPC           ((uint16_t) 0x80)
 
 ########src/107-quicksort.pas########
-Line 0:0024 Error 17 Token 29'
+Line 0:0062 Error 46 Token 5b
 
 Line:
- 24                readln(a[size]);
-
-Where a is a formal parameter of type 'VAR a: IntArrType' and where
-
-    CONST
-        MaxElts = 50;
-    TYPE
-        IntArrType = ARRAY [1..MaxElts] OF Integer;
+ 62                     pivot := arr[start];
+Where:
+  5     CONST
+  7         MaxElts = 50;
+  8     TYPE
+ 10         IntArrType = ARRAY [1..MaxElts] OF Integer;
+ 12     VAR
+ 17         arr: IntArrType;
+ 47                     pivot: integer;             { Pivot value. }
 
 Error:
-#define eINVARG          ((uint16_t) 0x17)
+#define eARRAYTYPE       ((uint16_t) 0x46)
 
-Token:
-')'
+Token: '['
 
 Analysis:
+This is some internal logic in the compiler.  simpleFactor() is called from
+omplexFactor() and then recurses and calls itself again.  It fails on the
+first recursion.
 
-Line:
-#0  error (errcode=23) at perr.c:129
-#1  0x000000010040bbba in readText (fileNumber=0) at pproc.c:470
+When first called from complexFactor, the bit set factorFlags is zeo.
 
-          /* Otherwise, we fall through to process the ARRAY like any */
-          /* expression */
+On the first time, simpleFactor() handles a VAR parameter and sets the factorFlags
+flags:
 
-        default :
+1936        case sVAR_PARM :
+1939          factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
 
-          switch (varParm(exprUnknown, NULL))
-            {
-            ...
-            default :
-              error(eINVARG);  <<< HERE
-              break;
-            }
-          break;
+It then recurses:
 
-This error occurs because varParm() returns expArrayPtr but there is no code generation logic in the switch statement for that case.
+1941          factorType    = simpleFactor(varPtr, factorFlags);
+
+On the second time through, simpleFactor processes the sARRAY type.  It fails
+checking that factorFlags is zero (they are not).
+
+1944        case sARRAY :
+1945          if (factorFlags != 0) error(eARRAYTYPE);
+
+Clearly there is some logic problem here, but its nature is not completely
+clear.
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)
@@ -171,7 +174,7 @@ Error:
 Token: ')'
 
 Analysis:
-There is no logic to support type sTRING in simpleFactor().  Any place an expression is expected and a string type is provided will fail.
+There is no logic to support type sSTRING in simpleFactor().  Any place an expression is expected and a string type is provided will fail.
 
 ########src/602-writefile.pas########
 Line 0:0016 Error 1e Token 09
