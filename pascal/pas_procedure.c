@@ -476,17 +476,20 @@ int actualParameterList(symbol_t *procPtr)
             case sARRAY :
               {
                 symbol_t *arrayType;
+                symbol_t *nextType;
                 uint16_t  arrayKind;
 
                 /* Get the base type of the array */
 
                 arrayKind = typePtr->sKind;
-                arrayType = typePtr->sParm.v.parent;
+                arrayType = typePtr;
+                nextType  = typePtr->sParm.v.parent;
 
-                while (arrayType != NULL && arrayType->sKind == sTYPE)
+                while (nextType != NULL && nextType->sKind == sTYPE)
                   {
+                    arrayType = nextType;
                     arrayKind = arrayType->sParm.t.type;
-                    arrayType = arrayType->sParm.t.parent;
+                    nextType  = arrayType->sParm.t.parent;
                   }
 
                 /* REVISIT:  For subranges, we use the base type of
@@ -541,17 +544,20 @@ int actualParameterList(symbol_t *procPtr)
                     case sARRAY :
                       {
                         symbol_t *arrayType;
+                        symbol_t *nextType;
                         uint16_t arrayKind;
 
                         /* Get the base type of the array */
 
                         arrayKind = typePtr->sKind;
-                        arrayType = typePtr->sParm.v.parent;
+                        arrayType = typePtr;
+                        nextType  = typePtr->sParm.v.parent;
 
-                        while (arrayType != NULL && arrayType->sKind == sTYPE)
+                        while (nextType != NULL && nextType->sKind == sTYPE)
                           {
+                            arrayType = nextType;
                             arrayKind = arrayType->sParm.t.type;
-                            arrayType = arrayType->sParm.t.parent;
+                            nextType  = arrayType->sParm.t.parent;
                           }
 
                         /* REVISIT:  For subranges, we use the base type of

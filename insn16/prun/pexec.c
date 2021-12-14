@@ -191,9 +191,7 @@ static uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     /* EOF: TOS = File number */
 
     case xEOF :
-      POP(st, fileNumber);  /* File number from stack */
-
-/* FINISH ME -- > */
+      TOS(st, 0) = pexec_eof(TOS(st, 0));
       break;
 
     /* EOLN: TOS = File number */

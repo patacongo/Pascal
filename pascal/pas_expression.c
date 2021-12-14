@@ -1384,8 +1384,9 @@ static exprType_t complexFactor(void)
 
   TRACE(g_lstFile,"[complexFactor]");
 
-  /* First, make a copy of the symbol table entry because the call to */
-  /* simpleFactor() will modify it. */
+  /* First, make a copy of the symbol table entry because the call to
+   * simpleFactor() will modify it.
+   */
 
   symbolSave = *g_tknPtr;
   getToken();
@@ -1730,7 +1731,7 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
     case sSUBRANGE :
       if (!g_abstractType) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.subType;
-      factorType = simpleFactor(varPtr, factorFlags);
+      factorType    = simpleFactor(varPtr, factorFlags);
       break;
 
     case sRECORD :
@@ -1741,9 +1742,13 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
           if (g_token == '.') error(ePOINTERTYPE);
 
           if ((factorFlags & INDEXED_FACTOR) != 0)
-            pas_GenerateStackReference(opLDSX, varPtr);
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+            }
           else
-            pas_GenerateStackReference(opLDS, varPtr);
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+            }
 
           factorType = exprRecordPtr;
         }
@@ -1790,7 +1795,9 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
                   pas_GenerateSimple(opADD);
                 }
               else
-                varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
+                {
+                  varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
+                }
 
               getToken();
               factorType = simpleFactor(varPtr, factorFlags);
@@ -1840,8 +1847,9 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
           error(eARRAYTYPE);
         }
 
-      /* Verify that a field identifier is associated with the RECORD */
-      /* specified by the WITH statement. */
+      /* Verify that a field identifier is associated with the RECORD
+       * specified by the WITH statement.
+       */
 
       else if (varPtr->sParm.r.record != g_withRecord.parent)
         {
@@ -1934,7 +1942,10 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sVAR_PARM :
-      if (factorFlags != 0) error(eVARPARMTYPE);
+      if ((factorFlags & (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR)) != 0)
+        {
+          error(eVARPARMTYPE);
+        }
 
       factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
       varPtr->sKind = typePtr->sParm.t.type;
@@ -1942,7 +1953,10 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sARRAY :
-      if (factorFlags != 0) error(eARRAYTYPE);
+      if ((factorFlags & INDEXED_FACTOR) != 0)
+        {
+          error(eARRAYTYPE);
+        }
 
       if (g_token == '[')
         {
@@ -1977,17 +1991,20 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
                 }
               else
                 {
-                  symbol_t *baseTypePtr = typePtr;
+                  symbol_t *baseTypePtr;
+                  symbol_t *nextPtr;
 
                   /* Get the base type of the array */
 
                   arrayType   = varPtr->sKind;
-                  baseTypePtr = varPtr->sParm.v.parent;
+                  baseTypePtr = varPtr;
+                  nextPtr     = varPtr->sParm.v.parent;
 
-                  while (baseTypePtr != NULL && baseTypePtr->sKind == sTYPE)
+                  while (nextPtr != NULL && nextPtr->sKind == sTYPE)
                     {
+                      baseTypePtr = nextPtr;
                       arrayType   = baseTypePtr->sParm.t.type;
-                      baseTypePtr = baseTypePtr->sParm.t.parent;
+                      nextPtr     = baseTypePtr->sParm.t.parent;
                     }
 
                   /* REVISIT:  For subranges, we use the base type of the
@@ -2572,6 +2589,7 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
           else
             {
               symbol_t *arrayPtr;
+              symbol_t *nextPtr;
               uint16_t  arrayKind;
 
               factorFlags         |= INDEXED_FACTOR;
@@ -2592,19 +2610,21 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
                */
 
               arrayKind = varPtr->sKind;
-              arrayPtr  = varPtr->sParm.v.parent;
+              arrayPtr  = varPtr;
+              nextPtr   = varPtr->sParm.v.parent;
 
-              while (arrayPtr != NULL && arrayPtr->sKind == sTYPE)
+              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
                 {
+                  arrayPtr  = nextPtr;
                   arrayKind = arrayPtr->sParm.t.type;
-                  arrayPtr  = arrayPtr->sParm.t.parent;
+                  nextPtr   = arrayPtr->sParm.t.parent;
                 }
 
               /* REVISIT:  For subranges, we use the base type of the subrange. */
 
               if (arrayKind == sSUBRANGE)
                 {
-                  arrayKind = indexTypePtr->sParm.t.subType;
+                  arrayKind = arrayPtr->sParm.t.subType;
                 }
 
               /* Get the pointer expression type of the array base type */

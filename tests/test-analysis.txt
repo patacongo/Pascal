@@ -35,7 +35,6 @@ writing, the following errors are reported when testall.sh is ran:
     I am not sure what these mean and have just commented them out for now.
     Assignment of a numeric value to a file is not supported.
 
-
 Successful test results are not shown.
 
 ########src/104-primes.pas########
@@ -55,57 +54,16 @@ This is a consequence of the fact that sets are implemented as bitsets and
 the bitset is currently limited to 32-bits:
 
 ########src/106-bubblesort.pas########
-Runtime error 0x80 -- Execution Stopped
+No errors reported but hangs at run-time.
 
 Analysis:
-Compiles without eror but experiences a run-time failure:
-
-  #define eBADPC           ((uint16_t) 0x80)
+Most likely due to some stubbed out file I/O logic
 
 ########src/107-quicksort.pas########
-Line 0:0062 Error 46 Token 5b
-
-Line:
- 62                     pivot := arr[start];
-Where:
-  5     CONST
-  7         MaxElts = 50;
-  8     TYPE
- 10         IntArrType = ARRAY [1..MaxElts] OF Integer;
- 12     VAR
- 17         arr: IntArrType;
- 47                     pivot: integer;             { Pivot value. }
-
-Error:
-#define eARRAYTYPE       ((uint16_t) 0x46)
-
-Token: '['
+No errors reported but hangs at run-time.
 
 Analysis:
-This is some internal logic in the compiler.  simpleFactor() is called from
-omplexFactor() and then recurses and calls itself again.  It fails on the
-first recursion.
-
-When first called from complexFactor, the bit set factorFlags is zeo.
-
-On the first time, simpleFactor() handles a VAR parameter and sets the factorFlags
-flags:
-
-1936        case sVAR_PARM :
-1939          factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
-
-It then recurses:
-
-1941          factorType    = simpleFactor(varPtr, factorFlags);
-
-On the second time through, simpleFactor processes the sARRAY type.  It fails
-checking that factorFlags is zero (they are not).
-
-1944        case sARRAY :
-1945          if (factorFlags != 0) error(eARRAYTYPE);
-
-Clearly there is some logic problem here, but its nature is not completely
-clear.
+Same as src/106-bubblesort.pas
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)

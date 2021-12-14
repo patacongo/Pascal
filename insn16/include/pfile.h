@@ -69,9 +69,10 @@ typedef enum openMode_e openMode_t;
  * Public Function Prototypes
  ***************************************************************************/
 
-void pexec_assignfile(uint16_t fileNumber, bool text, const char *filename);
-void pexec_openfile(uint16_t fileNumber, openMode_t openMode);
-void pexec_closefile(uint16_t fileNumber);
-void pexec_recordsize(uint16_t fileNumber, uint16_t size);
+void     pexec_assignfile(uint16_t fileNumber, bool text, const char *filename);
+void     pexec_openfile(uint16_t fileNumber, openMode_t openMode);
+void     pexec_closefile(uint16_t fileNumber);
+void     pexec_recordsize(uint16_t fileNumber, uint16_t size);
+uint16_t pexec_eof(uint16_t fileNumber);
 
 #endif /* __PFILES_H */
