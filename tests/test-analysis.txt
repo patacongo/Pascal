@@ -9,8 +9,6 @@ writing, the following errors are reported when testall.sh is ran:
     - Test cases using the list type probably have been removed (src/901-pageutils.pas
       which used longword has not yet been removed)
     - For testing purposes, the filename type has been changed to the string type.
-    - According to freepascal.org, fsplit is a procedure in a unit called DOS.  I am
-      not sure how standard that unit is.
  2. Smart Pascal has a Length function:
       function Length ( const SourceString : string ) : Integer;
       function Length ( const  SourceArray : array ) : Integer;
@@ -20,16 +18,13 @@ writing, the following errors are reported when testall.sh is ran:
     an array.
  3. Currently a set is limited to 32 elements so that they can be represented
     internally as a 32-bit bit set.
- 4. Not all operations on type 'string' are not yet supported.  An invalid type
-    error is reported from simpleFactor() (or ptrFactor()) for any place an
-    expression is expected and a string type is found.
- 5. I/O operations on most types of arrays and VAR arrays are not fully
+ 4. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See src/107-quicksort.pas
- 6. Not all file I/O functions have been implemented.
- 7. Forward references to variables before they are defined to not work.  See
+ 5. Not all file I/O functions have been implemented.
+ 6. Forward references to variables before they are defined to not work.  See
     failure in src/108-pointerrecode.pas.
- 8. Unit files with data declarations, but no implementation.
- 9. There are a couple of files with initialization like:
+ 7. Unit files with data declarations, but no implementation.
+ 8. There are a couple of files with initialization like:
       input = 1;
       output = 2;
     I am not sure what these mean and have just commented them out for now.
@@ -56,7 +51,28 @@ the bitset is currently limited to 32-bits:
 ########src/106-bubblesort.pas########
 ########src/107-quicksort.pas########
 
-These two examples compile fine and appear to run, but I see no output.
+These two examples compile fine but cause an Runtime error:
+
+Runtime error 0x80 -- Execution Stopped
+
+I believe that is due to a missing generated of an indexed load instruction:
+
+106-bubblesort.pas:
+ 45         FOR i := 1 TO size DO
+ 46             writeln(arr[i])
+
+106-bubblesort.o1:
+0000018a         PUSH  1    <file-number>
+0000018d         DUPH       <file-number><file-number>
+0000018e         LDH   6    <file-number><file-number><index>
+00000191         PUSH  1    <file-number><file-number><index><min-value>
+00000194         SUB        <file-number><file-number><index - min-value>
+00000195         PUSH  2    <file-number><file-number><index - min-value><size>
+00000198         MUL        <file-number><file-number><(index - min-value) * size>
+
+This should be done in pas_ArrayIndex(), but the complexity is that the size
+may be different depending on the base data type (which is available in
+pas_ArrayIndex()).
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)

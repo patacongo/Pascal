@@ -713,7 +713,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sARRAY :
       {
-        symbol_t *arrayType;
+        symbol_t *baseTypePtr;
         symbol_t *nextType;
         uint16_t arrayKind;
         uint16_t size;
@@ -731,30 +731,33 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         indexTypePtr = typePtr->sParm.t.index;
         if (indexTypePtr == NULL) error(eHUH);
 
+        /* Get a pointer to the base type symbol of the array */
+
+        baseTypePtr = typePtr;
+        nextType    = typePtr->sParm.t.parent;
+
+        while (nextType != NULL && baseTypePtr->sKind == sTYPE)
+          {
+            baseTypePtr = nextType;
+            nextType    = baseTypePtr->sParm.t.parent;
+          }
+
         /* Handle the array index */
 
-        pas_ArrayIndex(indexTypePtr, typePtr->sParm.t.asize);
+        pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
 
-        /* Get the base type of the array */
+        /* REVISIT:  Missing generation of the indexed load? */
 
-        size      = 0;
-        arrayKind = typePtr->sKind;
-        arrayType = typePtr;
-        nextType  = typePtr->sParm.t.parent;
+        /* Get the aize and base type of the array */
 
-        while (nextType != NULL && arrayType->sKind == sTYPE)
-          {
-            arrayType = nextType;
-            size      = arrayType->sParm.t.asize;
-            arrayKind = arrayType->sParm.t.type;
-            nextType  = arrayType->sParm.t.parent;
-          }
+        size      = baseTypePtr->sParm.t.asize;
+        arrayKind = baseTypePtr->sParm.t.type;
 
         /* REVISIT:  For subranges, we use the base type of the subrange. */
 
         if (arrayKind == sSUBRANGE)
           {
-            arrayKind = arrayType->sParm.t.subType;
+            arrayKind = baseTypePtr->sParm.t.subType;
           }
 
         varPtr->sKind        = arrayKind;

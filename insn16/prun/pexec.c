@@ -471,18 +471,18 @@ static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Allocate space on the string stack for the new string */
 
-      addr2             = ((st->csp + 1) & ~1);
+      addr2    = ((st->csp + 1) & ~1);
       st->csp += sSTRING_SIZE;    /* Allocate max size */
 
       /* Save the length at the beginning of the copy */
 
-      tmp    = (uint16_t*)&GETSTACK(st, addr2);  /* Pointer to new string */
-      *tmp++ = uparm1;                     /* Save current size */
-      dest   = (uint8_t*)tmp;                 /* Pointer to string data */
+      tmp     = (uint16_t*)&GETSTACK(st, addr2); /* Pointer to new string */
+      *tmp++  = uparm1;                          /* Save current size */
+      dest    = (uint8_t*)tmp;                   /* Pointer to string data */
 
       /* Copy the string into the string stack */
 
-      src  = (uint8_t*)&GETSTACK(st, addr1);  /* Pointer to original string */
+      src     = (uint8_t*)&GETSTACK(st, addr1);  /* Pointer to original string */
       memcpy(dest, src, uparm1);
 
       /* Update the stack content */
@@ -512,23 +512,23 @@ static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Allocate space on the string stack for the new string */
 
-      addr2             = ((st->csp + 1) & ~1);
+      addr2    = ((st->csp + 1) & ~1);
       st->csp += sSTRING_SIZE;    /* Allocate max size */
 
       /* Save the length at the beginning of the copy */
 
-      tmp    = (uint16_t*)&GETSTACK(st, addr2);  /* Pointer to new string */
-      *tmp++ = 1;                          /* Save initial size */
-      dest   = (uint8_t*)tmp;                 /* Pointer to string data */
+      tmp      = (uint16_t*)&GETSTACK(st, addr2); /* Pointer to new string */
+      *tmp++   = 1;                               /* Save initial size */
+      dest     = (uint8_t*)tmp;                   /* Pointer to string data */
 
       /* Copy the character into the string stack */
 
-      *dest++ = TOS(st, 0);                    /* Save character as string */
+      *dest++  = TOS(st, 0);                      /* Save character as string */
 
       /* Update the stack content */
 
-      TOS(st, 0) = addr2 + sSTRING_HDR_SIZE;   /* String address */
-      PUSH(st, 1);                             /* String length */
+      TOS(st, 0) = addr2 + sSTRING_HDR_SIZE;     /* String address */
+      PUSH(st, 1);                               /* String length */
       break;
 
       /* Concatenate a string to the end of a string.
@@ -558,7 +558,9 @@ static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
       if (uparm1 + uparm2 > sSTRING_MAX_SIZE)
+        {
           return eSTRSTKOVERFLOW;
+        }
       else
         {
           /* Get a pointer to string1 data */
@@ -1008,6 +1010,7 @@ static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen)
       memcpy(string, buffer, buflen);
       string[buflen] = '\0';
     }
+
   return string;
 }
 
@@ -1032,18 +1035,22 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
     case oNEG  :
       TOS(st, 0) = (ustack_t)(-(sstack_t)TOS(st, 0));
       break;
+
     case oABS  :
       if (signExtend16(TOS(st, 0)) < 0)
         {
           TOS(st, 0) = (ustack_t)(-signExtend16(TOS(st, 0)));
         }
       break;
+
     case oINC  :
       TOS(st, 0)++;
       break;
+
     case oDEC  :
       TOS(st, 0)--;
       break;
+
     case oNOT  :
       TOS(st, 0) = ~TOS(st, 0);
       break;
@@ -1054,42 +1061,52 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) + sparm);
       break;
+
     case oSUB :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) - sparm);
       break;
+
     case oMUL :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) * sparm);
       break;
+
     case oDIV :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) / sparm);
       break;
+
     case oMOD :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) % sparm);
       break;
+
     case oSLL :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) << sparm);
       break;
+
     case oSRL :
       POP(st, sparm);
       TOS(st, 0) = (TOS(st, 0) >> sparm);
       break;
+
     case oSRA :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) >> sparm);
       break;
+
     case oOR  :
       POP(st, uparm1);
       TOS(st, 0) = (TOS(st, 0) | uparm1);
       break;
+
     case oAND :
       POP(st, uparm1);
       TOS(st, 0) = (TOS(st, 0) & uparm1);
       break;
+
     case oBIT :
       POP(st, uparm1);
       uparm2 = TOS(st, 0);
@@ -1112,8 +1129,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       PUSH(st, uparm1);
       break;
+
     case oNEQZ :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1121,8 +1140,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       PUSH(st, uparm1);
       break;
+
     case oLTZ  :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1130,8 +1151,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       PUSH(st, uparm1);
       break;
+
     case oGTEZ :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1139,8 +1162,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       PUSH(st, uparm1);
       break;
+
     case oGTZ  :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1148,8 +1173,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       PUSH(st, uparm1);
       break;
+
     case oLTEZ :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1157,6 +1184,7 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       PUSH(st, uparm1);
       break;
 
@@ -1169,8 +1197,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       TOS(st, 0) = uparm1;
       break;
+
     case oNEQ  :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1178,8 +1208,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       TOS(st, 0) = uparm1;
       break;
+
     case oLT   :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1187,8 +1219,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       TOS(st, 0) = uparm1;
       break;
+
     case oGTE  :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1196,8 +1230,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       TOS(st, 0) = uparm1;
       break;
+
     case oGT   :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1205,8 +1241,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       TOS(st, 0) = uparm1;
       break;
+
     case oLTE  :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
@@ -1214,6 +1252,7 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         {
           uparm1 = PASCAL_TRUE;
         }
+
       TOS(st, 0) = uparm1;
       break;
 
@@ -1224,12 +1263,15 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       PUSH(st, GETSTACK(st, uparm1));
       PUSH(st, GETSTACK(st, uparm1 + BPERI));
       break;
+
     case oLDIH  :
       TOS(st, 0) = GETSTACK(st, TOS(st, 0));
       break;
+
     case oLDIB :
       TOS(st, 0) = GETBSTACK(st, TOS(st, 0));
       break;
+
     case oLDIM :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1); /* Size */
@@ -1250,19 +1292,23 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
             }
         }
       break;
+
     case oDUP :
       uparm1 = TOS(st, 0);
       uparm2 = TOS(st, 1);
       PUSH(st, uparm2);
       PUSH(st, uparm1);
       break;
+
     case oDUPH :
       uparm1 = TOS(st, 0);
       PUSH(st, uparm1);
       break;
+
     case oPUSHS :
       PUSH(st, st->csp);
       break;
+
     case oPOPS :
       POP(st, st->csp);
       break;
@@ -1274,11 +1320,13 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       POP(st, uparm2);
       PUTSTACK(st, uparm1,uparm2);
       break;
+
     case oSTIB :
       POP(st, uparm1);
       POP(st, uparm2);
       PUTBSTACK(st, uparm1, uparm2);
       break;
+
     case oSTIM :
  /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);                /* Size in bytes */
@@ -1312,6 +1360,7 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
 
     case oNOP   :
       break;
+
     case oRET   :
       POP(st, st->pc);
       POP(st, st->fp);
@@ -1977,7 +2026,7 @@ FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
    * constant data, then "normal" pascal stack.
    */
 
-  stacksize = attr->varsize + adjusted_rosize + attr->strsize;
+  stacksize    = attr->varsize + adjusted_rosize + attr->strsize;
   st->dstack.b = (uint8_t*)malloc(stacksize);
   if (!st->dstack.b)
     {
@@ -2084,7 +2133,7 @@ void pexec_Reset(struct pexec_s *st)
   /* Initialize the emulated P-Machine registers */
 
   st->csp   = 0;
-  st->sp    = st->spb + 2*BPERI;
+  st->sp    = st->spb + 2 * BPERI;
   st->fp    = st->spb + BPERI;
   st->pc    = st->entry;
 

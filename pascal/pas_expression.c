@@ -380,9 +380,11 @@ exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
 /****************************************************************************/
 /* Process Array Index */
 
-void pas_ArrayIndex(symbol_t *indexTypePtr, int32_t size)
+void pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize)
 {
-  TRACE(g_lstFile,"[arrayIndex]");
+  uint16_t offset;
+
+  TRACE(g_lstFile,"[pas_ArrayIndex]");
 
   /* FORM:  [<integer expression>].
    * On entry 'g_token' should refer to the ']' token.
@@ -422,20 +424,26 @@ void pas_ArrayIndex(symbol_t *indexTypePtr, int32_t size)
       getToken();
       pas_Exression(exprType, NULL);
 
-      /* Correct for size of array element */
+      /* We now have the array element at the top of the step.  If the index
+       * is not zero-based, the we need to offset the index value so that it
+       * is.
+       */
 
-      if (size > 1)
+      offset = indexTypePtr->sParm.t.minValue;
+      if (offset != 0)
         {
-          int32_t offset = indexTypePtr->sParm.t.minValue;
+          pas_GenerateDataOperation(opPUSH, offset);
+          pas_GenerateSimple(opSUB);
+        }
 
-          pas_GenerateDataOperation(opPUSH, size);
+      /* The index is in units of the base type of the elements of array.  If
+       * that element size if not one, then we need to multiply the zero-
+       * based index by the element size.
+       */
 
-          if (offset != 0)
-            {
-              pas_GenerateDataOperation(opPUSH, offset);
-              pas_GenerateSimple(opSUB);
-            }
-
+      if (elemSize != 1)
+        {
+          pas_GenerateDataOperation(opPUSH, elemSize);
           pas_GenerateSimple(opMUL);
         }
 
@@ -447,8 +455,9 @@ void pas_ArrayIndex(symbol_t *indexTypePtr, int32_t size)
 }
 
 /*************************************************************************/
-/* Determine the expression type associated with a pointer to a type */
-/* symbol */
+/* Determine the expression type associated with a pointer to a type
+ * symbol
+ */
 
 exprType_t pas_GetExpressionType(symbol_t *sType)
 {
@@ -1969,13 +1978,27 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
+              symbol_t *nextPtr;
+              symbol_t *baseTypePtr;
               uint16_t arrayType;
 
               factorFlags         |= INDEXED_FACTOR;
 
-              /* Generate the array offset calculation */
+              /* Get a pointer to the underlying base type symbol */
 
-              pas_ArrayIndex(indexTypePtr, typePtr->sParm.t.asize);
+              nextPtr     = typePtr;
+              baseTypePtr = typePtr;
+              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+                {
+                   baseTypePtr = nextPtr;
+                   nextPtr     = baseTypePtr->sParm.t.parent;
+                }
+
+              /* Generate the array offset calculation and indexed load */
+
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+
+              /* REVISIT:  Missing generation of the indexed load */
 
               /* Return the parent type of the array */
 
@@ -2153,6 +2176,7 @@ static exprType_t ptrFactor(void)
         break;
 
       default :
+
         error(ePTRADR);
         break;
     }
@@ -2588,15 +2612,27 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
-              symbol_t *arrayPtr;
+              symbol_t *baseTypePtr;
               symbol_t *nextPtr;
               uint16_t  arrayKind;
 
-              factorFlags         |= INDEXED_FACTOR;
+              factorFlags     |= INDEXED_FACTOR;
+
+              /* Get a pointer to the underlying base type symbol */
+
+              nextPtr          = typePtr;
+              baseTypePtr      = typePtr;
+              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+                {
+                   baseTypePtr = nextPtr;
+                   nextPtr     = baseTypePtr->sParm.t.parent;
+                }
 
               /* Generate the array offset calculation */
 
-              pas_ArrayIndex(indexTypePtr, typePtr->sParm.t.asize);
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+
+              /* REVISIT:  Missing generation of the indexed load */
 
               /* Return the parent type */
 
@@ -2609,22 +2645,13 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
                * type of the array.
                */
 
-              arrayKind = varPtr->sKind;
-              arrayPtr  = varPtr;
-              nextPtr   = varPtr->sParm.v.parent;
-
-              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-                {
-                  arrayPtr  = nextPtr;
-                  arrayKind = arrayPtr->sParm.t.type;
-                  nextPtr   = arrayPtr->sParm.t.parent;
-                }
+              arrayKind = baseTypePtr->sParm.t.type;
 
               /* REVISIT:  For subranges, we use the base type of the subrange. */
 
               if (arrayKind == sSUBRANGE)
                 {
-                  arrayKind = arrayPtr->sParm.t.subType;
+                  arrayKind = baseTypePtr->sParm.t.subType;
                 }
 
               /* Get the pointer expression type of the array base type */
@@ -2711,8 +2738,9 @@ static exprType_t functionDesignator(void)
 }
 
 /*************************************************************************/
-/* Determine the expression type associated with a pointer to a type */
-/* symbol */
+/* Determine the expression type associated with a pointer to a type
+ * symbol
+ */
 
 static void setAbstractType(symbol_t *sType)
 {
