@@ -217,7 +217,7 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
 
   if (typePtr == NULL)
     {
-      pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
+      pas_GenerateDataOperation(opPUSH, defaultFileNumber);
       if (pFileSize != NULL)
         {
           *pFileSize = sCHAR_SIZE;
@@ -327,7 +327,7 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
     {
       fileType   = sTEXTFILE;
       fileSize   = sCHAR_SIZE;
-      pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
+      pas_GenerateDataOperation(opPUSH, defaultFileNumber);
     }
 
   if (pFileSize != NULL)

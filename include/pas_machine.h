@@ -80,10 +80,26 @@
 #define sPTR_SIZE           sINT_SIZE
 #define sRETURN_SIZE       (3*sPTR_SIZE)
 
+/* Traditional Pascal strings are a block of 256 bytes on the stack arranged
+ * as follows.  This organization is only used in the string stack.
+ */
+
 #define sSTRING_HDR_SIZE    2
 #define sSTRING_SIZE        256                    /* size(2) + string(254) */
 #define sSTRING_MAX_SIZE   (sSTRING_SIZE - 2)      /* string storage size(254) */
+
+/* The representation used on the Pascal runtime stack then duplicates the
+ * size and includes a reference to the string stack data.  Order on the
+ * run-time stack is like:
+ *
+ *  TOS + n     = String size
+ *  TOS + n + 1 = 16-bit pointer to the string data.
+ */
+
 #define sRSTRING_SIZE      (sPTR_SIZE + sINT_SIZE) /* ptr + size */
+
+/* And there are also raw, NUL-terminated "C" strings. */
+
 #define sCSTRING_SIZE      (sizeof(void *))        /* absolute C pointer */
 
 #define MAXCHAR             255

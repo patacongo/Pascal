@@ -1,7 +1,7 @@
 /****************************************************************************
  * pload.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,8 @@
  * Public Functions
  ****************************************************************************/
 
-FAR struct pexec_s *pload(const char *filename, paddr_t varsize, paddr_t strsize)
+FAR struct pexec_s *pexec_Load(const char *filename, paddr_t varsize,
+                               paddr_t strsize)
 {
   struct pexec_attr_s attr;
   struct pexec_s *st;
@@ -127,7 +128,7 @@ FAR struct pexec_s *pload(const char *filename, paddr_t varsize, paddr_t strsize
 
   /* Initialize the p-code interpreter */
 
-  st = pexec_init(&attr);
+  st = pexec_Initialize(&attr);
   if (!st && attr.ispace)
     {
       /* Initialization failed, discard the allocated I-Space */
@@ -141,6 +142,7 @@ FAR struct pexec_s *pload(const char *filename, paddr_t varsize, paddr_t strsize
     {
       free(attr.rodata);
     }
+
   return st;
 
  errout_with_file:

@@ -41,8 +41,9 @@
  * Included Files
  ***************************************************************************/
 
-#include "stdint.h"
-#include "stdbool.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include "pexec.h"
 
 /***************************************************************************
  * Pre-processor Definitions
@@ -58,7 +59,8 @@
 
 enum openMode_e
 {
-  eOPEN_READ = 0,
+  eOPEN_NONE = 0,
+  eOPEN_READ,
   eOPEN_WRITE,
   eOPEN_APPEND
 };
@@ -69,10 +71,7 @@ typedef enum openMode_e openMode_t;
  * Public Function Prototypes
  ***************************************************************************/
 
-void     pexec_assignfile(uint16_t fileNumber, bool text, const char *filename);
-void     pexec_openfile(uint16_t fileNumber, openMode_t openMode);
-void     pexec_closefile(uint16_t fileNumber);
-void     pexec_recordsize(uint16_t fileNumber, uint16_t size);
-uint16_t pexec_eof(uint16_t fileNumber);
+void     pexec_InitializeFile(void);
+uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc);
 
 #endif /* __PFILES_H */

@@ -2603,7 +2603,7 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
               varPtr->sKind        = typePtr->sParm.t.type;
               varPtr->sParm.v.size = typePtr->sParm.t.asize;
 
-              pas_GenerateStackReference(opLAS, varPtr);
+              pas_GenerateStackReference(opLASX, varPtr);
 
               /* Get the expression type associated with the base
                * type of the array.

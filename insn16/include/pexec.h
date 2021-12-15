@@ -41,7 +41,7 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 #define BPERI         2
@@ -49,8 +49,80 @@
 #define BTOISTACK(i)  ((i) >> 1)
 #define ROUNDBTOI(i)  (((i) + 1) >> 1)
 
+/* INPUT/OUTPUT file numbers */
+
+#define INPUT_FILE_NUMBER   0
+#define OUTPUT_FILE_NUMBER  1
+
+/* BOOLEAN constant values */
+
+#define PASCAL_TRUE         (-1)
+#define PASCAL_FALSE        (0)
+
+/* Remove the value from the top of the stack */
+
+#define POP(st, dest) \
+  do { \
+    dest = (st)->dstack.i[BTOISTACK((st)->sp)]; \
+    (st)->sp -= BPERI; \
+  } while (0)
+
+/* Add the value to top of the stack */
+
+#define PUSH(st, src) \
+  do { \
+    (st)->sp += BPERI; \
+    (st)->dstack.i[BTOISTACK((st)->sp)] = src; \
+  } while (0)
+
+/* Return an rvalue for the (word) offset from the top of the stack */
+
+#define TOS(st, off) \
+  (st)->dstack.i[BTOISTACK((st)->sp)-(off)]
+
+/* Save the src (word) at the dest (word) stack position */
+
+#define PUTSTACK(st, src, dest)  \
+  do { \
+    (st)->dstack.i[BTOISTACK(dest)] = src; \
+  } while (0)
+
+/* Return an rvalue for the (word) from the absolute stack position */
+
+#define GETSTACK(st, src) \
+  (st)->dstack.i[BTOISTACK(src)]
+
+/* Store a byte to an absolute (byte) stack position */
+
+#define PUTBSTACK(st, src, dest) \
+  do { \
+    (st)->dstack.b[dest] = dest; \
+  } while (0)
+
+/* Return an rvalue for the absolute (byte) stack position */
+
+#define GETBSTACK(st, src) \
+  (st)->dstack.b[src]
+
+/* Return the address for an absolute (byte) stack position. */
+
+#define ATSTACK(st, src) \
+  &(st)->dstack.b[src]
+
+/* Discard n words from the top of the stack */
+
+#define DISCARD(st, n) \
+  do { \
+    (st)->sp -= BPERI*(n); \
+  } while (0)
+
+/* Release a C string */
+
+#define free_cstring(a) \
+  free(a)
+
 /****************************************************************************
- * Type Definitions
+ * Public Type Definitions
  ****************************************************************************/
 
 typedef uint16_t ustack_t;   /* Stack values are 16-bits in length */
@@ -64,6 +136,16 @@ union stack_u
   uint8_t  *b;
 };
 typedef union stack_u stackType_t;
+
+/* Floating point */
+
+union fparg_u
+{
+  double   f;
+  uint16_t hw[4];
+};
+
+typedef union fparg_u fparg_t;
 
 /* This structure describes the parameters needed to initialize the p-code
  * interpreter.
@@ -143,12 +225,12 @@ extern "C"
 #define EXTERN extern
 #endif
 
-FAR struct pexec_s *pload(const char *filename, paddr_t varsize,
-                          paddr_t strsize);
-FAR struct pexec_s *pexec_init(struct pexec_attr_s *attr);
-int pexec(FAR struct pexec_s *st);
-void pexec_reset(struct pexec_s *st);
-void pexec_release(struct pexec_s *st);
+FAR struct pexec_s *pexec_Load(const char *filename, paddr_t varsize,
+                               paddr_t strsize);
+FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr);
+int pexec_Execute(FAR struct pexec_s *st);
+void pexec_Reset(struct pexec_s *st);
+void pexec_Release(struct pexec_s *st);
 
 #undef EXTERN
 #ifdef __cplusplus

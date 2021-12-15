@@ -147,12 +147,12 @@ extern "C"
 #define EXTERN extern
 #endif
 
-FAR struct pexec_s *pload(const char *filename, paddr_t varsize,
-                          paddr_t strsize);
-FAR struct pexec_s *pexec_init(struct pexec_attr_s *attr);
-int pexec(FAR struct pexec_s *st);
-void pexec_reset(struct pexec_s *st);
-void pexec_release(struct pexec_s *st);
+FAR struct pexec_s *pexec_Load(const char *filename, paddr_t varsize,
+                               paddr_t strsize);
+FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr);
+int pexec_Execute(FAR struct pexec_s *st);
+void pexec_Reset(struct pexec_s *st);
+void pexec_Release(struct pexec_s *st);
 
 #undef EXTERN
 #ifdef __cplusplus

@@ -1,7 +1,7 @@
 /****************************************************************************
  * prun.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -221,7 +221,7 @@ static void prun(struct pexec_s *st)
     {
       /* Execute the instruction; Check for exceptional conditions */
 
-      errcode = pexec(st);
+      errcode = pexec_Execute(st);
       if (errcode != eNOERROR) break;
     }
 
@@ -253,9 +253,9 @@ int main(int argc, char *argv[], char *envp[])
 
   (void)extension(g_pofffilename, "o", fileName, 0);
 
-  /* Load the POFF file */
+  /* Initialize the P-machine and load the POFF file */
 
-  st = pload(fileName, g_varstacksize, g_strstacksize);
+  st = pexec_Load(fileName, g_varstacksize, g_strstacksize);
   if (!st)
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);
@@ -267,13 +267,17 @@ int main(int argc, char *argv[], char *envp[])
   /* And start program execution in the specified mode */
 
   if (g_debug)
-    dbg_run(st);
+    {
+      dbg_run(st);
+    }
   else
-    prun(st);
+    {
+      prun(st);
+    }
 
   /* Clean up resources used by the interpreter */
 
-  pexec_release(st);
+  pexec_Release(st);
   return 0;
 
 } /* end main */

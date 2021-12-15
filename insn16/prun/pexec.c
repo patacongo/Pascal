@@ -1,7 +1,7 @@
 /****************************************************************************
  * pexec.c
  *
- *   Copyright (C) 200-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,354 +61,19 @@
 #endif
 
 /****************************************************************************
- * Definitions
- ****************************************************************************/
-
-#define PTRUE   ((ustack_t)-1)
-#define PFALSE  ((ustack_t) 0)
-
-/****************************************************************************
- * Macros
- ****************************************************************************/
-
-/* Remove the value from the top of the stack */
-
-#define POP(st, dest) \
-  do { \
-    dest = (st)->dstack.i[BTOISTACK((st)->sp)]; \
-    (st)->sp -= BPERI; \
-  } while (0)
-
-/* Add the value to top of the stack */
-
-#define PUSH(st, src) \
-  do { \
-    (st)->sp += BPERI; \
-    (st)->dstack.i[BTOISTACK((st)->sp)] = src; \
-  } while (0)
-
-/* Return an rvalue for the (word) offset from the top of the stack */
-
-#define TOS(st, off) \
-  (st)->dstack.i[BTOISTACK((st)->sp)-(off)]
-
-/* Save the src (word) at the dest (word) stack position */
-
-#define PUTSTACK(st, src, dest)  \
-  do { \
-    (st)->dstack.i[BTOISTACK(dest)] = src; \
-  } while (0)
-
-/* Return an rvalue for the (word) from the absolute stack position */
-
-#define GETSTACK(st, src) \
-  (st)->dstack.i[BTOISTACK(src)]
-
-/* Store a byte to an absolute (byte) stack position */
-
-#define PUTBSTACK(st, src, dest) \
-  do { \
-    (st)->dstack.b[dest] = dest; \
-  } while (0)
-
-/* Return an rvalue for the absolute (byte) stack position */
-
-#define GETBSTACK(st, src) \
-  (st)->dstack.b[src]
-
-/* Return the address for an absolute (byte) stack position. */
-
-#define ATSTACK(st, src) \
-  &(st)->dstack.b[src]
-
-/* Discard n words from the top of the stack */
-
-#define DISCARD(st, n) \
-  do { \
-    (st)->sp -= BPERI*(n); \
-  } while (0)
-
-/* Release a C string */
-
-#define free_cstring(a) \
-  free(a)
-
-/****************************************************************************
- * Private Type Definitions
- ****************************************************************************/
-
-union fparg_u
-{
-  double   f;
-  uint16_t hw[4];
-};
-
-typedef union fparg_u fparg_t;
-
-/****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc);
 static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc);
 static uint16_t pexec_execfp(struct pexec_s *st, uint8_t fpop);
 static void     pexec_getfparguments(struct pexec_s *st, uint8_t fpop,
                                      fparg_t *arg1, fparg_t *arg2);
-static ustack_t pexec_readinteger(uint8_t *ioptr);
-static void     pexec_readreal(uint16_t *dest, uint8_t *ioptr);
 static ustack_t pexec_getbaseaddress(struct pexec_s *st, level_t leveloffset);
 static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen);
 
 /****************************************************************************
- * Private Variables
- ****************************************************************************/
-
-static uint8_t ioline[LINE_SIZE+1];
-
-/****************************************************************************
  * Private Functions
  ****************************************************************************/
-
-/****************************************************************************
- * Name: pexec_sysio
- *
- * Description:
- *   This function process a system I/O operation.
- *
- ****************************************************************************/
-
-static uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
-{
-  fparg_t  fp;
-  uint16_t fileNumber;
-  uint16_t size;
-  uint16_t address;
-  uint16_t value;
-  uint8_t *ptr;
-
-  switch (subfunc)
-    {
-    /* EOF: TOS = File number */
-
-    case xEOF :
-      TOS(st, 0) = pexec_eof(TOS(st, 0));
-      break;
-
-    /* EOLN: TOS = File number */
-
-    case xEOLN :
-      POP(st, fileNumber);  /* File number from stack */
-
-/* FINISH ME -- > */
-      break;
-
-    /* ASSIGNFILE: TOS     = File name pointer
-     *             TOS + 1 = 0:binary 1:textfile
-     *             TOS + 2 = File number
-     */
-
-    case xASSIGNFILE :
-      POP(st, fileNumber);  /* File number from stack */
-      POP(st, value);       /* Binary/text boolean from stack */
-      POP(st, address);     /* File name address from stack */
-      pexec_assignfile(fileNumber, (bool)value,
-                       (const char *)&st->dstack.b[address]);
-      break;
-
-    /* RESET: TOS = File number */
-
-    case xRESET :
-      POP(st, fileNumber);  /* File number from stack */
-      pexec_openfile(fileNumber, eOPEN_READ);
-      break;
-
-    /* RESETR: TOS   = New record size
-     *         TOS+1 = File number
-     */
-
-    case xRESETR :
-      POP(st, size);  /* File number from stack */
-      POP(st, fileNumber);  /* File number from stack */
-      pexec_openfile(fileNumber, eOPEN_READ);
-      pexec_recordsize(fileNumber, size);
-      break;
-
-    /* REWRITE: TOS = File number */
-
-    case xREWRITE :
-      POP(st, fileNumber);  /* File number from stack */
-      pexec_openfile(fileNumber, eOPEN_WRITE);
-      break;
-
-    /* RESETR: TOS   = New record size
-     *         TOS+1 = File number
-     */
-
-    case xREWRITER :
-      POP(st, size);  /* File number from stack */
-      POP(st, fileNumber);  /* File number from stack */
-      pexec_openfile(fileNumber, eOPEN_WRITE);
-      pexec_recordsize(fileNumber, size);
-      break;
-
-    /* APPEND: TOS = File number */
-
-    case xAPPEND :
-      POP(st, fileNumber);  /* File number from stack */
-      pexec_openfile(fileNumber, eOPEN_APPEND);
-      break;
-
-    /* CLOSEFILE: TOS = File number */
-
-    case xCLOSEFILE :
-      POP(st, fileNumber);  /* File number from stack */
-      pexec_closefile(fileNumber);
-      break;
-
-    /* READLN: TOS = File number */
-
-    case xREADLN :
-      POP(st, fileNumber);  /* File number from stack */
-/* FINISH ME -- > */
-      break;
-
-    /* READ_BINARY: TOS   = Read size
-     *              TOS+1 = Read address
-     *              TOS+2 = File number
-     */
-
-    case xREAD_BINARY :
-      POP(st, size);        /* Read size */
-      POP(st, address);     /* Read address */
-      POP(st, fileNumber);  /* File number from stack */
-/* FINISH ME -- > */
-      break;
-
-    /* READ_INT: TOS   = Read address
-     *           TOS+1 = File number
-     */
-
-    case xREAD_INT :
-
-      POP(st, address);     /* Read address */
-      POP(st, fileNumber);  /* File number from stack */
-      (void)fgets((char*)ioline, LINE_SIZE, stdin);
-      PUTSTACK(st, pexec_readinteger(ioline), address);
-      break;
-
-    /* READ_CHAR: TOS   = Read address
-     *            TOS+1 = File number
-     */
-
-    case xREAD_CHAR:
-      POP(st, address);     /* Read address */
-      POP(st, fileNumber);  /* File number from stack */
-      (void)fgets((char*)ioline, LINE_SIZE, stdin);
-      PUTBSTACK(st, ioline[0], address);
-      break;
-
-    /* READ_STRING: TOS   = Read size
-     *              TOS+1 = Read address
-     *              TOS+2 = File number
-     */
-
-    case xREAD_STRING :
-      POP(st, size);        /* Read size */
-      POP(st, address);     /* Read address */
-      POP(st, fileNumber);  /* File number from stack */
-      (void)fgets((char*)&st->dstack.b[address], size, stdin);
-      break;
-
-    /* READ_REAL: TOS   = Read address
-     *            TOS+1 = File number
-     */
-
-    case xREAD_REAL :
-      POP(st, address);     /* Read address */
-      POP(st, fileNumber);  /* File number from stack */
-      (void)fgets((char*)ioline, LINE_SIZE, stdin);
-      pexec_readreal((uint16_t*)&st->dstack.b[address], ioline);
-      break;
-
-    /* WRITELN: TOS = File number */
-
-    case xWRITELN :
-      POP(st, fileNumber);  /* File number from stack */
-      putchar('\n');
-      break;
-
-    /* WRITE_PAGE: TOS = File number */
-
-    case xWRITE_PAGE :
-      POP(st, fileNumber);  /* File number from stack */
-      putchar('\f');
-      break;
-
-    /* WRITE_BINARY: TOS   = Write size
-     *               TOS+1 = Write address
-     *               TOS+2 = File number
-     */
-
-    case xWRITE_BINARY :
-      POP(st, size);        /* Write size */
-      POP(st, address);     /* Write address */
-      POP(st, fileNumber);  /* File number from stack */
-/* FINISH ME -- > */
-      break;
-
-    /* WRITE_INT: TOS   = Write value
-     *            TOS+1 = File number
-     */
-
-    case xWRITE_INT :
-      POP(st, value);       /* Write address */
-      POP(st, fileNumber);  /* File number from stack */
-      printf("%" PRId32, signExtend16(value));
-      break;
-
-    /* WRITE_CHAR: TOS   = Write value
-     *             TOS+1 = File number
-     */
-
-    case xWRITE_CHAR :
-      POP(st, value);       /* Write value */
-      POP(st, fileNumber);  /* File number from stack */
-      putchar(value);
-      break;
-
-    /* WRITE_STRING: TOS   = Write size
-     *               TOS+1 = Write address
-     *               TOS+2 = File number
-     */
-
-    case xWRITE_STRING :
-      POP(st, size);        /* Write size */
-      POP(st, address);     /* Write address */
-      POP(st, fileNumber);  /* File number from stack */
-      for (ptr = (uint8_t*)&st->dstack.b[address]; size; size--, ptr++)
-        {
-          putchar(*ptr);
-        }
-      break;
-
-    /* WRITE_CHAR: TOS-TOS+3 = Write value
-     *             TOS+4     = File number
-     */
-
-    case xWRITE_REAL :
-      POP(st, fp.hw[3]);    /* Write value */
-      POP(st, fp.hw[2]);
-      POP(st, fp.hw[1]);
-      POP(st, fp.hw[0]);
-      printf("%f", fp.f);
-      break;
-
-    default :
-      return eBADSYSIOFUNC;
-    }
-
-  return eNOERROR;
-}
 
 /****************************************************************************
  * Name: pexec_libcall
@@ -761,18 +426,18 @@ static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        * default size!
        */
 
-      addr1             = ((st->csp + 1) & ~1);
+      addr1    = ((st->csp + 1) & ~1);
       st->csp += sSTRING_SIZE;    /* Allocate max size */
 
       /* Save the length at the beginning of the copy */
 
-      tmp    = (uint16_t*)&GETSTACK(st, addr1);  /* Pointer to new string */
-      *tmp++ = 0;                          /* Save current size */
+      tmp      = (uint16_t*)&GETSTACK(st, addr1);  /* Pointer to new string */
+      *tmp++   = 0;                                /* Save current size */
 
       /* Update the stack content */
 
-      PUSH(st, addr1 + sSTRING_HDR_SIZE);      /* Pointer to new string */
-      PUSH(st, 0);                             /* Current size */
+      PUSH(st, addr1 + sSTRING_HDR_SIZE);          /* Pointer to new string */
+      PUSH(st, 0);                                 /* Current size */
       break;
 
       /* Replace a string with a duplicate string residing in allocated
@@ -1028,8 +693,7 @@ static uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
     }
 
   return eNOERROR;
-
-} /* end pexec_libcall */
+}
 
 /****************************************************************************
  * Name: pexec_execfp
@@ -1116,44 +780,44 @@ static uint16_t pexec_execfp(struct pexec_s *st, uint8_t fpop)
 
     case fpEQU :
       pexec_getfparguments(st, fpop, &arg1, &arg2);
-      intValue = PFALSE;
+      intValue = PASCAL_FALSE;
       if (arg1.f == arg2.f)
-        intValue = PTRUE;
+        intValue = PASCAL_TRUE;
       PUSH(st, intValue);
       break;
     case fpNEQ :
       pexec_getfparguments(st, fpop, &arg1, &arg2);
-      intValue = PFALSE;
+      intValue = PASCAL_FALSE;
       if (arg1.f != arg2.f)
-        intValue = PTRUE;
+        intValue = PASCAL_TRUE;
       PUSH(st, intValue);
       break;
     case fpLT :
       pexec_getfparguments(st, fpop, &arg1, &arg2);
-      intValue = PFALSE;
+      intValue = PASCAL_FALSE;
       if (arg1.f < arg2.f)
-        intValue = PTRUE;
+        intValue = PASCAL_TRUE;
       PUSH(st, intValue);
       break;
     case fpGTE :
       pexec_getfparguments(st, fpop, &arg1, &arg2);
-      intValue = PFALSE;
+      intValue = PASCAL_FALSE;
       if (arg1.f >= arg2.f)
-        intValue = PTRUE;
+        intValue = PASCAL_TRUE;
       PUSH(st, intValue);
       break;
     case fpGT :
       pexec_getfparguments(st, fpop, &arg1, &arg2);
-      intValue = PFALSE;
+      intValue = PASCAL_FALSE;
       if (arg1.f > arg2.f)
-        intValue = PTRUE;
+        intValue = PASCAL_TRUE;
       PUSH(st, intValue);
       break;
     case fpLTE :
       pexec_getfparguments(st, fpop, &arg1, &arg2);
-      intValue = PFALSE;
+      intValue = PASCAL_FALSE;
       if (arg1.f <= arg2.f)
-        intValue = PTRUE;
+        intValue = PASCAL_TRUE;
       PUSH(st, intValue);
       break;
 
@@ -1240,9 +904,9 @@ static uint16_t pexec_execfp(struct pexec_s *st, uint8_t fpop)
       return eBADFPOPCODE;
 
     }
-  return eNOERROR;
 
-} /* end pexec_execfp */
+  return eNOERROR;
+}
 
 /****************************************************************************
  * Name: pexec_getfparguments
@@ -1296,89 +960,7 @@ static void pexec_getfparguments(struct pexec_s *st, uint8_t fpop, fparg_t *arg1
           POP(st, arg1->hw[0]);
         }
     }
-
-} /* end pexec_getfparguments */
-
-/****************************************************************************
- * Name: pexec_readinteger
- *
- * Description:
- *   This function parses a decimal integer from ioptr
- ****************************************************************************/
-
-static ustack_t pexec_readinteger(uint8_t *ioptr)
-{
-  sstack_t value = 0;
-
-  while (isspace(*ioptr)) ioptr++;
-  while ((*ioptr >= '0') && (*ioptr <= '9'))
-    {
-      value = 10*value
-        + (sstack_t)(*ioptr)
-        - (sstack_t)'0';
-      ioptr++;
-    }
-
-  return (ustack_t)value;
-
-} /* end pexec_readinteger */
-
-/****************************************************************************
- * Name: pexec_readreal
- *
- * Description:
- *    This function parses a decimal integer from ioptr.
- *
- ****************************************************************************/
-
-static void pexec_readreal(uint16_t *dest, uint8_t *inPtr)
-{
-  int32_t  intpart;
-  fparg_t  result;
-  double   fraction;
-  uint8_t  unaryop;
-
-  intpart = 0;
-  unaryop = '+';
-
-  /* Check for a leading unary - */
-
-  if ((*inPtr == '-') || (*inPtr == '+'))
-    unaryop = *inPtr++;
-
-  /* Get the integer part of the real */
-
-  while ((*inPtr >= '0') && (*inPtr <= '9'))
-    intpart = 10*intpart + ((int32_t)*inPtr++) - ((int32_t)'0');
-
-  result.f = ((double)intpart);
-
-  /* Check for the a fractional part */
-
-  if (*inPtr == '.')
-    {
-      inPtr++;
-      fraction = 0.1;
-      while ((*inPtr >= '0') && (*inPtr <= '9'))
-        {
-          result.f += fraction * (double)(((int32_t)*inPtr++) - ((int32_t)'0'));
-          fraction /= 10.0;
-        }
-    }
-
-  /* Correct the sign of the result */
-
-  if (unaryop == '-')
-    result.f = -result.f;
-
-  /* Return the value into the P-Machine stack */
-
-  *dest++ = result.hw[0];
-  *dest++ = result.hw[1];
-  *dest++ = result.hw[2];
-  *dest   = result.hw[3];
-
-} /* end pexec_readreal */
+}
 
 /****************************************************************************
  * Name: pexec_getbaseaddress
@@ -1409,9 +991,8 @@ static ustack_t pexec_getbaseaddress(struct pexec_s *st, level_t leveloffset)
     * return value
     */
 
-   return baseAddress + 2*BPERI;
-
-} /* end pexec_getbaseaddress */
+   return baseAddress + 2 * BPERI;
+}
 
 /****************************************************************************
  * Name: pexec_mkcstring
@@ -1514,11 +1095,11 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       uparm2 = TOS(st, 0);
       if ((uparm1 & (1 << uparm2)) != 0)
         {
-          TOS(st, 0) = PTRUE;
+          TOS(st, 0) = PASCAL_TRUE;
         }
       else
         {
-          TOS(st, 0) = PFALSE;
+          TOS(st, 0) = PASCAL_FALSE;
         }
       break;
 
@@ -1526,55 +1107,55 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
 
      case oEQUZ :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm == 0)
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       PUSH(st, uparm1);
       break;
     case oNEQZ :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm != 0)
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       PUSH(st, uparm1);
       break;
     case oLTZ  :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm < 0)
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       PUSH(st, uparm1);
       break;
     case oGTEZ :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm >= 0)
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       PUSH(st, uparm1);
       break;
     case oGTZ  :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm > 0)
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       PUSH(st, uparm1);
       break;
     case oLTEZ :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm <= 0)
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       PUSH(st, uparm1);
       break;
@@ -1583,55 +1164,55 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
 
     case oEQU  :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm == (sstack_t)TOS(st, 0))
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       TOS(st, 0) = uparm1;
       break;
     case oNEQ  :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm != (sstack_t)TOS(st, 0))
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       TOS(st, 0) = uparm1;
       break;
     case oLT   :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm < (sstack_t)TOS(st, 0))
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       TOS(st, 0) = uparm1;
       break;
     case oGTE  :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm >= (sstack_t)TOS(st, 0))
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       TOS(st, 0) = uparm1;
       break;
     case oGT   :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm > (sstack_t)TOS(st, 0))
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       TOS(st, 0) = uparm1;
       break;
     case oLTE  :
       POP(st, sparm);
-      uparm1 = PFALSE;
+      uparm1 = PASCAL_FALSE;
       if (sparm <= (sstack_t)TOS(st, 0))
         {
-          uparm1 = PTRUE;
+          uparm1 = PASCAL_TRUE;
         }
       TOS(st, 0) = uparm1;
       break;
@@ -2369,7 +1950,7 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
  * Name: pexec_init
  ****************************************************************************/
 
-FAR struct pexec_s *pexec_init(struct pexec_attr_s *attr)
+FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
 {
   struct pexec_s *st;
   paddr_t stacksize;
@@ -2420,7 +2001,7 @@ FAR struct pexec_s *pexec_init(struct pexec_attr_s *attr)
 
   /* Then perform a simulated reset */
 
-  pexec_reset(st);
+  pexec_Reset(st);
   return st;
 }
 
@@ -2428,7 +2009,7 @@ FAR struct pexec_s *pexec_init(struct pexec_attr_s *attr)
  * Name: pexec
  ****************************************************************************/
 
-int pexec(FAR struct pexec_s *st)
+int pexec_Execute(FAR struct pexec_s *st)
 {
   uint8_t opcode;
   int ret;
@@ -2491,7 +2072,7 @@ int pexec(FAR struct pexec_s *st)
  * Name: pexec_reset
  ****************************************************************************/
 
-void pexec_reset(struct pexec_s *st)
+void pexec_Reset(struct pexec_s *st)
 {
   int dndx;
 
@@ -2513,13 +2094,17 @@ void pexec_reset(struct pexec_s *st)
   st->dstack.i[dndx]   =  0;
   st->dstack.i[dndx+1] =  0;
   st->dstack.i[dndx+2] = -1;
+
+  /* [Re]-initialize the file I/O logic */
+
+  pexec_InitializeFile();
 }
 
 /****************************************************************************
  * Name: pexec_release
  ****************************************************************************/
 
-void pexec_release(struct pexec_s *st)
+void pexec_Release(struct pexec_s *st)
 {
   if (st)
     {

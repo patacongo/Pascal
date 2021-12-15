@@ -54,16 +54,9 @@ This is a consequence of the fact that sets are implemented as bitsets and
 the bitset is currently limited to 32-bits:
 
 ########src/106-bubblesort.pas########
-No errors reported but hangs at run-time.
-
-Analysis:
-Most likely due to some stubbed out file I/O logic
-
 ########src/107-quicksort.pas########
-No errors reported but hangs at run-time.
 
-Analysis:
-Same as src/106-bubblesort.pas
+These two examples compile fine and appear to run, but I see no output.
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)

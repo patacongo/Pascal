@@ -121,10 +121,10 @@
 #define xREAD_CHAR_INIT \
     { "_xread_char", 0, 2, { sINT_SIZE, sPTR_SIZE }}
 
-/* void _xread_string(int fileno, char *string, int stringsize); */
+/* void _xread_string(int fileno, int stringSize, char *string); */
 
 #define xREAD_STRING_INIT \
-    { "_xread_string", 0, 3, { sINT_SIZE, sPTR_SIZE, sINT_SIZE }}
+    { "_xread_string", 0, 3, { sINT_SIZE, sINT_SIZE, sPTR_SIZE }}
 
 /* void _xread_real(int fileno, real *value); */
 
@@ -156,10 +156,10 @@
 #define xWRITE_CHAR_INIT \
     { "_xwrite_char", 0, 2, { sINT_SIZE, sINT_SIZE }}
 
-/* void _write_string(int fileno, char *string, int stringsize); */
+/* void _write_string(int fileno, int stringsize, char *string); */
 
 #define xWRITE_STRING_INIT \
-    { "_xwrite_string", 0, 3, { sINT_SIZE, sPTR_SIZE, sINT_SIZE }}
+    { "_xwrite_string", 0, 3, { sINT_SIZE, sINT_SIZE, sPTR_SIZE }}
 
 /* void _write_real(int fileno, real value); */
 

@@ -300,13 +300,13 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
     case eCMD_NONE:   /* Do nothing */
       break;
     case eCMD_RESET:  /* Reset */
-      pexec_reset(st);
+      pexec_Reset(st);
       pdbg_initdebugger();
       pdbg_programstatus(st);
       g_lastcmd = eCMD_NONE;
       break;
     case eCMD_RUN:    /* Run */
-      pexec_reset(st);
+      pexec_Reset(st);
       pdbg_initdebugger();
       pdbg_debugpcode(st);
       pdbg_programstatus(st);
@@ -705,7 +705,7 @@ static void pdbg_debugpcode(struct pexec_s *st)
 
       /* Execute the instruction */
 
-      errno = pexec(st);
+      errno = pexec_Execute(st);
 
       /* Check for exceptional stopping conditions */
 
