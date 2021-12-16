@@ -189,12 +189,16 @@ typedef struct symLabel_s symLabel_t;
 
 struct symVar_s            /* for sKind == type identifier */
 {
+  uint8_t   flags;         /* flags to customize a variable (see above) */
   int32_t   offset;        /* Data stack offset */
   uint32_t  size;          /* Size of variable */
-  uint8_t   flags;         /* flags to customize a variable (see above) */
   uint32_t  symIndex;      /* POFF symbol table index (if undefined) */
-
   struct symbol_s *parent; /* pointer to parent type */
+
+  /* File Variables only */
+
+  uint16_t  fileNumber;    /* File number */
+  uint16_t  xfrUnit;       /* File transfer unit */
 };
 typedef struct symVar_s symVar_t;
 
@@ -219,15 +223,6 @@ struct symRecord_s         /* for sKind == sRECORD_OBJECT */
 };
 typedef struct symRecord_s symRecord_t;
 
-struct symFile_s           /* for sKind == sFILE */
-{
-  uint16_t  fileNumber;    /* File number of file */
-  uint16_t  subType;       /* Sub-type (e.g., sTEXTFILE, sCHAR, etc.) */
-
-  struct symbol_s *parent; /* pointer to parent type (not sTEXTFILE) */
-};
-typedef struct symFile_s symFile_t;
-
 struct symbol_s
 {
   char     *sName;         /* pointer to name in string stack */
@@ -239,7 +234,6 @@ struct symbol_s
     symConst_t       c;    /* for constants */
     symStringConst_t s;    /* for strings of constant size */
     symVarString_t   vs;   /* for strings of variable size */
-    symFile_t        f;    /* for files */
     symLabel_t       l;    /* for labels */
     symVar_t         v;    /* for variables */
     symProc_t        p;    /* for functions & procedures */

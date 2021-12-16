@@ -58,7 +58,7 @@
 #include "pas_block.h"    /* for block(), constantDefinitionGroup(), etc. */
 #include "pas_codegen.h"  /* for pas_Generate*() */
 #include "pas_token.h"    /* for getToken() */
-#include "pas_symtable.h" /* for pas_AddFile() */
+#include "pas_symtable.h" /* for pas_AddProcedure() */
 #include "pas_error.h"    /* for error() */
 #include "pas_program.h"  /* for usesSection() */
 #include "pas_unit.h"

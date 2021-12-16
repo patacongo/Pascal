@@ -284,7 +284,7 @@ symbol_t *pas_FindSymbol(const char *inName, int tableOffset)
 
 /***************************************************************/
 
-static symbol_t *addSymbol(char *name, int16_t type)
+static symbol_t *addSymbol(char *name, int16_t kind)
 {
    TRACE(g_lstFile,"[addSymbol]");
 
@@ -304,7 +304,7 @@ static symbol_t *addSymbol(char *name, int16_t type)
      /* Set the elements which are independent of sKind */
 
      g_symbolTable[g_nSym].sName  = name;
-     g_symbolTable[g_nSym].sKind  = type;
+     g_symbolTable[g_nSym].sKind  = kind;
      g_symbolTable[g_nSym].sLevel = g_level;
 
      return &g_symbolTable[g_nSym++];
@@ -403,8 +403,8 @@ symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
 
 /***************************************************************/
 
-symbol_t *pas_AddFile(char *name, uint16_t fileNumber, uint16_t subType,
-                      struct symbol_s *fileTypePtr)
+symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
+                      uint16_t fileNumber, uint16_t xfrUnit)
 {
   symbol_t *filePtr;
 
@@ -412,17 +412,18 @@ symbol_t *pas_AddFile(char *name, uint16_t fileNumber, uint16_t subType,
 
   /* Get a slot in the symbol table */
 
-  filePtr = addSymbol(name, sFILE);
+  filePtr = addSymbol(name, kind);
   if (filePtr)
     {
       /* Add the fileNumber to the symbol table */
 
-      filePtr->sParm.f.fileNumber = fileNumber;
-      filePtr->sParm.f.subType    = subType;
-      filePtr->sParm.f.parent     = fileTypePtr;
+      filePtr->sParm.v.offset     = offset;
+      filePtr->sParm.v.size       = sINT_SIZE;
+      filePtr->sParm.v.fileNumber = fileNumber;
+      filePtr->sParm.v.xfrUnit    = xfrUnit;
     }
 
-  /* Return a pointer to the new file symbol */
+  /* Return a pointer to the new file variable symbol */
 
   return filePtr;
 }
@@ -472,8 +473,6 @@ symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
 
       varPtr->sParm.v.offset   = offset;
       varPtr->sParm.v.size     = size;
-      varPtr->sParm.v.flags    = 0;
-      varPtr->sParm.v.symIndex = 0;
       varPtr->sParm.v.parent   = parent;
     }
 
@@ -611,8 +610,13 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard files to the symbol table */
 
-  (void)pas_AddFile("INPUT",  INPUT_FILE_NUMBER,  sTEXTFILE, NULL);
-  (void)pas_AddFile("OUTPUT", OUTPUT_FILE_NUMBER, sTEXTFILE, NULL);
+  (void)pas_AddFile("INPUT", sTEXTFILE, g_dStack, INPUT_FILE_NUMBER,
+                    sCHAR_SIZE);
+  g_dStack += sINT_SIZE;
+
+  (void)pas_AddFile("OUTPUT", sTEXTFILE, g_dStack, OUTPUT_FILE_NUMBER,
+                    sCHAR_SIZE);
+  g_dStack += sINT_SIZE;
 }
 
 /***************************************************************/
@@ -716,16 +720,6 @@ void dumpTables(void)
                   g_symbolTable[i].sParm.l.unDefined);
           break;
 
-          /* Files */
-
-        case sFILE :
-        case sTEXTFILE :
-          fprintf(g_lstFile, "fileNumber=%u subType=%u parent=[%p]\n",
-                  g_symbolTable[i].sParm.f.fileNumber,
-                  g_symbolTable[i].sParm.f.subType,
-                  g_symbolTable[i].sParm.f.parent);
-          break;
-
           /* Variables */
 
         case sINT :
@@ -736,12 +730,17 @@ void dumpTables(void)
         case sPOINTER :
         case sVAR_PARM :
         case sRECORD :
-          fprintf(g_lstFile, "offset=%" PRId32 " size=%" PRId32 " flags=%02x "
-                  "parent=[%p]\n",
+        case sFILE :
+        case sTEXTFILE :
+          fprintf(g_lstFile, " flags=%02x offset=%" PRId32 " size=%" PRId32
+                  "parent=[%p] fileNumber=%u xfrUnit=%u\n",
+                  g_symbolTable[i].sParm.v.flags,
                   g_symbolTable[i].sParm.v.offset,
                   g_symbolTable[i].sParm.v.size,
-                  g_symbolTable[i].sParm.v.flags,
-                  g_symbolTable[i].sParm.v.parent);
+                  g_symbolTable[i].sParm.v.parent,
+                  g_symbolTable[i].sParm.v.fileNumber,
+                  g_symbolTable[i].sParm.v.xfrUnit
+                  );
           break;
 
           /* Record objects */

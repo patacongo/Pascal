@@ -66,8 +66,8 @@ symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
 symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
                           symbol_t *parent);
 symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size);
-symbol_t *pas_AddFile(char *name, uint16_t fileNumber, uint16_t subType,
-                      struct symbol_s *fileTypePtr);
+symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
+                      uint16_t fileNumber, uint16_t xfrUnit);
 symbol_t *pas_AddLabel(char *name, uint16_t label);
 symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
                            uint16_t nParms, symbol_t *parent);

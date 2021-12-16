@@ -113,14 +113,16 @@ void program(void)
     {
       do
         {
-          /* Each file should appear as an identifier and will be assiged
+          /* Each file should appear as an identifier and will be assigned
            * file numbers beginning at FIRST_USER_FILE.
            */
 
           getToken();
           if (g_token == tIDENT)
             {
-              (void)pas_AddFile(g_tokenString, ++g_nFiles, sTEXTFILE, NULL);
+              (void)pas_AddFile(g_tokenString, sTEXTFILE, g_dStack, ++g_nFiles,
+                                sCHAR_SIZE);
+              g_dStack  += sINT_SIZE;
               g_stringSP = g_tokenString;
               getToken();
             }
@@ -129,8 +131,8 @@ void program(void)
            * (non-standard) and will have file numbers 0 and 1, respectively.
            */
 
-          else if ((g_token == sFILE) &&
-                   (g_tknPtr->sParm.f.fileNumber < FIRST_USER_FILE))
+          else if ((g_token == sFILE || g_token == sTEXTFILE) &&
+                   (g_tknPtr->sParm.v.fileNumber < FIRST_USER_FILE))
             {
               getToken();
             }

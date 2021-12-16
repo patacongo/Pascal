@@ -104,7 +104,7 @@ static symbol_t *pas_DeclareParameter      (bool pointerType);
 static bool      pas_IntAlignRequired      (symbol_t *typePtr);
 
 /***************************************************************
- * Private Public Data
+ * Private Data
  ***************************************************************/
 
 static int32_t g_nParms;
@@ -113,6 +113,7 @@ static int32_t g_dwVarSize;
 /***************************************************************
  * Public Functions
  ***************************************************************/
+ 
 /* Process BLOCK.  This function implements:
  *
  * block = declaration-group compound-statement
