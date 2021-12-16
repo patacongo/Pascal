@@ -131,14 +131,14 @@ exprType_t pas_StandardFunction(void)
 
         case txROUND :
           getToken();                          /* Skip over 'round' */
-          pas_Exression(exprReal, NULL);
+          pas_Expression(exprReal, NULL);
           pas_GenerateFpOperation(fpROUND);
           funcType = exprInteger;
           break;
 
         case txTRUNC :
           getToken();                          /* Skip over 'trunc' */
-          pas_Exression(exprReal, NULL);
+          pas_Expression(exprReal, NULL);
           pas_GenerateFpOperation(fpTRUNC);
           funcType = exprInteger;
           break;
@@ -243,7 +243,7 @@ static exprType_t absFunc(void)
 
    checkLParen();
 
-   absType = pas_Exression(exprUnknown, NULL);
+   absType = pas_Expression(exprUnknown, NULL);
    if (absType == exprInteger)
       pas_GenerateSimple(opABS);
    else if (absType == exprReal)
@@ -264,7 +264,7 @@ static void ordFunc(void)
    /* FORM:  ORD (<scalar type>) */
 
    checkLParen();
-   pas_Exression(exprAnyOrdinal, NULL);     /* Get any ordinal type */
+   pas_Expression(exprAnyOrdinal, NULL);     /* Get any ordinal type */
    checkRParen();
 }
 
@@ -282,7 +282,7 @@ static exprType_t predFunc(void)
 
    /* Process any ordinal expression */
 
-   predType = pas_Exression(exprAnyOrdinal, NULL);
+   predType = pas_Expression(exprAnyOrdinal, NULL);
    checkRParen();
    pas_GenerateSimple(opDEC);
    return predType;
@@ -300,7 +300,7 @@ static exprType_t sqrFunc(void)
 
    checkLParen();
 
-   sqrType = pas_Exression(exprUnknown, NULL); /* Process any expression */
+   sqrType = pas_Expression(exprUnknown, NULL); /* Process any expression */
    if (sqrType == exprInteger) {
 
      pas_GenerateSimple(opDUP);
@@ -329,7 +329,7 @@ static void realFunc (uint8_t fpOpCode)
 
    checkLParen();
 
-   realType = pas_Exression(exprUnknown, NULL); /* Process any expression */
+   realType = pas_Expression(exprUnknown, NULL); /* Process any expression */
    if (realType == exprInteger)
      pas_GenerateFpOperation((fpOpCode | fpARG1));
    else if (realType == exprReal)
@@ -354,7 +354,7 @@ static exprType_t succFunc(void)
 
    /* Process any ordinal expression */
 
-   succType = pas_Exression(exprAnyOrdinal, NULL);
+   succType = pas_Expression(exprAnyOrdinal, NULL);
 
    checkRParen();
    pas_GenerateSimple(opINC);
@@ -373,7 +373,7 @@ static void oddFunc(void)
 
    /* Process any ordinal expression */
 
-   pas_Exression(exprAnyOrdinal, NULL);
+   pas_Expression(exprAnyOrdinal, NULL);
    checkRParen();
    pas_GenerateDataOperation(opPUSH, 1);
    pas_GenerateSimple(opAND);
@@ -394,7 +394,7 @@ static void chrFunc(void)
     * let the returned value exceed the range of type char. */
 
    checkLParen();
-   pas_Exression(exprInteger, NULL);
+   pas_Expression(exprInteger, NULL);
    checkRParen();
 }
 
@@ -456,7 +456,7 @@ static exprType_t getenvFunc(void)
    * name.
    */
 
-  stringType = pas_Exression(exprString, NULL);
+  stringType = pas_Expression(exprString, NULL);
 
   /* Two possible kinds of strings could be returned.
    * Anything else other then 'exprString' would be an error (but

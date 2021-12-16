@@ -785,7 +785,7 @@ static void pas_Assignment(uint16_t storeOp, exprType_t assignType,
    if (g_token != tASSIGN) error (eASSIGN);
    else getToken();
 
-   pas_Exression(assignType, typePtr);
+   pas_Expression(assignType, typePtr);
    pas_GenerateStackReference(storeOp, varPtr);
 }
 
@@ -811,7 +811,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
     * to exprString records upon assignment.
     */
 
-   stringKind = pas_Exression(exprAnyString, typePtr);
+   stringKind = pas_Expression(exprAnyString, typePtr);
 
    /* Place the address of the destination string structure instance on the
     * stack.
@@ -886,7 +886,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
          }
      }
 
-   /* else ... type mismatch error already reported by pas_Exression() */
+   /* else ... type mismatch error already reported by pas_Expression() */
 }
 
 /***********************************************************************/
@@ -902,7 +902,7 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType_t assignType,
    if (g_token != tASSIGN) error (eASSIGN);
    else getToken();
 
-   pas_Exression(assignType, typePtr);
+   pas_Expression(assignType, typePtr);
    pas_GenerateDataSize(varPtr->sParm.v.size);
    pas_GenerateStackReference(storeOp, varPtr);
 }
@@ -1075,7 +1075,7 @@ static void pas_IfStatement(void)
 
   /* Evaluate the boolean expression */
 
-  pas_Exression(exprBoolean, NULL);
+  pas_Expression(exprBoolean, NULL);
 
   /* Make sure that the boolean expression is followed by the THEN token */
 
@@ -1218,7 +1218,7 @@ void pas_RepeatStatement ()
 
    /* Generate UNTIL <expression> */
 
-   pas_Exression(exprBoolean, NULL);
+   pas_Expression(exprBoolean, NULL);
 
    /* Generate conditional branch to the top of loop */
 
@@ -1255,7 +1255,7 @@ static void pas_WhileStatement(void)
    /* Evaluate the WHILE <expression> */
 
    nLspChanges = pas_GetNStackLevelChanges();
-   pas_Exression(exprBoolean, NULL);
+   pas_Expression(exprBoolean, NULL);
 
    /* Generate a conditional jump to the end of the loop */
 
@@ -1394,7 +1394,7 @@ static void pas_CaseStatement(void)
 
    /* Evaluate the CASE <expression> */
 
-   pas_Exression(exprAnyOrdinal, NULL);
+   pas_Expression(exprAnyOrdinal, NULL);
 
    /* Verify that CASE <expression> is followed with the OF token */
 
@@ -1632,7 +1632,7 @@ static void pas_ForStatement(void)
 
        /* Evaluate <expression> DO */
 
-       pas_Exression(exprInteger, varPtr->sParm.v.parent);
+       pas_Expression(exprInteger, varPtr->sParm.v.parent);
 
        /* Verify that the <expression> is followed by the DO token */
 

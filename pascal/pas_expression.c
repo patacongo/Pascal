@@ -90,10 +90,12 @@ static exprType_t simpleExpression(exprType_t findExprType);
 static exprType_t term(exprType_t findExprType);
 static exprType_t factor(exprType_t findExprType);
 static exprType_t complexFactor(void);
-static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags);
+static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags);
+static exprType_t baseFactor(symbol_t *varPtr, uint8_t factorFlags);
 static exprType_t ptrFactor(void);
 static exprType_t complexPtrFactor(void);
-static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags);
+static exprType_t simplifyPtrFactor(symbol_t *varPtr, uint8_t factorFlags);
+static exprType_t basePtrFactor(symbol_t *varPtr, uint8_t factorFlags);
 static exprType_t functionDesignator(void);
 static void       setAbstractType(symbol_t *sType);
 static void       getSetFactor(void);
@@ -116,7 +118,7 @@ static symbol_t *g_abstractType;
 /****************************************************************************/
 /* Evaluate (boolean) Expression */
 
-exprType_t pas_Exression(exprType_t findExprType, symbol_t *typePtr)
+exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
 {
   uint8_t    operation;
   uint16_t   intOpCode;
@@ -127,15 +129,18 @@ exprType_t pas_Exression(exprType_t findExprType, symbol_t *typePtr)
 
   TRACE(g_lstFile,"[expression]");
 
-  /* The abstract types - SETs, RECORDS, etc - require an exact */
-  /* match in type.  Save the symbol table sTYPE entry associated */
-  /* with the expression. */
+  /* The abstract types - SETs, RECORDS, etc - require an exact
+   * match in type.  Save the symbol table sTYPE entry associated
+   * with the expression.
+   */
 
   if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
   g_abstractType = typePtr;
 
-  /* FORM <simple expression> [<relational operator> <simple expression>] */
-  /* Get the first <simple expression> */
+  /* FORM <simple expression> [<relational operator> <simple expression>]
+   *
+   * Get the first <simple expression>
+   */
 
   simple1Type = simpleExpression(findExprType);
 
@@ -422,7 +427,7 @@ void pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize)
       /* Evaluate index expression */
 
       getToken();
-      pas_Exression(exprType, NULL);
+      pas_Expression(exprType, NULL);
 
       /* We now have the array element at the top of the step.  If the index
        * is not zero-based, the we need to offset the index value so that it
@@ -938,7 +943,7 @@ static exprType_t term(exprType_t findExprType)
            * second is INTEGER.
            */
 
-          if ((factor1Type == exprReal) && (factor2Type == exprInteger))
+          if (factor1Type == exprReal && factor2Type == exprInteger)
             {
               arg8FpBits = fpARG2;
             }
@@ -947,7 +952,7 @@ static exprType_t term(exprType_t findExprType)
            * second is REAL.
            */
 
-          else if ((factor1Type == exprInteger) && (factor2Type == exprReal))
+          else if (factor1Type == exprInteger && factor2Type == exprReal)
             {
               arg8FpBits = fpARG1;
               factor1Type = exprReal;
@@ -1324,7 +1329,7 @@ static exprType_t factor(exprType_t findExprType)
 
     case '(' :
       getToken();
-      factorType = pas_Exression(exprUnknown, g_abstractType);
+      factorType = pas_Expression(exprUnknown, g_abstractType);
       if (g_token == ')') getToken();
       else error (eRPAREN);
       break;
@@ -1394,7 +1399,7 @@ static exprType_t complexFactor(void)
   TRACE(g_lstFile,"[complexFactor]");
 
   /* First, make a copy of the symbol table entry because the call to
-   * simpleFactor() will modify it.
+   * simplifyFactor() will modify it.
    */
 
   symbolSave = *g_tknPtr;
@@ -1403,19 +1408,360 @@ static exprType_t complexFactor(void)
   /* Then process the complex factor until it is reduced to a simple */
   /* factor (like int, char, etc.) */
 
-  return simpleFactor(&symbolSave, 0);
+  return simplifyFactor(&symbolSave, 0);
 }
 
 /****************************************************************************/
 /* Process a complex factor (recursively) until it becomes a */
 /* simple factor */
 
-static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
+static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 {
   symbol_t  *typePtr;
   exprType_t factorType;
 
-  TRACE(g_lstFile,"[simpleFactor]");
+  TRACE(g_lstFile,"[simplifyFactor]");
+
+  /* Check if it has been reduced to a simple factor. */
+
+  factorType = baseFactor(varPtr, factorFlags);
+  if (factorType != exprUnknown)
+    {
+      return factorType;
+    }
+
+  /* NOPE... recurse until it becomes a simple factor
+   *
+   * Process the complex factor according to the current variable sKind.
+   */
+
+  typePtr = varPtr->sParm.v.parent;
+  switch (varPtr->sKind)
+    {
+    case sSUBRANGE :
+      if (!g_abstractType) g_abstractType = typePtr;
+      varPtr->sKind = typePtr->sParm.t.subType;
+      factorType    = simplifyFactor(varPtr, factorFlags);
+      break;
+
+    case sRECORD :
+      /* Check if this is a pointer to a record */
+
+      if ((factorFlags & ADDRESS_FACTOR) != 0)
+        {
+          if (g_token == '.') error(ePOINTERTYPE);
+
+          if ((factorFlags & INDEXED_FACTOR) != 0)
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+            }
+          else
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+            }
+
+          factorType = exprRecordPtr;
+        }
+
+      /* Verify that a period separates the RECORD identifier from the */
+      /* record field identifier */
+
+      else if (g_token == '.')
+        {
+          if (((factorFlags & ADDRESS_DEREFERENCE) != 0) &&
+              ((factorFlags & VAR_PARM_FACTOR) == 0))
+            {
+              error(ePOINTERTYPE);
+            }
+
+          /* Skip over the period. */
+
+          getToken();
+
+          /* Verify that a field identifier associated with this record */
+          /* follows the period. */
+
+          if ((g_token != sRECORD_OBJECT) ||
+              (g_tknPtr->sParm.r.record != typePtr))
+            {
+              error(eRECORDOBJECT);
+              factorType = exprInteger;
+            }
+          else
+            {
+              /* Modify the variable so that it has the characteristics of the */
+              /* the field but with level and offset associated with the record */
+
+              typePtr                 = g_tknPtr->sParm.r.parent;
+              varPtr->sKind           = typePtr->sParm.t.type;
+              varPtr->sParm.v.parent  = typePtr;
+
+              /* Special case:  The record is a VAR parameter. */
+
+              if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
+                                  VAR_PARM_FACTOR))
+                {
+                  pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
+                }
+
+              getToken();
+              factorType = simplifyFactor(varPtr, factorFlags);
+            }
+        }
+
+      /* A RECORD name may be a valid factor -- as the input */
+      /* parameter of a function or in an assignment */
+
+      else if (g_abstractType == typePtr)
+        {
+          /* Special case:  The record is a VAR parameter. */
+
+          if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
+                              VAR_PARM_FACTOR))
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+              pas_GenerateSimple(opADD);
+              pas_GenerateDataSize(varPtr->sParm.v.size);
+              pas_GenerateSimple(opLDIM);
+            }
+          else
+            {
+              pas_GenerateDataSize(varPtr->sParm.v.size);
+              pas_GenerateStackReference(opLDSM, varPtr);
+            }
+
+          factorType = exprRecord;
+        }
+      else error(ePERIOD);
+      break;
+
+    case sRECORD_OBJECT :
+      /* NOTE:  This must have been preceeded with a WITH statement */
+      /* defining the RECORD type */
+
+      if (!g_withRecord.parent)
+        {
+          error(eINVTYPE);
+        }
+      else if ((factorFlags && (ADDRESS_DEREFERENCE | ADDRESS_FACTOR)) != 0)
+        {
+          error(ePOINTERTYPE);
+        }
+      else if ((factorFlags && INDEXED_FACTOR) != 0)
+        {
+          error(eARRAYTYPE);
+        }
+
+      /* Verify that a field identifier is associated with the RECORD
+       * specified by the WITH statement.
+       */
+
+      else if (varPtr->sParm.r.record != g_withRecord.parent)
+        {
+          error(eRECORDOBJECT);
+        }
+      else
+        {
+          int16_t tempOffset;
+
+          /* Now there are two cases to consider:  (1) the g_withRecord is a */
+          /* pointer to a RECORD, or (2) the g_withRecord is the RECOR itself */
+
+          if (g_withRecord.pointer)
+            {
+              /* If the pointer is really a VAR parameter, then other syntax */
+              /* rules will apply */
+
+              if (g_withRecord.varParm)
+                {
+                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
+                                  VAR_PARM_FACTOR);
+                }
+              else
+                {
+                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
+                }
+
+              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
+              tempOffset   = g_withRecord.offset;
+            }
+          else
+            {
+              tempOffset   = varPtr->sParm.r.offset + g_withRecord.offset;
+            }
+
+          /* Modify the variable so that it has the characteristics of the */
+          /* the field but with level and offset associated with the record */
+          /* NOTE:  We have to be careful here because the structure */
+          /* associated with sRECORD_OBJECT is not the same as for */
+          /* variables! */
+
+          typePtr                 = varPtr->sParm.r.parent;
+          tempOffset              = varPtr->sParm.r.offset;
+
+          varPtr->sKind           = typePtr->sParm.t.type;
+          varPtr->sLevel          = g_withRecord.level;
+          varPtr->sParm.v.size    = typePtr->sParm.t.asize;
+          varPtr->sParm.v.offset  = tempOffset + g_withRecord.offset;
+          varPtr->sParm.v.parent  = typePtr;
+
+          factorType = simplifyFactor(varPtr, factorFlags);
+        }
+      break;
+
+    case sPOINTER :
+      /* Are we dereferencing a pointer? */
+
+      if (g_token == '^')
+        {
+          getToken();
+          factorFlags |= ADDRESS_DEREFERENCE;
+        }
+      else
+        {
+          factorFlags |= ADDRESS_FACTOR;
+        }
+
+      /* If the parent type is itself a typed pointer, then get the
+       * pointed-at type.
+       */
+
+      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.type == sPOINTER)
+        {
+          symbol_t *baseTypePtr = typePtr->sParm.t.parent;
+
+          varPtr->sKind = baseTypePtr->sParm.t.type;
+
+          /* REVISIT:  What if the type is a pointer to a pointer? */
+
+           if (varPtr->sKind == sPOINTER) fatal(eNOTYET);
+        }
+      else
+        {
+          /* Get the kind of parent type */
+
+          varPtr->sKind = typePtr->sParm.t.type;
+        }
+
+      factorType = simplifyFactor(varPtr, factorFlags);
+      break;
+
+    case sVAR_PARM :
+      if ((factorFlags & (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR)) != 0)
+        {
+          error(eVARPARMTYPE);
+        }
+
+      factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
+      varPtr->sKind = typePtr->sParm.t.type;
+      factorType    = simplifyFactor(varPtr, factorFlags);
+      break;
+
+    case sARRAY :
+      if ((factorFlags & INDEXED_FACTOR) != 0)
+        {
+          error(eARRAYTYPE);
+        }
+
+      if (g_token == '[')
+        {
+          /* Get the type of the index.  We will need minimum value of
+           * if the index type in order to offset the array index
+           * calculation
+           */
+
+          symbol_t *indexTypePtr = typePtr->sParm.t.index;
+          if (indexTypePtr == NULL) error(eHUH);
+          else
+            {
+              symbol_t *nextPtr;
+              symbol_t *baseTypePtr;
+              uint16_t arrayKind;
+
+              factorFlags     |= INDEXED_FACTOR;
+
+              /* Get a pointer to the underlying base type symbol */
+
+              nextPtr          = typePtr;
+              baseTypePtr      = typePtr;
+              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+                {
+                   baseTypePtr = nextPtr;
+                   nextPtr     = baseTypePtr->sParm.t.parent;
+                }
+
+              /* Generate the array offset calculation and indexed load */
+
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+
+              /* We have reduced this to a base type.  So we can generate
+               * the indexed load from that base type.
+               */
+
+              arrayKind = baseTypePtr->sParm.t.type;
+
+             /* REVISIT:  For subranges, we use the base type of the
+              * subrange.
+              */
+
+              if (arrayKind == sSUBRANGE)
+                {
+                  arrayKind = baseTypePtr->sParm.t.subType;
+                }
+
+              varPtr->sKind  = arrayKind;
+              factorType     = baseFactor(varPtr, factorFlags);
+
+              if (factorType == exprUnknown)
+                {
+                  error(eHUH);  /* Should never happen */
+                }
+
+              /* Return the parent type of the array */
+
+              varPtr->sKind        = typePtr->sParm.t.type;
+              varPtr->sParm.v.size = typePtr->sParm.t.asize;
+            }
+        }
+
+      /* An ARRAY name may be a valid factor as the input parameter of
+       * a function.
+       */
+
+      else if (g_abstractType == varPtr)
+        {
+          pas_GenerateDataSize(varPtr->sParm.v.size);
+          pas_GenerateStackReference(opLDSM, varPtr);
+          factorType = pas_MapVariable2ExprType(varPtr->sParm.t.type, false);
+        }
+      else
+        {
+          error(eLBRACKET);
+        }
+      break;
+
+    default :
+      error(eINVTYPE);
+      factorType = exprInteger;
+      break;
+    }
+
+  return factorType;
+}
+
+/**********************************************************************/
+
+static exprType_t baseFactor(symbol_t *varPtr, uint8_t factorFlags)
+{
+  symbol_t  *typePtr;
+  exprType_t factorType;
+
+  TRACE(g_lstFile,"[baseFactor]");
 
   /* Process according to the current variable sKind */
 
@@ -1547,7 +1893,12 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
         }
       break;
 
+    /* The only thing that REAL and STRING have in common is that they are
+     * both represented by a multi-word object.
+     */
+
     case sREAL         :
+    case sSTRING       :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
@@ -1555,18 +1906,18 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_GenerateDataSize(varPtr->sParm.v.size);
               pas_GenerateSimple(opLDIM);
-              factorType = exprReal;
+              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
           else if ((factorFlags & ADDRESS_FACTOR) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprRealPtr;
+              factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
             }
           else
             {
               pas_GenerateDataSize(varPtr->sParm.v.size);
               pas_GenerateStackReference(opLDSXM, varPtr);
-              factorType = exprReal;
+              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
         }
       else
@@ -1576,18 +1927,18 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateDataSize(varPtr->sParm.v.size);
               pas_GenerateSimple(opLDIM);
-              factorType = exprReal;
+              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
           else if ((factorFlags & ADDRESS_FACTOR) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprRealPtr;
+              factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
             }
           else
             {
               pas_GenerateDataSize(varPtr->sParm.v.size);
               pas_GenerateStackReference(opLDSM, varPtr);
-              factorType = exprReal;
+              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
         }
       break;
@@ -1735,336 +2086,12 @@ static exprType_t simpleFactor(symbol_t *varPtr, uint8_t factorFlags)
         }
       break;
 
-    /* NOPE... recurse until it becomes a simple factor */
-
-    case sSUBRANGE :
-      if (!g_abstractType) g_abstractType = typePtr;
-      varPtr->sKind = typePtr->sParm.t.subType;
-      factorType    = simpleFactor(varPtr, factorFlags);
-      break;
-
-    case sRECORD :
-      /* Check if this is a pointer to a record */
-
-      if ((factorFlags & ADDRESS_FACTOR) != 0)
-        {
-          if (g_token == '.') error(ePOINTERTYPE);
-
-          if ((factorFlags & INDEXED_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-            }
-
-          factorType = exprRecordPtr;
-        }
-
-      /* Verify that a period separates the RECORD identifier from the */
-      /* record field identifier */
-
-      else if (g_token == '.')
-        {
-          if (((factorFlags & ADDRESS_DEREFERENCE) != 0) &&
-              ((factorFlags & VAR_PARM_FACTOR) == 0))
-            {
-              error(ePOINTERTYPE);
-            }
-
-          /* Skip over the period. */
-
-          getToken();
-
-          /* Verify that a field identifier associated with this record */
-          /* follows the period. */
-
-          if ((g_token != sRECORD_OBJECT) ||
-              (g_tknPtr->sParm.r.record != typePtr))
-            {
-              error(eRECORDOBJECT);
-              factorType = exprInteger;
-            }
-          else
-            {
-              /* Modify the variable so that it has the characteristics of the */
-              /* the field but with level and offset associated with the record */
-
-              typePtr                 = g_tknPtr->sParm.r.parent;
-              varPtr->sKind           = typePtr->sParm.t.type;
-              varPtr->sParm.v.parent  = typePtr;
-
-              /* Special case:  The record is a VAR parameter. */
-
-              if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
-                                  VAR_PARM_FACTOR))
-                {
-                  pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
-                  pas_GenerateSimple(opADD);
-                }
-              else
-                {
-                  varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
-                }
-
-              getToken();
-              factorType = simpleFactor(varPtr, factorFlags);
-            }
-        }
-
-      /* A RECORD name name be a valid factor -- as the input */
-      /* parameter of a function or in an assignment */
-
-      else if (g_abstractType == typePtr)
-        {
-          /* Special case:  The record is a VAR parameter. */
-
-          if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
-                              VAR_PARM_FACTOR))
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              pas_GenerateSimple(opADD);
-              pas_GenerateDataSize(varPtr->sParm.v.size);
-              pas_GenerateSimple(opLDIM);
-            }
-          else
-            {
-              pas_GenerateDataSize(varPtr->sParm.v.size);
-              pas_GenerateStackReference(opLDSM, varPtr);
-            }
-
-          factorType = exprRecord;
-        }
-      else error(ePERIOD);
-      break;
-
-    case sRECORD_OBJECT :
-      /* NOTE:  This must have been preceeded with a WITH statement */
-      /* defining the RECORD type */
-
-      if (!g_withRecord.parent)
-        {
-          error(eINVTYPE);
-        }
-      else if ((factorFlags && (ADDRESS_DEREFERENCE | ADDRESS_FACTOR)) != 0)
-        {
-          error(ePOINTERTYPE);
-        }
-      else if ((factorFlags && INDEXED_FACTOR) != 0)
-        {
-          error(eARRAYTYPE);
-        }
-
-      /* Verify that a field identifier is associated with the RECORD
-       * specified by the WITH statement.
-       */
-
-      else if (varPtr->sParm.r.record != g_withRecord.parent)
-        {
-          error(eRECORDOBJECT);
-        }
-      else
-        {
-          int16_t tempOffset;
-
-          /* Now there are two cases to consider:  (1) the g_withRecord is a */
-          /* pointer to a RECORD, or (2) the g_withRecord is the RECOR itself */
-
-          if (g_withRecord.pointer)
-            {
-              /* If the pointer is really a VAR parameter, then other syntax */
-              /* rules will apply */
-
-              if (g_withRecord.varParm)
-                {
-                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
-                                  VAR_PARM_FACTOR);
-                }
-              else
-                {
-                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
-                }
-
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
-              tempOffset   = g_withRecord.offset;
-            }
-          else
-            {
-              tempOffset   = varPtr->sParm.r.offset + g_withRecord.offset;
-            }
-
-          /* Modify the variable so that it has the characteristics of the */
-          /* the field but with level and offset associated with the record */
-          /* NOTE:  We have to be careful here because the structure */
-          /* associated with sRECORD_OBJECT is not the same as for */
-          /* variables! */
-
-          typePtr                 = varPtr->sParm.r.parent;
-          tempOffset              = varPtr->sParm.r.offset;
-
-          varPtr->sKind           = typePtr->sParm.t.type;
-          varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.size    = typePtr->sParm.t.asize;
-          varPtr->sParm.v.offset  = tempOffset + g_withRecord.offset;
-          varPtr->sParm.v.parent  = typePtr;
-
-          factorType = simpleFactor(varPtr, factorFlags);
-        }
-      break;
-
-    case sPOINTER :
-      /* Are we dereferencing a pointer? */
-
-      if (g_token == '^')
-        {
-          getToken();
-          factorFlags |= ADDRESS_DEREFERENCE;
-        }
-      else
-        {
-          factorFlags |= ADDRESS_FACTOR;
-        }
-
-      /* If the parent type is itself a typed pointer, then get the
-       * pointed-at type.
-       */
-
-      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.type == sPOINTER)
-        {
-          symbol_t *baseTypePtr = typePtr->sParm.t.parent;
-
-          varPtr->sKind = baseTypePtr->sParm.t.type;
-
-          /* REVISIT:  What if the type is a pointer to a pointer? */
-
-           if (varPtr->sKind == sPOINTER) fatal(eNOTYET);
-        }
-      else
-        {
-          /* Get the kind of parent type */
-
-          varPtr->sKind = typePtr->sParm.t.type;
-        }
-
-      factorType = simpleFactor(varPtr, factorFlags);
-      break;
-
-    case sVAR_PARM :
-      if ((factorFlags & (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR)) != 0)
-        {
-          error(eVARPARMTYPE);
-        }
-
-      factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
-      varPtr->sKind = typePtr->sParm.t.type;
-      factorType    = simpleFactor(varPtr, factorFlags);
-      break;
-
-    case sARRAY :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
-        {
-          error(eARRAYTYPE);
-        }
-
-      if (g_token == '[')
-        {
-          /* Get the type of the index.  We will need minimum value of
-           * if the index type in order to offset the array index
-           * calculation
-           */
-
-          symbol_t *indexTypePtr = typePtr->sParm.t.index;
-          if (indexTypePtr == NULL) error(eHUH);
-          else
-            {
-              symbol_t *nextPtr;
-              symbol_t *baseTypePtr;
-              uint16_t arrayType;
-
-              factorFlags         |= INDEXED_FACTOR;
-
-              /* Get a pointer to the underlying base type symbol */
-
-              nextPtr     = typePtr;
-              baseTypePtr = typePtr;
-              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-                {
-                   baseTypePtr = nextPtr;
-                   nextPtr     = baseTypePtr->sParm.t.parent;
-                }
-
-              /* Generate the array offset calculation and indexed load */
-
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
-
-              /* REVISIT:  Missing generation of the indexed load */
-
-              /* Return the parent type of the array */
-
-              varPtr->sKind        = typePtr->sParm.t.type;
-              varPtr->sParm.v.size = typePtr->sParm.t.asize;
-
-              /* Return the factortype type for the array in the expression. */
-
-              if (typePtr->sKind != sTYPE || typePtr->sParm.t.type != sARRAY)
-                {
-                  error(eHUH);
-                  factorType = exprUnknown;
-                }
-              else
-                {
-                  symbol_t *baseTypePtr;
-                  symbol_t *nextPtr;
-
-                  /* Get the base type of the array */
-
-                  arrayType   = varPtr->sKind;
-                  baseTypePtr = varPtr;
-                  nextPtr     = varPtr->sParm.v.parent;
-
-                  while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-                    {
-                      baseTypePtr = nextPtr;
-                      arrayType   = baseTypePtr->sParm.t.type;
-                      nextPtr     = baseTypePtr->sParm.t.parent;
-                    }
-
-                  /* REVISIT:  For subranges, we use the base type of the
-                   * subrange.
-                   */
-
-                  if (arrayType == sSUBRANGE)
-                    {
-                      arrayType = baseTypePtr->sParm.t.subType;
-                    }
-
-                  /* Get the expression type of the array base type */
-
-                  factorType = pas_MapVariable2ExprType(arrayType, false);
-               }
-            }
-        }
-
-      /* An ARRAY name may be a valid factor as the input parameter of
-       * a function.
-       */
-
-      else if (g_abstractType == varPtr)
-        {
-          pas_GenerateDataSize(varPtr->sParm.v.size);
-          pas_GenerateStackReference(opLDSM, varPtr);
-          factorType = pas_MapVariable2ExprType(varPtr->sParm.t.type, false);
-        }
-      else
-        {
-          error(eLBRACKET);
-        }
-      break;
+    /* REVISIT: RECORD name may be a base factor -- as the input parameter of
+     * a function or in an assignment
+     */
 
     default :
-      error(eINVTYPE);
-      factorType = exprInteger;
+      factorType = exprUnknown;
       break;
     }
 
@@ -2178,6 +2205,7 @@ static exprType_t ptrFactor(void)
       default :
 
         error(ePTRADR);
+        factorType = exprUnknown;
         break;
     }
 
@@ -2185,7 +2213,7 @@ static exprType_t ptrFactor(void)
 }
 
 /****************************************************************************/
-/* Process a complex factor */
+/* Process a complex pointer factor */
 
 static exprType_t complexPtrFactor(void)
 {
@@ -2194,7 +2222,7 @@ static exprType_t complexPtrFactor(void)
   TRACE(g_lstFile,"[complexPtrFactor]");
 
   /* First, make a copy of the symbol table entry because the call to
-   * simplePtrFactor() will modify it.
+   * simplifyPtrFactor() will modify it.
    */
 
   symbolSave = *g_tknPtr;
@@ -2204,7 +2232,7 @@ static exprType_t complexPtrFactor(void)
    * factor (like int, char, etc.)
    */
 
-  return simplePtrFactor(&symbolSave, 0);
+  return simplifyPtrFactor(&symbolSave, 0);
 }
 
 /****************************************************************************/
@@ -2212,14 +2240,265 @@ static exprType_t complexPtrFactor(void)
  * factor.
  */
 
-static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
+static exprType_t simplifyPtrFactor(symbol_t *varPtr, uint8_t factorFlags)
 {
   symbol_t  *typePtr;
   exprType_t factorType;
 
-  TRACE(g_lstFile,"[simplePtrFactor]");
+  TRACE(g_lstFile,"[simplifyPtrFactor]");
 
-  /* Process according to the current variable sKind */
+  /* Check if it has been reduced to a simple factor. */
+
+  factorType = basePtrFactor(varPtr, factorFlags);
+  if (factorType != exprUnknown)
+    {
+      return factorType;
+    }
+
+  /* NOPE... recurse until it becomes a simple pointer factor
+   *
+   * Process the complex factor according to the current variable sKind.
+   */
+
+  typePtr = varPtr->sParm.v.parent;
+  switch (varPtr->sKind)
+    {
+      /* Check if we have reduced the complex factor to a simple factor */
+
+    case sSUBRANGE :
+      if (!g_abstractType) g_abstractType = typePtr;
+      varPtr->sKind = typePtr->sParm.t.subType;
+      factorType = simplifyPtrFactor(varPtr, factorFlags);
+      break;
+
+    case sRECORD :
+      /* Check if this is a pointer to a record */
+
+      if (g_token != '.')
+        {
+          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+            error(ePOINTERTYPE);
+
+          if ((factorFlags & INDEXED_FACTOR) != 0)
+            {
+              pas_GenerateStackReference(opLASX, varPtr);
+            }
+          else
+            {
+              pas_GenerateStackReference(opLAS, varPtr);
+            }
+
+          factorType = exprRecordPtr;
+        }
+      else
+        {
+          /* Verify that a period separates the RECORD identifier from the
+           * record field identifier
+           */
+
+          if (g_token != '.') error(ePERIOD);
+          else getToken();
+
+          /* Verify that a field identifier associated with this record
+           * follows the period.
+           */
+
+          if ((g_token != sRECORD_OBJECT) ||
+              (g_tknPtr->sParm.r.record != typePtr))
+            {
+              error(eRECORDOBJECT);
+              factorType = exprInteger;
+            }
+          else
+            {
+              /* Modify the variable so that it has the characteristics
+               * of the field but with level and offset associated with
+               * the record
+               */
+
+              typePtr                 = g_tknPtr->sParm.r.parent;
+              varPtr->sKind           = typePtr->sParm.t.type;
+              varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
+              varPtr->sParm.v.parent  = typePtr;
+
+              getToken();
+              factorType = simplifyPtrFactor(varPtr, factorFlags);
+            }
+        }
+      break;
+
+    case sRECORD_OBJECT :
+      /* NOTE:  This must have been preceeded with a WITH statement
+       * defining the RECORD type
+       */
+
+      if (!g_withRecord.parent)
+        {
+          error(eINVTYPE);
+        }
+      else if ((factorFlags && ADDRESS_DEREFERENCE) != 0)
+        {
+          error(ePOINTERTYPE);
+        }
+      else if ((factorFlags && INDEXED_FACTOR) != 0)
+        {
+          error(eARRAYTYPE);
+        }
+
+      /* Verify that a field identifier is associated with the RECORD
+       * specified by the WITH statement.
+       */
+
+      else if (varPtr->sParm.r.record != g_withRecord.parent)
+        {
+          error(eRECORDOBJECT);
+        }
+      else
+        {
+          int16_t tempOffset;
+
+          /* Now there are two cases to consider:  (1) the g_withRecord is a
+           * pointer to a RECORD, or (2) the g_withRecord is the RECOR itself
+           */
+
+          if (g_withRecord.pointer)
+            {
+              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
+              factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
+              tempOffset   = g_withRecord.offset;
+            }
+          else
+            {
+              tempOffset   = varPtr->sParm.r.offset + g_withRecord.offset;
+            }
+
+          /* Modify the variable so that it has the characteristics of the
+           * the field but with level and offset associated with the record
+           * NOTE:  We have to be careful here because the structure
+           * associated with sRECORD_OBJECT is not the same as for
+           * variables!
+           */
+
+          typePtr                 = varPtr->sParm.r.parent;
+          tempOffset              = varPtr->sParm.r.offset;
+
+          varPtr->sKind           = typePtr->sParm.t.type;
+          varPtr->sLevel          = g_withRecord.level;
+          varPtr->sParm.v.size    = typePtr->sParm.t.asize;
+          varPtr->sParm.v.offset  = tempOffset + g_withRecord.offset;
+          varPtr->sParm.v.parent  = typePtr;
+
+          factorType = simplifyPtrFactor(varPtr, factorFlags);
+        }
+      break;
+
+    case sPOINTER :
+      if (g_token == '^') error(ePTRADR);
+      else getToken();
+
+      factorFlags   |= ADDRESS_DEREFERENCE;
+      varPtr->sKind  = typePtr->sParm.t.type;
+      factorType     = simplifyPtrFactor(varPtr, factorFlags);
+      break;
+
+    case sVAR_PARM :
+      if (factorFlags != 0) error(eVARPARMTYPE);
+
+      factorFlags  |= ADDRESS_DEREFERENCE;
+      varPtr->sKind = typePtr->sParm.t.type;
+      factorType    = simplifyPtrFactor(varPtr, factorFlags);
+      break;
+
+    case sARRAY :
+      if ((factorFlags & ~ADDRESS_DEREFERENCE) != 0)
+        {
+          error(eARRAYTYPE);
+        }
+
+      if (g_token == '[')
+        {
+          /* Get the type of the index.  We will need minimum value of
+           * if the index type in order to offset the array index
+           * calcaultion
+           */
+
+          symbol_t *indexTypePtr = typePtr->sParm.t.index;
+          if (indexTypePtr == NULL) error(eHUH);
+          else
+            {
+              symbol_t *nextPtr;
+              symbol_t *baseTypePtr;
+              uint16_t arrayKind;
+
+              factorFlags     |= INDEXED_FACTOR;
+
+              /* Get a pointer to the underlying base type symbol */
+
+              nextPtr          = typePtr;
+              baseTypePtr      = typePtr;
+              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+                {
+                   baseTypePtr = nextPtr;
+                   nextPtr     = baseTypePtr->sParm.t.parent;
+                }
+
+              /* Generate the array offset calculation */
+
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+
+              /* We have reduced this to a base type.  So we can generate
+               * the indexed load from that base type.
+               */
+
+              arrayKind = baseTypePtr->sParm.t.type;
+
+             /* REVISIT:  For subranges, we use the base type of the
+              * subrange.
+              */
+
+              if (arrayKind == sSUBRANGE)
+                {
+                  arrayKind = baseTypePtr->sParm.t.subType;
+                }
+
+              varPtr->sKind  = arrayKind;
+              factorType     = basePtrFactor(varPtr, factorFlags);
+
+              if (factorType == exprUnknown)
+                {
+                  error(eHUH);  /* Should never happen */
+                }
+
+              /* Return the parent type of the array */
+
+              varPtr->sKind        = typePtr->sParm.t.type;
+              varPtr->sParm.v.size = typePtr->sParm.t.asize;
+            }
+        }
+      break;
+
+    default :
+      error(eINVTYPE);
+      factorType = exprInteger;
+      break;
+    }
+
+  return factorType;
+}
+
+/****************************************************************************/
+
+static exprType_t basePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
+{
+  symbol_t  *typePtr;
+  exprType_t factorType;
+
+  TRACE(g_lstFile,"[basePtrFactor]");
+
+  /* NOPE... recurse until it becomes a simple pointer factor
+   *
+   * Process the complex factor according to the current variable sKind.
+   */
 
   typePtr = varPtr->sParm.v.parent;
   switch (varPtr->sKind)
@@ -2313,7 +2592,12 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
         }
       break;
 
+    /* The only thing that REAL and STRING have in common is that they are
+     * both represented by a multi-word object.
+     */
+
     case sREAL         :
+    case sSTRING       :
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
@@ -2325,7 +2609,7 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
               pas_GenerateStackReference(opLASX, varPtr);
             }
 
-          factorType = exprRealPtr;
+          factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
         }
       else
         {
@@ -2338,7 +2622,7 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
               pas_GenerateStackReference(opLAS, varPtr);
             }
 
-          factorType = exprRealPtr;
+          factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
         }
       break;
 
@@ -2449,221 +2733,8 @@ static exprType_t simplePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
         }
       break;
 
-    /* NOPE... recurse until it becomes a simple factor */
-
-    case sSUBRANGE :
-      if (!g_abstractType) g_abstractType = typePtr;
-      varPtr->sKind = typePtr->sParm.t.subType;
-      factorType = simplePtrFactor(varPtr, factorFlags);
-      break;
-
-    case sRECORD :
-      /* Check if this is a pointer to a record */
-
-      if (g_token != '.')
-        {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
-            error(ePOINTERTYPE);
-
-          if ((factorFlags & INDEXED_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLASX, varPtr);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLAS, varPtr);
-            }
-
-          factorType = exprRecordPtr;
-        }
-      else
-        {
-          /* Verify that a period separates the RECORD identifier from the
-           * record field identifier
-           */
-
-          if (g_token != '.') error(ePERIOD);
-          else getToken();
-
-          /* Verify that a field identifier associated with this record
-           * follows the period.
-           */
-
-          if ((g_token != sRECORD_OBJECT) ||
-              (g_tknPtr->sParm.r.record != typePtr))
-            {
-              error(eRECORDOBJECT);
-              factorType = exprInteger;
-            }
-          else
-            {
-              /* Modify the variable so that it has the characteristics
-               * of the field but with level and offset associated with
-               * the record
-               */
-
-              typePtr                 = g_tknPtr->sParm.r.parent;
-              varPtr->sKind           = typePtr->sParm.t.type;
-              varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
-              varPtr->sParm.v.parent  = typePtr;
-
-              getToken();
-              factorType = simplePtrFactor(varPtr, factorFlags);
-            }
-        }
-      break;
-
-    case sRECORD_OBJECT :
-      /* NOTE:  This must have been preceeded with a WITH statement
-       * defining the RECORD type
-       */
-
-      if (!g_withRecord.parent)
-        {
-          error(eINVTYPE);
-        }
-      else if ((factorFlags && ADDRESS_DEREFERENCE) != 0)
-        {
-          error(ePOINTERTYPE);
-        }
-      else if ((factorFlags && INDEXED_FACTOR) != 0)
-        {
-          error(eARRAYTYPE);
-        }
-
-      /* Verify that a field identifier is associated with the RECORD
-       * specified by the WITH statement.
-       */
-
-      else if (varPtr->sParm.r.record != g_withRecord.parent)
-        {
-          error(eRECORDOBJECT);
-        }
-      else
-        {
-          int16_t tempOffset;
-
-          /* Now there are two cases to consider:  (1) the g_withRecord is a
-           * pointer to a RECORD, or (2) the g_withRecord is the RECOR itself
-           */
-
-          if (g_withRecord.pointer)
-            {
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
-              factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
-              tempOffset   = g_withRecord.offset;
-            }
-          else
-            {
-              tempOffset   = varPtr->sParm.r.offset + g_withRecord.offset;
-            }
-
-          /* Modify the variable so that it has the characteristics of the
-           * the field but with level and offset associated with the record
-           * NOTE:  We have to be careful here because the structure
-           * associated with sRECORD_OBJECT is not the same as for
-           * variables!
-           */
-
-          typePtr                 = varPtr->sParm.r.parent;
-          tempOffset              = varPtr->sParm.r.offset;
-
-          varPtr->sKind           = typePtr->sParm.t.type;
-          varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.size    = typePtr->sParm.t.asize;
-          varPtr->sParm.v.offset  = tempOffset + g_withRecord.offset;
-          varPtr->sParm.v.parent  = typePtr;
-
-          factorType = simplePtrFactor(varPtr, factorFlags);
-        }
-      break;
-
-    case sPOINTER :
-      if (g_token == '^') error(ePTRADR);
-      else getToken();
-
-      factorFlags   |= ADDRESS_DEREFERENCE;
-      varPtr->sKind  = typePtr->sParm.t.type;
-      factorType     = simplePtrFactor(varPtr, factorFlags);
-      break;
-
-    case sVAR_PARM :
-      if (factorFlags != 0) error(eVARPARMTYPE);
-
-      factorFlags  |= ADDRESS_DEREFERENCE;
-      varPtr->sKind = typePtr->sParm.t.type;
-      factorType    = simplePtrFactor(varPtr, factorFlags);
-      break;
-
-    case sARRAY :
-      if ((factorFlags & ~ADDRESS_DEREFERENCE) != 0)
-        {
-          error(eARRAYTYPE);
-        }
-
-      if (g_token == '[')
-        {
-          /* Get the type of the index.  We will need minimum value of
-           * if the index type in order to offset the array index
-           * calcaultion
-           */
-
-          symbol_t *indexTypePtr = typePtr->sParm.t.index;
-          if (indexTypePtr == NULL) error(eHUH);
-          else
-            {
-              symbol_t *baseTypePtr;
-              symbol_t *nextPtr;
-              uint16_t  arrayKind;
-
-              factorFlags     |= INDEXED_FACTOR;
-
-              /* Get a pointer to the underlying base type symbol */
-
-              nextPtr          = typePtr;
-              baseTypePtr      = typePtr;
-              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-                {
-                   baseTypePtr = nextPtr;
-                   nextPtr     = baseTypePtr->sParm.t.parent;
-                }
-
-              /* Generate the array offset calculation */
-
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
-
-              /* REVISIT:  Missing generation of the indexed load */
-
-              /* Return the parent type */
-
-              varPtr->sKind        = typePtr->sParm.t.type;
-              varPtr->sParm.v.size = typePtr->sParm.t.asize;
-
-              pas_GenerateStackReference(opLASX, varPtr);
-
-              /* Get the expression type associated with the base
-               * type of the array.
-               */
-
-              arrayKind = baseTypePtr->sParm.t.type;
-
-              /* REVISIT:  For subranges, we use the base type of the subrange. */
-
-              if (arrayKind == sSUBRANGE)
-                {
-                  arrayKind = baseTypePtr->sParm.t.subType;
-                }
-
-              /* Get the pointer expression type of the array base type */
-
-              factorType = pas_MapVariable2ExprPtrType(arrayKind, false);
-            }
-        }
-      break;
-
     default :
-      error(eINVTYPE);
-      factorType = exprInteger;
+      factorType = exprUnknown;
       break;
     }
 

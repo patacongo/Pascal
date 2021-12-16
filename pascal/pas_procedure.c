@@ -438,38 +438,38 @@ int actualParameterList(symbol_t *procPtr)
           switch (procPtr[parmIndex].sKind)
             {
             case sINT :
-              pas_Exression(exprInteger, typePtr);
+              pas_Expression(exprInteger, typePtr);
               size += sINT_SIZE;
               break;
 
             case sCHAR :
-              pas_Exression(exprChar, typePtr);
+              pas_Expression(exprChar, typePtr);
               size += sCHAR_SIZE;
               break;
 
             case sREAL :
-              pas_Exression(exprReal, typePtr);
+              pas_Expression(exprReal, typePtr);
               size += sREAL_SIZE;
               break;
 
             case sSTRING :
             case sRSTRING :
-              pas_Exression(exprString, typePtr);
+              pas_Expression(exprString, typePtr);
               size += sRSTRING_SIZE;
               break;
 
             case sSUBRANGE :
-              pas_Exression(exprInteger, typePtr);
+              pas_Expression(exprInteger, typePtr);
               size += sINT_SIZE;
               break;
 
             case sSCALAR :
-              pas_Exression(exprScalar, typePtr);
+              pas_Expression(exprScalar, typePtr);
               size += sINT_SIZE;
               break;
 
             case sSET_OF :
-              pas_Exression(exprSet, typePtr);
+              pas_Expression(exprSet, typePtr);
               size += sINT_SIZE;
               break;
 
@@ -506,13 +506,13 @@ int actualParameterList(symbol_t *procPtr)
                  */
 
                 exprType = pas_MapVariable2ExprType(arrayKind, false);
-                pas_Exression(exprType, typePtr);
+                pas_Expression(exprType, typePtr);
                 size += typePtr->sParm.t.asize;
               }
               break;
 
             case sRECORD :
-              pas_Exression(exprRecord, typePtr);
+              pas_Expression(exprRecord, typePtr);
               size += typePtr->sParm.t.asize;
               break;
 
@@ -1054,7 +1054,7 @@ static void openFileProc(uint16_t opcode1, uint16_t opcode2)
       if (g_token == ',')
         {
           getToken();
-          (void)pas_Exression(exprInteger, NULL);
+          (void)pas_Expression(exprInteger, NULL);
           opcode = opcode2;
         }
 
@@ -1175,12 +1175,12 @@ static void assignFileProc(void)       /* ASSIGNFILE procedure */
 
        /* Push the file name reference onto the stack. */
 
-       exprType = pas_Exression(exprUnknown, NULL);
+       exprType = pas_Expression(exprUnknown, NULL);
        if (exprType != exprString) error(eSTRING);
 
        /* And generate the SYSIO operation */
 
-       pas_GenerateIoOperation(txASSIGNFILE);
+       pas_GenerateIoOperation(xASSIGNFILE);
 
        /* Make sure that the matching right parenthesis is present */
 
@@ -1447,7 +1447,7 @@ static void writeText(void)
       /* Put the file number and value on the stack */
 
       pas_GenerateSimple(opDUP);
-      writeType = pas_Exression(exprUnknown, NULL);
+      writeType = pas_Expression(exprUnknown, NULL);
 
       /* Then generate the operation */
 

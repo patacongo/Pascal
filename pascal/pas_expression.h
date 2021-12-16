@@ -99,6 +99,7 @@ enum exprType_e
   exprCharPtr    = 0x85,    /* TOS = pointer to a character value */
   exprBooleanPtr = 0x86,    /* TOS = pointer to a boolean value */
   exprScalarPtr  = 0x87,    /* TOS = pointer to a scalar value */
+  exprStringPtr  = 0x88,    /* TOS = variable length string reference */
   exprSetPtr     = 0x8b,    /* TOS = pointer to a set value */
   exprFilePtr    = 0x8c,    /* TOS = pointer to a file */
   exprRecordPtr  = 0x8d     /* TOS = pointer to a record */
@@ -119,7 +120,7 @@ extern char   *constantStart;
  * Public Function Protothypes
  ***********************************************************************/
 
-exprType_t pas_Exression(exprType_t findExprType, symbol_t *typePtr);
+exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr);
 exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr);
 void       pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize);
 exprType_t pas_GetExpressionType(symbol_t *sType);

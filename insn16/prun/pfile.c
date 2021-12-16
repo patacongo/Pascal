@@ -649,9 +649,10 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
      */
 
     case xASSIGNFILE :
-      POP(st, fileNumber);  /* File number from stack */
+      POP(st, address);     /* File name string address */
+      POP(st, size);        /* File name string size */
       POP(st, value);       /* Binary/text boolean from stack */
-      POP(st, address);     /* File name address from stack */
+      POP(st, fileNumber);  /* File number from stack */
       pexec_AssignFile(fileNumber, (bool)value,
                        (const char *)&st->dstack.b[address]);
       break;

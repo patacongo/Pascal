@@ -342,7 +342,7 @@ static void constantOddFunc(void)
    pas_ConstantExression();
    isOrdinalConstant();
    constantInt &= 1;
-   pas_Exression(exprAnyOrdinal, NULL);
+   pas_Expression(exprAnyOrdinal, NULL);
    checkRParen();
 }
 

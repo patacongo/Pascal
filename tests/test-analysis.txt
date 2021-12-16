@@ -16,6 +16,8 @@ writing, the following errors are reported when testall.sh is ran:
     or the number of elements in SourceArray. (See units/DayIO.pas)
     It is often used to loop around all characters in a string or elements in
     an array.
+ 3. Free Pascal as the lowercase function:
+    See failure in src/803-redirect.pas
  3. Currently a set is limited to 32 elements so that they can be represented
     internally as a 32-bit bit set.
  4. I/O operations on most types of arrays and VAR arrays are not fully
@@ -31,6 +33,20 @@ writing, the following errors are reported when testall.sh is ran:
     Assignment of a numeric value to a file is not supported.
 
 Successful test results are not shown.
+
+########src/008-setcolors.pas########
+Line 0:0008 Error 0a Token 3a
+
+Line:
+names : array [color] of String[7]
+  = ('red', 'blue', 'yellow', 'green', 'white', 'black', 'orange');
+
+Error:
+186 #define eEQ              ((uint16_t) 0x0a) <-- Expected '='
+
+Token: ':'
+
+Analysis:
 
 ########src/104-primes.pas########
 Line 0:0012 Error 4c Token 3b
@@ -51,28 +67,28 @@ the bitset is currently limited to 32-bits:
 ########src/106-bubblesort.pas########
 ########src/107-quicksort.pas########
 
-These two examples compile fine but cause an Runtime error:
+These two examples compile fine but no output appears on stdout.
 
-Runtime error 0x80 -- Execution Stopped
-
-I believe that is due to a missing generated of an indexed load instruction:
+All output comes from:
 
 106-bubblesort.pas:
  45         FOR i := 1 TO size DO
  46             writeln(arr[i])
 
-106-bubblesort.o1:
-0000018a         PUSH  1    <file-number>
-0000018d         DUPH       <file-number><file-number>
-0000018e         LDH   6    <file-number><file-number><index>
-00000191         PUSH  1    <file-number><file-number><index><min-value>
-00000194         SUB        <file-number><file-number><index - min-value>
-00000195         PUSH  2    <file-number><file-number><index - min-value><size>
-00000198         MUL        <file-number><file-number><(index - min-value) * size>
+Presumably there is some error in the generated code:
 
-This should be done in pas_ArrayIndex(), but the complexity is that the size
-may be different depending on the base data type (which is available in
-pas_ArrayIndex()).
+00000191 ; LINE  0:46
+00000195         PUSHS
+00000196         PUSH  1        <file-number>
+00000199         DUPH           <file-number><file-number>
+0000019a         LDH   6        <file-number><file-number><index>
+0000019d         PUSH  1        <file-number><file-number><index><min-value>
+000001a0         SUB            <file-number><file-number><index - min-value>
+000001a1         PUSH  2        <file-number><file-number><index - min-value><element-size>
+000001a4         MUL            <file-number><file-number><(index - min-value) * element-size>
+000001a5         LDXH  8        <file-number><file-number><value>
+000001a8         SYSIO WRITEINT <file-number>
+000001ab         SYSIO WRITELN
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)
@@ -123,7 +139,7 @@ Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
 
 ########src/601-readfile.pas########
-Line 0:0020 Error 1e Token 29
+Runtime error 0x85 -- Execution Stopped
 
 Line:
  20       writeln('Name: ',Student.s_name);
@@ -136,12 +152,14 @@ Where:
   7    end;
 
 Error:
-207 #define eINVTYPE         ((uint16_t) 0x1e)
+287 #define eBADSYSIOFUNC    ((uint16_t) 0x85)
 
 Token: ')'
 
 Analysis:
-There is no logic to support type sSTRING in simpleFactor().  Any place an expression is expected and a string type is provided will fail.
+Compiles fine, but generates run-time errors.
+
+Probably an issue with STRING types as factors in expression processing.
 
 ########src/602-writefile.pas########
 Line 0:0016 Error 1e Token 09
@@ -182,25 +200,18 @@ Analysis:
 Not yet analyzed.  Perhaps an issue related to string types.
 
 ########src/604-textfile.pas########
-Line 0:0020 Error 1e Token 29
+Compiles without error but generates errors at run-time:
 
-Line:
- 20       writeln('Name: ',Student.s_name);
-Where
-  2 type
-  3    StudentRecord = Record
-  4       s_name: String;
-  5       s_addr: String;
-  6       s_batchcode: String;
-  7    end;
-
-Error:
-207 #define eINVTYPE         ((uint16_t) 0x1e)
-
-Token: ')'
+  ERROR: pexec_AssignFile: bad file number: 12
+  ERROR: pexec_OpenFile: Bad open mode,"No such file or directory": 4276736
 
 Analysis:
-Same as src/601-readfile.pas
+
+The first error occurs when AssignFile() is called to set the file's file
+name.  However, the stack paramters appear to be scramble and the assign fails.
+
+The second errors when OpenFile is called but this is just a consequence of
+failing to assign the file name.
 
 ########src/605-subprogram.pas########
 Line 0:0052 Error 2c Token 4b
@@ -229,38 +240,20 @@ filename has a type of string and the string type is not handled in
 the switch statement leading up to the error.
 
 ########src/803-redirect.pas########
-Line 0:0065 Error 1e Token 3d
+Line 0:0068 Error 3a Token 01 (lowercase)
 
 Line:
- 65         if (name = 'lstnavigation') or (name = 'navigation') or (name = 'goto') then
+ 68                   if lowercase(copy(value, 1, 5)) = 'http:' then
 
 Error:
-200 #define eINVTYPE         ((uint16_t) 0x1e)
+ 44 #define tIDENT           0x01
 
-Token:
- 66 #define tEQ              ('=')
+
+Token: ')'
 
 Analysis:
-Failure occurs while processing the 'line' symbol:
-
-  (gdb) p tkn_strt
-  $2 = 0x80008a291 "NAME"
-
-On the second time through simpleFactor
-(gdb) bt
-#0  error (errcode=30) at perr.c:128
-#1  0x0000000100408d6e in simpleFactor (varPtr=0xffffc590, factorFlags=9 '\t') at pexpr.c:1649
-&&&& simpleFactor: token=3d ('=') sKind=56
- 93 #define sVAR_PARM        0x56
-
-#2  0x0000000100408cbb in simpleFactor (varPtr=0xffffc590, factorFlags=9 '\t') at pexpr.c:1621
-&&&& simpleFactor: token=3d ('=') sKind=4b
- 81 #define sSTRING          0x4b /* String storage type */
-
-#3  0x0000000100408240 in complexFactor () at pexpr.c:1171
-...
-
-The problem is that operations on the 'string' are not yet implemented.
+The Free Pascal, non-standard lowercase() function is not supported.
+Appears as an undefined identifier.
 
 ########src/901-pageutils.pas########
 Line 0:0654 Error 0f Token 45

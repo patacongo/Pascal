@@ -90,13 +90,13 @@ static uint32_t g_nStackLevelReferenceChanges = 0;
  */
 
 static void
-pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *pVar)
+pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *varPtr)
 {
   /* Sanity checking.  Double check nesting level and also since this is
    * a level zero reference, then the offset must be positive
    */
 
-  if ((pVar->sLevel != 0) || (pVar->sParm.v.offset < 0))
+  if (varPtr->sLevel != 0 || varPtr->sParm.v.offset < 0)
     {
       error(eHUH);
     }
@@ -104,16 +104,16 @@ pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *pVar)
     {
       /* Generate the P-code */
 
-      insn_GenerateDataOperation(eOpCode, pVar->sParm.v.offset);
+      insn_GenerateDataOperation(eOpCode, varPtr->sParm.v.offset);
 
       /* If the variable is undefined, also generate a relocation
        * record.
        */
 
-      if ((pVar->sParm.v.flags & SVAR_EXTERNAL) != 0)
+      if ((varPtr->sParm.v.flags & SVAR_EXTERNAL) != 0)
         {
           (void)poffAddRelocation(poffHandle, RLT_LDST,
-                                  pVar->sParm.v.symIndex, 0);
+                                  varPtr->sParm.v.symIndex, 0);
         }
     }
 }
@@ -319,18 +319,18 @@ void pas_GenerateLevelReference(enum pcode_e eOpCode, uint16_t wLevel,
  * stack offsets.
  */
 
-void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *pVar)
+void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *varPtr)
 {
   /* Is this variable declared at level 0 (i.e., it has global scope)
    * that is being offset via a nesting level?
    */
 
-  if (pVar->sLevel == 0)
+  if (varPtr->sLevel == 0)
     {
       int32_t level0Opcode = pas_GetLevel0Opcode(eOpCode);
       if (PCODE_VALID(level0Opcode))
         {
-          pas_GenerateLevel0StackReference(level0Opcode, pVar);
+          pas_GenerateLevel0StackReference(level0Opcode, varPtr);
           return;
         }
     }
@@ -343,15 +343,15 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *pVar)
    * (assuming that the architecture has one).
    */
 
-  pas_SetLevelStackPointer(pVar->sLevel);
+  pas_SetLevelStackPointer(varPtr->sLevel);
 
   /* Generate the P-Code at the defined offset and with the specified
    * static level offset (in case that the architecture does not have
    * an LSP)
    */
 
-  insn_GenerateLevelReference(eOpCode, (g_level - pVar->sLevel),
-                              pVar->sParm.v.offset);
+  insn_GenerateLevelReference(eOpCode, (g_level - varPtr->sLevel),
+                              varPtr->sParm.v.offset);
 }
 
 /***********************************************************************/
@@ -380,12 +380,12 @@ void pas_GenerateProcedureCall(symbol_t *pProc)
    */
 
 #if 0 /* Not yet */
-  if ((pVar->sParm.p.flags & SVAR_EXTERNAL) != 0)
+  if ((varPtr->sParm.p.flags & SVAR_EXTERNAL) != 0)
     {
       /* For now */
 # error "Don't know what last parameter should be"
       (void)poffAddRelocation(poffHandle, RLT_PCAL,
-                              pVar->sParm.p.symIndex,
+                              varPtr->sParm.p.symIndex,
                               0);
     }
 #endif
@@ -442,14 +442,14 @@ void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
  * exported by a unit.
  */
 
-void pas_GenerateStackExport(symbol_t *pVar)
+void pas_GenerateStackExport(symbol_t *varPtr)
 {
   poffLibSymbol_t symbol;
 
 #if CONFIG_DEBUG
   /* Get the parent type of the variable */
 
-  symbol_t *typePtr = pVar->sParm.v.parent;
+  symbol_t *typePtr = varPtr->sParm.v.parent;
 
   /* Perform some sanity checking:
    * - Must have a parent type
@@ -457,9 +457,9 @@ void pas_GenerateStackExport(symbol_t *pVar)
    * - Must be declared at static nesting level zero
    */
 
-  if ((!typePtr) ||
-      ((pVar->sParm.v.flags & SVAR_EXTERNAL) != 0) ||
-      (pVar->sLevel != 0))
+  if (typePtr == NULL ||
+      (varPtr->sParm.v.flags & SVAR_EXTERNAL) != 0 ||
+      varPtr->sLevel != 0)
     {
       error(eSYMTABINTERNAL);
     }
@@ -470,9 +470,9 @@ void pas_GenerateStackExport(symbol_t *pVar)
   symbol.type  = STT_DATA;
   symbol.align = STA_8BIT; /* for now */
   symbol.flags = STF_NONE;
-  symbol.name  = pVar->sName;
-  symbol.value = pVar->sParm.v.offset;
-  symbol.size  = pVar->sParm.v.size;
+  symbol.name  = varPtr->sName;
+  symbol.value = varPtr->sParm.v.offset;
+  symbol.size  = varPtr->sParm.v.size;
 
   /* Add the symbol to the symbol table */
 
@@ -484,14 +484,14 @@ void pas_GenerateStackExport(symbol_t *pVar)
  * imported by a program or unit from a unit.
  */
 
-void pas_GenerateStackImport(symbol_t *pVar)
+void pas_GenerateStackImport(symbol_t *varPtr)
 {
   poffLibSymbol_t symbol;
 
 #if CONFIG_DEBUG
   /* Get the parent type of the variable */
 
-  symbol_t *typePtr = pVar->sParm.v.parent;
+  symbol_t *typePtr = varPtr->sParm.v.parent;
 
   /* Perform some sanity checking
    * - Must have a parent type
@@ -499,9 +499,9 @@ void pas_GenerateStackImport(symbol_t *pVar)
    * - Must be declared at static nesting level zero
    */
 
-  if ((!typePtr) ||
-      ((pVar->sParm.v.flags & SVAR_EXTERNAL) == 0) ||
-      (pVar->sLevel != 0))
+  if (typePtr == NULL ||
+      (varPtr->sParm.v.flags & SVAR_EXTERNAL) == 0 ||
+      varPtr->sLevel != 0)
     {
       error(eSYMTABINTERNAL);
     }
@@ -512,13 +512,13 @@ void pas_GenerateStackImport(symbol_t *pVar)
   symbol.type  = STT_DATA;
   symbol.align = STA_8BIT; /* for now */
   symbol.flags = STF_UNDEFINED;
-  symbol.name  = pVar->sName;
-  symbol.value = pVar->sParm.v.offset; /* for now */
-  symbol.size  = pVar->sParm.v.size;
+  symbol.name  = varPtr->sName;
+  symbol.value = varPtr->sParm.v.offset; /* for now */
+  symbol.size  = varPtr->sParm.v.size;
 
   /* Add the symbol to the symbol table */
 
-  pVar->sParm.v.symIndex = poffAddSymbol(poffHandle, &symbol);
+  varPtr->sParm.v.symIndex = poffAddSymbol(poffHandle, &symbol);
 }
 
 /***********************************************************************/
@@ -539,33 +539,41 @@ void pas_GenerateProcExport(symbol_t *pProc)
 
   /* Check for a function reference which must have a valid parent type */
 
-  if ((pProc->sKind == sFUNC) && (typePtr != NULL));
+  if (pProc->sKind == sFUNC && typePtr != NULL);
 
   /* Check for a procedure reference which must not have a valid type */
 
-  else  if ((pProc->sKind == sPROC) && (typePtr == NULL));
+  else  if (pProc->sKind == sPROC && typePtr == NULL);
 
   /* Anything else is an error */
 
   else
-    error(eSYMTABINTERNAL);
+    {
+      error(eSYMTABINTERNAL);
+    }
 
   /* The function / procedure should NOT be declared external and
    * only procedures declared at static nesting level zero can
    * be exported.
    */
 
-  if (((pProc->sParm.p.flags & SPROC_EXTERNAL) != 0) ||
-      (pProc->sLevel != 0))
-    error(eSYMTABINTERNAL);
+  if ((pProc->sParm.p.flags & SPROC_EXTERNAL) != 0 ||
+      pProc->sLevel != 0)
+    {
+      error(eSYMTABINTERNAL);
+    }
 #endif
 
   /* Everthing looks okay.  Create the symbol structure */
 
   if (pProc->sKind == sPROC)
-    symbol.type  = STT_PROC;
+    {
+      symbol.type  = STT_PROC;
+    }
   else
-    symbol.type  = STT_FUNC;
+    {
+      symbol.type  = STT_FUNC;
+    }
 
   symbol.align = STA_NONE;
   symbol.flags = STF_NONE;
@@ -596,11 +604,11 @@ void pas_GenerateProcImport(symbol_t *pProc)
 
   /* Check for a function reference which must have a valid parent type */
 
-  if ((pProc->sKind == sFUNC) && (typePtr != NULL));
+  if (pProc->sKind == sFUNC && typePtr != NULL);
 
   /* Check for a procedure reference which must not have a valid type */
 
-  else  if ((pProc->sKind == sPROC) && (typePtr == NULL));
+  else  if (pProc->sKind == sPROC && typePtr == NULL);
 
   /* Anything else is an error */
 
@@ -612,17 +620,23 @@ void pas_GenerateProcImport(symbol_t *pProc)
    * be exported.
    */
 
-  if (((pProc->sParm.p.flags & SPROC_EXTERNAL) == 0) ||
-      (pProc->sLevel != 0))
-    error(eSYMTABINTERNAL);
+  if ((pProc->sParm.p.flags & SPROC_EXTERNAL) == 0 ||
+      pProc->sLevel != 0)
+    {
+      error(eSYMTABINTERNAL);
+    }
 #endif
 
   /* Everthing looks okay.  Create the symbol structure */
 
   if (pProc->sKind == sPROC)
-    symbol.type  = STT_PROC;
+    {
+      symbol.type  = STT_PROC;
+    }
   else
-    symbol.type  = STT_FUNC;
+    {
+      symbol.type  = STT_FUNC;
+    }
 
   symbol.align = STA_NONE;
   symbol.flags = STF_UNDEFINED;
