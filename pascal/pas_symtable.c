@@ -196,7 +196,7 @@ static const symbolAlias_t g_aliasTable[] =
 
 /**************************************************************/
 
-const char *mapToAlias(const char *name)
+const char *pas_MapToAlias(const char *name)
 {
   const symbolAlias_t *ptr;               /* Point into symbol alias list */
   int16_t cmp;                            /* 0=equal; >0=past it */
@@ -230,7 +230,7 @@ const char *mapToAlias(const char *name)
 
 /**************************************************************/
 
-const reservedWord_t *findReservedWord(const char *name)
+const reservedWord_t *pas_FindReservedWord(const char *name)
 {
   const reservedWord_t *ptr;              /* Point into reserved word list */
   int16_t cmp;                            /* 0=equal; >0=past it */
@@ -264,7 +264,7 @@ const reservedWord_t *findReservedWord(const char *name)
 
 /***************************************************************/
 
-symbol_t *findSymbol(const char *inName, int tableOffset)
+symbol_t *pas_FindSymbol(const char *inName, int tableOffset)
 {
   int i;
 
@@ -313,12 +313,12 @@ static symbol_t *addSymbol(char *name, int16_t type)
 
 /***************************************************************/
 
-symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
-                        symbol_t *parent, symbol_t *index)
+symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
+                            symbol_t *parent, symbol_t *index)
 {
    symbol_t *typePtr;
 
-   TRACE(g_lstFile,"[addTypeDefine]");
+   TRACE(g_lstFile,"[pas_AddTypeDefine]");
 
    /* Get a slot in the symbol table */
 
@@ -352,12 +352,12 @@ symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
 
 /***************************************************************/
 
-symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
-                      symbol_t *parent)
+symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
+                          symbol_t *parent)
 {
    symbol_t *constPtr;
 
-   TRACE(g_lstFile,"[addConstant]");
+   TRACE(g_lstFile,"[pas_AddConstant]");
 
    /* Get a slot in the symbol table */
    constPtr = addSymbol(name, type);
@@ -379,11 +379,11 @@ symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
 
 /***************************************************************/
 
-symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size)
+symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
 {
   symbol_t *stringPtr;
 
-  TRACE(g_lstFile,"[addStringConst]");
+  TRACE(g_lstFile,"[pas_AddStringConstant]");
 
   /* Get a slot in the symbol table */
 
@@ -403,12 +403,12 @@ symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size)
 
 /***************************************************************/
 
-symbol_t *addFile(char *name, uint16_t fileNumber, uint16_t subType,
-                  struct symbol_s *fileTypePtr)
+symbol_t *pas_AddFile(char *name, uint16_t fileNumber, uint16_t subType,
+                      struct symbol_s *fileTypePtr)
 {
   symbol_t *filePtr;
 
-  TRACE(g_lstFile,"[addFile]");
+  TRACE(g_lstFile,"[pas_AddFile]");
 
   /* Get a slot in the symbol table */
 
@@ -429,12 +429,12 @@ symbol_t *addFile(char *name, uint16_t fileNumber, uint16_t subType,
 
 /***************************************************************/
 
-symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
-                    uint16_t nParms, symbol_t *parent)
+symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
+                           uint16_t nParms, symbol_t *parent)
 {
    symbol_t *procPtr;
 
-   TRACE(g_lstFile,"[addProcedure]");
+   TRACE(g_lstFile,"[pas_AddProcedure]");
 
    /* Get a slot in the symbol table */
    procPtr = addSymbol(name, type);
@@ -456,12 +456,12 @@ symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
 
 /***************************************************************/
 
-symbol_t *addVariable(char *name, uint8_t type, uint16_t offset,
-                   uint16_t size, symbol_t *parent)
+symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
+                          uint16_t size, symbol_t *parent)
 {
   symbol_t *varPtr;
 
-  TRACE(g_lstFile,"[addVariable]");
+  TRACE(g_lstFile,"[pas_AddVariable]");
 
   /* Get a slot in the symbol table */
 
@@ -484,11 +484,11 @@ symbol_t *addVariable(char *name, uint8_t type, uint16_t offset,
 
 /***************************************************************/
 
-symbol_t *addLabel(char *name, uint16_t label)
+symbol_t *pas_AddLabel(char *name, uint16_t label)
 {
   symbol_t *labelPtr;
 
-  TRACE(g_lstFile,"[addLabel]");
+  TRACE(g_lstFile,"[pas_AddLabel]");
 
   /* Get a slot in the symbol table */
 
@@ -508,11 +508,11 @@ symbol_t *addLabel(char *name, uint16_t label)
 
 /***************************************************************/
 
-symbol_t *addField(char *name, symbol_t *record)
+symbol_t *pas_AddField(char *name, symbol_t *record)
 {
    symbol_t *fieldPtr;
 
-   TRACE(g_lstFile,"[addField]");
+   TRACE(g_lstFile,"[pas_AddField]");
 
    /* Get a slot in the symbol table */
    fieldPtr = addSymbol(name, sRECORD_OBJECT);
@@ -530,14 +530,14 @@ symbol_t *addField(char *name, symbol_t *record)
 
 /***************************************************************/
 
-void primeSymbolTable(unsigned long symbolTableSize)
+void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 {
   int32_t trueValue   = BOOLEAN_TRUE;
   int32_t falseValue  = BOOLEAN_FALSE;
   int32_t maxintValue = MAXINT;
   symbol_t *typePtr;
 
-  TRACE(g_lstFile,"[primeSymbolTable]");
+  TRACE(g_lstFile,"[pas_PrimeSymbolTable]");
 
   /* Allocate and initialize symbol table */
 
@@ -551,14 +551,14 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard constants to the symbol table */
 
-  (void)addConstant("TRUE",   tBOOLEAN_CONST, &trueValue,   NULL);
-  (void)addConstant("FALSE",  tBOOLEAN_CONST, &falseValue,  NULL);
-  (void)addConstant("MAXINT", tINT_CONST,     &maxintValue, NULL);
-  (void)addConstant("NIL",    tNIL,           &falseValue,  NULL);
+  (void)pas_AddConstant("TRUE",   tBOOLEAN_CONST, &trueValue,   NULL);
+  (void)pas_AddConstant("FALSE",  tBOOLEAN_CONST, &falseValue,  NULL);
+  (void)pas_AddConstant("MAXINT", tINT_CONST,     &maxintValue, NULL);
+  (void)pas_AddConstant("NIL",    tNIL,           &falseValue,  NULL);
 
   /* Add the standard types to the symbol table */
 
-  typePtr = addTypeDefine("INTEGER", sINT, sINT_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("INTEGER", sINT, sINT_SIZE, NULL, NULL);
   if (typePtr)
     {
       g_parentInteger           = typePtr;
@@ -566,23 +566,23 @@ void primeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.maxValue = MAXINT;
     }
 
-  typePtr = addTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.minValue = trueValue;
       typePtr->sParm.t.maxValue = falseValue;
     }
 
-  typePtr = addTypeDefine("REAL", sREAL, sREAL_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("REAL", sREAL, sREAL_SIZE, NULL, NULL);
 
-  typePtr = addTypeDefine("CHAR", sCHAR, sCHAR_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("CHAR", sCHAR, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.minValue = MINCHAR;
       typePtr->sParm.t.maxValue = MAXCHAR;
     }
 
-  typePtr = addTypeDefine("TEXTFILE", sTEXTFILE, sCHAR_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("TEXTFILE", sTEXTFILE, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.subType  = sCHAR;
@@ -597,7 +597,7 @@ void primeSymbolTable(unsigned long symbolTableSize)
    * storage
    */
 
-  typePtr = addTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL, NULL);
   if (typePtr)
     {
       g_parentString            = typePtr;
@@ -611,13 +611,13 @@ void primeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard files to the symbol table */
 
-  (void)addFile("INPUT",  INPUT_FILE_NUMBER,  sTEXTFILE, NULL);
-  (void)addFile("OUTPUT", OUTPUT_FILE_NUMBER, sTEXTFILE, NULL);
+  (void)pas_AddFile("INPUT",  INPUT_FILE_NUMBER,  sTEXTFILE, NULL);
+  (void)pas_AddFile("OUTPUT", OUTPUT_FILE_NUMBER, sTEXTFILE, NULL);
 }
 
 /***************************************************************/
 
-void verifyLabels(int32_t symIndex)
+void pas_VerifyLabels(int32_t symIndex)
 {
    int16_t i;                 /* loop index */
 

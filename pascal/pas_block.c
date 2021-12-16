@@ -219,7 +219,7 @@ void block()
 
   /* Make sure all declared labels were defined in the block */
 
-  verifyLabels(saveNSym);
+  pas_VerifyLabels(saveNSym);
 
   /* "Pop" declarations local to this block */
 
@@ -596,7 +596,7 @@ static void pas_DeclareLabel(void)
            labelname = g_stringSP;
            (void)sprintf(labelname, "%" PRId32, g_tknInt);
            while (*g_stringSP++);
-           (void)addLabel(labelname, ++g_label);
+           (void)pas_AddLabel(labelname, ++g_label);
            getToken();
          }
        else error(eINTCONST);
@@ -653,17 +653,17 @@ static void pas_DeclareConst(void)
     case tCHAR_CONST :
     case tBOOLEAN_CONST :
     case sSCALAR_OBJECT :
-      (void)addConstant(const_name, constantToken, &constantInt, NULL);
+      (void)pas_AddConstant(const_name, constantToken, &constantInt, NULL);
       break;
 
     case tREAL_CONST :
-      (void)addConstant(const_name, constantToken, (int32_t*)&constantReal, NULL);
+      (void)pas_AddConstant(const_name, constantToken, (int32_t*)&constantReal, NULL);
       break;
 
     case tSTRING_CONST :
       {
         uint32_t offset = poffAddRoDataString(poffHandle, constantStart);
-        (void)addStringConst(const_name, offset, strlen(constantStart));
+        (void)pas_AddStringConstant(const_name, offset, strlen(constantStart));
       }
       break;
 
@@ -727,7 +727,7 @@ static symbol_t *pas_DeclareOrdinalType(char *typeName)
        typeIdPtr = pas_TypeIdentifier(1);
        if (typeIdPtr)
          {
-           typePtr = addTypeDefine(typeName, typeIdPtr->sParm.t.type,
+           typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.type,
                                     g_dwVarSize, typeIdPtr, NULL);
          }
      }
@@ -796,11 +796,11 @@ static symbol_t *pas_DeclareVar(void)
       if (!isIntAligned(g_dStack) && pas_IntAlignRequired(typePtr))
         {
           g_dStack = intAlign(g_dStack);
-	}
+    }
 
       /* Add the new variable to the symbol table */
 
-      varPtr = addVariable(varName, varType, g_dStack, g_dwVarSize, typePtr);
+      varPtr = pas_AddVariable(varName, varType, g_dStack, g_dwVarSize, typePtr);
 
       /* If the variable is declared in an interface section at level zero,
        * then it is a candidate to imported or exported.
@@ -891,7 +891,7 @@ static void pas_ProcedureDeclaration(void)
 
   /* Add the procedure to the symbol table */
 
-  procPtr = addProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
+  procPtr = pas_AddProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
 
   /* Save the string stack pointer so that we can release all
    * formal parameter strings later.  Then get the next token.
@@ -1006,7 +1006,7 @@ static void pas_FunctionDeclaration(void)
       return;
     }
 
-  funcPtr = addProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
+  funcPtr = pas_AddProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
 
   /* NOTE:  The level associated with the FUNCTION symbol is the level
    * At which the procedure was declared.  Everything declare within the
@@ -1046,7 +1046,7 @@ static void pas_FunctionDeclaration(void)
    * below).
    */
 
-  valPtr  = addVariable(funcName, sINT, 0, sINT_SIZE, NULL);
+  valPtr  = pas_AddVariable(funcName, sINT, 0, sINT_SIZE, NULL);
 
   /* Get function type, return value type/size and offset to return value */
 
@@ -1155,8 +1155,8 @@ static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
            * either '[]' or '()' to delimit the size specification.
            */
 
-          if (((g_token == '[') || (g_token == '(')) &&
-              ((typePtr->sParm.t.flags & STYPE_VARSIZE) != 0))
+          if ((g_token == '[' || g_token == '(') &&
+              (typePtr->sParm.t.flags & STYPE_VARSIZE) != 0)
             {
               uint16_t term_token;
               uint16_t errcode;
@@ -1322,7 +1322,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
     {
       int32_t nObjects;
       nObjects = 0;
-      typePtr = addTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL, NULL);
 
       /* Now declare each instance of the scalar */
 
@@ -1332,7 +1332,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
           if (g_token != tIDENT) error(eIDENT);
           else
             {
-              (void)addConstant(g_tokenString, sSCALAR_OBJECT, &nObjects, typePtr);
+              (void)pas_AddConstant(g_tokenString, sSCALAR_OBJECT, &nObjects, typePtr);
               nObjects++;
               getToken();
             }
@@ -1378,7 +1378,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
 
       /* Create the new INTEGER subrange type */
 
-      typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL, NULL);
       typePtr->sParm.t.subType  = sINT;
       typePtr->sParm.t.minValue = value;
       typePtr->sParm.t.maxValue = MAXINT;
@@ -1429,7 +1429,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
     {
       /* Create the new CHAR subrange type */
 
-      typePtr = addTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL, NULL);
       typePtr->sParm.t.subType  = sCHAR;
       typePtr->sParm.t.minValue = g_tknInt;
       typePtr->sParm.t.maxValue = MAXCHAR;
@@ -1459,7 +1459,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
      {
       /* Create the new SCALAR subrange type */
 
-      typePtr = addTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr, NULL);
       typePtr->sParm.t.subType  = g_token;
       typePtr->sParm.t.minValue = g_tknInt;
       typePtr->sParm.t.maxValue = MAXINT;
@@ -1511,7 +1511,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
       typeIdPtr = pas_TypeIdentifier(1);
       if (typeIdPtr)
         {
-          typePtr = addTypeDefine(typeName, sPOINTER, g_dwVarSize,
+          typePtr = pas_AddTypeDefine(typeName, sPOINTER, g_dwVarSize,
                                   typeIdPtr, NULL);
         }
       else
@@ -1552,7 +1552,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
           typeIdPtr = pas_GetArrayBaseType(indexTypePtr);
           if (typeIdPtr)
             {
-              typePtr = addTypeDefine(typeName, sARRAY, g_dwVarSize,
+              typePtr = pas_AddTypeDefine(typeName, sARRAY, g_dwVarSize,
                                       typeIdPtr, indexTypePtr);
             }
         }
@@ -1604,7 +1604,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
         {
           /* Declare the SET type */
 
-          typePtr = addTypeDefine(typeName, sSET_OF,
+          typePtr = pas_AddTypeDefine(typeName, sSET_OF,
                                   typeIdPtr->sParm.t.asize, typeIdPtr,
                                   NULL);
 
@@ -1659,7 +1659,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
       typeIdPtr = pas_TypeDenoter(NULL, 1);
       if (typeIdPtr)
         {
-          typePtr = addTypeDefine(typeName, sFILE, g_dwVarSize,
+          typePtr = pas_AddTypeDefine(typeName, sFILE, g_dwVarSize,
                                   typeIdPtr, NULL);
           if (typePtr)
             {
@@ -1678,7 +1678,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
       /* Get the type-denoter */
 
-      typeIdPtr = addTypeDefine(typeName, sTEXTFILE, g_dwVarSize,
+      typeIdPtr = pas_AddTypeDefine(typeName, sTEXTFILE, g_dwVarSize,
                                 g_tknPtr, NULL);
       if (typePtr)
         {
@@ -1936,7 +1936,7 @@ static symbol_t *pas_GetArrayIndexType(void)
            * added to deal with ordinal type names as index-type.
            */
 
-         indexTypePtr = addTypeDefine(NULL, indexType, indexSize, NULL, NULL);
+         indexTypePtr = pas_AddTypeDefine(NULL, indexType, indexSize, NULL, NULL);
           if (indexTypePtr)
             {
               indexTypePtr->sParm.t.minValue = minValue;
@@ -1998,7 +1998,7 @@ static symbol_t *pas_DeclareRecord(char *recordName)
 
   /* Declare the new RECORD type */
 
-  recordPtr = addTypeDefine(recordName, sRECORD, 0, NULL, NULL);
+  recordPtr = pas_AddTypeDefine(recordName, sRECORD, 0, NULL, NULL);
 
   /* Then declare the field-list associated with the RECORD
    * FORM: field-list =
@@ -2141,7 +2141,7 @@ static symbol_t *pas_DeclareRecord(char *recordName)
 
               /* Declare a <field> with this <identifier> as its name */
 
-              fieldPtr = addField(fieldName, recordPtr);
+              fieldPtr = pas_AddField(fieldName, recordPtr);
 
               /* Increment the number of fields in the record */
 
@@ -2352,59 +2352,58 @@ static symbol_t *pas_DeclareRecord(char *recordName)
 
 static symbol_t *pas_DeclareField(symbol_t *recordPtr)
 {
-   symbol_t *fieldPtr = NULL;
-   symbol_t *typePtr;
+  symbol_t *fieldPtr = NULL;
+  symbol_t *typePtr;
 
-   TRACE(g_lstFile,"[pas_DeclareField]");
+  TRACE(g_lstFile,"[pas_DeclareField]");
 
-   /* Declare one record-section with a record.
-    * FORM: record-section = identifier-list ':' type-denoter
-    * FORM: identifier-list = identifier { ',' identifier }
-    */
+  /* Declare one record-section with a record.
+   * FORM: record-section = identifier-list ':' type-denoter
+   * FORM: identifier-list = identifier { ',' identifier }
+   */
 
-   if (g_token != tIDENT) error(eIDENT);
-   else {
+  if (g_token != tIDENT) error(eIDENT);
+  else
+    {
+      /* Declare a <field> with this <identifier> as its name */
 
-     /* Declare a <field> with this <identifier> as its name */
+      fieldPtr = pas_AddField(g_tokenString, recordPtr);
+      getToken();
 
-     fieldPtr = addField(g_tokenString, recordPtr);
-     getToken();
+      /* Check for multiple fields of this <type> */
 
-     /* Check for multiple fields of this <type> */
+      if (g_token == ',')
+        {
+          getToken();
+          typePtr = pas_DeclareField(recordPtr);
+        }
+      else
+        {
+          if (g_token != ':') error(eCOLON);
+          else getToken();
 
-     if (g_token == ',') {
+          /* Use the existing type or declare a new type with no name */
 
-       getToken();
-       typePtr = pas_DeclareField(recordPtr);
+          typePtr = pas_TypeDenoter(NULL, 1);
+        }
 
-     }
-     else {
+      recordPtr->sParm.t.maxValue++;
+      if (typePtr)
+        {
+          /* Copy the size of field from the sTYPE entry into the <field>
+           * type entry.  NOTE:  This element is not essential since it
+           * can be obtained from the parent type pointer.
+           */
 
-       if (g_token != ':') error(eCOLON);
-       else getToken();
+          fieldPtr->sParm.r.size     = typePtr->sParm.t.asize;
 
-       /* Use the existing type or declare a new type with no name */
+          /* Save a pointer back to the parent field type */
 
-       typePtr = pas_TypeDenoter(NULL, 1);
-     }
+          fieldPtr->sParm.r.parent   = typePtr;
+        }
+    }
 
-     recordPtr->sParm.t.maxValue++;
-     if (typePtr) {
-
-       /* Copy the size of field from the sTYPE entry into the <field> */
-       /* type entry.  NOTE:  This element is not essential since it */
-       /* can be obtained from the parent type pointer */
-
-       fieldPtr->sParm.r.size     = typePtr->sParm.t.asize;
-
-       /* Save a pointer back to the parent field type */
-
-       fieldPtr->sParm.r.parent   = typePtr;
-
-     }
-   }
-
-   return typePtr;
+  return typePtr;
 }
 
 /***************************************************************/
@@ -2431,7 +2430,7 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
      {
        /* Set up for this formal parameter */
 
-       varPtr = addVariable(g_tokenString, sINT, 0, sINT_SIZE, NULL);
+       varPtr = pas_AddVariable(g_tokenString, sINT, 0, sINT_SIZE, NULL);
 
        /* The parameter name may be followed by either ',' or ':' */
 

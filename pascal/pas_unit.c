@@ -58,7 +58,7 @@
 #include "pas_block.h"    /* for block(), constantDefinitionGroup(), etc. */
 #include "pas_codegen.h"  /* for pas_Generate*() */
 #include "pas_token.h"    /* for getToken() */
-#include "pas_symtable.h" /* for addFile() */
+#include "pas_symtable.h" /* for pas_AddFile() */
 #include "pas_error.h"    /* for error() */
 #include "pas_program.h"  /* for usesSection() */
 #include "pas_unit.h"
@@ -455,7 +455,7 @@ static void exportedProcedureHeading(void)
        return;
      } /* endif */
 
-   procPtr = addProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
+   procPtr = pas_AddProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
 
    /* Mark the procedure as external */
 
@@ -538,7 +538,7 @@ static void exportedFunctionHeading(void)
        return;
      } /* endif */
 
-   funcPtr = addProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
+   funcPtr = pas_AddProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
 
    /* Mark the procedure as external */
 

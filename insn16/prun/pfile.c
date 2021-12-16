@@ -82,7 +82,7 @@ typedef struct pexecFileTable_s pexecFileTable_t;
 static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
 static void     pexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
 static void     pexec_AssignFile(uint16_t fileNumber, bool text,
-                                 const char *fileName);
+                                 const char *fileName, uint16_t size);
 static void     pexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
 static void     pexec_CloseFile(uint16_t fileNumber);
 static void     pexec_RecordSize(uint16_t fileNumber, uint16_t size);
@@ -226,7 +226,8 @@ static void pexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
   *dest   = result.hw[3];
 }
 
-static void pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName)
+static void pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
+                             uint16_t size)
 {
   if (fileNumber >= MAX_OPEN_FILES)
     {
@@ -278,8 +279,7 @@ static void pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
       if (g_fileTable[fileNumber].stream == NULL)
         {
           fprintf(stderr, g_openFailed, "pexec_OpenFile",
-                  strerror(errno), g_fileTable[fileNumber].fileName,
-                  fileNumber);
+                  strerror(errno), fileNumber);
         }
       else
         {
@@ -649,12 +649,12 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
      */
 
     case xASSIGNFILE :
-      POP(st, address);     /* File name string address */
       POP(st, size);        /* File name string size */
+      POP(st, address);     /* File name string address */
       POP(st, value);       /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
-      pexec_AssignFile(fileNumber, (bool)value,
-                       (const char *)&st->dstack.b[address]);
+      pexec_AssignFile(fileNumber, (value != 0),
+                       (const char *)&st->dstack.b[address], size);
       break;
 
     /* RESET: TOS = File number */

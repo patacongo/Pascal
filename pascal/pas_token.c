@@ -488,11 +488,11 @@ static void identifier(void)
    * pascall compilers.
    */
 
-  aliasedName = mapToAlias(g_tokenString);
+  aliasedName = pas_MapToAlias(g_tokenString);
 
   /* Check if the (possibly aliased) identifier is a reserved word */
 
-  rptr = findReservedWord(aliasedName);
+  rptr = pas_FindReservedWord(aliasedName);
   if (rptr)
     {
       g_token      = rptr->rtype;             /* get type from rsw table */
@@ -506,7 +506,7 @@ static void identifier(void)
 
   else
     {
-      g_tknPtr = findSymbol(aliasedName, g_symStart);
+      g_tknPtr = pas_FindSymbol(aliasedName, g_symStart);
       if (g_tknPtr)
         {
           g_token    = g_tknPtr->sKind;       /* get type from symbol table */

@@ -202,16 +202,12 @@ Not yet analyzed.  Perhaps an issue related to string types.
 ########src/604-textfile.pas########
 Compiles without error but generates errors at run-time:
 
-  ERROR: pexec_AssignFile: bad file number: 12
-  ERROR: pexec_OpenFile: Bad open mode,"No such file or directory": 4276736
+  ERROR: pexec_OpenFile: Bad open mode,"No such file or directory": 0
 
 Analysis:
 
-The first error occurs when AssignFile() is called to set the file's file
-name.  However, the stack paramters appear to be scramble and the assign fails.
-
-The second errors when OpenFile is called but this is just a consequence of
-failing to assign the file name.
+This is not really an error.  The program depes on the existence of a file
+called Students.dat which does not exist.
 
 ########src/605-subprogram.pas########
 Line 0:0052 Error 2c Token 4b
@@ -238,6 +234,24 @@ readln functions:
 
 filename has a type of string and the string type is not handled in
 the switch statement leading up to the error.
+
+########src/606-addfiledata.pas########
+Line 0:0051 Error 2c Token 4b
+
+Line:
+ 51    readln(filename);
+Where:
+  7 var
+  9    filename: string;
+
+Error:
+222 #define ePTRADR          ((uint16_t) 0x2c)
+
+Token:
+ 83 #define sSTRING          0x4b /* String storage type */
+
+Analysis:
+I haven't looked into this yet
 
 ########src/803-redirect.pas########
 Line 0:0068 Error 3a Token 01 (lowercase)

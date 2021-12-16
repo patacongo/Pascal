@@ -57,25 +57,25 @@ extern unsigned int g_nConst;        /* Number constant table entries */
  * Public Function Prototypes
  ***************************************************************************/
 
-const char *mapToAlias(const char *name);
+const char *pas_MapToAlias(const char *name);
 const reservedWord_t *
-          findReservedWord(const char *name);
-symbol_t *findSymbol(const char *inName, int tableOffset);
-symbol_t *addTypeDefine(char *name, uint8_t type, uint16_t size,
-                        symbol_t *parent, symbol_t *index);
-symbol_t *addConstant(char *name, uint8_t type, int32_t *value,
-                      symbol_t *parent);
-symbol_t *addStringConst(char *name, uint32_t offset, uint32_t size);
-symbol_t *addFile(char *name, uint16_t fileNumber, uint16_t subType,
-                  struct symbol_s *fileTypePtr);
-symbol_t *addLabel(char *name, uint16_t label);
-symbol_t *addProcedure(char *name, uint8_t type, uint16_t label,
-                       uint16_t nParms, symbol_t *parent);
-symbol_t *addVariable(char *name, uint8_t type, uint16_t offset,
-                      uint16_t size, symbol_t *parent);
-symbol_t *addField(char *name, symbol_t *record);
-void   primeSymbolTable(unsigned long symbolTableSize);
-void   verifyLabels(int32_t symIndex);
+          pas_FindReservedWord(const char *name);
+symbol_t *pas_FindSymbol(const char *inName, int tableOffset);
+symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
+                            symbol_t *parent, symbol_t *index);
+symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
+                          symbol_t *parent);
+symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size);
+symbol_t *pas_AddFile(char *name, uint16_t fileNumber, uint16_t subType,
+                      struct symbol_s *fileTypePtr);
+symbol_t *pas_AddLabel(char *name, uint16_t label);
+symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
+                           uint16_t nParms, symbol_t *parent);
+symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
+                          uint16_t size, symbol_t *parent);
+symbol_t *pas_AddField(char *name, symbol_t *record);
+void      pas_PrimeSymbolTable(unsigned long symbolTableSize);
+void      pas_VerifyLabels(int32_t symIndex);
 
 #if CONFIG_DEBUG
 void   dumpTables(void);

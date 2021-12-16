@@ -2027,7 +2027,7 @@ FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
    */
 
   stacksize    = attr->varsize + adjusted_rosize + attr->strsize;
-  st->dstack.b = (uint8_t*)malloc(stacksize);
+  st->dstack.b = (uint8_t *)malloc(stacksize);
   if (!st->dstack.b)
     {
       free(st);

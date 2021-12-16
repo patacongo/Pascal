@@ -56,7 +56,7 @@
 #include "pas_block.h"    /* for block() */
 #include "pas_codegen.h"  /* for pas_Generate*() */
 #include "pas_token.h"    /* for getToken() */
-#include "pas_symtable.h" /* for addFile() */
+#include "pas_symtable.h" /* for pas_AddFile() */
 #include "pofflib.h"      /* For poff*() functions*/
 #include "paslib.h"       /* for extension() */
 #include "pas_error.h"    /* for error() */
@@ -120,7 +120,7 @@ void program(void)
           getToken();
           if (g_token == tIDENT)
             {
-              (void)addFile(g_tokenString, ++g_nFiles, sTEXTFILE, NULL);
+              (void)pas_AddFile(g_tokenString, ++g_nFiles, sTEXTFILE, NULL);
               g_stringSP = g_tokenString;
               getToken();
             }

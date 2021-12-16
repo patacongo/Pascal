@@ -90,7 +90,7 @@
 
 /* The representation used on the Pascal runtime stack then duplicates the
  * size and includes a reference to the string stack data.  Order on the
- * run-time stack is like:
+ * run-time stack is like (assuming push-down stack):
  *
  *  TOS + n     = String size
  *  TOS + n + 1 = 16-bit pointer to the string data.

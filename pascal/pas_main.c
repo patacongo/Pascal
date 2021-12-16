@@ -64,7 +64,7 @@
 #include "pas_procedure.h" /* For pas_PrimeStandardProcedures */
 #include "pas_function.h"  /* For pas_PrimeStandardFunctions */
 #include "pas_token.h"     /* For primeTokenizer */
-#include "pas_symtable.h"  /* For primeSymbolTable */
+#include "pas_symtable.h"  /* For pas_PrimeSymbolTable */
 #include "pas_program.h"   /* for program() */
 #include "pas_unit.h"      /* for unit() */
 #include "pas_error.h"     /* for error() */
@@ -333,7 +333,7 @@ int main(int argc, char *argv[])
   /* Initialization */
 
   primeSignalHandlers();
-  primeSymbolTable(MAX_SYM);
+  pas_PrimeSymbolTable(MAX_SYM);
   pas_PrimeStandardProcedures();
   pas_PrimeStandardFunctions();
   primeTokenizer(MAX_STRINGS);
