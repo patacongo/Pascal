@@ -106,11 +106,11 @@ static void pas_WithStatement    (void);  /* With statement */
 
 /****************************************************************************/
 
-void statement(void)
+void pas_Statement(void)
 {
   symbol_t *symPtr;     /* Save Symbol Table pointer to token */
 
-  TRACE(g_lstFile,"[statement");
+  TRACE(g_lstFile,"[pas_Statement");
 
   /* Generate file/line number pseudo-operation to facilitate P-Code testing */
 
@@ -207,7 +207,7 @@ void statement(void)
 
       /* Other Statements */
 
-    case tBEGIN        : compoundStatement(); break;
+    case tBEGIN        : pas_CompoundStatement(); break;
     case tWITH         : pas_WithStatement(); break;
 
       /* None of the above, try standard procedures */
@@ -1102,7 +1102,7 @@ static void pas_IfStatement(void)
 
       /* Parse the <statment> following the THEN token */
 
-      statement();
+      pas_Statement();
 
       /* Save the LSP after generating the THEN <statement>.  We will compare the
        * elseLSP to the thenLSP below.
@@ -1139,7 +1139,7 @@ static void pas_IfStatement(void)
            * ENDIF label.
            */
 
-          statement();
+          pas_Statement();
 
           /* Save the LSP after generating the ELSE <statement>.  We will
            * compare elseLSP to the thenLSP below.
@@ -1169,16 +1169,16 @@ static void pas_IfStatement(void)
 
 /***********************************************************************/
 
-void compoundStatement(void)
+void pas_CompoundStatement(void)
 {
-   TRACE(g_lstFile,"[compoundStatement]");
+   TRACE(g_lstFile,"[pas_CompoundStatement]");
 
    /* Process statements until END encountered */
 
    do
      {
        getToken();
-       statement();
+       pas_Statement();
      }
    while (g_token == ';');
 
@@ -1207,7 +1207,7 @@ void pas_RepeatStatement ()
 
        /* Process <statement> */
 
-       statement();
+       pas_Statement();
      }
    while (g_token == ';');
 
@@ -1290,7 +1290,7 @@ static void pas_WhileStatement(void)
 
    /* Generate the <statement> following the DO token */
 
-   statement();
+   pas_Statement();
 
    /* Generate a branch to the top of the loop */
 
@@ -1420,7 +1420,7 @@ static void pas_CaseStatement(void)
 
            /* Evaluate ELSE statement */
 
-           statement();
+           pas_Statement();
 
            /* Check the LSP after evaluating the ELSE <statement>. */
 
@@ -1518,7 +1518,7 @@ static void pas_CaseStatement(void)
 
            /* Evaluate <statement> */
 
-           statement();
+           pas_Statement();
 
            /* Jump to exit CASE */
 
@@ -1661,7 +1661,7 @@ static void pas_ForStatement(void)
 
        /* Evaluate the for statement <statement> */
 
-       statement();
+       pas_Statement();
 
        /* Generate end of loop logic:  Load the variable, modify the
         * variable, store the variable, and jump unconditionally to the
@@ -1835,7 +1835,7 @@ static void pas_WithStatement(void)
 
    /* Then process the statement following the WITH */
 
-   statement();
+   pas_Statement();
 
    /* Restore the previous value of the with record */
 

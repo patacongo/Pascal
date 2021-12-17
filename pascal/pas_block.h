@@ -47,11 +47,11 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void    block(void);
-void    declarationGroup(int32_t beginLabel);
-void    constantDefinitionGroup(void);
-void    typeDefinitionGroup(void);
-void    variableDeclarationGroup(void);
-int16_t formalParameterList(symbol_t *procPtr);
+void    pas_Block(int32_t preAllocatedDStack);
+void    pas_DeclarationGroup(int32_t beginLabel);
+void    pas_ConstantDefinitionGroup(void);
+void    pas_TypeDefinitionGroup(void);
+void    pas_VariableDeclarationGroup(void);
+int16_t pas_FormalParameterList(symbol_t *procPtr);
 
 #endif /* __PAS_BLOCK_H */

@@ -54,6 +54,16 @@
 
 /* SYSIO built-ins ****************y*************************************/
 
+/* int _xallocfile(void); */
+
+#define xALLOCFILE_INIT \
+    { "_xallocfile", sINT_SIZE, 0, { 0 }}
+
+/* void _xfreefile(int fileNumber ); */
+
+#define xALLOCFILE_INIT \
+    { "_xfreefile", 0, 1, { sINT_SIZE }}
+
 /* boolean _xeof(fileno); */
 
 #define xEOF_INIT \

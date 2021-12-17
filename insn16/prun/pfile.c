@@ -66,11 +66,12 @@
 struct pexecFileTable_s
 {
   char fileName[MAX_FILE_NAME];
-  FILE *stream;
-  openMode_t openMode;
+  bool inUse;
+  bool text;
   uint16_t recordSize;
   int16_t eof;
-  bool text;
+  FILE *stream;
+  openMode_t openMode;
 };
 
 typedef struct pexecFileTable_s pexecFileTable_t;
@@ -81,6 +82,8 @@ typedef struct pexecFileTable_s pexecFileTable_t;
 
 static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
 static void     pexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
+static ustack_t pexec_AllocateFile(void);
+static void     pexec_FreeFile(uint16_t fileNumber);
 static void     pexec_AssignFile(uint16_t fileNumber, bool text,
                                  const char *fileName, uint16_t size);
 static void     pexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
@@ -116,6 +119,8 @@ static pexecFileTable_t g_fileTable[MAX_OPEN_FILES];
 /* Common error message formats */
 
 static const char *g_badFileNumber   = "ERROR: %s: bad file number: %u\n";
+static const char *g_NotInUse        = "ERROR: %s: File not in use: %u\n";
+static const char *g_NoFreeFile      = "ERROR: %s: No free file: %u\n";
 static const char *g_fileAlreadyOpen = "ERROR: %s: File already open: %u\n";
 static const char *g_fileNotOpen     = "ERROR: %s: File not open: %u\n";
 static const char *g_badOpenMode     = "ERROR: %s: Bad open mode %d: %u\n";
@@ -224,6 +229,48 @@ static void pexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
   *dest++ = result.hw[1];
   *dest++ = result.hw[2];
   *dest   = result.hw[3];
+}
+
+static ustack_t pexec_AllocateFile(void)
+{
+  uint16_t fileNumber;
+
+  for (fileNumber = 0; fileNumber < MAX_OPEN_FILES; fileNumber++)
+    {
+      if (!g_fileTable[fileNumber].inUse)
+        {
+          g_fileTable[fileNumber].inUse = true;
+          return fileNumber;
+        }
+    }
+
+  fprintf(stderr, g_NoFreeFile, "pexec_AllocateFile", fileNumber);
+  return fileNumber;  /* Return the out-of-range file number */
+}
+
+static void pexec_FreeFile(uint16_t fileNumber)
+{
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      fprintf(stderr, g_badFileNumber, "pexec_FreeFile", fileNumber);
+    }
+  else if (!g_fileTable[fileNumber].inUse)
+    {
+      fprintf(stderr, g_NotInUse, "pexec_FreeFile", fileNumber);
+    }
+  else
+    {
+      /* If the file was opened, then close it */
+
+      if (g_fileTable[fileNumber].stream != NULL)
+        {
+          pexec_CloseFile(fileNumber);
+        }
+
+      /* Reset the entire file entry */
+
+      memset(&g_fileTable[fileNumber], 0, sizeof(pexecFileTable_t));
+    }
 }
 
 static void pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
@@ -630,6 +677,19 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 
   switch (subfunc)
     {
+    /* ALLOCFILE: No stack arguments */
+
+    case xALLOCFILE :
+       PUSH(st, pexec_AllocateFile());
+       break;
+
+    /* FREEFILE: TOS = File number */
+
+    case xFREEFILE :
+       POP(st, fileNumber); /* File number */
+       pexec_FreeFile(fileNumber);
+       break;
+
     /* EOF: TOS = File number */
 
     case xEOF :

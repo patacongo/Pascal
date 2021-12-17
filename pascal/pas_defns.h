@@ -62,15 +62,6 @@
 #define FNAME_SIZE         40       /* Max size file name */
 #define MAX_INCPATHES      8        /* Max number of include pathes */
 
-/* INPUT and OUtput file numbers.  input and output have file numbers of
- * zero and one, respectively.  Other user files defined in PROGRAM
- * arguments begin at 2.
- */
-
-#define INPUT_FILE_NUMBER  0        /* Input file number */
-#define OUTPUT_FILE_NUMBER 1        /* Output file number */
-#define FIRST_USER_FILE    2        /* First user defined file */
-
 /* Bit values for the 'flags' field of the symType_t, symProc_t, and
  * symVar_t (see below)
  */
@@ -190,15 +181,12 @@ typedef struct symLabel_s symLabel_t;
 struct symVar_s            /* for sKind == type identifier */
 {
   uint8_t   flags;         /* flags to customize a variable (see above) */
+  uint16_t  xfrUnit;       /* File transfer unit (files only) */
   int32_t   offset;        /* Data stack offset */
   uint32_t  size;          /* Size of variable */
   uint32_t  symIndex;      /* POFF symbol table index (if undefined) */
+
   struct symbol_s *parent; /* pointer to parent type */
-
-  /* File Variables only */
-
-  uint16_t  fileNumber;    /* File number */
-  uint16_t  xfrUnit;       /* File transfer unit */
 };
 typedef struct symVar_s symVar_t;
 

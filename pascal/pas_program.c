@@ -50,48 +50,30 @@
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
-#include "poff.h"         /* FHT_ definitions */
+#include "poff.h"            /* FHT_ definitions */
 
-#include "pas_main.h"     /* for globals + openNestedFile */
-#include "pas_block.h"    /* for block() */
-#include "pas_codegen.h"  /* for pas_Generate*() */
-#include "pas_token.h"    /* for getToken() */
-#include "pas_symtable.h" /* for pas_AddFile() */
-#include "pofflib.h"      /* For poff*() functions*/
-#include "paslib.h"       /* for extension() */
-#include "pas_error.h"    /* for error() */
-#include "pas_unit.h"     /* for unit() */
+#include "pas_main.h"        /* for globals + openNestedFile */
+#include "pas_block.h"       /* for pas_Block() */
+#include "pas_initializer.h" /* for pas_AddFileInitializer() */
+#include "pas_codegen.h"     /* for pas_Generate*() */
+#include "pas_token.h"       /* for getToken() */
+#include "pas_symtable.h"    /* for pas_AddFile() */
+#include "pofflib.h"         /* For poff*() functions*/
+#include "paslib.h"          /* for extension() */
+#include "pas_error.h"       /* for error() */
+#include "pas_unit.h"        /* for unit() */
 #include "pas_program.h"
-
-/**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-/***********************************************************************
- * Private Function Prototypes
- ***********************************************************************/
-
-/***********************************************************************
- * Private Functions
- ***********************************************************************/
 
 /***********************************************************************
  * Public Functions
  ***********************************************************************/
 
-void program(void)
+void pas_Program(void)
 {
-  char *pgmname = NULL;
+  char *programName = NULL;
+  uint16_t nFiles   = 2;
 
-  TRACE(g_lstFile, "[program]");
+  TRACE(g_lstFile, "[pas_Program]");
 
   /* FORM: program = program-heading ';' [uses-section ] block '.'
    * FORM: program-heading = 'program' identifier [ '(' identifier-list ')' ]
@@ -103,7 +85,7 @@ void program(void)
   if (g_token != tIDENT) error(eIDENT);      /* Verify <program name> */
   else
     {
-      pgmname = g_tokenString;             /* Save program name */
+      programName = g_tokenString;           /* Save program name */
       getToken();
     }
 
@@ -114,25 +96,28 @@ void program(void)
       do
         {
           /* Each file should appear as an identifier and will be assigned
-           * file numbers beginning at FIRST_USER_FILE.
+           * file numbers dynamically.
            */
 
           getToken();
           if (g_token == tIDENT)
             {
-              (void)pas_AddFile(g_tokenString, sTEXTFILE, g_dStack, ++g_nFiles,
-                                sCHAR_SIZE);
+              symbol_t *filePtr;
+
+              filePtr = pas_AddFile(g_tokenString, sTEXTFILE, g_dStack,
+                                    sCHAR_SIZE, NULL);
+              nFiles++;
+              pas_AddFileInitializer(filePtr);
               g_dStack  += sINT_SIZE;
               g_stringSP = g_tokenString;
               getToken();
             }
 
-          /* INPUT and OUTPUT will appear as symbols since they were pre-defined
-           * (non-standard) and will have file numbers 0 and 1, respectively.
+          /* INPUT and OUTPUT will appear as variable symbols since they were
+           * pre-defined (non-standard).
            */
 
-          else if ((g_token == sFILE || g_token == sTEXTFILE) &&
-                   (g_tknPtr->sParm.v.fileNumber < FIRST_USER_FILE))
+          else if (g_token == sFILE || g_token == sTEXTFILE)
             {
               getToken();
             }
@@ -154,12 +139,12 @@ void program(void)
 
   /* Set the POFF file header type */
 
-  poffSetFileType(poffHandle, FHT_PROGRAM, g_nFiles, pgmname);
+  poffSetFileType(poffHandle, FHT_PROGRAM, nFiles, programName);
   poffSetArchitecture(poffHandle, FHA_PCODE);
 
   /* Discard the program name string */
 
-  g_stringSP = pgmname;
+  g_stringSP = programName;
 
   /* Process the optional 'uses-section'
    * FORM: uses-section = 'uses' [ uses-unit-list ] ';'
@@ -168,19 +153,19 @@ void program(void)
   if (g_token == tUSES)
     {
       getToken();
-      usesSection();
+      pas_UsesSection();
     }
 
   /* Process the block */
 
-  block();
+  pas_Block(g_dStack);
   if (g_token !=  '.') error(ePERIOD);
   pas_GenerateSimple(opEND);
 }
 
 /***********************************************************************/
 
-void usesSection(void)
+void pas_UsesSection(void)
 {
   uint16_t saveToken;
   char defaultUnitFileName[FNAME_SIZE + 1];
@@ -188,7 +173,7 @@ void usesSection(void)
   char *saveTknStrt;
   char *unitName;
 
-  TRACE(g_lstFile, "[usesSection]");
+  TRACE(g_lstFile, "[pas_UsesSection]");
 
   /* FORM: uses-section = 'uses' [ uses-unit-list ] ';'
    * FORM: uses-unit-list = unit-import {';' uses-unit-list }

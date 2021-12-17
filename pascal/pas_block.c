@@ -1,4 +1,4 @@
-/***************************************************************
+/****************************************************************************
  * pas_block.c
  * Process a Pascal Block
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************/
+ ****************************************************************************/
 
-/***************************************************************
+/****************************************************************************
  * Included Files
- ***************************************************************/
+ ****************************************************************************/
 
 #include <stdio.h>
 #include <string.h>
@@ -50,6 +50,7 @@
 
 #include "pas_main.h"
 #include "pas_block.h"
+#include "pas_initializer.h"
 #include "pas_expression.h"
 #include "pas_statement.h"
 #include "pas_codegen.h"
@@ -58,9 +59,9 @@
 #include "pas_insn.h"
 #include "pas_error.h"
 
-/***************************************************************
+/****************************************************************************
  * Private Definitions
- ***************************************************************/
+ ****************************************************************************/
 
 /* This macro implements a test for:
  * FORM:  unsigned-constant = integer-number | real-number |
@@ -78,9 +79,9 @@
 #define isIntAligned(x) (((x) & (sINT_SIZE-1)) == 0)
 #define intAlign(x)     (((x) + (sINT_SIZE-1)) & (~(sINT_SIZE-1)))
 
-/***************************************************************
+/****************************************************************************
  * Private Function Prototypes
- ***************************************************************/
+ ****************************************************************************/
 
 static void      pas_DeclareLabel          (void);
 static void      pas_DeclareConst          (void);
@@ -103,17 +104,17 @@ static symbol_t *pas_DeclareField          (symbol_t *recordPtr);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
 static bool      pas_IntAlignRequired      (symbol_t *typePtr);
 
-/***************************************************************
+/****************************************************************************
  * Private Data
- ***************************************************************/
+ ****************************************************************************/
 
 static int32_t g_nParms;
 static int32_t g_dwVarSize;
 
-/***************************************************************
+/****************************************************************************
  * Public Functions
- ***************************************************************/
- 
+ ****************************************************************************/
+
 /* Process BLOCK.  This function implements:
  *
  * block = declaration-group compound-statement
@@ -133,17 +134,43 @@ static int32_t g_dwVarSize;
  * program = program-heading ';' [ uses-section ] block '.'
  */
 
-void block()
+void pas_Block(int32_t preAllocatedDStack)
 {
-  uint16_t beginLabel          = ++g_label;          /* BEGIN label */
-  int32_t saveDStack           = g_dStack;           /* Save DSEG size */
-  char   *saveStringSP         = g_stringSP;         /* Save top of string stack */
-  unsigned int saveNSym        = g_nSym;             /* Save top of symbol table */
-  unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
-  unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
-  unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
+  uint16_t beginLabel;                /* BEGIN label */
+  int32_t saveDStack;                 /* Saved DSEG size */
+  char   *saveStringSP;               /* Saved top of string stack */
+  unsigned int saveNSym;              /* Saved top of symbol table */
+  unsigned int saveNConst;            /* Saved top of constant table */
+  unsigned int saveNInitializer;      /* Saved top of initializer stack */
+  unsigned int saveSymOffset;         /* Saved previous level symbol offset */
+  unsigned int saveConstOffset;       /* Saved previous level constant offset */
+  unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
 
-  TRACE(g_lstFile,"[block]");
+  TRACE(g_lstFile,"[pas_Block]");
+
+  /* Set the begin label number */
+
+  beginLabel              = ++g_label;
+
+  /* Save the DSEG and string stack sizes.  These will grow within the block,
+   * but we use these saved values to restore the sizes at the END of the
+   * block.
+   */
+
+  saveDStack              = g_dStack;
+  saveStringSP            = g_stringSP;
+
+  /* Save the current top-of-stack data for symbols, constants, and
+   * initializers.
+   */
+
+  saveNSym                 = g_nSym;
+  saveNConst               = g_nConst;
+  saveNInitializer         = g_nInitializer;
+
+  saveSymOffset            = g_levelSymOffset;
+  saveConstOffset          = g_levelConstOffset;
+  saveInitializerOffset    = g_levelInitializerOffset;
 
   /* Set the current symbol/constant table offsets for this level */
 
@@ -160,9 +187,12 @@ void block()
       poffSetEntryPoint(poffHandle, g_label);
     }
 
-  /* Init size of the new DSEG */
+  /* Init size of the new DSEG.  Normally nothing is preallocated on the
+   * stack.  The exception is at the program level where the INPUT and OUTPUT
+   * (and maybe other) file variables are created.
+   */
 
-  g_dStack = 0;
+  g_dStack = preAllocatedDStack;
 
   /* FORM: block = declaration-group compound-statement
    * Process the declaration-group
@@ -176,7 +206,7 @@ void block()
    *     procedure-declaration
    */
 
-  declarationGroup(beginLabel);
+  pas_DeclarationGroup(beginLabel);
 
   /* Process the compound-statement
    *
@@ -204,14 +234,26 @@ void block()
 
   pas_InvalidateCurrentStackLevel();
 
-  /* Then emit the compoundStatement itself */
+  /* Allocate data stack */
 
   if (g_dStack)
     {
       pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
     }
 
-  compoundStatement();
+  /* Generate initializers */
+
+  pas_Initialization();
+
+  /* Then emit the pas_CompoundStatement itself */
+
+  pas_CompoundStatement();
+
+  /* Generate finalizers */
+
+  pas_Finalization();
+
+  /* Release the allocated data stack */
 
   if (g_dStack)
     {
@@ -224,37 +266,51 @@ void block()
 
   /* "Pop" declarations local to this block */
 
-  g_dStack           = saveDStack;    /* Restore old DSEG size */
-  g_stringSP         = saveStringSP;  /* Restore top of string stack */
+  g_dStack                 = saveDStack;       /* Restore old DSEG size */
+  g_stringSP               = saveStringSP;     /* Restore top of string stack */
 
-  /* Restore the symbol/constant table offsets for the previous level */
+  /* Restore the symbol, constant, and initializer table offsets for the
+   * revious level.
+   */
 
-  g_levelSymOffset   = saveSymOffset;
-  g_levelConstOffset = saveConstOffset;
+  g_levelSymOffset         = saveSymOffset;
+  g_levelConstOffset       = saveConstOffset;
+  g_levelInitializerOffset = saveInitializerOffset;
 
-  /* Release the symbols/constants used by this level */
+  /* Release the symbols, constants, and initializers used by this level */
 
-  g_nSym             = saveNSym;      /* Restore top of symbol table */
-  g_nConst           = saveNConst;    /* Restore top of constant table */
+  g_nSym                   = saveNSym;         /* Restore top of symbol table */
+  g_nConst                 = saveNConst;       /* Restore top of constant table */
+  g_nInitializer           = saveNInitializer; /* Restore top of initializer table */
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process declarative-part */
 
-void declarationGroup(int32_t beginLabel)
+void pas_DeclarationGroup(int32_t beginLabel)
 {
-  unsigned int notFirst        = 0;                  /* Init count of nested procs */
-  unsigned int saveNSym        = g_nSym;             /* Save top of symbol table */
-  unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
-  unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
-  unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
+  unsigned int notFirst = 0;          /* Init count of nested procs */
 
-  TRACE(g_lstFile,"[declarationGroup]");
+  unsigned int saveNSym;              /* Saved top of symbol table */
+  unsigned int saveNConst;            /* Saved top of constant table */
+  unsigned int saveSymOffset;         /* Saved previous level symbol offset */
+  unsigned int saveConstOffset;       /* Saved previous level constant offset */
 
-  /* Set the current symbol/constant table offsets for this level */
+  TRACE(g_lstFile,"[pas_DeclarationGroup]");
 
-  g_levelSymOffset             = saveNSym;
-  g_levelConstOffset           = saveNConst;
+  /* Save the current top-of-stack data for symbols and constants. */
+
+  saveNSym                 = g_nSym;
+  saveNConst               = g_nConst;
+  saveSymOffset            = g_levelSymOffset;
+  saveConstOffset          = g_levelConstOffset;
+
+  /* Set the current symbol, constant, and initializer table offsets for this
+   * level
+   */
+
+  g_levelSymOffset         = saveNSym;
+  g_levelConstOffset       = saveNConst;
 
   /* FORM: declarative-part = { declaration-group }
    * FORM: declaration-group =
@@ -284,7 +340,7 @@ void declarationGroup(int32_t beginLabel)
        * FORM: constant-definition = identifier '=' constant
        */
 
-      constantDefinitionGroup();
+      pas_ConstantDefinitionGroup();
     }
 
   /* Process type-definition-group
@@ -302,7 +358,7 @@ void declarationGroup(int32_t beginLabel)
        * FORM: type-definition = identifier '=' type-denoter
        */
 
-      typeDefinitionGroup();
+      pas_TypeDefinitionGroup();
     }
 
   /* Process variable-declaration-group
@@ -321,7 +377,7 @@ void declarationGroup(int32_t beginLabel)
        * FORM: identifier-list = identifier { ',' identifier }
        */
 
-      variableDeclarationGroup();
+      pas_VariableDeclarationGroup();
     }
 
   /* Process procedure/function-declaration(s) if present
@@ -385,7 +441,10 @@ void declarationGroup(int32_t beginLabel)
           pas_ProcedureDeclaration();
           notFirst++;                 /* No JMP next time */
         }
-      else break;
+      else
+       {
+         break;
+       }
     }
 
   /* Restore the symbol/constant table offsets for the previous level */
@@ -394,9 +453,9 @@ void declarationGroup(int32_t beginLabel)
   g_levelConstOffset = saveConstOffset;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-void constantDefinitionGroup(void)
+void pas_ConstantDefinitionGroup(void)
 {
   /* Process constant-definition-group.
    * FORM: constant-definition-group =
@@ -419,9 +478,9 @@ void constantDefinitionGroup(void)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-void typeDefinitionGroup(void)
+void pas_TypeDefinitionGroup(void)
 {
   char   *typeName;
 
@@ -457,9 +516,9 @@ void typeDefinitionGroup(void)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-void variableDeclarationGroup(void)
+void pas_VariableDeclarationGroup(void)
 {
    /* Process variable-declaration-group
     * FORM: variable-declaration-group =
@@ -479,16 +538,16 @@ void variableDeclarationGroup(void)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process formal-parameter-list */
 
-int16_t formalParameterList(symbol_t *procPtr)
+int16_t pas_FormalParameterList(symbol_t *procPtr)
 {
   int16_t parameterOffset;
   int16_t i;
   bool    pointerType;
 
-  TRACE(g_lstFile,"[formalParameterList]");
+  TRACE(g_lstFile,"[pas_FormalParameterList]");
 
   /* FORM: formal-parameter-list =
    *       '(' formal-parameter-section { ';' formal-parameter-section } ')'
@@ -576,9 +635,9 @@ int16_t formalParameterList(symbol_t *procPtr)
   return parameterOffset;
 }
 
-/***************************************************************
+/****************************************************************************
  * Private Functions
- ***************************************************************/
+ ****************************************************************************/
 /* Process LABEL block */
 
 static void pas_DeclareLabel(void)
@@ -608,7 +667,7 @@ static void pas_DeclareLabel(void)
    else getToken();
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process constant definition:
  * FORM: constant-definition = identifier '=' constant
  * FORM: constant = [ sign ] integer-number |
@@ -673,7 +732,7 @@ static void pas_DeclareConst(void)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process TYPE declaration */
 
 static symbol_t *pas_DeclareType(char *typeName)
@@ -706,7 +765,7 @@ static symbol_t *pas_DeclareType(char *typeName)
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process a simple TYPE declaration */
 
 static symbol_t *pas_DeclareOrdinalType(char *typeName)
@@ -736,7 +795,7 @@ static symbol_t *pas_DeclareOrdinalType(char *typeName)
    return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process VAR declaration */
 
 static symbol_t *pas_DeclareVar(void)
@@ -779,85 +838,145 @@ static symbol_t *pas_DeclareVar(void)
       if (g_token != ':') error(eCOLON);
       else getToken();
 
-      /* Process the type-denoter */
+      /* Let's handle files differently. */
 
-      typePtr = pas_TypeDenoter(varName, 1);
-      if (typePtr == NULL)
+      if (g_token == tFILE || g_token == sTEXTFILE)
         {
-          error(eINVTYPE);
+          symbol_t *filePtr;
+          symbol_t *fileTypePtr = NULL;
+          uint16_t fileKind     = sTEXTFILE;
+          uint16_t fileSize     = sCHAR_SIZE;
+
+          if (g_token == tFILE)
+            {
+              getToken();
+
+              /* Make sure that 'file' is followed by 'of' */
+
+              if (g_token != tOF) error(eOF);
+              else getToken();
+
+              /* Make sure that the token following 'of' is a type */
+
+              if (g_token != sTYPE) error(eINVTYPE);
+              else
+                {
+                   /* Save the size and type of the file */
+
+                   fileTypePtr = g_tknPtr;
+                   fileKind    = sFILE;
+                   fileSize    = fileTypePtr->sParm.t.asize;
+                   getToken();
+                }
+            }
+
+          /* Add the file to the symbol table */
+
+          filePtr = pas_AddFile(varName, fileKind, g_dStack, fileSize,
+                                fileTypePtr);
+          pas_AddFileInitializer(filePtr);
+          g_dStack   += sINT_SIZE;
+          return filePtr;
+        }
+      else
+        {
+          /* Process the normal type-denoter */
+
+          typePtr = pas_TypeDenoter(varName, 1);
+          if (typePtr == NULL)
+            {
+              error(eINVTYPE);
+            }
         }
     }
 
-  if (typePtr)
+  if (typePtr != NULL)
     {
       uint16_t varType = typePtr->sParm.t.type;
 
-      /* Determine if alignment to INTEGER boundaries is necessary */
-
-      if (!isIntAligned(g_dStack) && pas_IntAlignRequired(typePtr))
+      if (typePtr->sKind == sFILE || typePtr->sKind == sTEXTFILE)
         {
-          g_dStack = intAlign(g_dStack);
-    }
-
-      /* Add the new variable to the symbol table */
-
-      varPtr = pas_AddVariable(varName, varType, g_dStack, g_dwVarSize, typePtr);
-
-      /* If the variable is declared in an interface section at level zero,
-       * then it is a candidate to imported or exported.
-       */
-
-      if ((!g_level) && (FP->section == eIsInterfaceSection))
-        {
-          /* Are we importing or exporting the interface?
-           *
-           * PROGRAM EXPORTS:
-           * If we are generating a program binary (i.e., FP0->kind ==
-           * eIsProgram) then the variable memory allocation must appear
-           * on the initial stack allocation; therefore the variable
-           * stack offset myst be exported by the program binary.
-           *
-           * UNIT IMPORTS:
-           * If we are generating a unit binary (i.e., FP0->kind ==
-           * eIsUnit), then we are importing the level 0 stack offset
-           * from the main program.
+          /* For the FILE case, typePtr is not a type at all but the pointer
+           * tto he file variable that was declared from a more nested
+           * recusion.  We can use that symbol to clone the one at this
+           * nesting level.
            */
 
-          if (FP0->kind == eIsUnit)
-            {
-              /* Mark the symbol as external and replace the absolute
-               * offset with this relative offset.
-               */
-
-              varPtr->sParm.v.flags  |= SVAR_EXTERNAL;
-              varPtr->sParm.v.offset  = g_dStack - FP->dstack;
-
-              /* IMPORT the symbol; assign an offset relative to
-               * the dstack at the beginning of this file
-               */
-
-              pas_GenerateStackImport(varPtr);
-            }
-          else /* if (FP0->kind == eIsProgram) */
-            {
-              /* EXPORT the symbol */
-
-              pas_GenerateStackExport(varPtr);
-            }
+          (void)pas_AddFile(varName, typePtr->sKind, g_dStack,
+                            typePtr->sParm.v.xfrUnit,
+                            typePtr->sParm.v.parent);
+          g_dStack += sINT_SIZE;
         }
+      else
+        {
+          /* Determine if alignment to INTEGER boundaries is necessary */
 
-      /* In any event, bump the stack offset to include space for
-       * this new symbol.  The 'bumped' stack offset will be the
-       * offset for the next variable that is declared.
-       */
+          if (!isIntAligned(g_dStack) && pas_IntAlignRequired(typePtr))
+            {
+              g_dStack = intAlign(g_dStack);
+            }
 
-      g_dStack += g_dwVarSize;
+          /* Add the new variable to the symbol table */
+
+          varPtr = pas_AddVariable(varName, varType, g_dStack, g_dwVarSize,
+                                   typePtr);
+
+          /* If the variable is declared in an interface section at level
+           * zero, then it is a candidate to be imported or exported.
+           */
+
+          if ((!g_level) && (FP->section == eIsInterfaceSection))
+            {
+              /* Are we importing or exporting the interface?
+               *
+               * PROGRAM EXPORTS:
+               * If we are generating a program binary (i.e., FP0->kind ==
+               * eIsProgram) then the variable memory allocation must appear
+               * on the initial stack allocation; therefore the variable
+               * stack offset myst be exported by the program binary.
+               *
+               * UNIT IMPORTS:
+               * If we are generating a unit binary (i.e., FP0->kind ==
+               * eIsUnit), then we are importing the level 0 stack offset
+               * from the main program.
+               */
+
+              if (FP0->kind == eIsUnit)
+                {
+                  /* Mark the symbol as external and replace the absolute
+                   * offset with this relative offset.
+                   */
+
+                  varPtr->sParm.v.flags  |= SVAR_EXTERNAL;
+                  varPtr->sParm.v.offset  = g_dStack - FP->dstack;
+
+                  /* IMPORT the symbol; assign an offset relative to
+                   * the dstack at the beginning of this file
+                   */
+
+                  pas_GenerateStackImport(varPtr);
+                }
+              else /* if (FP0->kind == eIsProgram) */
+                {
+                  /* EXPORT the symbol */
+
+                  pas_GenerateStackExport(varPtr);
+                }
+            }
+
+          /* In any event, bump the stack offset to include space for
+           * this new symbol.  The 'bumped' stack offset will be the
+           * offset for the next variable that is declared.
+           */
+
+          g_dStack += g_dwVarSize;
+        }
     }
 
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process Procedure Declaration Block */
 
 static void pas_ProcedureDeclaration(void)
@@ -865,8 +984,8 @@ static void pas_ProcedureDeclaration(void)
   uint16_t     procLabel = ++g_label;
   char        *saveStringSP;
   symbol_t    *procPtr;
-  unsigned int saveSymOffset;    /* Save previous level symbol offset */
-  unsigned int saveConstOffset;  /* Save previous level constant offset */
+  unsigned int saveSymOffset;    /* Saved previous level symbol offset */
+  unsigned int saveConstOffset;  /* Saved previous level constant offset */
   int          i;
 
   TRACE(g_lstFile,"[pas_ProcedureDeclaration]");
@@ -918,7 +1037,7 @@ static void pas_ProcedureDeclaration(void)
   /* Process parameter list */
 
   getToken();
-  (void)formalParameterList(procPtr);
+  (void)pas_FormalParameterList(procPtr);
 
   if (g_token !=  ';') error(eSEMICOLON);
   else getToken();
@@ -944,7 +1063,7 @@ static void pas_ProcedureDeclaration(void)
   /* Process block */
 
   pas_GenerateDataOperation(opLABEL, (int32_t)procLabel);
-  block();
+  pas_Block(0);
 
   /* Destroy formal parameter names */
 
@@ -971,7 +1090,7 @@ static void pas_ProcedureDeclaration(void)
   else getToken();
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process Function Declaration Block */
 
 static void pas_FunctionDeclaration(void)
@@ -983,8 +1102,8 @@ static void pas_FunctionDeclaration(void)
   symbol_t    *valPtr;
   symbol_t    *typePtr;
   char        *funcName;
-  unsigned int saveSymOffset;   /* Save previous level symbol offset */
-  unsigned int saveConstOffset; /* Save previous level constant offset */
+  unsigned int saveSymOffset;   /* Saved previous level symbol offset */
+  unsigned int saveConstOffset; /* Saved previous level constant offset */
   int          i;
 
   TRACE(g_lstFile,"[pas_FunctionDeclaration]");
@@ -1034,7 +1153,7 @@ static void pas_FunctionDeclaration(void)
   /* Process parameter list */
 
   getToken();
-  parameterOffset    = formalParameterList(funcPtr);
+  parameterOffset    = pas_FormalParameterList(funcPtr);
 
   /* Verify that the parameter list is followed by a colon */
 
@@ -1102,7 +1221,7 @@ static void pas_FunctionDeclaration(void)
   else getToken();
 
   pas_GenerateDataOperation(opLABEL, (int32_t)funcLabel);
-  block();
+  pas_Block(0);
 
   /* Destroy formal parameter names and the function return value name */
 
@@ -1130,7 +1249,7 @@ static void pas_FunctionDeclaration(void)
   else getToken();
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Determine the size value to use with this type */
 
 static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
@@ -1235,7 +1354,7 @@ static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Verify that the next token is a type identifer
  * NOTE:  This function modifies the global variable g_dwVarSize
  * as a side-effect
@@ -1264,7 +1383,7 @@ static symbol_t *pas_TypeIdentifier(bool allocate)
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 static symbol_t *pas_TypeDenoter(char *typeName, bool allocate)
 {
@@ -1306,7 +1425,7 @@ static symbol_t *pas_TypeDenoter(char *typeName, bool allocate)
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Declare is new ordinal type */
 
 static symbol_t *pas_NewOrdinalType(char *typeName)
@@ -1491,7 +1610,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 static symbol_t *pas_NewComplexType(char *typeName)
 {
@@ -1657,7 +1776,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
       /* Get the type-denoter */
 
-      typeIdPtr = pas_TypeDenoter(NULL, 1);
+      typeIdPtr = pas_TypeDenoter(NULL, true);
       if (typeIdPtr)
         {
           typePtr = pas_AddTypeDefine(typeName, sFILE, g_dwVarSize,
@@ -1705,7 +1824,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Verify that the next token is a type identifer
  */
 
@@ -1748,7 +1867,7 @@ static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* get index and array type for TYPE block or variable declaration */
 
 static symbol_t *pas_GetArrayIndexType(void)
@@ -1984,7 +2103,7 @@ static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
   return typeDenoter;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 static symbol_t *pas_DeclareRecord(char *recordName)
 {
@@ -2049,8 +2168,10 @@ static symbol_t *pas_DeclareRecord(char *recordName)
            * will terminate the fixed part with no complaint.
            */
 
-          if ((g_token == tEND) || (g_token == tCASE))
-            break;
+          if (g_token == tEND || g_token == tCASE)
+            {
+              break;
+            }
         }
 
       /* If there is no semicolon after the field declaration,
@@ -2192,7 +2313,7 @@ static symbol_t *pas_DeclareRecord(char *recordName)
        * FORM: variant-part-completer = ( 'otherwise' | 'else' ) ( field-list )
        */
 
-      for (;;)
+      for (; ; )
         {
           /* Now process each variant where:
            * FORM: variant = case-constant-list ':' '(' field-list ')'
@@ -2249,7 +2370,7 @@ static symbol_t *pas_DeclareRecord(char *recordName)
                *       ]
                */
 
-              for (;;)
+              for (; ; )
                 {
                   /* We now expect to see and indentifier representating the
                    * beginning of the next variablefield.
@@ -2276,7 +2397,9 @@ static symbol_t *pas_DeclareRecord(char *recordName)
                        */
 
                       if (g_token == tEND)
-                        break;
+                        {
+                          break;
+                        }
                     }
                   else break;
                 }
@@ -2349,7 +2472,7 @@ static symbol_t *pas_DeclareRecord(char *recordName)
   return recordPtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 static symbol_t *pas_DeclareField(symbol_t *recordPtr)
 {
@@ -2385,7 +2508,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr)
 
           /* Use the existing type or declare a new type with no name */
 
-          typePtr = pas_TypeDenoter(NULL, 1);
+          typePtr = pas_TypeDenoter(NULL, true);
         }
 
       recordPtr->sParm.t.maxValue++;
@@ -2407,7 +2530,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr)
   return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process VAR/value Parameter Declaration
  *
  * NOTE:  This function increments the global variable g_nParms
@@ -2481,7 +2604,7 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
    return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 static bool pas_IntAlignRequired(symbol_t *typePtr)
 {
@@ -2511,4 +2634,4 @@ static bool pas_IntAlignRequired(symbol_t *typePtr)
   return returnValue;
 }
 
-/***************************************************************/
+/****************************************************************************/

@@ -1,8 +1,8 @@
 /***************************************************************************
- * pas_symtable.h
- * External Declarations associated with pas_symtable.c
+ * pas_initializer.h
+ * External Declarations associated with pas_initializer.c
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,53 +34,22 @@
  *
  ***************************************************************************/
 
-#ifndef __PAS_SYMTABLE_H
-#define __PAS_SYMTABLE_H
-
-/***************************************************************************
- * Included Files
- ***************************************************************************/
-
-#include <stdint.h>
-#include "config.h"
+#ifndef __PAS_INITIIALIZER_H
+#define __PAS_INITIIALIZER_H
 
 /***************************************************************************
  * Public Data
  ***************************************************************************/
 
-extern symbol_t    *g_parentInteger;
-extern symbol_t    *g_parentString;
-extern symbol_t    *g_inputFile;     /* Shortcut to the INPUT file symbol */
-extern symbol_t    *g_outputFile;    /* Shortcut to the OUTPUT file symbol */
-extern unsigned int g_nSym;          /* Number symbol table entries */
-extern unsigned int g_nConst;        /* Number constant table entries */
+extern int g_nInitializer;           /* The top of the initializer stack */
+extern int g_levelInitializerOffset; /* Index to initializers for this level */
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-const char *pas_MapToAlias(const char *name);
-const reservedWord_t *
-          pas_FindReservedWord(const char *name);
-symbol_t *pas_FindSymbol(const char *inName, int tableOffset);
-symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
-                            symbol_t *parent, symbol_t *index);
-symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
-                          symbol_t *parent);
-symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size);
-symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
-                      uint16_t xfrUnit, symbol_t *typePtr);
-symbol_t *pas_AddLabel(char *name, uint16_t label);
-symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
-                           uint16_t nParms, symbol_t *parent);
-symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
-                          uint16_t size, symbol_t *parent);
-symbol_t *pas_AddField(char *name, symbol_t *record);
-void      pas_PrimeSymbolTable(unsigned long symbolTableSize);
-void      pas_VerifyLabels(int32_t symIndex);
+void pas_AddFileInitializer(symbol_t *filePtr);
+void pas_Initialization(void);
+void pas_Finalization(void);
 
-#if CONFIG_DEBUG
-void   dumpTables(void);
-#endif
-
-#endif /* __PAS_SYMTABLE_H */
+#endif /* __PAS_INITIIALIZER_H */

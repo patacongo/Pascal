@@ -1,4 +1,4 @@
-/***************************************************************
+/****************************************************************************
  * pas_symtable.c
  * Table Management Package
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************/
+ ****************************************************************************/
 
-/***************************************************************
+/****************************************************************************
  * Included Files
- ***************************************************************/
+ ****************************************************************************/
 
 #include <sys/types.h>
 #include <stdbool.h>
@@ -53,12 +53,13 @@
 #include "pas_errcodes.h"
 
 #include "pas_main.h"
+#include "pas_initializer.h" /* for pas_AddFileInitializer() */
 #include "pas_symtable.h"
 #include "pas_error.h"
 
-/***************************************************************
+/****************************************************************************
  * Private Types
- ***************************************************************/
+ ****************************************************************************/
 
 struct symbolAlias_s
 {
@@ -68,24 +69,26 @@ struct symbolAlias_s
 
 typedef struct symbolAlias_s symbolAlias_t;
 
-/***************************************************************
+/****************************************************************************
  * Private Function Prototypes
- ***************************************************************/
+ ****************************************************************************/
 
 static symbol_t *addSymbol(char *name, int16_t type);
 
-/***************************************************************
+/****************************************************************************
  * Public Data
- ***************************************************************/
+ ****************************************************************************/
 
 symbol_t    *g_parentInteger = NULL;
 symbol_t    *g_parentString  = NULL;
-unsigned int g_nSym          = 0;    /* Number symbol table entries */
-unsigned int g_nConst        = 0;    /* Number constant table entries */
+symbol_t    *g_inputFile     = NULL;  /* Shortcut to the INPUT file symbol */
+symbol_t    *g_outputFile    = NULL;  /* Shortcut to the OUTPUT file symbol */
+unsigned int g_nSym          = 0;     /* Number symbol table entries */
+unsigned int g_nConst        = 0;     /* Number constant table entries */
 
-/***************************************************************
+/****************************************************************************
  * Private Data
- ***************************************************************/
+ ****************************************************************************/
 
 /* NOTES in the following:
  * (1) Standard Pascal reserved word
@@ -404,7 +407,7 @@ symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
 /***************************************************************/
 
 symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
-                      uint16_t fileNumber, uint16_t xfrUnit)
+                      uint16_t xfrUnit, symbol_t *typePtr)
 {
   symbol_t *filePtr;
 
@@ -415,12 +418,12 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
   filePtr = addSymbol(name, kind);
   if (filePtr)
     {
-      /* Add the fileNumber to the symbol table */
+      /* Add the file to the symbol table */
 
-      filePtr->sParm.v.offset     = offset;
-      filePtr->sParm.v.size       = sINT_SIZE;
-      filePtr->sParm.v.fileNumber = fileNumber;
-      filePtr->sParm.v.xfrUnit    = xfrUnit;
+      filePtr->sParm.v.xfrUnit    = xfrUnit;    /* Size of each transfer (binary) */
+      filePtr->sParm.v.offset     = offset;     /* Offset to variable */
+      filePtr->sParm.v.size       = sINT_SIZE;  /* Run time storage size */
+      filePtr->sParm.v.parent     = typePtr;    /* FILE OF Type (binary) */
     }
 
   /* Return a pointer to the new file variable symbol */
@@ -610,16 +613,16 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard files to the symbol table */
 
-  (void)pas_AddFile("INPUT", sTEXTFILE, g_dStack, INPUT_FILE_NUMBER,
-                    sCHAR_SIZE);
+  g_inputFile = pas_AddFile("INPUT", sTEXTFILE, g_dStack, sCHAR_SIZE, NULL);
+  pas_AddFileInitializer(g_inputFile);
   g_dStack += sINT_SIZE;
 
-  (void)pas_AddFile("OUTPUT", sTEXTFILE, g_dStack, OUTPUT_FILE_NUMBER,
-                    sCHAR_SIZE);
+  g_outputFile = pas_AddFile("OUTPUT", sTEXTFILE, g_dStack, sCHAR_SIZE, NULL);
+  pas_AddFileInitializer(g_outputFile);
   g_dStack += sINT_SIZE;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 void pas_VerifyLabels(int32_t symIndex)
 {
@@ -732,15 +735,13 @@ void dumpTables(void)
         case sRECORD :
         case sFILE :
         case sTEXTFILE :
-          fprintf(g_lstFile, " flags=%02x offset=%" PRId32 " size=%" PRId32
-                  "parent=[%p] fileNumber=%u xfrUnit=%u\n",
+          fprintf(g_lstFile, "flags=%02x xfrUnit=%u offset=%" PRId32
+                  " size=%" PRId32 " parent=[%p]\n",
                   g_symbolTable[i].sParm.v.flags,
+                  g_symbolTable[i].sParm.v.xfrUnit,
                   g_symbolTable[i].sParm.v.offset,
                   g_symbolTable[i].sParm.v.size,
-                  g_symbolTable[i].sParm.v.parent,
-                  g_symbolTable[i].sParm.v.fileNumber,
-                  g_symbolTable[i].sParm.v.xfrUnit
-                  );
+                  g_symbolTable[i].sParm.v.parent);
           break;
 
           /* Record objects */

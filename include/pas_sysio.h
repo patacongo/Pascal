@@ -43,17 +43,24 @@
  * through 0xffff.
  */
 
-#define xEOF            (0x0001)  /* Test for end of file */
-#define xEOLN           (0x0002)  /* Test for end of line */
-#define xASSIGNFILE     (0x0003)  /* Assign a name and type to the file */
-#define xRESET          (0x0004)  /* Open the file for reading */
-#define xRESETR         (0x0005)  /* Open the file for reading and reset
+/* These are for internal use by the compiler and run-time */
+
+#define xALLOCFILE      (0x0001)  /* Allocate a file number */
+#define xFREEFILE       (0x0002)  /* Release the allocated file */
+
+/* These correspond to Pascal Standard I/O functions */
+
+#define xEOF            (0x0003)  /* Test for end of file */
+#define xEOLN           (0x0004)  /* Test for end of line */
+#define xASSIGNFILE     (0x0005)  /* Assign a name and type to the file */
+#define xRESET          (0x0006)  /* Open the file for reading */
+#define xRESETR         (0x0007)  /* Open the file for reading and reset
                                    * record size */
-#define xREWRITE        (0x0006)  /* Open the file for writing */
-#define xREWRITER       (0x0007)  /* Open the file for writing and reset
+#define xREWRITE        (0x0008)  /* Open the file for writing */
+#define xREWRITER       (0x0009)  /* Open the file for writing and reset
                                    * record size */
-#define xAPPEND         (0x0008)  /* Open the file for appending */
-#define xCLOSEFILE      (0x0009)  /* Close the file */
+#define xAPPEND         (0x000a)  /* Open the file for appending */
+#define xCLOSEFILE      (0x000b)  /* Close the file */
 
 #define xREADLN         (0x0010)  /* Move to the next line */
 #define xREAD_PAGE      (0x0011)  /* Move to the next page */

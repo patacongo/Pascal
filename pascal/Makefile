@@ -1,7 +1,7 @@
 ############################################################################
 # pascal/Makefile
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,27 +35,28 @@
 #
 # Directories
 #
-PASDIR			= ${shell pwd}
-PASCAL			= $(PASDIR)/..
+PASDIR   = ${shell pwd}
+PASCAL   = $(PASDIR)/..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR			= $(PASCAL)/include
-LIBDIR			= $(PASCAL)/lib
-BINDIR-$(CONFIG_INSN16)	= $(PASCAL)/bin16
-BINDIR-$(CONFIG_INSN32)	= $(PASCAL)/bin32
+INCDIR   = $(PASCAL)/include
+LIBDIR   = $(PASCAL)/lib
+BINDIR-$(CONFIG_INSN16) = $(PASCAL)/bin16
+BINDIR-$(CONFIG_INSN32) = $(PASCAL)/bin32
 
 #
 # Objects and targets
 #
-PASSRCS			= pas_main.c pas_program.c pas_unit.c pas_block.c \
-			  pas_statement.c pas_expression.c pas_constexpr.c \
-			  pas_procedure.c pas_stdfunc.c pas_constfunc.c pas_codegen.c \
-			  pas_token.c pas_symtable.c pas_error.c
-PASOBJS			= $(PASSRCS:.c=.o)
 
-OBJS			= $(PASOBJS)
+PASSRCS  = pas_main.c pas_program.c pas_unit.c pas_block.c pas_initializer.c
+PASSRCS += pas_statement.c pas_expression.c pas_constexpr.c pas_procedure.c
+PASSRCS += pas_stdfunc.c pas_constfunc.c pas_codegen.c pas_token.c
+PASSRCS += pas_symtable.c pas_error.c
+PASOBJS  = $(PASSRCS:.c=.o)
+
+OBJS     = $(PASOBJS)
 
 all: pascal
 .PHONY: all pascal clean

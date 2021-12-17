@@ -97,7 +97,6 @@ extern int16_t     g_includeIndex;         /* Include file index */
 extern int16_t     g_nIncPathes;           /* Number pathes in g_includePath[] */
 extern uint16_t    g_label;                /* Last label number */
 extern int16_t     g_errCount;             /* Error counter */
-extern int16_t     g_nFiles;               /* Program file counter */
 extern int32_t     g_warnCount;            /* Warning counter */
 extern int32_t     g_dStack;               /* Data stack size */
 

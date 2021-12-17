@@ -200,8 +200,7 @@ void pas_StandardProcedure(void)
 
 /***********************************************************************/
 
-uint16_t generateFileNumber(uint16_t defaultFileNumber,
-                            uint16_t *pFileSize)
+uint16_t pas_GenerateFileNumber(uint16_t *pFileSize, symbol_t *defaultFilePtr)
 {
   symbol_t *varPtr   = g_tknPtr; /* Remember the variable symbol */
   symbol_t *typePtr  = g_tknPtr; /* The base type may be in a different symbol */
@@ -217,13 +216,7 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
 
   if (typePtr == NULL)
     {
-      pas_GenerateDataOperation(opPUSH, defaultFileNumber);
-      if (pFileSize != NULL)
-        {
-          *pFileSize = sCHAR_SIZE;
-        }
-
-      return sTEXTFILE;
+      typePtr = defaultFilePtr;
     }
 
   /* Check if this is a VAR parameter */
@@ -273,12 +266,12 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
   /* Is this a dereferenced pointer to a file type? */
   /* REVISIT:  Not implemented. */
 
-  /* Is this a symbol of type binary or text FILE? */
+  /* Is this a variable representing a type binary or text FILE? */
 
   if (tknType == sFILE || tknType == sTEXTFILE)
     {
       fileType = varPtr->sKind;
-      fileSize = typePtr->sParm.v.size;
+      fileSize = varPtr->sParm.v.xfrUnit;
 
       /* If this is a VAR parameter, then we need to push the address of the
        * file variable and dereference that address.
@@ -291,6 +284,10 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
         }
       else
         {
+          /* REVISIT:  Consider
+           * pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.xfrUnit);
+           */
+
           pas_GenerateStackReference(opLDS, varPtr);
         }
 
@@ -327,7 +324,7 @@ uint16_t generateFileNumber(uint16_t defaultFileNumber,
     {
       fileType   = sTEXTFILE;
       fileSize   = sCHAR_SIZE;
-      pas_GenerateDataOperation(opPUSH, defaultFileNumber);
+      pas_GenerateStackReference(opLDS, defaultFilePtr);
     }
 
   if (pFileSize != NULL)
@@ -658,7 +655,7 @@ static void readProc(void)          /* READLN procedure */
 
   /* Get TOS = file number */
 
-  fileType = generateFileNumber(INPUT_FILE_NUMBER, &fileSize);
+  fileType = pas_GenerateFileNumber(&fileSize, g_inputFile);
 
   /* Since there may or may not be a file number, there may or may
    * not be a comma present on the first time through this loop
@@ -716,13 +713,13 @@ static void readlnProc(void)          /* READLN procedure */
         {
           /* No read-parameter-list.  Use the INPUT file number */
 
-          pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
+          pas_GenerateStackReference(opLDS, g_inputFile);
         }
       else
         {
           /* Get TOS = file number */
 
-          fileType = generateFileNumber(INPUT_FILE_NUMBER, &fileSize);
+          fileType = pas_GenerateFileNumber(&fileSize, g_inputFile);
 
           /* Since there may or may not be a file number, there may or may
            * not be a comma present on the first time through this loop
@@ -751,7 +748,7 @@ static void readlnProc(void)          /* READLN procedure */
     {
       /* No read-parameter-list.  Use the INPUT file number */
 
-      pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
+      pas_GenerateStackReference(opLDS, g_inputFile);
     }
 
   /* Set the end-of-line in the file. */
@@ -1047,7 +1044,7 @@ static void openFileProc(uint16_t opcode1, uint16_t opcode2)
       /* Push the file-number at the top of the stack */
 
       getToken();
-      (void)generateFileNumber(OUTPUT_FILE_NUMBER, NULL);
+      (void)pas_GenerateFileNumber(NULL, g_outputFile);
 
       /* Check for the option record-size */
 
@@ -1071,7 +1068,7 @@ static void openFileProc(uint16_t opcode1, uint16_t opcode2)
     {
       /* Assume the standard OUTPUT file? */
 
-      pas_GenerateDataOperation(opPUSH, OUTPUT_FILE_NUMBER);
+      pas_GenerateStackReference(opLDS, g_outputFile);
 
       /* And generate the opcode1 */
 
@@ -1107,7 +1104,7 @@ static void fileProc(uint16_t opcode)
       /* Push the file-number at the top of the stack */
 
       getToken();
-      (void)generateFileNumber(OUTPUT_FILE_NUMBER, NULL);
+      (void)pas_GenerateFileNumber(NULL, g_outputFile);
 
       /* And generate the opcode */
 
@@ -1122,7 +1119,7 @@ static void fileProc(uint16_t opcode)
     {
       /* Assume the standard OUTPUT file? */
 
-      pas_GenerateDataOperation(opPUSH, OUTPUT_FILE_NUMBER);
+      pas_GenerateStackReference(opLDS, g_outputFile);
 
       /* And generate the opcode */
 
@@ -1162,7 +1159,7 @@ static void assignFileProc(void)       /* ASSIGNFILE procedure */
 
        /* Push the file number onto the TOS */
 
-       fileType = generateFileNumber(OUTPUT_FILE_NUMBER, NULL);
+       fileType = pas_GenerateFileNumber(NULL, g_outputFile);
 
        /* The file variable must be followed by a comma. */
 
@@ -1217,7 +1214,7 @@ static void writeProc(void)            /* WRITE procedure */
 
   /* Get TOS = file number */
 
-  fileType = generateFileNumber(OUTPUT_FILE_NUMBER, &fileSize);
+  fileType = pas_GenerateFileNumber(&fileSize, g_outputFile);
 
   /* Since there may or may not be a file number, there may or may
    * not be a comma present on the first time through this loop
@@ -1271,13 +1268,13 @@ static void writelnProc(void)         /* WRITELN procedure */
         {
           /* No writeln-parameter-list.  Use the OUTPUT file number */
 
-          pas_GenerateDataOperation(opPUSH, OUTPUT_FILE_NUMBER);
+          pas_GenerateStackReference(opLDS, g_outputFile);
         }
       else
         {
           /* Get TOS = file number */
 
-          fileType = generateFileNumber(OUTPUT_FILE_NUMBER, &fileSize);
+          fileType = pas_GenerateFileNumber(&fileSize, g_outputFile);
 
           /* Since there may or may not be a file number, there may or may
            * not be a comma present on the first time through this loop
@@ -1306,7 +1303,7 @@ static void writelnProc(void)         /* WRITELN procedure */
     {
       /* No writeln-parameter-list.  Use the OUTPUT file number */
 
-      pas_GenerateDataOperation(opPUSH, OUTPUT_FILE_NUMBER);
+      pas_GenerateStackReference(opLDS, g_outputFile);
     }
 
   /* Set the end-of-line in the file.

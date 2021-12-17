@@ -51,16 +51,17 @@
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
 
-#include "pofflib.h"      /* For poff*() functions*/
-#include "poff.h"         /* FHT_ definitions */
+#include "pofflib.h"         /* For poff*() functions*/
+#include "poff.h"            /* FHT_ definitions */
 
-#include "pas_main.h"     /* for globals */
-#include "pas_block.h"    /* for block(), constantDefinitionGroup(), etc. */
-#include "pas_codegen.h"  /* for pas_Generate*() */
-#include "pas_token.h"    /* for getToken() */
-#include "pas_symtable.h" /* for pas_AddProcedure() */
-#include "pas_error.h"    /* for error() */
-#include "pas_program.h"  /* for usesSection() */
+#include "pas_main.h"        /* for globals */
+#include "pas_block.h"       /* for pas_ConstantDefinitionGroup(), etc. */
+#include "pas_initializer.h" /* for initialzer stack variables */
+#include "pas_codegen.h"     /* for pas_Generate*() */
+#include "pas_token.h"       /* for getToken() */
+#include "pas_symtable.h"    /* for pas_AddProcedure() */
+#include "pas_error.h"       /* for error() */
+#include "pas_program.h"     /* for pas_UsesSection() */
 #include "pas_unit.h"
 
 /***********************************************************************
@@ -159,12 +160,12 @@ void unitImplementation(void)
           /* Process the uses-section */
 
           getToken();
-          usesSection();
+          pas_UsesSection();
         }
 
       /* Now, process the declaration-group */
 
-      declarationGroup(0);
+      pas_DeclarationGroup(0);
     }
 
   /* Check for the presence of an initialization section
@@ -279,17 +280,27 @@ void unitInterface(void)
 
 static void interfaceSection(void)
 {
-  unsigned int saveNSym        = g_nSym;             /* Save top of symbol table */
-  unsigned int saveNConst      = g_nConst;           /* Save top of constant table */
-  unsigned int saveSymOffset   = g_levelSymOffset;   /* Save previous level symbol offset */
-  unsigned int saveConstOffset = g_levelConstOffset; /* Save previous level constant offset */
+  unsigned int saveNSym;        /* Save top of symbol table */
+  unsigned int saveNConst;      /* Save top of constant table */
+  unsigned int saveSymOffset;   /* Save previous level symbol offset */
+  unsigned int saveConstOffset; /* Save previous level constant offset */
 
   TRACE(g_lstFile, "[interfaceSection]");
 
-  /* Set the current symbol/constant table offsets for this level */
+  /* Save the current top-of-stack data for symbols, constants, and
+   * initializers.
+   */
 
-  g_levelSymOffset             = saveNSym;
-  g_levelConstOffset           = saveNConst;
+  saveNSym           = g_nSym;
+  saveNConst         = g_nConst;
+
+  saveSymOffset      = g_levelSymOffset;
+  saveConstOffset    = g_levelConstOffset;
+
+  /* Set the current symbol and constant table offsets for this level */
+
+  g_levelSymOffset   = saveNSym;
+  g_levelConstOffset = saveNConst;
 
   /*  FORM: interface-section =
    *       'interface' [ uses-section ] interface-declaration
@@ -310,7 +321,7 @@ static void interfaceSection(void)
       /* Process the uses-section */
 
       getToken();
-      usesSection();
+      pas_UsesSection();
     }
 
   /* Process the interface-declaration
@@ -335,7 +346,7 @@ static void interfaceSection(void)
         * FORM: constant-definition = identifier '=' constant
         */
 
-       constantDefinitionGroup();
+       pas_ConstantDefinitionGroup();
 
      }
 
@@ -354,7 +365,7 @@ static void interfaceSection(void)
         * FORM: type-definition = identifier '=' type-denoter
         */
 
-       typeDefinitionGroup();
+       pas_TypeDefinitionGroup();
      }
 
    /* Process the optional variable-declaration-group
@@ -373,7 +384,7 @@ static void interfaceSection(void)
         * FORM: identifier-list = identifier { ',' identifier }
         */
 
-       variableDeclarationGroup();
+       pas_VariableDeclarationGroup();
      }
 
    /* Process the exported-heading
@@ -477,7 +488,7 @@ static void exportedProcedureHeading(void)
 
    /* Process parameter list */
 
-   (void)formalParameterList(procPtr);
+   (void)pas_FormalParameterList(procPtr);
 
    if (g_token !=  ';') error (eSEMICOLON);
    else getToken();
@@ -560,7 +571,7 @@ static void exportedFunctionHeading(void)
 
    /* Process parameter list */
 
-   parameterOffset = formalParameterList(funcPtr);
+   parameterOffset = pas_FormalParameterList(funcPtr);
 
    /* Verify that the parameter list is followed by a colon */
 

@@ -420,7 +420,7 @@ static void fileFunc(uint16_t opcode)
       /* Push the file number argument on the stack */
 
       getToken();
-      (void)generateFileNumber(INPUT_FILE_NUMBER, NULL);
+      (void)pas_GenerateFileNumber(NULL, g_inputFile);
 
       /* FORM: EOF|EOLN ({<file number>}) */
       /* Generate the file operation */
@@ -434,7 +434,7 @@ static void fileFunc(uint16_t opcode)
        * Use default INPUT file
        */
 
-      pas_GenerateDataOperation(opPUSH, INPUT_FILE_NUMBER);
+      pas_GenerateStackReference(opLDS, g_inputFile);
       pas_GenerateIoOperation(opcode);
     }
 }

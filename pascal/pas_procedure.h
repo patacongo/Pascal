@@ -47,10 +47,10 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void pas_PrimeStandardProcedures(void);
-void pas_StandardProcedure(void);
-uint16_t generateFileNumber(uint16_t defaultFileNumber, uint16_t *pFileSize);
-int  actualParameterSize(symbol_t *procPtr, int parmNo);
-int  actualParameterList(symbol_t *procPtr);
+void     pas_PrimeStandardProcedures(void);
+void     pas_StandardProcedure(void);
+uint16_t pas_GenerateFileNumber(uint16_t *pFileSize, symbol_t *defaultFilePtr);
+int      actualParameterSize(symbol_t *procPtr, int parmNo);
+int      actualParameterList(symbol_t *procPtr);
 
 #endif /* __PAS_PROCEDURE_H */

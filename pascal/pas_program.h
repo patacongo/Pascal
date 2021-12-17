@@ -41,7 +41,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void program(void);
-void usesSection(void);
+void pas_Program(void);
+void pas_UsesSection(void);
 
 #endif /* __PAS_PROGRAM_H */

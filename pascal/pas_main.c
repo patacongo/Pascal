@@ -65,7 +65,7 @@
 #include "pas_function.h"  /* For pas_PrimeStandardFunctions */
 #include "pas_token.h"     /* For primeTokenizer */
 #include "pas_symtable.h"  /* For pas_PrimeSymbolTable */
-#include "pas_program.h"   /* for program() */
+#include "pas_program.h"   /* for pas_Program() */
 #include "pas_unit.h"      /* for unit() */
 #include "pas_error.h"     /* for error() */
 
@@ -99,7 +99,6 @@ int16_t     g_includeIndex = 0;      /* Include file index */
 int16_t     g_nIncPathes   = 0;      /* Number pathes in g_includePath[] */
 uint16_t    g_label        = 0;      /* Last label number */
 int16_t     g_errCount     = 0;      /* Error counter */
-int16_t     g_nFiles       = 1;      /* Program file counter */
 int32_t     g_warnCount    = 0;      /* Warning counter */
 int32_t     g_dStack       = 0;      /* Data stack size */
 
@@ -373,7 +372,7 @@ int main(int argc, char *argv[])
       FP->kind    = eIsProgram;
       FP->section = eIsProgramSection;
       getToken();
-      program();
+      pas_Program();
     }
   else if (g_token == tUNIT)
     {
