@@ -160,22 +160,20 @@ void pas_Block(int32_t preAllocatedDStack)
   saveDStack              = g_dStack;
   saveStringSP            = g_stringSP;
 
-  /* Save the current top-of-stack data for symbols, constants, and
-   * initializers.
+  /* Save the current top-of-stack data for symbols, constants, but not
+   * initializers (we'll get those later).
    */
 
   saveNSym                 = g_nSym;
   saveNConst               = g_nConst;
-  saveNInitializer         = g_nInitializer;
 
   saveSymOffset            = g_levelSymOffset;
   saveConstOffset          = g_levelConstOffset;
-  saveInitializerOffset    = g_levelInitializerOffset;
 
-  /* Set the current symbol/constant table offsets for this level */
+  /* Set the current symbol and constant table offsets for this level */
 
-  g_levelSymOffset             = saveNSym;
-  g_levelConstOffset           = saveNConst;
+  g_levelSymOffset         = saveNSym;
+  g_levelConstOffset       = saveNConst;
 
   /* When we enter block at level zero, then we must be at the
    * entry point to the program.  Save the entry point label
@@ -241,17 +239,37 @@ void pas_Block(int32_t preAllocatedDStack)
       pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
     }
 
-  /* Generate initializers */
+  /* Remember the current state of the initializers */
+
+  saveNInitializer         = g_nInitializer;
+  saveInitializerOffset    = g_levelInitializerOffset;
+
+  /* Generate the initializers */
 
   pas_Initialization();
 
-  /* Then emit the pas_CompoundStatement itself */
+  /* Set the appropriate initializers state for the next level, protecting
+   * those at this level.
+   */
+
+  g_levelInitializerOffset = g_nInitializer;
+
+  /* Then emit the compound statement itself */
 
   pas_CompoundStatement();
+
+  /* Restore the symbol and constant table offsets for this level */
+
+  g_nInitializer           = saveNInitializer;
+  g_levelInitializerOffset = saveInitializerOffset;
 
   /* Generate finalizers */
 
   pas_Finalization();
+
+  /* Set up so that these initializers will not be used again. */
+
+  g_levelInitializerOffset = g_nInitializer;
 
   /* Release the allocated data stack */
 
@@ -269,19 +287,15 @@ void pas_Block(int32_t preAllocatedDStack)
   g_dStack                 = saveDStack;       /* Restore old DSEG size */
   g_stringSP               = saveStringSP;     /* Restore top of string stack */
 
-  /* Restore the symbol, constant, and initializer table offsets for the
-   * revious level.
-   */
+  /* Restore the symbol and constant table offsets for the previous level. */
 
   g_levelSymOffset         = saveSymOffset;
   g_levelConstOffset       = saveConstOffset;
-  g_levelInitializerOffset = saveInitializerOffset;
 
   /* Release the symbols, constants, and initializers used by this level */
 
   g_nSym                   = saveNSym;         /* Restore top of symbol table */
   g_nConst                 = saveNConst;       /* Restore top of constant table */
-  g_nInitializer           = saveNInitializer; /* Restore top of initializer table */
 }
 
 /****************************************************************************/
@@ -290,27 +304,25 @@ void pas_Block(int32_t preAllocatedDStack)
 void pas_DeclarationGroup(int32_t beginLabel)
 {
   unsigned int notFirst = 0;          /* Init count of nested procs */
-
-  unsigned int saveNSym;              /* Saved top of symbol table */
-  unsigned int saveNConst;            /* Saved top of constant table */
   unsigned int saveSymOffset;         /* Saved previous level symbol offset */
   unsigned int saveConstOffset;       /* Saved previous level constant offset */
+  unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
 
   TRACE(g_lstFile,"[pas_DeclarationGroup]");
 
   /* Save the current top-of-stack data for symbols and constants. */
 
-  saveNSym                 = g_nSym;
-  saveNConst               = g_nConst;
   saveSymOffset            = g_levelSymOffset;
   saveConstOffset          = g_levelConstOffset;
+  saveInitializerOffset    = g_levelInitializerOffset;
 
   /* Set the current symbol, constant, and initializer table offsets for this
    * level
    */
 
-  g_levelSymOffset         = saveNSym;
-  g_levelConstOffset       = saveNConst;
+  g_levelSymOffset         = g_nSym;
+  g_levelConstOffset       = g_nConst;
+  g_levelInitializerOffset = g_nInitializer;
 
   /* FORM: declarative-part = { declaration-group }
    * FORM: declaration-group =
@@ -449,8 +461,9 @@ void pas_DeclarationGroup(int32_t beginLabel)
 
   /* Restore the symbol/constant table offsets for the previous level */
 
-  g_levelSymOffset   = saveSymOffset;
-  g_levelConstOffset = saveConstOffset;
+  g_levelSymOffset         = saveSymOffset;
+  g_levelConstOffset       = saveConstOffset;
+  g_levelInitializerOffset = saveInitializerOffset;
 }
 
 /****************************************************************************/
