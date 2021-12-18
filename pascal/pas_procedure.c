@@ -82,6 +82,10 @@ static void writeProcCommon(bool text,          /* WRITE[LN] common logic */
 static void writeText(void);                    /* WRITE text file */
 static void writeBinary(uint16_t fileSize);     /* WRITE binary file */
 
+static uint16_t genVarFileNumber(symbol_t *varPtr,
+                                 uint16_t *pFileSize,
+                                 symbol_t *defaultFilePtr);
+
 /* Helpers for less-than-standard procedures */
 
 static void valProc(void);                      /* VAL procedure */
@@ -203,129 +207,74 @@ void pas_StandardProcedure(void)
 uint16_t pas_GenerateFileNumber(uint16_t *pFileSize, symbol_t *defaultFilePtr)
 {
   symbol_t *varPtr   = g_tknPtr; /* Remember the variable symbol */
-  symbol_t *typePtr  = g_tknPtr; /* The base type may be in a different symbol */
-  uint16_t tknType   = g_token;  /* The base type may not be a symbol */
   uint16_t fileType;
   uint16_t fileSize;
-  uint16_t fileFlags = 0;
 
   /* If the token is not a symbol table related token, then abort returning
    * the default.  For example, suppose the first argument is a constant
    * string.
    */
 
-  if (typePtr == NULL)
+  if (varPtr == NULL)
     {
-      typePtr = defaultFilePtr;
+      varPtr = defaultFilePtr;
     }
 
   /* Check if this is a VAR parameter */
 
-  if (typePtr->sKind == sVAR_PARM)
+  if (varPtr->sKind == sVAR_PARM)
     {
-      /* Use the parent type.  The parent of a a VAR parameter is a type */
-
-      typePtr    = typePtr->sParm.v.parent;
-      tknType    = typePtr->sKind;
-      fileFlags |= VAR_PARM_FACTOR;
+      return genVarFileNumber(varPtr, pFileSize, defaultFilePtr);
     }
 
 #if 0
-  if (typePtr->sKind == sARRAY)
-    {
-      fileFlags  |= INDEXED_FACTOR;
-    }
+  /* Check for other exotic forms that have not yet be implemented */
 
-  if (typePtr->sKind == sPOINTER)
+  else if (varPtr->sKind == sARRAY ||
+           varPtr->sKind == sPOINTER ||
+           varPtr->sKind == sTYPE)
     {
-      fileFlags  |= ADDRESS_FACTOR;
+      error(eNOTYET);
     }
 #endif
 
-  /* Is this a symbole whose type is typedef'ed? */
-
-  while (typePtr->sKind == sTYPE)
-    {
-      /* Get the type of the parent */
-
-      tknType = typePtr->sParm.t.type;
-
-      /* This is the final type if it has no parent. */
-
-      symbol_t *tmpPtr = varPtr->sParm.t.parent;
-      if (tmpPtr != NULL)
-        {
-          varPtr = tmpPtr;
-        }
-      else
-        {
-          break;
-        }
-    }
-
-  /* Is this a dereferenced pointer to a file type? */
-  /* REVISIT:  Not implemented. */
-
   /* Is this a variable representing a type binary or text FILE? */
 
-  if (tknType == sFILE || tknType == sTEXTFILE)
+  else if (g_token == sFILE || g_token == sTEXTFILE)
     {
       fileType = varPtr->sKind;
-      fileSize = varPtr->sParm.v.xfrUnit;
-
-      /* If this is a VAR parameter, then we need to push the address of the
-       * file variable and dereference that address.
-       */
-
-      if ((fileFlags & VAR_PARM_FACTOR) != 0)
+      if (g_token == sTEXTFILE)
         {
-          pas_GenerateStackReference(opLDS, varPtr);
-          pas_GenerateSimple(opLDI);
+          fileSize = sCHAR_SIZE;
         }
       else
         {
-          /* REVISIT:  Consider
-           * pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.xfrUnit);
-           */
+          fileSize = varPtr->sParm.v.xfrUnit;
+        }
 
-          pas_GenerateStackReference(opLDS, varPtr);
+      pas_GenerateStackReference(opLDS, varPtr);
+
+      /* Return the file size */
+
+      if (pFileSize != NULL)
+        {
+          *pFileSize = fileSize;
         }
 
       /* Skip over the variable identifer */
 
       getToken();
+
+      return fileType;
     }
-
-#if 0 /* Needs more thought */
-  /* Is this a file type? */
-
-  else if (typePtr->sKind == sTYPE)
-    {
-      fileType   = varPtr->sParm.t.type;
-      fileSize   = varPtr->sParm.t.asize;
-      pas_GenerateDataOperation(opPUSH, g_tokenPtr->sParm.f.fileNumber);
-
-      if (dereference)
-        {
-        }
-      else
-        {
-        }
-
-      getToken();
-    }
-#endif
 
   /* Not a file-type variable.  Use the default file number (which we assume
    * to be of type sTEXTFILE)
    */
 
-  else
-    {
-      fileType   = sTEXTFILE;
-      fileSize   = sCHAR_SIZE;
-      pas_GenerateStackReference(opLDS, defaultFilePtr);
-    }
+  fileType   = sTEXTFILE;
+  fileSize   = sCHAR_SIZE;
+  pas_GenerateStackReference(opLDS, defaultFilePtr);
 
   if (pFileSize != NULL)
     {
@@ -353,20 +302,25 @@ int actualParameterSize(symbol_t *procPtr, int parmNo)
     default:
       return sINT_SIZE;
       break;
+
     case sCHAR :
       return sCHAR_SIZE;
       break;
+
     case sREAL :
       return sREAL_SIZE;
       break;
+
     case sSTRING :
     case sRSTRING :
       return sRSTRING_SIZE;
       break;
+
     case sARRAY :
     case sRECORD :
       return typePtr->sParm.t.asize;
       break;
+
     case sVAR_PARM :
       return sPTR_SIZE;
       break;
@@ -1195,7 +1149,7 @@ static void writeProc(void)            /* WRITE procedure */
 
    TRACE(g_lstFile, "[writeProc]");
 
-  /* FORM: WRITE   write-parameter-list
+  /* FORM: WRITE  write-parameter-list
    * FORM:      write-parameter-list = '(' [ file-variable ',' ]
    *            write-parameter { ',' write-parameter } ')'
    * FORM:      write-parameter = expression [ ':' expression [ ':' expression ] ]
@@ -1567,6 +1521,110 @@ static void writeBinary(uint16_t fileSize)
     }
 
   getToken();
+}
+
+/****************************************************************************/
+/* The VAR file parameter is more complex than the "normal" file variable
+ * because the transfer unit size is more difficult to find.
+ */
+
+static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
+                                 symbol_t *defaultFilePtr)
+{
+  symbol_t *typePtr;  /* The base type may be in a different symbol */
+  uint16_t  symType;  /* The base type may not be a symbol */
+  uint16_t  fileType;
+  uint16_t  fileSize;
+
+  /* Use the parent type.  The parent of a a VAR parameter is a type */
+
+  typePtr = varPtr->sParm.v.parent;
+  symType  = 0;  /* Invalid type */
+  fileType = 0;  /* Invalid type */
+  fileSize = 0;  /* Invalid transfer unit size */
+
+  /* Is this a symbole whose type is typedef'ed?  This will be a sequence of
+   * types referenced from the variable.  One of the intermediate types will
+   * be sFILE or sTEXTFILE.  Another sTYPE symbol will appear after the sFILE
+   * entry to refer to the FILE OF type.
+   */
+
+  while (typePtr != NULL && typePtr->sKind == sTYPE)
+    {
+      /* Get the type of the parent */
+
+      symType = typePtr->sParm.t.type;
+
+      /* Check if this is a file in the sequence of types. */
+
+      if (symType == sFILE)
+        {
+          /* For binary files, we find the transfer unit size in the asize
+           * field.
+           */
+
+          fileSize = typePtr->sParm.t.asize;
+          fileType = sFILE;
+          break;
+        }
+      else if (symType == sTEXTFILE)
+        {
+          /* For text files, the size is always the size of one character */
+
+          fileSize = sCHAR_SIZE;
+          fileType = sTEXTFILE;
+          break;
+        }
+      else
+        {
+          symbol_t *tmpPtr  = typePtr->sParm.t.parent;
+
+          /* This is the final type if it has no parent. */
+
+          if (tmpPtr != NULL)
+            {
+              typePtr = tmpPtr;
+            }
+          else
+            {
+              break;
+            }
+        }
+    }
+
+  /* Is this a variable representing a type binary or text FILE? */
+
+  if (symType == sFILE || symType == sTEXTFILE)
+    {
+      /* Since this is a VAR parameter, we need to push the address of the
+       * file variable and dereference that address.
+       */
+
+      pas_GenerateStackReference(opLDS, varPtr);
+      pas_GenerateSimple(opLDI);
+
+      /* Skip over the variable identifer */
+
+      getToken();
+    }
+
+  /* Not a file-type variable.  Use the default file number (which we assume
+   * to be of type sTEXTFILE)
+   */
+
+  else
+    {
+      fileType   = sTEXTFILE;
+      fileSize   = sCHAR_SIZE;
+      pas_GenerateStackReference(opLDS, defaultFilePtr);
+    }
+
+  if (pFileSize != NULL)
+    {
+      *pFileSize = fileSize;
+    }
+
+  return fileType;
 }
 
 /****************************************************************************/

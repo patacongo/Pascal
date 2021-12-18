@@ -910,7 +910,7 @@ static symbol_t *pas_DeclareVar(void)
       if (typePtr->sKind == sFILE || typePtr->sKind == sTEXTFILE)
         {
           /* For the FILE case, typePtr is not a type at all but the pointer
-           * tto he file variable that was declared from a more nested
+           * to the file variable that was declared from a more nested
            * recusion.  We can use that symbol to clone the one at this
            * nesting level.
            */

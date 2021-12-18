@@ -49,7 +49,7 @@ Token: ':'
 Analysis:
 
 ########src/104-primes.pas########
-Line 0:0012 Error 4c Token 3b
+Line 0:0012 Error 4d Token 3b
 
 Line (in var section):
  12   sieve, primes : array[0..w] of set of 0..maxbit;
@@ -58,7 +58,9 @@ Where (in const section)
   8   maxbit = 58;
 
 Error:
-244 #define eSETRANGE        ((uint16_t) 0x48)
+241 #define eEXPRTYPE        ((uint16_t) 0x3d)
+
+Token: '='
 
 Analysis:
 This is a consequence of the fact that sets are implemented as bitsets and
@@ -68,27 +70,7 @@ the bitset is currently limited to 32-bits:
 ########src/107-quicksort.pas########
 
 These two examples compile fine but no output appears on stdout.
-
-All output comes from:
-
-106-bubblesort.pas:
- 45         FOR i := 1 TO size DO
- 46             writeln(arr[i])
-
-Presumably there is some error in the generated code:
-
-00000191 ; LINE  0:46
-00000195         PUSHS
-00000196         PUSH  1        <file-number>
-00000199         DUPH           <file-number><file-number>
-0000019a         LDH   6        <file-number><file-number><index>
-0000019d         PUSH  1        <file-number><file-number><index><min-value>
-000001a0         SUB            <file-number><file-number><index - min-value>
-000001a1         PUSH  2        <file-number><file-number><index - min-value><element-size>
-000001a4         MUL            <file-number><file-number><(index - min-value) * element-size>
-000001a5         LDXH  8        <file-number><file-number><value>
-000001a8         SYSIO WRITEINT <file-number>
-000001ab         SYSIO WRITELN
+(Perhaps they crash silently?)
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)
@@ -136,30 +118,17 @@ Token:
 #define tIDENT           0x01
 
 Analysis:
-Same problem as with src/108-pointerrecode.pas:  Use of forward reference to define a pointer variable fails.
+Same problem as with src/108-pointerrecode.pas:  Use of forward reference to
+define a pointer variable fails.
 
 ########src/601-readfile.pas########
-Runtime error 0x85 -- Execution Stopped
+Compiles without error but generates errors at run-time:
 
-Line:
- 20       writeln('Name: ',Student.s_name);
-Where:
-  2 type
-  3    StudentRecord = Record
-  4       s_name: String;
-  5       s_addr: String;
-  6       s_batchcode: String;
-  7    end;
-
-Error:
-287 #define eBADSYSIOFUNC    ((uint16_t) 0x85)
-
-Token: ')'
+  ERROR: pexec_OpenFile: Bad open mode,"No such file or directory": 0
 
 Analysis:
-Compiles fine, but generates run-time errors.
-
-Probably an issue with STRING types as factors in expression processing.
+Compiles fine, but generates run-time errors.  This is because the program
+depends on a file called students.dat which does not exist.
 
 ########src/602-writefile.pas########
 Line 0:0016 Error 1e Token 09
@@ -185,13 +154,13 @@ Analysis:
 Probably another issue related to missing string handling.
 
 ########src/603-appendfile.pas########
-Line 0:0020 Error 2c Token 4b
+Line 0:0020 Error 2d Token 4b
 
 Line:
  20      readln(myfile, info);
 
 Error:
-222 #define ePTRADR          ((uint16_t) 0x2c)
+222 #define ePTRADR          ((uint16_t) 0x2d)
 
 Token:
  83 #define sSTRING          0x4b /* String storage type */
@@ -205,82 +174,74 @@ Compiles without error but generates errors at run-time:
   ERROR: pexec_OpenFile: Bad open mode,"No such file or directory": 0
 
 Analysis:
-
 This is not really an error.  The program depes on the existence of a file
-called Students.dat which does not exist.
+called Students.dat which does not exist.  Same as src/601-readfile.pas
 
 ########src/605-subprogram.pas########
-Line 0:0052 Error 2c Token 4b
+Line 0:0052 Error 2d Token 4b
 
 Line:
  52    readln(filename);
 Where:O
-  9    filename: string;
-
-Error:
-#define ePTRVAL          ((uint16_t) 0x2d)
-
-Token:
-#define sSTRING          0x4b /* String storage type */
-
-Analysis:
-This is another case of missing string handling logic.  The error is
-generated in ptrFactor() while parsing the filename argume to the
-readln functions:
-
-2036          default :
-2037            error(ePTRADR);
-2038            break;
-
-filename has a type of string and the string type is not handled in
-the switch statement leading up to the error.
-
-########src/606-addfiledata.pas########
-Line 0:0051 Error 2c Token 4b
-
-Line:
- 51    readln(filename);
-Where:
   7 var
   9    filename: string;
 
 Error:
-222 #define ePTRADR          ((uint16_t) 0x2c)
+224 #define ePTRADR          ((uint16_t) 0x2d)
 
 Token:
  83 #define sSTRING          0x4b /* String storage type */
 
 Analysis:
-I haven't looked into this yet
+The error occurs in ptrFactor().  Pointers to strings not supported because
+there are no pointer variables in memory yet.
+
+########src/606-addfiledata.pas########
+Line 0:0052 Error 2d Token 4b
+
+Line:
+ 52    readln(filename);
+Where:O
+  7 var
+  9    filename: string;
+
+Error:
+224 #define ePTRADR          ((uint16_t) 0x2d)
+
+Token:
+ 83 #define sSTRING          0x4b /* String storage type */
+
+Analysis:
+Same as src/605-subprogram.pas
 
 ########src/803-redirect.pas########
-Line 0:0068 Error 3a Token 01 (lowercase)
+Line 0:0068 Error 3b Token 01 (lowercase)
 
 Line:
  68                   if lowercase(copy(value, 1, 5)) = 'http:' then
 
 Error:
+239 #define eUNDEFSYM        ((uint16_t) 0x3b)
+
+Token:
  44 #define tIDENT           0x01
-
-
-Token: ')'
 
 Analysis:
 The Free Pascal, non-standard lowercase() function is not supported.
 Appears as an undefined identifier.
 
 ########src/901-pageutils.pas########
-Line 0:0654 Error 0f Token 45
+Line 0:0954 Error 1e Token 01 (longword)
 
 Line:
 In TYPE definition section:
  954 ulong = longword;
 
 Error:
-184 #define eIMPLEMENTATION  ((uint16_t) 0x0f)
+208 #define eINVTYPE         ((uint16_t) 0x1e)
 
 Token:
- 75 #define sFILE            0x45
+ 44 #define tIDENT           0x01
 
 Analysis:
 Type longword is not supported.
@@ -290,6 +251,34 @@ Type longword is not supported.
 ########unit-sine.pas########
 ########unit-data.pas########
 ########sinecos.pex########
+NOW:
+---
+
+ERROR: pexec_WriteString: Not open for writing: 0
+ERROR: pexec_WriteReal: Not open for writing: 0
+ERROR: pexec_WriteString: Not open for writing: 0
+ERROR: pexec_WriteReal: Not open for writing: 0
+ERROR: pexec_WriteString: Not open for writing: 0
+ERROR: pexec_WriteReal: Not open for writing: 0
+ERROR: pexec_WriteChar: Not open for writing: 0
+sinecos.pex Loaded
+Enter radians   : cos(0.707107)=0.707107
+sin(0.707107)=0.000000
+
+Analysis:
+The error occurs in the main block in the statement:
+
+   19    writeln('sin(', x, ')**2 + cos(', x, ')**2=', myone)
+
+I can see that something in the logic of the function myone corrupts that stack:
+
+The value of OUTPUT on the stack is 1 prior to calling 'myone' but has changed
+to 0 on return, casing the error (0 is INPUT which is not open for writing).
+The 'myone' is in unit-data.pas
+
+BEFORE:
+------
+
 sinecos.pex Loaded
 Enter radians   : cos(0.707107)=0.707107
 sin(0.707107)=-1049815400776833903362048.000000
@@ -298,11 +287,10 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Could not read POFF file, errcode=0x71
-
+Line 0:0055 Error 2f Token 2c
 
 Error:
-#define eRBRACKET        ((uint16_t) 0x2e)
+#define eRBRACKET        ((uint16_t) 0x2f)
 
 Line:
  55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
@@ -315,10 +303,10 @@ Analysis:
 The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-Line 0:0122 Error 3a Token 01 (Length)
+Line 0:0122 Error 3b Token 01 (Length)
 
 Error:
-237 #define eUNDEFSYM        ((uint16_t) 0x3a)
+237 #define eUNDEFSYM        ((uint16_t) 0x3b)
 
 Line:
 122                     WHILE (Ch <> ' ') AND (Length(DayStr) < DaySize) DO
