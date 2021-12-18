@@ -887,7 +887,7 @@ static symbol_t *pas_DeclareVar(void)
 
           filePtr = pas_AddFile(varName, fileKind, g_dStack, fileSize,
                                 fileTypePtr);
-          pas_AddFileInitializer(filePtr);
+          pas_AddFileInitializer(filePtr, false, 0);
           g_dStack   += sINT_SIZE;
           return filePtr;
         }

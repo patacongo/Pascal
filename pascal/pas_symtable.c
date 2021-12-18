@@ -614,11 +614,11 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
   /* Add the standard files to the symbol table */
 
   g_inputFile = pas_AddFile("INPUT", sTEXTFILE, g_dStack, sCHAR_SIZE, NULL);
-  pas_AddFileInitializer(g_inputFile);
+  pas_AddFileInitializer(g_inputFile, true, INPUT_FILE_NUMBER);
   g_dStack += sINT_SIZE;
 
   g_outputFile = pas_AddFile("OUTPUT", sTEXTFILE, g_dStack, sCHAR_SIZE, NULL);
-  pas_AddFileInitializer(g_outputFile);
+  pas_AddFileInitializer(g_outputFile, true, OUTPUT_FILE_NUMBER);
   g_dStack += sINT_SIZE;
 }
 

@@ -107,7 +107,7 @@ void pas_Program(void)
               filePtr = pas_AddFile(g_tokenString, sTEXTFILE, g_dStack,
                                     sCHAR_SIZE, NULL);
               nFiles++;
-              pas_AddFileInitializer(filePtr);
+              pas_AddFileInitializer(filePtr, false, 0);
               g_dStack  += sINT_SIZE;
               g_stringSP = g_tokenString;
               getToken();

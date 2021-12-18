@@ -48,7 +48,8 @@ extern int g_levelInitializerOffset; /* Index to initializers for this level */
  * Public Function Prototypes
  ***************************************************************************/
 
-void pas_AddFileInitializer(symbol_t *filePtr);
+void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
+                            uint16_t fileNumber);
 void pas_Initialization(void);
 void pas_Finalization(void);
 
