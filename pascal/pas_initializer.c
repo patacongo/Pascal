@@ -39,6 +39,7 @@
  **********************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -66,6 +67,7 @@
 struct initializer_s
 {
   symbol_t *symbol;
+  bool stdFile;
 };
 
 typedef struct initializer_s initializer_t;
@@ -75,13 +77,14 @@ typedef struct initializer_s initializer_t;
  **********************************************************************/
 
 static initializer_t g_initializers[MAX_INITIALIZERS];
+static int g_nFilesInitialized = 0;
 
 /**********************************************************************
  * Public Data
  **********************************************************************/
 
-int g_nInitializer           = 0; /* The top of the initializer stack */
-int g_levelInitializerOffset = 0; /* Index to initializers for this level */
+int g_nInitializer             = 0; /* The top of the initializer stack */
+int g_levelInitializerOffset   = 0; /* Index to initializers for this level */
 
 /**********************************************************************
  * Private Functions
@@ -96,7 +99,9 @@ void pas_AddFileInitializer(symbol_t *filePtr)
   if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
   else
     {
-      g_initializers[g_nInitializer++].symbol = filePtr;
+      g_initializers[g_nInitializer].symbol  = filePtr;
+      g_initializers[g_nInitializer].stdFile = false;
+      g_nInitializer++;
     }
 }
 
@@ -113,10 +118,32 @@ void pas_Initialization(void)
       symbol_t *varPtr = g_initializers[initializer].symbol;
       if (varPtr->sKind == sFILE || varPtr->sKind == sTEXTFILE)
         {
+          /* INPUT and OUTPUT are pre-allocated and pre-initialized */
           /* REVISIT:  How about ARRAYs of files. */
 
-          pas_GenerateIoOperation(xALLOCFILE);
+          if (g_nFilesInitialized < 2)
+            {
+              uint32_t fileNumber;
+
+              if (g_nFilesInitialized == 0)
+                {
+                  fileNumber = INPUT_FILE_NUMBER;
+                }
+              else
+                {
+                  fileNumber = OUTPUT_FILE_NUMBER;
+                }
+
+              pas_GenerateDataOperation(opPUSH, fileNumber);
+              g_initializers[initializer].stdFile = true;
+            }
+          else
+            {
+              pas_GenerateIoOperation(xALLOCFILE);
+            }
+
           pas_GenerateStackReference(opSTS, varPtr);
+          g_nFilesInitialized++;
         }
     }
 }
@@ -132,10 +159,14 @@ void pas_Finalization(void)
        initializer++)
     {
       symbol_t *varPtr = g_initializers[initializer].symbol;
+
       if (varPtr->sKind == sFILE || varPtr->sKind == sTEXTFILE)
         {
-          pas_GenerateStackReference(opLDS, varPtr);
-          pas_GenerateIoOperation(xFREEFILE);
+          if (!g_initializers[initializer].stdFile)
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+              pas_GenerateIoOperation(xFREEFILE);
+            }
         }
     }
 }
