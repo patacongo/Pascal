@@ -56,7 +56,7 @@
 #include "pas_insn.h"      /* (DEBUG only) */
 #include "pas_error.h"     /* error() */
 
-#include "pas_procedure.h" /* for actualParameterSize */
+#include "pas_procedure.h" /* for pas_ActualParameterSize */
 #include "pas_codegen.h"   /* (to verify prototypes in this file) */
 
 /**********************************************************************
@@ -425,7 +425,7 @@ void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
 
    for (i = 0; i < nparms; i++)
      {
-       pContainer->argsize[i] = actualParameterSize(pProc, i+1);
+       pContainer->argsize[i] = pas_ActualParameterSize(pProc, i+1);
      }
 
    /* Add the contained information to the library */

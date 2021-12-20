@@ -126,20 +126,6 @@
 
 #define lbSTRINIT       (0x0005)
 
-/* Free the string buffer from a a previously initialized string.  This
- * is called on exit from a Pascal block for local strings that need to
- * to be destroyed.
- *
- *   procedure strfee(str : string);
- *
- * ON INPUT
- *   TOS(st, 0)=pointer to the allocated string variable to be freed
- *   TOS(st, 1)=Size of the valid data in the string (not used)
- * ON RETURN
- */
-
-#define lbSTRFREE       (0x0006)
-
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
  *
@@ -153,7 +139,7 @@
  *   TOS(1)=length of new string
  */
 
-#define lbSTRDUP        (0x0007)
+#define lbSTRDUP        (0x0006)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -164,7 +150,7 @@
  *   TOS(1)=length of new string
  */
 
-#define lbMKSTKC        (0x0008)
+#define lbMKSTKC        (0x0007)
 
 /* Concatenate a string to the end of a string.
  *
@@ -180,7 +166,7 @@
  *   TOS(st, 1)=new length of dest string2
  */
 
-#define lbSTRCAT        (0x0009)
+#define lbSTRCAT        (0x0008)
 
 /* Concatenate a character to the end of a string.
  *
@@ -195,23 +181,23 @@
  *   TOS(1)=new length of string
  */
 
-#define lbSTRCATC       (0x000a)
+#define lbSTRCATC       (0x0009)
 
 /* Compare two pascal strings
  *
  *   function strcmp(name1 : string, name2 : string) : integer;
  *
  * ON INPUT
- *   TOS(1)=length of string2
  *   TOS(2)=address of string2 data
- *   TOS(3)=length of string1
+ *   TOS(1)=length of string2
  *   TOS(4)=address of string1 data
+ *   TOS(3)=length of string1
  * ON OUTPUT
  *   TOS(0)=(-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x000b)
+#define lbSTRCMP        (0x000a)
 
-#define MAX_LBOP        (0x000c)
+#define MAX_LBOP        (0x000b)
 
 #endif /* __PAS_LIBRARY_H */

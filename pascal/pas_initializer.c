@@ -141,7 +141,8 @@ void pas_AddStringInitializer(symbol_t *filePtr)
 
 void pas_Initialization(void)
 {
-  int index;
+  bool pushs = false;
+  int  index;
 
   /* Generate each index */
 
@@ -171,6 +172,17 @@ void pas_Initialization(void)
             break;
 
           case sSTRING:
+            /* Generate a PUSHS (push string stack pointer) if we have not
+             * already done so.
+             */
+
+            if (!pushs)
+              {
+                /* Generate a PUSHS (push string stack pointer) */
+
+                pas_GenerateSimple(opPUSHS);
+              }
+
             /* Generate:
              *
              *   TOS = Address of string variable to be initialized
@@ -178,6 +190,7 @@ void pas_Initialization(void)
 
              pas_GenerateStackReference(opLAS, varPtr);
              pas_StandardFunctionCall(lbSTRINIT);
+             pushs = true;
              break;
 
           default:
@@ -189,6 +202,7 @@ void pas_Initialization(void)
 
 void pas_Finalization(void)
 {
+  bool pops = false;
   int index;
 
   /* Free resources used by pas_Initialization */
@@ -214,14 +228,19 @@ void pas_Finalization(void)
                   break;
 
               case sSTRING :
-                  pas_GenerateDataSize(sSTRING_SIZE);
-                  pas_GenerateStackReference(opLDSM, varPtr);
-                  pas_StandardFunctionCall(lbSTRFREE);
+                  pops = true;
                   break;
 
               default:
                   break;
             }
         }
+    }
+
+  /* If there are any strings, generate a POPS (pop the saved string stack). */
+
+  if (pops)
+    {
+      pas_GenerateSimple(opPOPS);
     }
 }

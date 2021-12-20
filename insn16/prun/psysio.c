@@ -892,9 +892,9 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       pexec_WriteChar(fileNumber, (uint8_t)value);
       break;
 
-    /* WRITE_STRING: TOS   = Write size
-     *               TOS+1 = Write address
-     *               TOS+2 = File number
+    /* WRITE_STRING: TOS(0) = Write address
+     *               TOS(1) = Write size
+     *               TOS(2) = File number
      */
 
     case xWRITE_STRING :

@@ -287,9 +287,9 @@ uint16_t pas_GenerateFileNumber(uint16_t *pFileSize, symbol_t *defaultFilePtr)
 
 /***********************************************************************/
 
-int actualParameterSize(symbol_t *procPtr, int parmNo)
+int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
 {
-  /* These sizes must agree with the sizes used in actualParameterListg()
+  /* These sizes must agree with the sizes used in pas_ActualParameterListg()
    * below.
    */
 
@@ -329,7 +329,7 @@ int actualParameterSize(symbol_t *procPtr, int parmNo)
 
 /***********************************************************************/
 
-int actualParameterList(symbol_t *procPtr)
+int pas_ActualParameterList(symbol_t *procPtr)
 {
   symbol_t *typePtr;
   exprType_t exprType;
@@ -337,7 +337,7 @@ int actualParameterList(symbol_t *procPtr)
   int parmIndex = 0;
   int size = 0;
 
-  TRACE(g_lstFile,"[actualParameterList]");
+  TRACE(g_lstFile,"[pas_ActualParameterList]");
 
   /* Processes the (optional) actual-parameter-list associated with
    * a function or procedure call:
@@ -378,7 +378,7 @@ int actualParameterList(symbol_t *procPtr)
       /* Loop to process the expected number of parameters.  The formal
        * argument descriptions follow the procedure/function description
        * as an array of variable declarations. (These sizes below must
-       * agree with actualParameterSize() above);
+       * agree with pas_ActualParameterSize() above);
        */
 
       for (parmIndex = 1;
@@ -1429,8 +1429,8 @@ static void writeText(void)
 
         case exprString :
         case exprStkString :
-          /* WRITE_STRING: TOS   = Write size
-           *               TOS+1 = Write address
+          /* WRITE_STRING: TOS   = Write address
+           *               TOS+1 = Write size
            *               TOS+2 = File number
            */
 
@@ -1657,7 +1657,7 @@ static void valProc(void)         /* VAL procedure */
 
   /* Setup the actual-parameter-list */
 
-  (void)actualParameterList(valSymbol);
+  (void)pas_ActualParameterList(valSymbol);
 
   /* Generate the built-in procedure call.  NOTE the procedure call
    * logic will release the parameters from the stack saving us from

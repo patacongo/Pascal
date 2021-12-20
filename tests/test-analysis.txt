@@ -31,6 +31,16 @@ writing, the following errors are reported when testall.sh is ran:
       output = 2;
     I am not sure what these mean and have just commented them out for now.
     Assignment of a numeric value to a file is not supported.
+ 9. Pascal runtime memory is divided into three regions:  String stack, RO
+    data, and the Pascal run-time stack.  The size of the string stack is
+    set with the -t option to prun and 1024 is the default size used by the
+    testone.sh script.  String allocations are large, 256 bytes, and the
+    string stack is lazy, only when a procedure/function returns.  As a
+    result, programs with functions that do a lot of string operations need
+    a start larger than the 1024 default.  202-strcat.pas is one that needs
+    a larger string stack.
+    NOTE that improved string stack recovery/usage is already on the TODO
+    list.
 
 Successful test results are not shown.
 

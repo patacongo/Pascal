@@ -54,7 +54,7 @@
 #include "pas_main.h"
 #include "pas_statement.h"
 #include "pas_expression.h"
-#include "pas_procedure.h"  /* for actualParameterList() */
+#include "pas_procedure.h"  /* for pas_ActualParameterList() */
 #include "pas_function.h"
 #include "pas_codegen.h"    /* for pas_Generate*() */
 #include "pas_token.h"
@@ -2761,7 +2761,7 @@ static exprType_t functionDesignator(void)
    * value container.
    */
 
-  size = actualParameterList(funcPtr);
+  size = pas_ActualParameterList(funcPtr);
 
   /* Generate function call and stack adjustment (if required) */
 

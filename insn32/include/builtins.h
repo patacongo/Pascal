@@ -208,11 +208,6 @@
 #define lbSTRINIT_INIT \
     { "_lbstrinit",  0, 1, { sPTR_SIZE }}
 
-/* _lbstrfree(str : string); */
-
-#define lbSTRFREE_INIT \
-    { "_lbstrfree",  0, 1, { sSTRING_SIZE }}
-
 /* function strdup(name : string) : string; */
 
 #define lbSTRDUP_INIT \

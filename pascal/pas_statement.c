@@ -999,7 +999,7 @@ static void pas_ProcStatement(void)
    * call.
    */
 
-  size = actualParameterList(procPtr);
+  size = pas_ActualParameterList(procPtr);
 
   /* Generate procedure call and stack adjustment (if required)
    * Upon return from the procedure, the level stack pointer (LSP)

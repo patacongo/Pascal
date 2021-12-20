@@ -49,8 +49,9 @@
 
 void     pas_PrimeStandardProcedures(void);
 void     pas_StandardProcedure(void);
-uint16_t pas_GenerateFileNumber(uint16_t *pFileSize, symbol_t *defaultFilePtr);
-int      actualParameterSize(symbol_t *procPtr, int parmNo);
-int      actualParameterList(symbol_t *procPtr);
+uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
+                                symbol_t *defaultFilePtr);
+int      pas_ActualParameterSize(symbol_t *procPtr, int parmNo);
+int      pas_ActualParameterList(symbol_t *procPtr);
 
 #endif /* __PAS_PROCEDURE_H */

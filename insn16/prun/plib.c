@@ -310,39 +310,6 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       PUTSTACK(st, 0,     addr1 + sSTRING_SIZE_OFFSET);
       break;
 
-      /* Free the string buffer from a a previously initialized string.  This
-       * is called on exit from a Pascal block for local strings that need to
-       * to be destroyed.
-       *
-       *   procedure strfee(str : string);
-       *
-       * ON INPUT
-       *   TOS(st, 0)=pointer to the allocated string variable to be freed
-       *   TOS(st, 1)=Size of the valid data in the string (not used)
-       * ON RETURN
-       */
-
-    case lbSTRFREE :
-      /* Get input parameters */
-
-      POP(st, addr1);  /* Address of string buffer to free */
-      DISCARD(st, 1);  /* Discard the size.  We don't need it. */
-
-      /* Chop of the top of the string stack (but only if addr lies in the
-       * stack).  This may seem brutal but is okay because this function is
-       * called only at the end of a block and we need to free all of the
-       * string stack used at that level.  A more robust design would be
-       * better, i.e., one where we explicitly save and restore the top of
-       * the string stack on enty and exit from the block.
-       */
-
-      if (addr1 < st->csp)
-        {
-          st->csp = addr1;
-        }
-
-      break;
-
       /* Replace a string with a duplicate string residing in allocated
        * string stack.
        *
@@ -517,10 +484,10 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* Compare two pascal strings
        *   function strcmp(name1 : string, name2 : string) : integer;
        * ON INPUT
-       *   TOS(st, 1)=length of string2
        *   TOS(st, 2)=address of string2 data
-       *   TOS(st, 3)=length of string1
+       *   TOS(st, 1)=length of string2
        *   TOS(st, 4)=address of string1 data
+       *   TOS(st, 3)=length of string1
        * ON OUTPUT
        *   TOS(st, 0)=(-1=less than, 0=equal, 1=greater than}
        */
@@ -533,10 +500,10 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
          * return value);
          */
 
-        POP(st, uparm2);     /* length of string2 */
-        POP(st, addr2);      /* address of string2 data */
-        POP(st, uparm1);     /* length of string1 */
-        addr1 = TOS(st, 0);  /* address of string1 data */
+        POP(st, addr2);      /* Address of string2 data */
+        POP(st, uparm2);     /* Length of string2 */
+        POP(st, addr1);      /* Address of string1 data */
+        uparm1 = TOS(st, 0); /* Length of string1 */
 
         /* Get full address */
 

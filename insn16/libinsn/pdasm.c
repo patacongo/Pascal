@@ -460,8 +460,8 @@ static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
 /* 0x00 */ "HALT",      "GETENV",     "STRCPY",     "CSTR2STR",
-/* 0x04 */ "VAL",       "STRINIT",    "STRFREE",    "STRDUP",
-/* 0x08 */ "MKSTKC",    "STRCAT",     "STRCATC",    "STRCMP"
+/* 0x04 */ "VAL",       "STRINIT",    "STRDUP",     "MKSTKC",
+/* 0x08 */ "STRCAT",    "STRCATC",    "STRCMP"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";
