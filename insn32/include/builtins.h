@@ -186,62 +186,57 @@
 /* string _lbgetenv(string *name); */
 
 #define lbGETENV_INIT \
-    { "_lbgetenv", sRSTRING_SIZE, 1, { sRSTRING_SIZE }}
+    { "_lbgetenv", sSTRING_SIZE, 1, { sSTRING_SIZE }}
 
-/* void _lbstr2str(string src, string dest); */
+/* void _lbstrcpy(string src, string *dest); */
 
-#define lbSTR2STR_INIT \
-    { "_lbstgr2str", 0, 2, { sRSTRING_SIZE, sRSTRING_SIZE }}
+#define lbSTRCPY_INIT \
+    { "_lbstrcpy", 0, 2, { sSTRING_SIZE, sPTR_SIZE }}
 
 /* void _lbcstr2str(string src, string dest); */
 
 #define lbCSTR2STR_INIT \
-    { "_lbcstr2str", 0, 2, { sRSTRING_SIZE, sRSTRING_SIZE }}
-
-/* void _libstr2rstr(string src, string dest); */
-
-#define lbSTR2RSTR_INIT \
-    { "_lbstr2rstr", 0, 2, { sRSTRING_SIZE, sRSTRING_SIZE }}
-
-/* void _lbcstr2str(string src, string dest); */
-
-#define lbCSTR2RSTR_INIT \
-    { "_lbcstr2rstr", 0, 2, { sRSTRING_SIZE, sRSTRING_SIZE }}
+    { "_lbcstr2str", 0, 2, { sSTRING_SIZE, sSTRING_SIZE }}
 
 /* void _lbval(const string s, int *v, int *code); */
 
 #define lbVAL_INIT \
-    { "_lbval", 0, 2, { sRSTRING_SIZE, sPTR_SIZE, sPTR_SIZE }}
+    { "_lbval", 0, 2, { sSTRING_SIZE, sPTR_SIZE, sPTR_SIZE }}
 
-/* string _lbmkstk(void); */
+/* _lbstrinit(VAR str : string); */
 
-#define lbMKSTK_INIT \
-    { "_lbmkstk",  sRSTRING_SIZE, 0, { 0 }}
+#define lbSTRINIT_INIT \
+    { "_lbstrinit",  0, 1, { sPTR_SIZE }}
 
-/* string mkstkstr(string name); */
+/* _lbstrfree(str : string); */
 
-#define lbMKSTKSTR_INIT \
-    { "_lbmkstkstr",  sRSTRING_SIZE, 1, { sRSTRING_SIZE }}
+#define lbSTRFREE_INIT \
+    { "_lbstrfree",  0, 1, { sSTRING_SIZE }}
+
+/* function strdup(name : string) : string; */
+
+#define lbSTRDUP_INIT \
+    { "_lbstrdup",  sSTRING_SIZE, 1, { sSTRING_SIZE }}
 
 /* string _lbmkstkc(int c); */
 
 #define lbMKSTKC_INIT \
-    { "_lbmkstkc",  sRSTRING_SIZE, 1, { sINT_SIZE }}
+    { "_lbmkstkc",  sSTRING_SIZE, 1, { sINT_SIZE }}
 
 /* string _lbstgrcat(string name, int c); */
 
 #define lbSTRCAT_INIT \
-    { "_lbstrcat",  sRSTRING_SIZE, 2, { sRSTRING_SIZE, sINT_SIZE }}
+    { "_lbstrcat",  sSTRING_SIZE, 2, { sSTRING_SIZE, sINT_SIZE }}
 
 /* string _lbstrcatc(string name, int c); */
 
 #define lbSTRCATC_INIT \
-    { "_lbstrcatc",  sRSTRING_SIZE, 2, { sRSTRING_SIZE, sINT_SIZE }}
+    { "_lbstrcatc",  sSTRING_SIZE, 2, { sSTRING_SIZE, sINT_SIZE }}
 
 /* int _lbstrcmp(string name1, string name2); */
 
 #define lbSTRCMP_INIT \
-    { "_lbstrcmp", sINT_SIZE, 2, { sRSTRING_SIZE, sRSTRING_SIZE }}
+    { "_lbstrcmp", sINT_SIZE, 2, { sSTRING_SIZE, sSTRING_SIZE }}
 
 /* Floating point library built-ins ************************************/
 

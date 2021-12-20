@@ -48,7 +48,7 @@
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"      /* general operation codes */
 #include "pas_fpops.h"      /* floating point operations */
-#include "pas_sysio.h"      /* library operations */
+#include "pas_library.h"    /* library operations */
 #include "pas_errcodes.h"
 
 #include "pas_main.h"
@@ -325,14 +325,14 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
    *    if the requested type is a real expression.
    */
 
-  if ((findExprType != exprUnknown) &&     /* 1)NOT Any expression */
-      (findExprType != simple1Type) &&     /* 2)NOT Matched expression */
-      ((findExprType != exprAnyOrdinal) || /* 3)NOT any ordinal type */
-       (!isOrdinalType(simple1Type))) &&   /*   OR type is not ordinal */
-      ((findExprType != exprAnyString) ||  /* 4)NOT any string type */
-       (!isAnyStringType(simple1Type))) && /*   OR type is not string */
-      ((findExprType != exprString) ||     /* 5)Not looking for string ref */
-       (!isStringReference(simple1Type)))) /*   OR type is not string ref */
+  if (findExprType != exprUnknown &&     /* 1)NOT Any expression */
+      findExprType != simple1Type &&     /* 2)NOT Matched expression */
+      (findExprType != exprAnyOrdinal || /* 3)NOT any ordinal type */
+       !isOrdinalType(simple1Type)) &&   /*   OR type is not ordinal */
+      (findExprType != exprAnyString ||  /* 4)NOT any string type */
+       !isAnyStringType(simple1Type)) && /*   OR type is not string */
+      (findExprType != exprString ||     /* 5)Not looking for string ref */
+       !isStringReference(simple1Type))) /*   OR type is not string ref */
     {
       /* Automatic conversions from INTEGER to REAL will be performed */
 
@@ -495,7 +495,6 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
           break;
 
         case sSTRING :
-        case sRSTRING :
           factorType = exprString;
           break;
 
@@ -605,9 +604,6 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
                 case sTEXTFILE :
                   return exprFile;    /* File number */
 
-                case sRSTRING :
-                  return exprCString; /* pointer to C string */
-
                 case sRECORD :
                 case sRECORD_OBJECT :
                   return exprRecord;  /* record */
@@ -701,7 +697,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
 
       /* Special case for string types.  So far, we have parsed
        * '<string> +'  At this point, it is safe to assume we
-       * going to modified string.  So, if the string has not
+       * going to modify a string.  So, if the string has not
        * been copied to the string stack, we will have to do that
        * now.
        */
@@ -712,7 +708,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
            * change the expression type to reflect this.
            */
 
-          pas_StandardFunctionCall(lbMKSTKSTR);
+          pas_StandardFunctionCall(lbSTRDUP);
           term1Type = exprStkString;
         }
 
@@ -757,7 +753,7 @@ static exprType_t simpleExpression(exprType_t findExprType)
               if (term1Type == exprReal && term2Type == exprInteger)
                 {
                   arg8FpBits = fpARG2;
-                  term2Type = exprReal;
+                  term2Type  = exprReal;
                 }
 
               /* Handle the case where the 1st argument is Integer and the
@@ -1201,8 +1197,9 @@ static exprType_t factor(exprType_t findExprType)
     case tSTRING_CONST :
       {
         /* Final stack representation is:
-         * TOS(0) : size in bytes
-         * TOS(1) : pointer to string
+         *
+         *   TOS(0) : pointer to string
+         *   TOS(1) : size in bytes
          *
          * Add the string to the RO data section of the output
          * and get the offset to the string location.
@@ -1212,8 +1209,8 @@ static exprType_t factor(exprType_t findExprType)
 
         /* Get the offset then size of the string on the stack */
 
-        pas_GenerateDataOperation(opLAC, offset);
         pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
+        pas_GenerateDataOperation(opLAC, offset);
 
         /* Release the tokenized string */
 
@@ -1225,40 +1222,27 @@ static exprType_t factor(exprType_t findExprType)
 
     case sSTRING_CONST :
       /* Final stack representation is:
-       * TOS(0) : size in bytes
-       * TOS(1) : pointer to string
+       *
+       *   TOS(0) : pointer to string
+       *   TOS(1) : size in bytes
        */
 
-      pas_GenerateDataOperation(opLAC, g_tknPtr->sParm.s.offset);
       pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.s.size);
+      pas_GenerateDataOperation(opLAC, g_tknPtr->sParm.s.offset);
       getToken();
       factorType = exprString;
       break;
 
     case sSTRING :
-      /* Final stack representation is:
-       *   TOS(0) = size in bytes
-       *   TOS(1) = pointer to string data
-       */
-
-      pas_GenerateDataOperation(opPUSH, sSTRING_HDR_SIZE);
-      pas_GenerateStackReference(opLASX, g_tknPtr);
-      pas_GenerateStackReference(opLDSH, g_tknPtr);
-
-      getToken();
-      factorType = exprString;
-      break;
-
-    case sRSTRING :
-      /* Final stack representation is:
-       *   TOS(0) : size in bytes
-       *   TOS(1) : pointer to string data
+      /* Stack representation is:
        *
-       * We get that by just cloning the reference on the top of the stack
+       *   TOS(0) = pointer to string data
+       *   TOS(1) = size in bytes
        */
 
-      pas_GenerateDataSize(g_tknPtr->sParm.v.size);
+      pas_GenerateDataSize(sSTRING_SIZE);
       pas_GenerateStackReference(opLDSM, g_tknPtr);
+
       getToken();
       factorType = exprString;
       break;
@@ -2759,24 +2743,9 @@ static exprType_t functionDesignator(void)
   /* Allocate stack space for a reference instance of the type
    * returned by the function.  This is an uninitalized "container"
    * that will catch the valued returned by the function.
-   *
-   * Check for the special case of a string value.  In this case,
-   * the container cannot be empty.  Rather, it must refer to an
-   * empty string allocated on the string strack
    */
 
-  if (typePtr->sParm.t.rtype == sRSTRING)
-    {
-      /* Create and empty string reference */
-
-      pas_StandardFunctionCall(lbMKSTK);
-    }
-  else
-    {
-      /* Okay, create the empty container */
-
-      pas_GenerateDataOperation(opINDS, typePtr->sParm.t.rsize);
-    }
+   pas_GenerateDataOperation(opINDS, typePtr->sParm.t.rsize);
 
   /* Get the type of the function */
 

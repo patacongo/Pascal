@@ -400,7 +400,6 @@ static exprType_t builtInSizeOf(void)
       case sCHAR :
       case sREAL :
       case sSTRING :
-      case sRSTRING :
       case sSCALAR :
       case sSUBRANGE :
       case sSET_OF :

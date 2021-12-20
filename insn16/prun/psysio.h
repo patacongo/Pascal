@@ -1,8 +1,8 @@
 /***************************************************************************
- * pas_initializer.h
- * External Declarations associated with pas_initializer.c
+ * psysio.h
+ * External Declarations associated with the run-time file table
  *
- *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,24 +34,44 @@
  *
  ***************************************************************************/
 
-#ifndef __PAS_INITIIALIZER_H
-#define __PAS_INITIIALIZER_H
+#ifndef __PFILE_H
+#define __PFILE_H
 
 /***************************************************************************
- * Public Data
+ * Included Files
  ***************************************************************************/
 
-extern int g_nInitializer;           /* The top of the initializer stack */
-extern int g_levelInitializerOffset; /* Index to initializers for this level */
+#include <stdint.h>
+#include <stdbool.h>
+#include "pexec.h"
+
+/***************************************************************************
+ * Pre-processor Definitions
+ ***************************************************************************/
+
+/* Maximum number of files that can be opened at run-time */
+
+#define MAX_OPEN_FILES 8
+
+/***************************************************************************
+ * Public Types
+ ***************************************************************************/
+
+enum openMode_e
+{
+  eOPEN_NONE = 0,
+  eOPEN_READ,
+  eOPEN_WRITE,
+  eOPEN_APPEND
+};
+
+typedef enum openMode_e openMode_t;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
-                            uint16_t fileNumber);
-void pas_AddStringInitializer(symbol_t *filePtr);
-void pas_Initialization(void);
-void pas_Finalization(void);
+void     pexec_InitializeFile(void);
+uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc);
 
-#endif /* __PAS_INITIIALIZER_H */
+#endif /* __PFILE_H */

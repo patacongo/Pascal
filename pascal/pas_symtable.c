@@ -603,9 +603,9 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
   if (typePtr)
     {
       g_parentString            = typePtr;
-      typePtr->sParm.t.rtype    = sRSTRING;
+      typePtr->sParm.t.rtype    = sSTRING;
       typePtr->sParm.t.subType  = sCHAR;
-      typePtr->sParm.t.rsize    = sRSTRING_SIZE;
+      typePtr->sParm.t.rsize    = sSTRING_SIZE;
       typePtr->sParm.t.flags    = STYPE_VARSIZE;
       typePtr->sParm.t.minValue = MINCHAR;
       typePtr->sParm.t.maxValue = MAXCHAR;

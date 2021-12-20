@@ -2,7 +2,7 @@
  *  psopt.c
  *  String Stack Optimizaitons
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@
 #include "pas_errcodes.h"
 #include "pinsn16.h"
 #include "pas_sysio.h"
+#include "pas_library.h"
 
 #include "popt.h"
 #include "psopt.h"
@@ -287,10 +288,13 @@ static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
           arg16  = (arg16a << 8) | arg16b;
           inch   = poffGetProgByte(poffHandle);
 
-          /* Is it LIB MKSTK? MKSTKSTR? or MKSTKC? */
+          /* Is it LIB STRINIT? STRDUP? or other string library functions
+           * that we should not optimize?
+           */
 
-          if ((arg16 == lbMKSTK) ||
-              (arg16 == lbMKSTKSTR) ||
+          if ((arg16 == lbSTRINIT) ||
+              (arg16 == lbSTRFREE) ||
+              (arg16 == lbSTRDUP) ||
               (arg16 == lbMKSTKC))
             {
               /* Flush the buffered data with the PUSHS */

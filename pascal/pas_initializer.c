@@ -48,6 +48,7 @@
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "pas_sysio.h"
+#include "pas_library.h"
 #include "pas_errcodes.h"
 
 #include "pas_error.h"
@@ -66,9 +67,24 @@
 
 struct initializer_s
 {
-  symbol_t *symbol;
-  bool      preallocated;
-  uint16_t  fileNumber;
+  symbol_t *symbol;                 /* Symbol table reference */
+
+  union
+    {
+      /* File variable initialization data */
+
+      struct
+        {
+          bool      preallocated;  /* File number is pre-allocated */
+          uint16_t  fileNumber;    /* Pre-allocted file number */
+        };
+
+      /* String variable initialization data */
+
+      struct
+        {
+        };
+    };
 };
 
 typedef struct initializer_s initializer_t;
@@ -107,6 +123,22 @@ void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
     }
 }
 
+void pas_AddStringInitializer(symbol_t *filePtr)
+{
+  /* Remember the file variable info so that we can use it at the appropriate
+   * time.
+   */
+
+  if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
+  else
+    {
+      g_initializers[g_nInitializer].symbol       = filePtr;
+      g_initializers[g_nInitializer].preallocated = false;
+      g_initializers[g_nInitializer].fileNumber   = 0;
+      g_nInitializer++;
+    }
+}
+
 void pas_Initialization(void)
 {
   int index;
@@ -120,20 +152,37 @@ void pas_Initialization(void)
       initializer_t *initializer = &g_initializers[index];
       symbol_t      *varPtr      = initializer->symbol;
 
-      if (varPtr->sKind == sFILE || varPtr->sKind == sTEXTFILE)
+      switch (varPtr->sKind)
         {
           /* REVISIT:  How about ARRAYs of files. */
 
-          if (initializer->preallocated)
-            {
-              pas_GenerateDataOperation(opPUSH, initializer->fileNumber);
-            }
-          else
-            {
-              pas_GenerateIoOperation(xALLOCFILE);
-            }
+          case sFILE :
+          case sTEXTFILE :
+            if (initializer->preallocated)
+              {
+                pas_GenerateDataOperation(opPUSH, initializer->fileNumber);
+              }
+            else
+              {
+                pas_GenerateIoOperation(xALLOCFILE);
+              }
 
-          pas_GenerateStackReference(opSTS, varPtr);
+            pas_GenerateStackReference(opSTS, varPtr);
+            break;
+
+          case sSTRING:
+            /* Generate:
+             *
+             *   TOS = Address of string variable to be initialized
+             */
+
+             pas_GenerateStackReference(opLAS, varPtr);
+             pas_StandardFunctionCall(lbSTRINIT);
+             break;
+
+          default:
+            error(eHUH);
+            break;
         }
     }
 }
@@ -150,14 +199,28 @@ void pas_Finalization(void)
     {
       initializer_t *initializer = &g_initializers[index];
 
+      /* If the variable uses all pre-allocated resources, then do nothing. */
+
       if (!initializer->preallocated)
         {
-          symbol_t *varPtr = initializer->symbol;
+          symbol_t   *varPtr      = initializer->symbol;
 
-          if (varPtr->sKind == sFILE || varPtr->sKind == sTEXTFILE)
+          switch (varPtr->sKind)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
-              pas_GenerateIoOperation(xFREEFILE);
+              case sFILE :
+              case sTEXTFILE :
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateIoOperation(xFREEFILE);
+                  break;
+
+              case sSTRING :
+                  pas_GenerateDataSize(sSTRING_SIZE);
+                  pas_GenerateStackReference(opLDSM, varPtr);
+                  pas_StandardFunctionCall(lbSTRFREE);
+                  break;
+
+              default:
+                  break;
             }
         }
     }

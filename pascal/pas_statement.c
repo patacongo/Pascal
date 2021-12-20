@@ -48,7 +48,7 @@
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
-#include "pas_sysio.h"
+#include "pas_library.h"
 
 #include "pas_main.h"
 #include "pas_statement.h"
@@ -171,7 +171,6 @@ void pas_Statement(void)
       break;
 
     case sSTRING :
-    case sRSTRING :
       symPtr = g_tknPtr;
       getToken();
       pas_StringAssignment(symPtr, symPtr->sParm.v.parent);
@@ -796,97 +795,57 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
 {
   exprType_t stringKind;
 
-   TRACE(g_lstFile,"[pas_StringAssignment]");
+  TRACE(g_lstFile,"[pas_StringAssignment]");
 
-   /* FORM:  <variable OR function identifer> := <expression> */
+  /* FORM:  <variable OR function identifer> := <expression> */
 
-   /* Verify that the assignment token follows the indentifier */
+  /* Verify that the assignment token follows the indentifier */
 
-   if (g_token != tASSIGN) error (eASSIGN);
-   else getToken();
+  if (g_token != tASSIGN) error (eASSIGN);
+  else getToken();
 
-   /* Get the expression after assignment token. We'll take any kind
-    * of string expression.  This is a hack to handle calls to system
-    * functions that return exprCString pointers that must be converted
-    * to exprString records upon assignment.
-    */
+  /* Get the expression after assignment token. We'll take any kind
+   * of string expression.  This is a hack to handle calls to system
+   * functions that return exprCString pointers that must be converted
+   * to exprString records upon assignment.
+   */
 
-   stringKind = pas_Expression(exprAnyString, typePtr);
+  stringKind = pas_Expression(exprAnyString, typePtr);
 
-   /* Place the address of the destination string structure instance on the
-    * stack.
-    */
+  /* Place the address of the destination string structure instance on the
+   * stack.
+   */
 
-   pas_GenerateStackReference(opLAS, varPtr);
+  pas_GenerateStackReference(opLAS, varPtr);
 
-   /* Check if this is an assignment to a global allocated string, or
-    * to a stack reference to an allocated string.
-    */
+  /* This is an assignment to a allocated Pascal string --
+   * Generate a runtime library call to copy the destination
+   * string string into the pascal string instance.  The particular
+   * runtime call will account for any necesary string type conversion.
+   */
 
-   if (varPtr->sKind == sRSTRING)
+  if (stringKind == exprString || stringKind == exprStkString)
+    {
+      /* It is a pascal string type. Current stack representation is:
+       *
+       *   TOS(0)=address of dest string buffer
+       *   TOS(1)=length of source string
+       *   TOS(2)=pointer to source string
+       */
+
+      pas_StandardFunctionCall(lbSTRCPY);
+    }
+  else if (stringKind == exprCString)
      {
-       /* It is an assignment to a string reference --
-        * Generate a runtime library call to copy the destination
-        * string string into the pascal string instance.  The particular
-        * runtime call will account for any necesary string type conversion.
-        */
+      /* It is a 32-bit C string point.  Current stack representation is:
+       *
+       *   TOS(0)=address of dest string buffer
+       *   TOS(1)=MS 16-bits of 32-bit C source string pointer
+       *   TOS(2)=LS 16-bits of 32-bit C source string pointer
+       */
 
-       if ((stringKind == exprString) || (stringKind == exprStkString))
-         {
-           /* It is a pascal string type. Current stack representation is:
-            *
-            *   TOS(0)=address of dest string reference
-            *   TOS(1)=length of source string
-            *   TOS(2)=pointer to source string
-            */
-
-           pas_StandardFunctionCall(lbSTR2RSTR);
-         }
-       else if (stringKind == exprCString)
-         {
-           /* It is a 32-bit C string point.  Current stack representation is:
-            *
-            *   TOS(0)=address of dest string reference
-            *   TOS(1)=MS 16-bits of 32-bit C source string pointer
-            *   TOS(2)=LS 16-bits of 32-bit C source string pointer
-            */
-
-           pas_StandardFunctionCall(lbCSTR2RSTR);
-         }
-     }
-   else
-     {
-       /* It is an assignment to a allocated Pascal string --
-        * Generate a runtime library call to copy the destination
-        * string string into the pascal string instance.  The particular
-        * runtime call will account for any necesary string type conversion.
-        */
-
-       if ((stringKind == exprString) || (stringKind == exprStkString))
-         {
-           /* It is a pascal string type. Current stack representation is:
-            *
-            *   TOS(0)=address of dest string hdr
-            *   TOS(1)=length of source string
-            *   TOS(2)=pointer to source string
-            */
-
-           pas_StandardFunctionCall(lbSTR2STR);
-         }
-       else if (stringKind == exprCString)
-         {
-           /* It is a 32-bit C string point.  Current stack representation is:
-            *
-            *   TOS(0)=address of dest string hdr
-            *   TOS(1)=MS 16-bits of 32-bit C source string pointer
-            *   TOS(2)=LS 16-bits of 32-bit C source string pointer
-            */
-
-           pas_StandardFunctionCall(lbCSTR2STR);
-         }
-     }
-
-   /* else ... type mismatch error already reported by pas_Expression() */
+      pas_StandardFunctionCall(lbCSTR2STR);
+    }
 }
 
 /***********************************************************************/

@@ -49,6 +49,7 @@
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
 #include "pas_sysio.h"
+#include "pas_library.h"
 
 #include "pas_main.h"
 #include "pas_expression.h"
@@ -312,8 +313,7 @@ int actualParameterSize(symbol_t *procPtr, int parmNo)
       break;
 
     case sSTRING :
-    case sRSTRING :
-      return sRSTRING_SIZE;
+      return sSTRING_SIZE;
       break;
 
     case sARRAY :
@@ -404,9 +404,8 @@ int actualParameterList(symbol_t *procPtr)
               break;
 
             case sSTRING :
-            case sRSTRING :
               pas_Expression(exprString, typePtr);
-              size += sRSTRING_SIZE;
+              size += sSTRING_SIZE;
               break;
 
             case sSUBRANGE :
@@ -1106,9 +1105,9 @@ static void assignFileProc(void)       /* ASSIGNFILE procedure */
 
        getToken();
 
-       /* Get TOS     = Pointer to string
-        *     TOS + 1 = 0:binary 1:text
-        *     TOS + 2 = File number
+       /* Get TOS(0) = Pointer to string
+        *     TOS(1) = 0:binary 1:text
+        *     TOS(2) = File number
         */
 
        /* Push the file number onto the TOS */
@@ -1346,8 +1345,8 @@ static void writeText(void)
         /* Set the file number, offset and size on the stack */
 
         pas_GenerateSimple(opDUP);
-        pas_GenerateDataOperation(opLAC, (uint16_t)offset);
         pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
+        pas_GenerateDataOperation(opLAC, (uint16_t)offset);
         pas_GenerateIoOperation(xWRITE_STRING);
 
         g_stringSP = g_tokenString;
@@ -1362,8 +1361,8 @@ static void writeText(void)
        */
 
       pas_GenerateSimple(opDUP);
-      pas_GenerateDataOperation(opLAC, (uint16_t)g_tknPtr->sParm.s.offset);
       pas_GenerateDataOperation(opPUSH, (uint16_t)g_tknPtr->sParm.s.size);
+      pas_GenerateDataOperation(opLAC, (uint16_t)g_tknPtr->sParm.s.offset);
       pas_GenerateIoOperation(xWRITE_STRING);
 
       getToken();
@@ -1383,8 +1382,8 @@ static void writeText(void)
            */
 
           pas_GenerateSimple(opDUP);
-          pas_GenerateStackReference(opLAS, wPtr);
           pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.size);
+          pas_GenerateStackReference(opLAS, wPtr);
           pas_GenerateIoOperation(xWRITE_STRING);
           getToken();
           break;

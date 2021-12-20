@@ -166,6 +166,7 @@ void pas_Block(int32_t preAllocatedDStack)
 
   saveNSym                 = g_nSym;
   saveNConst               = g_nConst;
+  saveNInitializer         = g_nInitializer;
 
   saveSymOffset            = g_levelSymOffset;
   saveConstOffset          = g_levelConstOffset;
@@ -241,7 +242,6 @@ void pas_Block(int32_t preAllocatedDStack)
 
   /* Remember the current state of the initializers */
 
-  saveNInitializer         = g_nInitializer;
   saveInitializerOffset    = g_levelInitializerOffset;
 
   /* Generate the initializers */
@@ -260,7 +260,6 @@ void pas_Block(int32_t preAllocatedDStack)
 
   /* Restore the symbol and constant table offsets for this level */
 
-  g_nInitializer           = saveNInitializer;
   g_levelInitializerOffset = saveInitializerOffset;
 
   /* Generate finalizers */
@@ -296,6 +295,7 @@ void pas_Block(int32_t preAllocatedDStack)
 
   g_nSym                   = saveNSym;         /* Restore top of symbol table */
   g_nConst                 = saveNConst;       /* Restore top of constant table */
+  g_nInitializer           = saveNInitializer; /* Restore top of initializers */
 }
 
 /****************************************************************************/
@@ -934,6 +934,16 @@ static symbol_t *pas_DeclareVar(void)
           varPtr = pas_AddVariable(varName, varType, g_dStack, g_dwVarSize,
                                    typePtr);
 
+          /* If we just created a string variable, then set up and
+           * initializer for the string; memory for the string buffer
+           * must be set up at run time.
+           */
+
+          if (varType == sSTRING)
+            {
+              pas_AddStringInitializer(varPtr);
+            }
+
           /* If the variable is declared in an interface section at level
            * zero, then it is a candidate to be imported or exported.
            */
@@ -1324,10 +1334,7 @@ static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
               else
                 {
                   /* Use the value of the integer constant for the size
-                   * the allocation.  NOTE:  There is a problem here in
-                   * that for the sSTRING type, it wants the first 2 bytes
-                   * for the string length.  This means that the actual
-                   * length is real two less than the specified length.
+                   * the allocation.
                    */
 
                   g_dwVarSize = g_tknInt;
@@ -1822,13 +1829,16 @@ static symbol_t *pas_NewComplexType(char *typeName)
       /* FORM: string-type = pascal-string-type | c-string-type
        * FORM: pascal-string-type = 'string' [ max-string-length ]
        */
+
     case sSTRING :
       error(eNOTYET);
       getToken();
       break;
 
-      /* FORM: list-type = 'list' 'of' type-denoter */
-      /* FORM: object-type = 'object' | 'class' */
+      /* FORM: list-type = 'list' 'of' type-denoter
+       * FORM: object-type = 'object' | 'class'
+       */
+
     default :
       break;
 

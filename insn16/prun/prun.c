@@ -162,7 +162,8 @@ static void prun_parseargs(int argc, char **argv)
                   fprintf(stderr, "ERROR: Invalid stack size\n");
                   prun_showusage(argv[0]);
                 }
-              g_varstacksize = (size + 3) & ~3;
+
+	      g_varstacksize = (size + 3) & ~3;
               break;
 
             case 't' :
@@ -172,7 +173,8 @@ static void prun_parseargs(int argc, char **argv)
                   fprintf(stderr, "ERROR: Invalid string storage size\n");
                   prun_showusage(argv[0]);
                 }
-              g_strstacksize = ((size + 3) & ~3);
+
+	      g_strstacksize = ((size + 3) & ~3);
               break;
 
             case 'd' :
@@ -279,5 +281,4 @@ int main(int argc, char *argv[], char *envp[])
 
   pexec_Release(st);
   return 0;
-
-} /* end main */
+}

@@ -56,6 +56,7 @@
 #include "pas_errcodes.h"
 #include "pinsn32.h"
 #include "pas_sysio.h"
+#include "pas_library.h"
 
 #include "popt.h"
 #include "psopt.h"
@@ -289,11 +290,14 @@ static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
 
           inch   = poffGetProgByte(poffHandle);
 
-          /* Is it LIB MKSTK? MKSTKSTR? or MKSTKC? */
+          /* Is it LIB STRINIT? STRDUP? or other string library functions
+           * that we should not optimize?
+           */
 
-          if ((arg32 == lbMKSTK) ||
-              (arg32 == lbMKSTKSTR) ||
-              (arg32 == lbMKSTKC))
+          if ((arg16 == lbSTRINIT) ||
+              (arg16 == lbSTRFREE) ||
+              (arg16 == lbSTRDUP) ||
+              (arg16 == lbMKSTKC))
             {
               /* Flush the buffered data with the PUSHS */
 

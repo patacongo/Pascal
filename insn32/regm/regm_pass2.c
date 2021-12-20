@@ -48,6 +48,7 @@
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "pas_sysio.h"
+#include "pas_library.h"
 #include "pas_fpops.h"
 #include "pas_errcodes.h"
 #include "pofflib.h"
@@ -379,12 +380,11 @@ static const struct regm_builtin_s g_rgSysIoBuiltIns[MAX_XOP] =
 static const struct regm_builtin_s g_rgLibCallBuiltIns[MAX_LBOP] =
 {
   /* 0x00 */ libHALT_INIT,              lbGETENV_INIT,
-  /* 0x02 */ lbSTR2STR_INIT,            lbCSTR2STR_INIT,
-  /* 0x04 */ lbSTR2RSTR_INIT,           lbCSTR2RSTR_INIT,
-  /* 0x06 */ lbVAL_INIT,                lbMKSTK_INIT,
-  /* 0x08 */ lbMKSTKSTR_INIT,           lbMKSTKC_INIT,
-  /* 0x0a */ lbSTRCAT_INIT,             lbSTRCATC_INIT
-  /* 0x0c */ lbSTRCMP_INIT
+  /* 0x02 */ lbSTRCPY_INIT,             lbCSTR2STR_INIT,
+  /* 0x04 */ lbVAL_INIT,                lbSTRINIT_INIT,
+  /* 0x06 */ lbSTRFREE_INIT,            lbMKSTKSTR_INIT,
+  /* 0x08 */ lbMKSTKC_INIT,             lbSTRCAT_INIT,
+  /* 0x0a */ lbSTRCATC_INIT,            lbSTRCMP_INIT
 };
 
 static const struct regm_builtin_s g_rgRrFopBuiltIns[MAX_FOP] =

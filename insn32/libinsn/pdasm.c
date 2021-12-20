@@ -46,6 +46,7 @@
 #include "pinsn32.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"
+#include "pas_library.h"
 #include "paslib.h"
 
 #include "pas_insn.h"
@@ -327,10 +328,9 @@ static const char *xName[MAX_XOP] =
 static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "HALT",       "GETENV",     "STR2STR",   "CSTR2STR",
-/* 0x04 */ "STR2RSTR",   "CSTR2RSTR",  "VAL",       "MKSTK",
-/* 0x08 */ "MKSTKSTR",   "MKSTKC",     "STRCAT",    "STRCATC",
-/* 0x0c */ "STRCMP"
+/* 0x00 */ "HALT",      "GETENV",     "STRCPY",     "CSTR2STR",
+/* 0x04 */ "VAL",       "STRINIT",    "STRFREE",    "STRDUP",
+/* 0x08 */ "MKSTKC",    "STRCAT",     "STRCATC",    "STRCMP"
 };
 
 #define MAX_FOP 16

@@ -80,27 +80,34 @@
 #define sPTR_SIZE           sINT_SIZE
 #define sRETURN_SIZE       (3*sPTR_SIZE)
 
-/* Traditional Pascal strings are a block of 256 bytes on the stack arranged
- * as follows.  This organization is only used in the string stack.
- */
-
-#define sSTRING_HDR_SIZE    2
-#define sSTRING_SIZE        256                    /* size(2) + string(254) */
-#define sSTRING_MAX_SIZE   (sSTRING_SIZE - 2)      /* string storage size(254) */
-
-/* The representation used on the Pascal runtime stack then duplicates the
- * size and includes a reference to the string stack data.  Order on the
- * run-time stack is like (assuming push-down stack):
+/* Pascal string variables consist of:
  *
- *  TOS + n     = String size
- *  TOS + n + 1 = 16-bit pointer to the string data.
+ * - A fixed size, large string buffer, and
+ * - A small string variable that includes the size of the string and a
+ *   pointer to the string buffer.  It must always appear on the stack
+ *   in this order.
+ *
+ *      TOS(n)     = 16-bit pointer to the string data.
+ *      TOS(n + 1) = String size
+ *
+ * The string is usually access via opLDSM or opSTSM instructions.  The
+ * relation ship between the ordering is confusing.  It is a push up stack.
+ * when the memory is copied onto the stack:
+ *
+ *    STORAGE LOCATION      -> STACK
+ *      Size    (Offset 0)  -> TOS(1)
+ *      Pointer (Offset 4)  -> TOS(0)
+ *
+ * The size is pushed then the pointer is pushed.  The order is retained in
+ * memory, but the offset relative to TOS is confusing.
  */
 
-#define sRSTRING_SIZE      (sPTR_SIZE + sINT_SIZE) /* ptr + size */
+#define sSTRING_SIZE        (sPTR_SIZE + sINT_SIZE)
+#define sSTRING_SIZE_OFFSET (0)         /* Byte offset to string size */
+#define sSTRING_DATA_OFFSET (sINT_SIZE) /* Byte offset to buffer pointer */
+#define STRING_BUFFER_SIZE  (256)       /* Size of string buffer */
 
-/* And there are also raw, NUL-terminated "C" strings. */
-
-#define sCSTRING_SIZE      (sizeof(void *))        /* absolute C pointer */
+/* Range of unsigned character type */
 
 #define MAXCHAR             255
 #define MINCHAR             0

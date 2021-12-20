@@ -197,9 +197,11 @@ o BUGS
   outout procedures would default to the built-in OUTPUT.  This has been
   fixed for some functions (like eof and eoln) but not all cases have been
   verified.
-- Operations on type 'string' are no yet supported
 - Unit files with data declarations, but no implementation generate an
   error.
+- There is a string stack memory leak:  There is no explicit logic to free
+  string stack allocated for constant strings.  It eventually gets freed
+  when a procedure, function, or program exits, but can waste log of memory within.
 
 o IMPROVEMENTS
 - In PTKN, verify that string stack does not overflow when

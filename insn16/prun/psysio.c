@@ -1,5 +1,5 @@
 /****************************************************************************
- * pfile.c
+ * psysio.c
  *
  *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -51,7 +51,7 @@
 #include "pas_errcodes.h"
 #include "pas_error.h"
 
-#include "pfile.h"
+#include "psysio.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -703,9 +703,9 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       TOS(st, 0) =  0;
       break;
 
-    /* ASSIGNFILE: TOS     = File name pointer
-     *             TOS + 1 = 0:binary 1:textfile
-     *             TOS + 2 = File number
+    /* ASSIGNFILE: TOS(0) = File name pointer
+     *             TOS(1) = 0:binary 1:textfile
+     *             TOS(2) = File number
      */
 
     case xASSIGNFILE :
@@ -898,8 +898,8 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
      */
 
     case xWRITE_STRING :
-      POP(st, size);        /* String size */
       POP(st, address);     /* String address */
+      POP(st, size);        /* String size */
       POP(st, fileNumber);  /* File number from stack */
 
       pexec_WriteString(fileNumber,

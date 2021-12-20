@@ -1,8 +1,8 @@
 /***************************************************************************
- * file.h
- * External Declarations associated with the run-time file table
+ * plib.h
+ * External Declarations associated with the run-time library
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,44 +34,19 @@
  *
  ***************************************************************************/
 
-#ifndef __PFILES_H
-#define __PFILES_H
+#ifndef __PLIB_H
+#define __PLIB_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
-#include <stdbool.h>
-#include "pexec.h"
-
-/***************************************************************************
- * Pre-processor Definitions
- ***************************************************************************/
-
-/* Maximum number of files that can be opened at run-time */
-
-#define MAX_OPEN_FILES 8
-
-/***************************************************************************
- * Public Types
- ***************************************************************************/
-
-enum openMode_e
-{
-  eOPEN_NONE = 0,
-  eOPEN_READ,
-  eOPEN_WRITE,
-  eOPEN_APPEND
-};
-
-typedef enum openMode_e openMode_t;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void     pexec_InitializeFile(void);
-uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc);
+uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc);
 
-#endif /* __PFILES_H */
+#endif /* __PLIB_H */

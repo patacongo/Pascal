@@ -48,6 +48,7 @@
 #include "pas_fpops.h"
 #include "pas_errcodes.h"
 #include "pas_sysio.h"
+#include "pas_library.h"
 
 #include "pas_main.h"
 #include "pas_expression.h"
@@ -463,7 +464,7 @@ static exprType_t getenvFunc(void)
    * should happen).
    */
 
-  if ((stringType != exprString) && (stringType != exprStkString))
+  if (stringType != exprString && stringType != exprStkString)
     {
       error(eINVARG);
     }
