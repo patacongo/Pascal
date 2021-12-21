@@ -295,7 +295,7 @@ static void pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
     {
       fprintf(stderr, g_badFileNumber, "pexec_OpenFile", fileNumber);
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (g_fileTable[fileNumber].stream != NULL)
     {
       fprintf(stderr, g_fileAlreadyOpen, "pexec_OpenFile", fileNumber);
     }

@@ -65,7 +65,6 @@ function show_usage ()
     echo "  FILTER=5: Execute only multi-file tests"
     echo "  FILTER=6: File I/O tests"
     echo "  FILTER=8: Execute only Erie pascal programs"
-    echo "  FILTER=9: Execute only miscellaneous large programs"
     echo "  FILTER=A: Execute all tests"
     echo "  Default:  Execute all tests"
     exit 1

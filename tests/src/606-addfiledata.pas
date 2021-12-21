@@ -17,13 +17,13 @@ var
 begin
    rewrite(f, sizeof(data));
    for i:=1 to MAX do
-   
+
    begin
       writeln('Enter rainfall data: ');
       readln(data);
       write(f, data);
    end;
-   
+
    close(f);
 end;
 
@@ -36,12 +36,12 @@ begin
    reset(x);
    sum:= 0.0;
    while not eof(x) do
-   
+
    begin
       read(x, d);
       sum := sum + d;
    end;
-   
+
    average := sum/MAX;
    close(x);
    writeln('Average Rainfall: ', average:7:2);

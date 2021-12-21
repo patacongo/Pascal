@@ -830,7 +830,7 @@ static symbol_t *pas_DeclareVar(void)
   varName = g_tokenString;
   getToken();
 
-  /* A comma indicates that there is another indentifier int the
+  /* A comma indicates that there is another indentifier in the
    * identifier-list
    */
 
@@ -885,10 +885,10 @@ static symbol_t *pas_DeclareVar(void)
 
           /* Add the file to the symbol table */
 
-          filePtr = pas_AddFile(varName, fileKind, g_dStack, fileSize,
-                                fileTypePtr);
+          filePtr   = pas_AddFile(varName, fileKind, g_dStack, fileSize,
+                                  fileTypePtr);
           pas_AddFileInitializer(filePtr, false, 0);
-          g_dStack   += sINT_SIZE;
+          g_dStack += sINT_SIZE;
           return filePtr;
         }
       else

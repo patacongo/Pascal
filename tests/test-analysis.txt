@@ -5,42 +5,28 @@ writing, the following errors are reported when testall.sh is ran:
 
  1. Several test cases found on the internet failed because they involved the
     use of non-standard Pascal types('filename', 'list', 'word', 'longword) and
-    undefined functions, and  procedures (fsplit, addr).
-    - Test cases using the list type probably have been removed (src/901-pageutils.pas
-      which used longword has not yet been removed)
-    - For testing purposes, the filename type has been changed to the string type.
- 2. Smart Pascal has a Length function:
-      function Length ( const SourceString : string ) : Integer;
-      function Length ( const  SourceArray : array ) : Integer;
-    The Length function returns either the number of characters in SourceString,
-    or the number of elements in SourceArray. (See units/DayIO.pas)
-    It is often used to loop around all characters in a string or elements in
-    an array.
- 3. Free Pascal as the lowercase function:
-    See failure in src/803-redirect.pas
- 3. Currently a set is limited to 32 elements so that they can be represented
+    undefined functions, and  procedures (fsplit, addr, length, lowercase,
+    etc.).  These test cases have been removed because there will never
+    compile.
+ 2. Currently a set is limited to 32 elements so that they can be represented
     internally as a 32-bit bit set.
- 4. I/O operations on most types of arrays and VAR arrays are not fully
+ 3. I/O operations on most types of arrays and VAR arrays are not fully
     implemented.  See src/107-quicksort.pas
- 5. Not all file I/O functions have been implemented.
- 6. Forward references to variables before they are defined to not work.  See
+ 4. Forward references to variables before they are defined to not work.  See
     failure in src/108-pointerrecode.pas.
- 7. Unit files with data declarations, but no implementation.
- 8. There are a couple of files with initialization like:
+ 5. There are a couple of files with initialization like:
       input = 1;
       output = 2;
     I am not sure what these mean and have just commented them out for now.
     Assignment of a numeric value to a file is not supported.
- 9. Pascal runtime memory is divided into three regions:  String stack, RO
+ 6. Pascal runtime memory is divided into three regions:  String stack, RO
     data, and the Pascal run-time stack.  The size of the string stack is
     set with the -t option to prun and 1024 is the default size used by the
     testone.sh script.  String allocations are large, 256 bytes, and the
     string stack is lazy, only when a procedure/function returns.  As a
     result, programs with functions that do a lot of string operations need
-    a start larger than the 1024 default.  202-strcat.pas is one that needs
-    a larger string stack.
-    NOTE that improved string stack recovery/usage is already on the TODO
-    list.
+    a start larger than the 1024 default.  All of the test files here work
+    OK with a string stack of 1024.
 
 Successful test results are not shown.
 
@@ -48,8 +34,9 @@ Successful test results are not shown.
 Line 0:0008 Error 0a Token 3a
 
 Line:
-names : array [color] of String[7]
-  = ('red', 'blue', 'yellow', 'green', 'white', 'black', 'orange');
+ 7 const
+ 8 names : array [color] of String[7]
+     = ('red', 'blue', 'yellow', 'green', 'white', 'black', 'orange');
 
 Error:
 186 #define eEQ              ((uint16_t) 0x0a) <-- Expected '='
@@ -57,6 +44,12 @@ Error:
 Token: ':'
 
 Analysis:
+This fails because the compiler does not expect encounter a type in a const 
+efinition.  The function pas_DeclareConst() always expects to see '='
+following the constant identifier.
+
+An appropriate fix might involve repartitioning pas_DeclareVar() so that the
+part that creates the (nameless) type could be called from pas_DeclareConst().
 
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b
@@ -80,7 +73,7 @@ the bitset is currently limited to 32-bits:
 ########src/107-quicksort.pas########
 
 These two examples compile fine but no output appears on stdout.
-(Perhaps they crash silently?)
+(Perhaps they crash silently?  Perhaps they hang reading input?)
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)
@@ -131,14 +124,38 @@ Analysis:
 Same problem as with src/108-pointerrecode.pas:  Use of forward reference to
 define a pointer variable fails.
 
-########src/601-readfile.pas########
-Compiles without error but generates errors at run-time:
-
-  ERROR: pexec_OpenFile: Bad open mode,"No such file or directory": 0
+########src/202-strcat.pas########
+Runtime error 0x82 -- Execution Stopped
 
 Analysis:
-Compiles fine, but generates run-time errors.  This is because the program
-depends on a file called students.dat which does not exist.
+This file compiled and ran properly in the past but now fails with a runtime
+error.  This is because n internal function, inquote, returns a string value
+via STRCPY.  The compiler's functionDesignator() allocates an unitialized
+string to catch the return value using INDS.  Because the string is never
+initalized, the STRCPY that returns the value can crash because STRCPY
+assumes that the target string is initialized with a valid string buffer.
+
+########src/601-datafile.pas########
+Compiles without error but generates an error (really a warning) at run-time:
+
+  +ERROR: pexec_OpenFile: File already open: 0
+
+Hangs thereafter.
+
+Analysis:
+The Pascal file attempts to open INPUT which is opened by default.
+
+The error is that the file should not have file number zero.  This logic:
+
+  9 var
+ 10    Student: StudentRecord;
+ 11    f: file of StudentRecord;
+ 12
+ 13 begin
+ 14    assign(f, 'students.dat');
+ 15    reset(f);
+
+Should have assigned a new file number, not re-used zero.
 
 ########src/602-writefile.pas########
 Line 0:0016 Error 1e Token 09
@@ -161,7 +178,7 @@ Token:
  53 #define tASSIGN          0x09
 
 Analysis:
-Probably another issue related to missing string handling.
+Probably another issue related to missing either records or string handling.
 
 ########src/603-appendfile.pas########
 Line 0:0020 Error 2d Token 4b
@@ -185,7 +202,8 @@ Compiles without error but generates errors at run-time:
 
 Analysis:
 This is not really an error.  The program depes on the existence of a file
-called Students.dat which does not exist.  Same as src/601-readfile.pas
+called Students.dat which does not exist.  Can be created with
+src/601-datafile.pas
 
 ########src/605-subprogram.pas########
 Line 0:0052 Error 2d Token 4b
@@ -223,38 +241,6 @@ Token:
 
 Analysis:
 Same as src/605-subprogram.pas
-
-########src/803-redirect.pas########
-Line 0:0068 Error 3b Token 01 (lowercase)
-
-Line:
- 68                   if lowercase(copy(value, 1, 5)) = 'http:' then
-
-Error:
-239 #define eUNDEFSYM        ((uint16_t) 0x3b)
-
-Token:
- 44 #define tIDENT           0x01
-
-Analysis:
-The Free Pascal, non-standard lowercase() function is not supported.
-Appears as an undefined identifier.
-
-########src/901-pageutils.pas########
-Line 0:0954 Error 1e Token 01 (longword)
-
-Line:
-In TYPE definition section:
- 954 ulong = longword;
-
-Error:
-208 #define eINVTYPE         ((uint16_t) 0x1e)
-
-Token:
- 44 #define tIDENT           0x01
-
-Analysis:
-Type longword is not supported.
 
 ########sinecos.pas########
 ########unit-cosine.pas########
