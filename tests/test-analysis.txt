@@ -135,51 +135,25 @@ string to catch the return value using INDS.  Because the string is never
 initalized, the STRCPY that returns the value can crash because STRCPY
 assumes that the target string is initialized with a valid string buffer.
 
-########src/601-datafile.pas########
-Compiles without error but generates an error (really a warning) at run-time:
+########src/601-writefile.pas########
+Compiles okay, runs without error, creates the students.dat file.  However
+the content of the file is garbage.
+########src/602-datafile.pas########
+Compiles without error but generates errors at run-time:
 
-  +ERROR: pexec_OpenFile: File already open: 0
-
-Hangs thereafter.
-
-Analysis:
-The Pascal file attempts to open INPUT which is opened by default.
-
-The error is that the file should not have file number zero.  This logic:
-
-  9 var
- 10    Student: StudentRecord;
- 11    f: file of StudentRecord;
- 12
- 13 begin
- 14    assign(f, 'students.dat');
- 15    reset(f);
-
-Should have assigned a new file number, not re-used zero.
-
-########src/602-writefile.pas########
-Line 0:0016 Error 1e Token 09
-
-Line:
- 16   Student.s_name := 'John Smith';
-Where:
-  2 type
-  3    StudentRecord = Record
-  4       s_name: String;
-  5       s_addr: String;
-  6       s_batchcode: String;
-  7    end;
-
-
-Error:
-207 #define eINVTYPE         ((uint16_t) 0x1e)
-
-Token:
- 53 #define tASSIGN          0x09
-
-Analysis:
-Probably another issue related to missing either records or string handling.
-
+Using string stack size = 1024
+src/602-datafile.pex Loaded
+ERROR: pexec_WriteString: bad file number: 1073
+ERROR: pexec_WriteChar: bad file number: 16
+ERROR: pexec_WriteChar: Not open for writing: 0
+ERROR: pexec_WriteString: Not open for writing: 0
+ERROR: pexec_WriteChar: Not open for writing: 2
+ERROR: pexec_WriteString: bad file number: 1073
+ERROR: pexec_WriteChar: bad file number: 16
+ERROR: pexec_WriteChar: Not open for writing: 0
+ERROR: pexec_WriteString: Not open for writing: 0
+ERROR: pexec_WriteChar: Not open for writing: 2
+Name: Address: p▒Batch Code: Name: Address: p▒Batch Code:
 ########src/603-appendfile.pas########
 Line 0:0020 Error 2d Token 4b
 
@@ -194,16 +168,6 @@ Token:
 
 Analysis:
 Not yet analyzed.  Perhaps an issue related to string types.
-
-########src/604-textfile.pas########
-Compiles without error but generates errors at run-time:
-
-  ERROR: pexec_OpenFile: Bad open mode,"No such file or directory": 0
-
-Analysis:
-This is not really an error.  The program depes on the existence of a file
-called Students.dat which does not exist.  Can be created with
-src/601-datafile.pas
 
 ########src/605-subprogram.pas########
 Line 0:0052 Error 2d Token 4b

@@ -647,16 +647,18 @@ void pexec_InitializeFile(void)
   memset(g_fileTable, 0, MAX_OPEN_FILES * sizeof(pexecFileTable_t));
 
   strcpy(g_fileTable[INPUT_FILE_NUMBER].fileName, "INPUT");
+  g_fileTable[INPUT_FILE_NUMBER].inUse       = true;
+  g_fileTable[INPUT_FILE_NUMBER].text        = true;
+  g_fileTable[INPUT_FILE_NUMBER].recordSize  = 1;
   g_fileTable[INPUT_FILE_NUMBER].stream      = stdin;
   g_fileTable[INPUT_FILE_NUMBER].openMode    = eOPEN_READ;
-  g_fileTable[INPUT_FILE_NUMBER].recordSize  = 1;
-  g_fileTable[INPUT_FILE_NUMBER].text        = true;
 
   strcpy(g_fileTable[OUTPUT_FILE_NUMBER].fileName, "OUTPUT");
+  g_fileTable[OUTPUT_FILE_NUMBER].inUse      = true;
+  g_fileTable[OUTPUT_FILE_NUMBER].text       = true;
+  g_fileTable[OUTPUT_FILE_NUMBER].recordSize = 1;
   g_fileTable[OUTPUT_FILE_NUMBER].stream     = stdout;
   g_fileTable[OUTPUT_FILE_NUMBER].openMode   = eOPEN_WRITE;
-  g_fileTable[OUTPUT_FILE_NUMBER].recordSize = 1;
-  g_fileTable[OUTPUT_FILE_NUMBER].text       = true;
 }
 
 /****************************************************************************
@@ -709,8 +711,8 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
      */
 
     case xASSIGNFILE :
-      POP(st, size);        /* File name string size */
       POP(st, address);     /* File name string address */
+      POP(st, size);        /* File name string size */
       POP(st, value);       /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
       pexec_AssignFile(fileNumber, (value != 0),

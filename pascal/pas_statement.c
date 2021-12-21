@@ -380,39 +380,60 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       break;
 
+    /* The only thing that real and strings have in common is that they are
+     * large, multi-word LValues.
+     */
+
     case sREAL         :
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
-        {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-              pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
-            }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            {
-              pas_Assignment(opSTSX, exprRealPtr, varPtr, typePtr);
-            }
-          else
-            {
-              pas_LargeAssignment(opSTSXM, exprReal, varPtr, typePtr);
-            }
-        }
-      else
-        {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
-            }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-            {
-              pas_Assignment(opSTS, exprRealPtr, varPtr, typePtr);
-            }
-          else
-            {
-              pas_LargeAssignment(opSTSM, exprReal, varPtr, typePtr);
-            }
-        }
+    case sSTRING       :
+      {
+        exprType_t leftExprType;
+        exprType_t leftExprPtrType;
+
+        if (varPtr->sKind == sREAL)
+          {
+            leftExprType    = exprReal;
+            leftExprPtrType = exprRealPtr;
+          }
+        else
+          {
+            leftExprType    = exprString;
+            leftExprPtrType = exprStringPtr;
+          }
+
+        if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+          {
+            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+              {
+                pas_GenerateStackReference(opLDSX, varPtr);
+                pas_LargeAssignment(opSTIM, leftExprType, varPtr, typePtr);
+              }
+            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+              {
+                pas_Assignment(opSTSX, leftExprPtrType, varPtr, typePtr);
+              }
+            else
+              {
+                pas_LargeAssignment(opSTSXM, leftExprType, varPtr, typePtr);
+              }
+          }
+        else
+          {
+            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+              {
+                pas_GenerateStackReference(opLDS, varPtr);
+                pas_LargeAssignment(opSTIM, leftExprType, varPtr, typePtr);
+              }
+            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+              {
+                pas_Assignment(opSTS, leftExprPtrType, varPtr, typePtr);
+              }
+            else
+              {
+                pas_LargeAssignment(opSTSM, leftExprType, varPtr, typePtr);
+              }
+          }
+      }
       break;
 
     case sSCALAR :
