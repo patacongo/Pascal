@@ -57,6 +57,7 @@
 #include "pas_token.h"
 #include "pas_symtable.h"
 #include "pas_insn.h"
+#include "pas_machine.h"
 #include "pas_error.h"
 
 /****************************************************************************
@@ -75,9 +76,6 @@
         || ((x) == tCHAR_CONST) \
         || ((x) == tREAL_CONST) \
         || ((x) == sSCALAR_OBJECT))
-
-#define isIntAligned(x) (((x) & (sINT_SIZE-1)) == 0)
-#define intAlign(x)     (((x) + (sINT_SIZE-1)) & (~(sINT_SIZE-1)))
 
 /****************************************************************************
  * Private Function Prototypes
@@ -237,6 +235,9 @@ void pas_Block(int32_t preAllocatedDStack)
 
   if (g_dStack)
     {
+      /* Make sure that the data stack is aligned */
+
+      g_dStack = INT_ALIGNUP(g_dStack);
       pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
     }
 
@@ -641,7 +642,7 @@ int16_t pas_FormalParameterList(symbol_t *procPtr)
        */
 
       parameterOffset -= procPtr[i].sParm.v.size;
-      parameterOffset  = intAlign(parameterOffset);
+      parameterOffset  = INT_ALIGNUP(parameterOffset);
       procPtr[i].sParm.v.offset = parameterOffset;
     }
 
@@ -924,9 +925,9 @@ static symbol_t *pas_DeclareVar(void)
         {
           /* Determine if alignment to INTEGER boundaries is necessary */
 
-          if (!isIntAligned(g_dStack) && pas_IntAlignRequired(typePtr))
+          if (!INT_ISALIGNED(g_dStack) && pas_IntAlignRequired(typePtr))
             {
-              g_dStack = intAlign(g_dStack);
+              g_dStack = INT_ALIGNUP(g_dStack);
             }
 
           /* Add the new variable to the symbol table */
@@ -1202,7 +1203,7 @@ static void pas_FunctionDeclaration(void)
        */
 
       parameterOffset        -= g_dwVarSize;
-      parameterOffset         = intAlign(parameterOffset);
+      parameterOffset         = INT_ALIGNUP(parameterOffset);
 
       /* Save the TYPE for the function return value local variable */
 
@@ -2222,9 +2223,11 @@ static symbol_t *pas_DeclareRecord(char *recordName)
         {
           /* Align the recordOffset (if necessary) */
 
-          if ((!isIntAligned(recordOffset)) &&
-              (pas_IntAlignRequired(recordPtr[symbolIndex].sParm.r.parent)))
-            recordOffset = intAlign(recordOffset);
+          if (!INT_ISALIGNED(recordOffset) &&
+              pas_IntAlignRequired(recordPtr[symbolIndex].sParm.r.parent))
+            {
+              recordOffset = INT_ALIGNUP(recordOffset);
+            }
 
           /* Save the offset associated with this field, and determine the
            * offset to the next field (if there is one)
@@ -2305,9 +2308,11 @@ static symbol_t *pas_DeclareRecord(char *recordName)
 
               /* Align the recordOffset (if necessary) */
 
-              if ((!isIntAligned(recordOffset)) &&
-                  (pas_IntAlignRequired(typePtr)))
-                recordOffset = intAlign(recordOffset);
+              if (!INT_ISALIGNED(recordOffset) &&
+                  pas_IntAlignRequired(typePtr))
+                {
+                  recordOffset = INT_ALIGNUP(recordOffset);
+                }
 
               /* Save the offset associated with this field, and determine
                * the offset to the next field (if there is one)
@@ -2445,9 +2450,11 @@ static symbol_t *pas_DeclareRecord(char *recordName)
                     {
                       /* Align the recordOffset (if necessary) */
 
-                      if ((!isIntAligned(recordOffset)) &&
-                          (pas_IntAlignRequired(recordPtr[symbolIndex].sParm.r.parent)))
-                        recordOffset = intAlign(recordOffset);
+                      if (!INT_ISALIGNED(recordOffset) &&
+                          pas_IntAlignRequired(recordPtr[symbolIndex].sParm.r.parent))
+                        {
+                          recordOffset = INT_ALIGNUP(recordOffset);
+                        }
 
                       /* Save the offset associated with this field, and
                        * determine the offset to the next field (if there

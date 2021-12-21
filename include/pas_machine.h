@@ -74,6 +74,10 @@
 #  define MINUINT           0
 #endif
 
+#define INT_ALIGNUP(n)      (((n) + sINT_SIZE - 1) & ~(sINT_SIZE - 1))
+#define INT_ALIGNDOWN(n)    ((n) & ~sINT_SIZE)
+#define INT_ISALIGNED(n)    (((n) & (sINT_SIZE - 1)) == 0)
+
 #define sCHAR_SIZE          1
 #define sBOOLEAN_SIZE       sINT_SIZE
 #define sREAL_SIZE          8

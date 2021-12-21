@@ -61,8 +61,6 @@
  * Pre-processor Definitions
  ***************************************************************/
 
-#define intTrunc(x) ((x) & (~(sINT_SIZE)))
-
 #define isRelationalOperator(t) \
    (((t) == tEQ) || ((t) == tNE) || \
     ((t) == tLT) || ((t) == tLE) || \

@@ -62,13 +62,8 @@
 #include "pas_symtable.h"    /* for pas_AddProcedure() */
 #include "pas_error.h"       /* for error() */
 #include "pas_program.h"     /* for pas_UsesSection() */
+#include "pas_machine.h"     /* for INT_ALIGNUP() */
 #include "pas_unit.h"
-
-/***********************************************************************
- * Pre-processor Definitions
- ***********************************************************************/
-
-#define intAlign(x)     (((x) + (sINT_SIZE-1)) & (~(sINT_SIZE-1)))
 
 /***********************************************************************
  * Private Function Prototypes
@@ -588,7 +583,7 @@ static void exportedFunctionHeading(void)
         */
 
        parameterOffset        -= g_tknPtr->sParm.t.rsize;
-       parameterOffset         = intAlign(parameterOffset);
+       parameterOffset         = INT_ALIGNUP(parameterOffset);
 
        /* Save the TYPE for the function */
 
