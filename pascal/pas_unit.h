@@ -41,7 +41,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void unitImplementation(void);
-void unitInterface(void);
+void pas_UnitImplementation(void);
+void pas_UnitInterface(void);
 
 #endif /* __PAS_UNIT_H */

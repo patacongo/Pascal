@@ -640,7 +640,7 @@ void pas_VerifyLabels(int32_t symIndex)
 
 #if CONFIG_DEBUG
 const char noName[] = "********";
-void dumpTables(void)
+void pas_DumpTables(void)
 {
   int16_t i;
 

@@ -104,7 +104,7 @@ extern int32_t     g_dStack;               /* Data stack size */
  * Public Function Prototypes
  ***************************************************************************/
 
-void openNestedFile(const char *fileName);
-void closeNestedFile(void);
+void pas_OpenNestedFile(const char *fileName);
+void pas_CloseNestedFile(void);
 
 #endif /* __PAS_MAIN_H */

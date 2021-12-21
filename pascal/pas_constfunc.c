@@ -213,7 +213,7 @@ static void constantAbsFunc(void)
 
    /* FORM:  ABS (<simple integer/real expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
 
    if (constantToken == tINT_CONST)
@@ -235,7 +235,7 @@ static void constantAbsFunc(void)
        error(eINVARG);
      }
 
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /**********************************************************************/
@@ -246,10 +246,10 @@ static void constantOrdFunc(void)
 
    /* FORM:  ORD (<scalar type>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
    isOrdinalConstant();
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /**********************************************************************/
@@ -260,11 +260,11 @@ static void constantPredFunc(void)
 
    /* FORM:  PRED (<simple integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
    isOrdinalConstant();
    constantInt--;
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /**********************************************************************/
@@ -275,7 +275,7 @@ static void constantSqrFunc(void)
 
    /* FORM:  SQR (<simple integer OR real expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
    if (constantToken == tINT_CONST)
      {
@@ -290,7 +290,7 @@ static void constantSqrFunc(void)
        error(eINVARG);
      }
 
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /**********************************************************************/
@@ -301,7 +301,7 @@ static void constantRealFunc(uint8_t fpOpCode)
 
    /* FORM:  <function identifier> (<real/integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
    if (constantToken == tINT_CONST)
      {
@@ -312,7 +312,7 @@ static void constantRealFunc(uint8_t fpOpCode)
        error(eINVARG);
      }
 
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /**********************************************************************/
@@ -323,11 +323,11 @@ static void constantSuccFunc(void)
 
    /* FORM:  SUCC (<simple integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
    isOrdinalConstant();
    constantInt++;
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /***********************************************************************/
@@ -338,12 +338,12 @@ static void constantOddFunc(void)
 
    /* FORM:  ODD (<simple integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
    isOrdinalConstant();
    constantInt &= 1;
    pas_Expression(exprAnyOrdinal, NULL);
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /***********************************************************************/
@@ -359,7 +359,7 @@ static void constantChrFunc(void)
     * that ord(ch) = val.  If this is not the case, we will simply
     * let the returned value exceed the range of type char. */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_ConstantExression();
    if (constantToken == tINT_CONST)
      {
@@ -370,7 +370,7 @@ static void constantChrFunc(void)
        error(eINVARG);
      }
 
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /***********************************************************************/
@@ -388,7 +388,7 @@ static exprType_t builtInSizeOf(void)
 
   /* FORM:  sizeof '(' variable | type ')' */
 
-  checkLParen();
+  pas_CheckLParen();
   switch (g_token)
     {
       /* Variables */
@@ -432,7 +432,7 @@ static exprType_t builtInSizeOf(void)
   pas_GenerateDataOperation(opPUSH, size);
 
   getToken();
-  checkRParen();
+  pas_CheckRParen();
   return exprInteger;
 }
 

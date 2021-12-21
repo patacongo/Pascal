@@ -66,6 +66,6 @@ void    getToken(void);
 void    getLevelToken(void);
 char    getNextCharacter(bool skipWhiteSpace);
 int16_t primeTokenizer(unsigned long stringStackSize);
-int16_t rePrimeTokenizer(void);
+int16_t pas_RePrimeTokenizer(void);
 
 #endif /* __PTKN_H */

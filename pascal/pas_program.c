@@ -52,7 +52,7 @@
 #include "pas_errcodes.h"
 #include "poff.h"            /* FHT_ definitions */
 
-#include "pas_main.h"        /* for globals + openNestedFile */
+#include "pas_main.h"        /* for globals + pas_OpenNestedFile */
 #include "pas_block.h"       /* for pas_Block() */
 #include "pas_initializer.h" /* for pas_AddFileInitializer() */
 #include "pas_codegen.h"     /* for pas_Generate*() */
@@ -228,7 +228,7 @@ void pas_UsesSection(void)
       /* Open the unit file */
 
       saveToken   = g_token;
-      openNestedFile(unitFileName);
+      pas_OpenNestedFile(unitFileName);
       FP->kind    = eIsUnit;
       FP->section = eIsOtherSection;
 
@@ -254,8 +254,8 @@ void pas_UsesSection(void)
        * to the unit name on entry into unit().
        */
 
-      unitInterface();
-      closeNestedFile();
+      pas_UnitInterface();
+      pas_CloseNestedFile();
 
       /* Verify the terminating semicolon */
 

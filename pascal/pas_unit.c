@@ -86,11 +86,11 @@ static void exportedFunctionHeading   (void);
  * and generating a unit binary.
  */
 
-void unitImplementation(void)
+void pas_UnitImplementation(void)
 {
   char   *saveTknStart = g_tokenString;
 
-  TRACE(g_lstFile, "[unitImplementation]");
+  TRACE(g_lstFile, "[pas_UnitImplementation]");
 
   /* FORM: unit =
    *       unit-heading ';' interface-section implementation-section
@@ -216,10 +216,10 @@ void unitImplementation(void)
  * going to parse the interface section from the unit file.
  */
 
-void unitInterface(void)
+void pas_UnitInterface(void)
 {
   int32_t savedDStack  = g_dStack;
-  TRACE(g_lstFile, "[unitInterface]");
+  TRACE(g_lstFile, "[pas_UnitInterface]");
 
   /* FORM: unit =
    *       unit-heading ';' interface-section implementation-section

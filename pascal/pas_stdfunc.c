@@ -217,14 +217,14 @@ exprType_t pas_StandardFunction(void)
   return funcType;
 }
 
-void checkLParen(void)
+void pas_CheckLParen(void)
 {
    getToken();                          /* Skip over function name */
    if (g_token != '(') error(eLPAREN);  /* Check for '(' */
    else getToken();
 }
 
-void checkRParen(void)
+void pas_CheckRParen(void)
 {
    if (g_token != ')') error(eRPAREN);  /* Check for ')') */
    else getToken();
@@ -242,7 +242,7 @@ static exprType_t absFunc(void)
 
    /* FORM:  ABS (<simple integer/real expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
 
    absType = pas_Expression(exprUnknown, NULL);
    if (absType == exprInteger)
@@ -252,7 +252,7 @@ static exprType_t absFunc(void)
    else
       error(eINVARG);
 
-   checkRParen();
+   pas_CheckRParen();
    return absType;
 }
 
@@ -264,9 +264,9 @@ static void ordFunc(void)
 
    /* FORM:  ORD (<scalar type>) */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_Expression(exprAnyOrdinal, NULL);     /* Get any ordinal type */
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /**********************************************************************/
@@ -279,12 +279,12 @@ static exprType_t predFunc(void)
 
    /* FORM:  PRED (<simple integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
 
    /* Process any ordinal expression */
 
    predType = pas_Expression(exprAnyOrdinal, NULL);
-   checkRParen();
+   pas_CheckRParen();
    pas_GenerateSimple(opDEC);
    return predType;
 }
@@ -299,7 +299,7 @@ static exprType_t sqrFunc(void)
 
 /* FORM:  SQR (<simple integer OR real expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
 
    sqrType = pas_Expression(exprUnknown, NULL); /* Process any expression */
    if (sqrType == exprInteger) {
@@ -314,7 +314,7 @@ static exprType_t sqrFunc(void)
    else
      error(eINVARG);
 
-   checkRParen();
+   pas_CheckRParen();
    return sqrType;
 }
 
@@ -328,7 +328,7 @@ static void realFunc (uint8_t fpOpCode)
 
    /* FORM:  <function identifier> (<real/integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
 
    realType = pas_Expression(exprUnknown, NULL); /* Process any expression */
    if (realType == exprInteger)
@@ -338,7 +338,7 @@ static void realFunc (uint8_t fpOpCode)
    else
      error(eINVARG);
 
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /**********************************************************************/
@@ -351,13 +351,13 @@ static exprType_t succFunc(void)
 
    /* FORM:  SUCC (<simple integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
 
    /* Process any ordinal expression */
 
    succType = pas_Expression(exprAnyOrdinal, NULL);
 
-   checkRParen();
+   pas_CheckRParen();
    pas_GenerateSimple(opINC);
    return succType;
 }
@@ -370,12 +370,12 @@ static void oddFunc(void)
 
    /* FORM:  ODD (<simple integer expression>) */
 
-   checkLParen();
+   pas_CheckLParen();
 
    /* Process any ordinal expression */
 
    pas_Expression(exprAnyOrdinal, NULL);
-   checkRParen();
+   pas_CheckRParen();
    pas_GenerateDataOperation(opPUSH, 1);
    pas_GenerateSimple(opAND);
    pas_GenerateSimple(opNEQZ);
@@ -394,9 +394,9 @@ static void chrFunc(void)
     * that ord(ch) = val.  If this is not the case, we will simply
     * let the returned value exceed the range of type char. */
 
-   checkLParen();
+   pas_CheckLParen();
    pas_Expression(exprInteger, NULL);
-   checkRParen();
+   pas_CheckRParen();
 }
 
 /****************************************************************************/
@@ -427,7 +427,7 @@ static void fileFunc(uint16_t opcode)
       /* Generate the file operation */
 
       pas_GenerateIoOperation(opcode);
-      checkRParen();
+      pas_CheckRParen();
     }
   else
     {
@@ -451,7 +451,7 @@ static exprType_t getenvFunc(void)
 
   /* FORM:  <string_var> = getenv(<string>) */
 
-  checkLParen();
+  pas_CheckLParen();
 
   /* Get the string expression representing the environment variable
    * name.
@@ -470,7 +470,7 @@ static exprType_t getenvFunc(void)
     }
 
   pas_StandardFunctionCall(lbGETENV);
-  checkRParen();
+  pas_CheckRParen();
   return exprCString;
 }
 

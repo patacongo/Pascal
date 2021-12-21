@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
       FP->kind    = eIsUnit;
       FP->section = eIsOtherSection;
       getToken();
-      unitImplementation();
+      pas_UnitImplementation();
     }
   else
     {
@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
   /* Dump the symbol table content (debug only) */
 
 #if CONFIG_DEBUG
-  dumpTables();
+  pas_DumpTables();
 #endif
 
   /* Write the POFF output file */
@@ -423,7 +423,7 @@ int main(int argc, char *argv[])
 
 /***********************************************************************/
 
-void openNestedFile(const char *fileName)
+void pas_OpenNestedFile(const char *fileName)
 {
   fileState_t *prev = FP;
   char fullpath[FNAME_SIZE + 1];
@@ -496,7 +496,7 @@ void openNestedFile(const char *fileName)
       FP->section = prev->section;
       FP->dstack  = g_dStack;
 
-      rePrimeTokenizer();
+      pas_RePrimeTokenizer();
 
       /* Get the first token from the file */
 
@@ -506,7 +506,7 @@ void openNestedFile(const char *fileName)
 
 /***********************************************************************/
 
-void closeNestedFile(void)
+void pas_CloseNestedFile(void)
 {
   if (FP->stream)
     {

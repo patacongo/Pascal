@@ -80,7 +80,7 @@ void      pas_PrimeSymbolTable(unsigned long symbolTableSize);
 void      pas_VerifyLabels(int32_t symIndex);
 
 #if CONFIG_DEBUG
-void   dumpTables(void);
+void   pas_DumpTables(void);
 #endif
 
 #endif /* __PAS_SYMTABLE_H */

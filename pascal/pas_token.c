@@ -116,15 +116,15 @@ int16_t primeTokenizer(unsigned long stringStackSize)
 
   /* Set up for input at the initial level of file parsing */
 
-  rePrimeTokenizer();
+  pas_RePrimeTokenizer();
   return 0;
 }
 
 /***************************************************************/
 
-int16_t rePrimeTokenizer(void)
+int16_t pas_RePrimeTokenizer(void)
 {
-  TRACE(g_lstFile,"[rePrimeTokenizer]");
+  TRACE(g_lstFile,"[pas_RePrimeTokenizer]");
 
   /* (Re-)set the char pointer to the beginning of the line */
 
@@ -628,7 +628,7 @@ static bool getLine(void)
         {
           /* Yes.  Close the file */
 
-          closeNestedFile();
+          pas_CloseNestedFile();
 
           /* Indicate that there is no data on the input line. NOTE:
            * that FP now refers to the previous file at the next lower

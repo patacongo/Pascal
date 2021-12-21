@@ -61,7 +61,7 @@
  **********************************************************************/
 
 #if CONFIG_DEBUG
-#define DUMPTABLES dumpTables()
+#define DUMPTABLES pas_DumpTables()
 #else
 #define DUMPTABLES
 #endif
