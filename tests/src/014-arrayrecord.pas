@@ -2,8 +2,8 @@ program arrayRecord;
 type
 NameString =
   record
-     title: packed array [1..50] of char;;
-     info:  packed array [1..50] of char;;
+     title: packed array [1..50] of char;
+     info:  packed array [1..50] of char;
   end;
 
 var

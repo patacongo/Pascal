@@ -132,6 +132,7 @@
  * eRECORDDECLARE       Error in RECORD declaration
  * eRECORDOBJECT        Expected a field of RECORD
  * eRECORDVAR           Expected a RECORD variable in WITH
+ * eRECORDTYPE          Bad record type
  * eUNIT                Expected UNIT at beginning of unit file
  * eUNITNAME            File does not contain the expected UNIT
  * eARGIGNORED          An argument was provided, but ignored
@@ -263,9 +264,10 @@
 #define eRECORDDECLARE   ((uint16_t) 0x51)
 #define eRECORDOBJECT    ((uint16_t) 0x52)
 #define eRECORDVAR       ((uint16_t) 0x53)
-#define eUNIT            ((uint16_t) 0x54)
-#define eUNITNAME        ((uint16_t) 0x55)
-#define eARGIGNORED      ((uint16_t) 0x56)
+#define eRECORDTYPE      ((uint16_t) 0x55)
+#define eUNIT            ((uint16_t) 0x56)
+#define eUNITNAME        ((uint16_t) 0x57)
+#define eARGIGNORED      ((uint16_t) 0x58)
 
 /* LINK TIME ERRORS */
 

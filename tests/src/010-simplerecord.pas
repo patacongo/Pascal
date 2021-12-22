@@ -1,3 +1,5 @@
+{ Verifies compilation of a simple record }
+
 program simpleRecord;
 type
 letters =

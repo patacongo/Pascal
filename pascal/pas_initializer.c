@@ -42,6 +42,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 #include "pas_debug.h"
@@ -106,24 +107,44 @@ int g_levelInitializerOffset = 0;  /* Index to initializers for this level */
  * Private Functions
  **********************************************************************/
 
-void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
+void pas_AddFileInitializer(symbol_t *stringPtr, bool preallocated,
                             uint16_t fileNumber)
 {
-  /* Remember the file variable info so that we can use it at the appropriate
+  /* Remember the string variable info so that we can use it at the appropriate
    * time.
    */
 
   if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
   else
     {
-      g_initializers[g_nInitializer].symbol       = filePtr;
-      g_initializers[g_nInitializer].preallocated = preallocated;
-      g_initializers[g_nInitializer].fileNumber   = fileNumber;
+      initializer_t *initializer = &g_initializers[g_nInitializer];
+
+      memset(initializer, 0, sizeof(initializer_t));
+      initializer->symbol        = stringPtr;
+      initializer->preallocated  = preallocated;
+      initializer->fileNumber    = fileNumber;
       g_nInitializer++;
     }
 }
 
-void pas_AddStringInitializer(symbol_t *filePtr)
+void pas_AddStringInitializer(symbol_t *stringPtr)
+{
+  /* Remember the string variable info so that we can use it at the
+   * appropriate time.
+   */
+
+  if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
+  else
+    {
+      initializer_t *initializer = &g_initializers[g_nInitializer];
+
+      memset(initializer, 0, sizeof(initializer_t));
+      initializer->symbol        = stringPtr;
+      g_nInitializer++;
+    }
+}
+
+void pas_AddRecordFileInitializer(symbol_t *fileObjectPtr)
 {
   /* Remember the file variable info so that we can use it at the appropriate
    * time.
@@ -132,9 +153,27 @@ void pas_AddStringInitializer(symbol_t *filePtr)
   if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
   else
     {
-      g_initializers[g_nInitializer].symbol       = filePtr;
-      g_initializers[g_nInitializer].preallocated = false;
-      g_initializers[g_nInitializer].fileNumber   = 0;
+      initializer_t *initializer = &g_initializers[g_nInitializer];
+
+      memset(initializer, 0, sizeof(initializer_t));
+      initializer->symbol        = fileObjectPtr;
+      g_nInitializer++;
+    }
+}
+
+void pas_AddRecordStringInitializer(symbol_t *recordObjectPtr)
+{
+  /* Remember the file variable info so that we can use it at the appropriate
+   * time.
+   */
+
+  if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
+  else
+    {
+      initializer_t *initializer = &g_initializers[g_nInitializer];
+
+      memset(initializer, 0, sizeof(initializer_t));
+      initializer->symbol        = recordObjectPtr;
       g_nInitializer++;
     }
 }
@@ -183,15 +222,67 @@ void pas_Initialization(void)
                 pas_GenerateSimple(opPUSHS);
               }
 
-            /* Generate:
-             *
-             *   TOS = Address of string variable to be initialized
-             */
+            /* Get TOS = Address of string variable to be initialized */
 
-             pas_GenerateStackReference(opLAS, varPtr);
-             pas_StandardFunctionCall(lbSTRINIT);
-             pushs = true;
-             break;
+            pas_GenerateStackReference(opLAS, varPtr);
+            pas_StandardFunctionCall(lbSTRINIT);
+            pushs = true;
+            break;
+
+          case sRECORD_OBJECT:
+            {
+              symbol_t *recordPtr     = varPtr->sParm.r.record;
+              symbol_t *recordTypePtr = varPtr->sParm.r.parent;
+              int offset = recordPtr->sParm.r.offset;
+
+              /* Check if the field is a string */
+
+              if (recordTypePtr->sParm.t.type == sSTRING)
+                {
+                  /* Get TOS = Address of string variable to be initialized */
+
+                  pas_GenerateStackReference(opLAS, varPtr);
+
+                  /* Add the offset to the string field to be initialized */
+
+                  pas_GenerateDataOperation(opPUSH, offset);
+                  pas_GenerateSimple(opADD);
+
+                  /* Then initialize the string */
+
+                  pas_StandardFunctionCall(lbSTRINIT);
+                  pushs = true;
+                }
+              else if (recordTypePtr->sParm.t.type == sFILE ||
+                       recordTypePtr->sParm.t.type == sTEXTFILE)
+                {
+                  /* Push the file number */
+
+                  if (initializer->preallocated)
+                    {
+                      pas_GenerateDataOperation(opPUSH,
+                                                initializer->fileNumber);
+                    }
+                  else
+                    {
+                      pas_GenerateIoOperation(xALLOCFILE);
+                    }
+
+                  /* Get TOS = Address of file variable to be initialized */
+
+                  pas_GenerateStackReference(opLAS, varPtr);
+
+                  /* Add the offset to the file field to be initialized */
+
+                  pas_GenerateDataOperation(opPUSH, offset);
+                  pas_GenerateSimple(opADD);
+
+                  /* Then initialize the file */
+
+                  pas_GenerateStackReference(opSTS, varPtr);
+                }
+            }
+            break;
 
           default:
             error(eHUH);

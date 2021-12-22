@@ -595,9 +595,7 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 
   /* Add some enhanced Pascal standard" types to the symbol table
    *
-   * string is represent by a 256 byte memory regions consisting of
-   * one byte for the valid string length plus 255 bytes for string
-   * storage
+   * string is represent by a large buffer in separater string memory.
    */
 
   typePtr = pas_AddTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL, NULL);

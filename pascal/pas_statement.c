@@ -1782,16 +1782,20 @@ static void pas_WithStatement(void)
            /* Okay, update the with record to use this record field */
 
            if (g_withRecord.pointer)
-             g_withRecord.index += g_tknPtr->sParm.r.offset;
+             {
+               g_withRecord.index += g_tknPtr->sParm.r.offset;
+             }
            else
-             g_withRecord.offset += g_tknPtr->sParm.r.offset;
+             {
+               g_withRecord.offset += g_tknPtr->sParm.r.offset;
+             }
 
            g_withRecord.parent  = g_tknPtr->sParm.r.parent;
 
            /* Skip over the sRECORD_OBJECT */
 
            getToken();
-     }
+         }
 
      /* Anything else is an error */
 

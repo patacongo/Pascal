@@ -1,3 +1,5 @@
+{ Verifies that strings in arrays are initialized properly }
+
 program stringArray;
 var
    lines : packed array[0..1] of string;

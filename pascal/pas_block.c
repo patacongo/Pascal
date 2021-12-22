@@ -97,7 +97,7 @@ static symbol_t *pas_NewOrdinalType        (char *typeName);
 static symbol_t *pas_OrdinalTypeIdentifier (bool allocate);
 static symbol_t *pas_GetArrayIndexType     (void);
 static symbol_t *pas_GetArrayBaseType      (symbol_t *indexTypePtr);
-static symbol_t *pas_DeclareRecord         (char *recordName);
+static symbol_t *pas_DeclareRecordType     (char *recordName);
 static symbol_t *pas_DeclareField          (symbol_t *recordPtr);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
 static bool      pas_IntAlignRequired      (symbol_t *typePtr);
@@ -945,6 +945,67 @@ static symbol_t *pas_DeclareVar(void)
               pas_AddStringInitializer(varPtr);
             }
 
+          /* A more complex case:  We just created a RECORD variable that
+           * may contain string fields that need to be initialized.
+           */
+
+          else if (varType == sRECORD)
+            {
+              symbol_t *recordTypePtr = varPtr->sParm.v.parent;
+              if (recordTypePtr == NULL ||
+                  recordTypePtr->sKind != sTYPE ||
+                  recordTypePtr->sParm.t.type != sRECORD)
+                {
+                  error(eRECORDTYPE);
+                }
+
+              /* Looks like a good RECORD type */
+
+              else
+                {
+                  int nObjects = recordTypePtr->sParm.t.maxValue;
+                  int objectIndex;
+
+                  /* The parent is the RECORD type.  That is followed by the
+                   * RECORD OBJECT symbols.  The number of following RECORD
+                   * OBJECT symbols is given by the maxValue field of the
+                   * RECORD type entry.
+                   */
+
+                  for (objectIndex = 1;
+                       objectIndex < nObjects;
+                       objectIndex++)
+                    {
+                      symbol_t *recordObjectPtr = &typePtr[objectIndex];
+                      symbol_t *parentTypePtr;
+
+                      if (recordObjectPtr->sKind != sRECORD_OBJECT)
+                        {
+                          /* The symbol table must be corrupted */
+
+                          error(eHUH);
+                        }
+
+                      /* If this field is a string, then set up to initialize
+                       * it.
+                       */
+
+                      parentTypePtr = recordObjectPtr->sParm.r.parent;
+
+                      if (parentTypePtr->sKind != sTYPE) error(eHUH);
+                      else if (parentTypePtr->sParm.t.type == sSTRING)
+                        {
+                           pas_AddRecordStringInitializer(recordObjectPtr);
+                        }
+                      else if (parentTypePtr->sParm.t.type == sFILE ||
+                               parentTypePtr->sParm.t.type == sTEXTFILE)
+                        {
+                           pas_AddRecordFileInitializer(recordObjectPtr);
+                        }
+                    }
+                }
+            }
+
           /* If the variable is declared in an interface section at level
            * zero, then it is a candidate to be imported or exported.
            */
@@ -1705,7 +1766,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
     case tRECORD :
       getToken();
-      typePtr = pas_DeclareRecord(typeName);
+      typePtr = pas_DeclareRecordType(typeName);
       break;
 
       /* Set Types
@@ -2129,14 +2190,14 @@ static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
 
 /****************************************************************************/
 
-static symbol_t *pas_DeclareRecord(char *recordName)
+static symbol_t *pas_DeclareRecordType(char *recordName)
 {
   symbol_t *recordPtr;
   int16_t recordOffset;
   int recordCount;
   int symbolIndex;
 
-  TRACE(g_lstFile,"[pas_DeclareRecord]");
+  TRACE(g_lstFile,"[pas_DeclareRecordType]");
 
   /* FORM: record-type = 'record' field-list 'end' */
 
