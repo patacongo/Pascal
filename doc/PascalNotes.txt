@@ -3,7 +3,8 @@
 TYPES
 - Only types INT, BOOLEAN, CHAR, REAL, SCALAR, SUBRANGE, RECORD and SET
   implemented
-  - No PACKED types (actually, types are always packed).
+  - No PACKED types (actually, types are always packed).  This is a bug
+    and needs to be revisited in the future.
   - FILE OF and TEXTFILE types partially supported
     - Not supported in TYPE block
     - TEXTFILE is defined as FILE OF CHAR vs PACKED FILE OF CHAR
@@ -226,8 +227,6 @@ o IMPROVEMENTS
 - Full extended pascal string support
 - Other things from extended pascal:  'list of'
 - Need to optimize out JMP .+1
-- For compatibility, let  'packed array [n..m] of char;' be equivalent to
-  string.
 - Need to review all uses of string stack for identifiers and strings
   that get discarded.  Probably should get a get infrastructure.
 - Add 16-bit word type

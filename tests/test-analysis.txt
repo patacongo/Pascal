@@ -52,20 +52,14 @@ An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
 ########src/009-stringarray.pas########
-Line 0:0005 Error 25 Token 9a
+Compiles okay but there are run-time failures:
 
-Line:
-  5    lines : packed array[0..1] of string;
-
-Error:
-217 #define eNOTYET          ((uint16_t) 0x25)
-
-Token:
-138 #define tPACKED          0x9a
+Now is the time
+^@To come to the ai^@To come to th
 
 Analysis:
-PACKED keyword is not currently supported.  This probably just needs logic
-to ignore the PACKED starage class for now.
+I have not looked at this yet but it is almost certainly because the strings
+in the array are not yet initialized.
 
 ########src/011-stringrecord.pas########
 Compiles fine but this error occurs at run-time:
@@ -129,19 +123,17 @@ Token:
 Analysis:
 
 ########src/014-arrayrecord.pas########
-Line 0:0005 Error 25 Token 9a
+Line 0:0014 Error 21 Token 2c
 
 Line:
-  5      title: packed array [1..50] of char;
+14   writeln(name.title, ': ', name.info);
 
 Error:
-217 #define eNOTYET          ((uint16_t) 0x25)
+#define eLBRACKET        ((uint16_t) 0x21)
 
-Token:
-8 #define tPACKED          0x9a
+Token: ','
 
 Analysis:
-Packed storage class not suppored (probably needs to be ignored)
 
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b
@@ -188,26 +180,17 @@ Token:
 Analysis:
 Fails because recdata is not defined yet and the forward reference is not supported.
 
-########ssrc/010-strrecord.pas########
-Line 0:0004 Error 25 Token 9a
+########src/109-findwords.pas########
+Line 0:0018 Error 1e Token 01 (list)
 
-Line:
-  2 type
-  3 Books = record
-  4    title: packed array [1..50] of char;
-
-Error:
-#define eNOTYET          ((uint16_t) 0x25)
-
-Token:
-#define tPACKED          0x9a
+Same issue as src/108-pointerrecode.pas
 
 ########src/202-strcat.pas########
 Runtime error 0x82 -- Execution Stopped
 
 Analysis:
 This file compiled and ran properly in the past but now fails with a runtime
-error.  This is because n internal function, inquote, returns a string value
+error.  This is because an internal function, inquote, returns a string value
 via STRCPY.  The compiler's functionDesignator() allocates an unitialized
 string to catch the return value using INDS.  Because the string is never
 initalized, the STRCPY that returns the value can crash because STRCPY
@@ -254,13 +237,18 @@ Line 0:0052 Error 2d Token 4b
 
 Line:
  52    readln(filename);
+Where:O
+  7 var
+  9    filename: string;
 
 Error:
-225 #define ePTRADR          ((uint16_t) 0x2d)
+224 #define ePTRADR          ((uint16_t) 0x2d)
 
-Token: '-'
+Token:
+ 83 #define sSTRING          0x4b /* String storage type */
 
 Analysis:
+Same as src/605-subprogram.pas
 
 ########src/605-subprogram.pas########
 Line 0:0052 Error 2d Token 4b
@@ -280,24 +268,6 @@ Token:
 Analysis:
 The error occurs in ptrFactor().  Pointers to strings not supported because
 there are no pointer variables in memory yet.
-
-########src/606-addfiledata.pas########
-Line 0:0052 Error 2d Token 4b
-
-Line:
- 52    readln(filename);
-Where:O
-  7 var
-  9    filename: string;
-
-Error:
-224 #define ePTRADR          ((uint16_t) 0x2d)
-
-Token:
- 83 #define sSTRING          0x4b /* String storage type */
-
-Analysis:
-Same as src/605-subprogram.pas
 
 ########sinecos.pas########
 ########unit-cosine.pas########

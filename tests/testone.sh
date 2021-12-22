@@ -2,7 +2,7 @@
 ############################################################################
 # testone.sh
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -69,13 +69,13 @@ function get_sourcename ()
     PASBASENAME=`basename ${PASFILENAME} .pas`
     PASDIRNAME=`dirname ${PASFILENAME}`
     if [ "${PASDIRNAME}" == "." ]; then
-	PASDIRNAME=src
+    PASDIRNAME=src
     fi
 
     PASFILENAME=${PASDIRNAME}/${PASBASENAME}.pas
     if [ ! -f "${PASFILENAME}" ]; then
-	echo "ERROR: ${PASFILENAME} does not exist"
-	exit 1
+    echo "ERROR: ${PASFILENAME} does not exist"
+    exit 1
     fi
 }
 
@@ -84,27 +84,27 @@ function get_sourcename ()
 function compile_source ()
 {
     if [ ! -f ${PASFILENAME} ]; then
-	echo "No source file"
+    echo "No source file"
     else
-	PASOPTS=-Iunits
-	${PASCAL} ${PASOPTS} ${PASFILENAME} 2>&1 || rm -f src/${PASBASENAME}.o1
-	if [ -f src/${PASBASENAME}.err ] ; then
-	    cat src/${PASBASENAME}.err | grep Line
-	fi
-	if [ ! -f src/${PASBASENAME}.o1 ] ; then
-	    echo "Compilation failed"
-	else
+    PASOPTS=-Iunits
+    ${PASCAL} ${PASOPTS} ${PASFILENAME} 2>&1 || rm -f src/${PASBASENAME}.o1
+    if [ -f src/${PASBASENAME}.err ] ; then
+        cat src/${PASBASENAME}.err | grep Line
+    fi
+    if [ ! -f src/${PASBASENAME}.o1 ] ; then
+        echo "Compilation failed"
+    else
 
-	    if [ "${CONFIG_REGM}" == "y" ]; then
-		POPTOPTS=-r
-		${POPT} ${POPTOPTS} src/${PASBASENAME}.o1 2>&1
-		${REGM} src/${PASBASENAME}.o1 2>&1
-	    else
-		POPTOPTS=
-		${POPT} ${POPTOPTS} src/${PASBASENAME}.o1 2>&1
-		${PLINK} src/${PASBASENAME}.o src/${PASBASENAME}.pex 2>&1
-	    fi
-	fi
+        if [ "${CONFIG_REGM}" == "y" ]; then
+        POPTOPTS=-r
+        ${POPT} ${POPTOPTS} src/${PASBASENAME}.o1 2>&1
+        ${REGM} src/${PASBASENAME}.o1 2>&1
+        else
+        POPTOPTS=
+        ${POPT} ${POPTOPTS} src/${PASBASENAME}.o1 2>&1
+        ${PLINK} src/${PASBASENAME}.o src/${PASBASENAME}.pex 2>&1
+        fi
+    fi
     fi
 }
 
@@ -113,20 +113,20 @@ function compile_source ()
 function test_program ()
 {
     if [ "${CONFIG_REGM}" == "y" ]; then
-	echo "Don't know how to run REGM programs yet"
+    echo "Don't know how to run REGM programs yet"
     else
-	echo "Using string stack size = ${STRSTKSZ}"
-	PRUNOPTS="-t ${STRSTKSZ}"
+    echo "Using string stack size = ${STRSTKSZ}"
+    PRUNOPTS="-t ${STRSTKSZ}"
 
-	if [ ! -f src/${PASBASENAME}.pex ]; then
-	    echo "No p-code executable"
-	else
-	    if [ -f src/${PASBASENAME}.inp ] ; then
-		${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1 <src/${PASBASENAME}.inp
-	    else
-		${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1
-	    fi
-	fi
+    if [ ! -f src/${PASBASENAME}.pex ]; then
+        echo "No p-code executable"
+    else
+        if [ -f src/${PASBASENAME}.inp ] ; then
+        ${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1 <src/${PASBASENAME}.inp
+        else
+        ${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1
+        fi
+    fi
     fi
 }
 
@@ -138,16 +138,16 @@ PASFILENAME=
 
 while [ -n "$1" ]; do
     case "$1" in
-	-t )
-	    STRSTKSZ=$2
-	    shift
-	    ;;
-	-h )
-	    show_usage
-	    ;;
-	* )
-	    PASFILENAME=$1
-	    ;;
+    -t )
+        STRSTKSZ=$2
+        shift
+        ;;
+    -h )
+        show_usage
+        ;;
+    * )
+        PASFILENAME=$1
+        ;;
     esac
     shift
 done

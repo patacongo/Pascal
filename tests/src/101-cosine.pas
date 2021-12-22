@@ -20,10 +20,10 @@ begin
       t := 1; k := 0; s := 1; sx := sqr(x);
       while abs(t) > eps*abs(s) do
       begin
-	 k := k+2;
-	 t := -t*sx/(k*(k-1));
-	 s := s+t;
-	 writeln('   cos(', x, ')=', s, ' interation=', k div 2)
+         k := k+2;
+         t := -t*sx/(k*(k-1));
+         s := s+t;
+         writeln('   cos(', x, ')=', s, ' iteration=', k div 2)
       end
    end
 end.

@@ -1731,9 +1731,13 @@ static symbol_t *pas_NewComplexType(char *typeName)
       /* PACKED Types */
 
     case tPACKED :
-      error(eNOTYET);
+      /* REVISIT: Packed arrays not yet supported. Fail silently.
+       * error(eNOTYET);
+       */
+
       getToken();
       if (g_token != tARRAY) break;
+
       /* Fall through to process PACKED ARRAY type */
 
       /* Array Types
