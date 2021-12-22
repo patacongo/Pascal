@@ -1,6 +1,6 @@
 program simpleRecord;
 type
-numbers =
+letters =
   record
     a : char;
     b : char;
@@ -8,7 +8,7 @@ numbers =
   end;
 
 var
-   abc : numbers;
+   abc : letters;
 
 begin
    abc.a := 'A';

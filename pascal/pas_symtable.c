@@ -512,22 +512,23 @@ symbol_t *pas_AddLabel(char *name, uint16_t label)
 
 symbol_t *pas_AddField(char *name, symbol_t *record)
 {
-   symbol_t *fieldPtr;
+  symbol_t *fieldPtr;
 
-   TRACE(g_lstFile,"[pas_AddField]");
+  TRACE(g_lstFile,"[pas_AddField]");
 
-   /* Get a slot in the symbol table */
-   fieldPtr = addSymbol(name, sRECORD_OBJECT);
-   if (fieldPtr) {
+  /* Get a slot in the symbol table */
 
-     /* Add the field to the symbol table */
-     fieldPtr->sParm.r.record = record;
+  fieldPtr = addSymbol(name, sRECORD_OBJECT);
+  if (fieldPtr)
+    {
+      /* Add the field to the symbol table */
 
-   }
+      fieldPtr->sParm.r.record = record;
+     }
 
-   /* Return a pointer to the new variable symbol */
+  /* Return a pointer to the new variable symbol */
 
-   return fieldPtr;
+  return fieldPtr;
 }
 
 /***************************************************************/

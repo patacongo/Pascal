@@ -2168,8 +2168,8 @@ static symbol_t *pas_DeclareRecord(char *recordName)
 
       if (g_token == tCASE) break;
 
-      /* We now expect to see and indentifier representating the
-       * beginning of the next fixed field.
+      /* We now expect to see and indentifier representing the beginning
+       * of the next fixed field.
        */
 
       (void)pas_DeclareField(recordPtr);
