@@ -10,9 +10,9 @@ writing, the following errors are reported when testall.sh is ran:
     compile.
  2. Currently a set is limited to 32 elements so that they can be represented
     internally as a 32-bit bit set.
- 3. I/O operations on most types of arrays and VAR arrays are not fully
+ 3. I/O operations on most types of arrays and records are not fully
     implemented.  See src/107-quicksort.pas
- 4. Forward references to variables before they are defined to not work.  See
+ 4. Forward references to variables before they are defined do not work.  See
     failure in src/108-pointerrecode.pas.
  5. There are a couple of files with initialization like:
       input = 1;
@@ -45,7 +45,7 @@ Token: ':'
 
 Analysis:
 This fails because the compiler does not expect encounter a type in a const
-efinition.  The function pas_DeclareConst() always expects to see '='
+definition.  The function pas_DeclareConst() always expects to see '='
 following the constant identifier.
 
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
@@ -126,7 +126,10 @@ Analysis:
 Line 0:0014 Error 21 Token 2c
 
 Line:
-14   writeln(name.title, ': ', name.info);
+ 12 procedure printBook( var name : NameString );
+ 13 begin
+ 14   writeln(name.title, ': ', name.info);
+ 15 end;
 
 Error:
 #define eLBRACKET        ((uint16_t) 0x21)
@@ -134,6 +137,22 @@ Error:
 Token: ','
 
 Analysis:
+This some of the traditonal Pascal behavior that is not implemented.  'title' is
+declared as an array:
+
+NameString =
+  record
+     title: packed array [1..50] of char;
+     info:  packed array [1..50] of char;
+  end;
+
+But accessed without indexing:
+
+   writeln(name.title, ': ', name.info);
+
+Even though title is an array, no index is required for the special case of packed array of char.
+
+More modern Pascal implement added type string for these cases.  Is backward compatible support needed?
 
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b
