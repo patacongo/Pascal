@@ -96,33 +96,19 @@ Token:
 Analysis:
 Fails because recdata is not defined yet and the forward reference is not supported.
 
-########src/109-findwords.pas########
-Line 0:0018 Error 1e Token 01 (LIST)
-
-After commenting out re-definition of boolean constants:
-
-const
-    { TRUE = 1;
-      FALSE = 0; }
+########ssrc/010-strrecord.pas########
+Line 0:0004 Error 25 Token 9a
 
 Line:
-type
-     listptr = ^list;  <<< HERE
-     list = record
-              line : integer;       { line number of occurrence     }
-              nextline : listptr;   { link to next line number      }
-              prevline : listptr    { link to previous line number  }
-     end;
+  2 type
+  3 Books = record
+  4    title: packed array [1..50] of char;
 
 Error:
-#define eINVTYPE         ((uint16_t) 0x1e)
+#define eNOTYET          ((uint16_t) 0x25)
 
 Token:
-#define tIDENT           0x01
-
-Analysis:
-Same problem as with src/108-pointerrecode.pas:  Use of forward reference to
-define a pointer variable fails.
+#define tPACKED          0x9a
 
 ########src/202-strcat.pas########
 Runtime error 0x82 -- Execution Stopped

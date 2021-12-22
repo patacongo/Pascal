@@ -147,8 +147,10 @@ tutorialspoint.com
     procedure WriteLn(var F: Text; Args: Arguments);  - Writes variable to file and append newline
 
 Extended Pascal Features
-- Type STRING is partially implemented.
+- Type STRING is implemented.
 - PACKED ARRAY[..] OF CHAR is not a string.
+- INPUT and OUTPUT are STRING files.  STRING files are text files.  All
+  others are binary files.
 - SIZEOF built-in is supported
 
 NON-standard Pascal extensions/differences
