@@ -171,14 +171,6 @@ struct symStringConst_s    /* for sKind == sSTRING_CONST */
 };
 typedef struct symStringConst_s symStringConst_t;
 
-struct symVarString_s      /* for sKind == sSTRING */
-{
-  uint16_t label;          /* label at string declaration */
-  uint16_t size;           /* valid length of string in bytes */
-  uint16_t alloc;          /* max length of string in bytes */
-};
-typedef struct symVarString_s symVarString_t;
-
 struct symLabel_s          /* for sKind == sLABEL */
 {
   uint16_t label;          /* label number */
@@ -186,7 +178,7 @@ struct symLabel_s          /* for sKind == sLABEL */
 };
 typedef struct symLabel_s symLabel_t;
 
-struct symVar_s            /* for sKind == type identifier */
+struct symVar_s            /* for sKind == Variable type identifier */
 {
   uint8_t   flags;         /* flags to customize a variable (see above) */
   uint16_t  xfrUnit;       /* File transfer unit (files only) */
@@ -229,7 +221,6 @@ struct symbol_s
     symType_t        t;    /* for type definitions */
     symConst_t       c;    /* for constants */
     symStringConst_t s;    /* for strings of constant size */
-    symVarString_t   vs;   /* for strings of variable size */
     symLabel_t       l;    /* for labels */
     symVar_t         v;    /* for variables */
     symProc_t        p;    /* for functions & procedures */

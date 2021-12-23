@@ -52,7 +52,7 @@ An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
 ########src/009-stringarray.pas########
-Compiles okay but there are run-time failures:
+Compiles okay but there are run-time errors in the output:
 
 Now is the time
 ^@To come to the ai^@To come to th
@@ -60,39 +60,6 @@ Now is the time
 Analysis:
 I have not looked at this yet but it is almost certainly because the strings
 in the array are not yet initialized.
-
-########src/011-stringrecord.pas########
-Compiles fine but this error occurs at run-time:
-
-  ERROR: pexec_WriteString: Not open for writing: 0
-
-Analysis:
-This is caused by a stack corruption problem.
-
-String fields in RECORDS cause failures at runtime.  See 011-stringrecord.pas.
-This is because the logic is generating the code based on the sRECORD entry
-and not taking into acount the correct size and offset in sRECORD_OBJECT
-entry.  The failure occurs in the sREAL/sSTRING case in pas_expression.c
-function baseFactor():
-
-varPtr points to the whole RECORD varialble (size 6) and not to the string
-file (size 4, offset 2).  So the following logic:
-
-1917                  pas_GenerateDataSize(varPtr->sParm.v.size);
-1918                  pas_GenerateStackReference(opLDSM, varPtr);
-
-Generates:
-
-  PUSHB 6   /* Size entry RECORD is 6 bytes */
-  LDM   4   /* Read 6 bytes from the RECORD at FP offset 4 */
-
-Which clobbers the stack.  It should generate:
-
-  PUSHB 4    /* Size of string read */
-  LA    4    /* Address of the RECORD at FP offset 4 */
-  PUSHB 2    /* Offset to the string field */
-  ADD        /* Offset address to the string field */
-  LDI        /* Load 4 bytes from the offset address */
 
 ########src/012-stringrecordarray.pas########
 Line 0:0020 Error 52 Token 54

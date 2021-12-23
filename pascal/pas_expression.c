@@ -65,6 +65,8 @@
  * Private Type Declarations
  ****************************************************************************/
 
+/* This structure is used for managing SET variables */
+
 struct setType_s
 {
   uint8_t    setType;
@@ -1467,23 +1469,39 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
             }
           else
             {
-              /* Modify the variable so that it has the characteristics of the */
-              /* the field but with level and offset associated with the record */
+              /* Modify the variable so that it has the characteristics of
+               * the field but with level and offset associated with the
+               * record.
+               */
 
               typePtr                 = g_tknPtr->sParm.r.parent;
               varPtr->sKind           = typePtr->sParm.t.type;
               varPtr->sParm.v.parent  = typePtr;
 
-              /* Special case:  The record is a VAR parameter. */
+              /* Adjust the variable size and offset.  Add the RECORD offset
+               * to the RECORD data stack offset to get the data stack
+               * offset to the record object; Change the size to match the
+               * size of RECORD object.
+               */
+
+              varPtr->sParm.v.size    = g_tknPtr->sParm.r.size;
 
               if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
                                   VAR_PARM_FACTOR))
                 {
+                  /* Add the offset to the record field to the RECORD address
+                   * that should already be on the stack.
+                   */
+
                   pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
                   pas_GenerateSimple(opADD);
                 }
               else
                 {
+                  /* Add the offset to RECORD object to RECORD data stack
+                   * offset.
+                   */
+
                   varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
                 }
 
@@ -1519,8 +1537,9 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
       break;
 
     case sRECORD_OBJECT :
-      /* NOTE:  This must have been preceeded with a WITH statement */
-      /* defining the RECORD type */
+      /* NOTE:  This must have been preceeded with a WITH statement
+       * defining the RECORD type
+       */
 
       if (!g_withRecord.parent)
         {
