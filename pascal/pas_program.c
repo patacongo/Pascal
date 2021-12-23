@@ -159,6 +159,7 @@ void pas_Program(void)
   /* Process the block */
 
   pas_Block(g_dStack);
+
   if (g_token !=  '.') error(ePERIOD);
   pas_GenerateSimple(opEND);
 }

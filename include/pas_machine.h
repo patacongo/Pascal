@@ -109,7 +109,7 @@
 #define sSTRING_SIZE        (sPTR_SIZE + sINT_SIZE)
 #define sSTRING_SIZE_OFFSET (0)         /* Byte offset to string size */
 #define sSTRING_DATA_OFFSET (sINT_SIZE) /* Byte offset to buffer pointer */
-#define STRING_BUFFER_SIZE  (256)       /* Size of string buffer */
+#define STRING_BUFFER_SIZE  (256)       /* Default size of string buffer */
 
 /* Range of unsigned character type */
 

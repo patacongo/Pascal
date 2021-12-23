@@ -168,11 +168,13 @@ void pas_Block(int32_t preAllocatedDStack)
 
   saveSymOffset            = g_levelSymOffset;
   saveConstOffset          = g_levelConstOffset;
+  saveInitializerOffset    = g_levelInitializerOffset;
 
   /* Set the current symbol and constant table offsets for this level */
 
   g_levelSymOffset         = saveNSym;
   g_levelConstOffset       = saveNConst;
+  g_levelInitializerOffset = saveNInitializer;
 
   /* When we enter block at level zero, then we must be at the
    * entry point to the program.  Save the entry point label
@@ -241,35 +243,15 @@ void pas_Block(int32_t preAllocatedDStack)
       pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
     }
 
-  /* Remember the current state of the initializers */
-
-  saveInitializerOffset    = g_levelInitializerOffset;
-
   /* Generate the initializers */
 
+  g_levelInitializerOffset = saveInitializerOffset;
   pas_Initialization();
-
-  /* Set the appropriate initializers state for the next level, protecting
-   * those at this level.
-   */
-
-  g_levelInitializerOffset = g_nInitializer;
 
   /* Then emit the compound statement itself */
 
-  pas_CompoundStatement();
-
-  /* Restore the symbol and constant table offsets for this level */
-
-  g_levelInitializerOffset = saveInitializerOffset;
-
-  /* Generate finalizers */
-
-  pas_Finalization();
-
-  /* Set up so that these initializers will not be used again. */
-
   g_levelInitializerOffset = g_nInitializer;
+  pas_CompoundStatement();
 
   /* Release the allocated data stack */
 
@@ -277,6 +259,12 @@ void pas_Block(int32_t preAllocatedDStack)
     {
       pas_GenerateDataOperation(opINDS, -(int32_t)g_dStack);
     }
+
+
+  /* Generate finalizers */
+
+  g_levelInitializerOffset = saveInitializerOffset;
+  pas_Finalization();
 
   /* Make sure all declared labels were defined in the block */
 
@@ -291,6 +279,7 @@ void pas_Block(int32_t preAllocatedDStack)
 
   g_levelSymOffset         = saveSymOffset;
   g_levelConstOffset       = saveConstOffset;
+  g_levelInitializerOffset = saveInitializerOffset;
 
   /* Release the symbols, constants, and initializers used by this level */
 
@@ -313,17 +302,15 @@ void pas_DeclarationGroup(int32_t beginLabel)
 
   /* Save the current top-of-stack data for symbols and constants. */
 
-  saveSymOffset            = g_levelSymOffset;
-  saveConstOffset          = g_levelConstOffset;
-  saveInitializerOffset    = g_levelInitializerOffset;
+  saveSymOffset      = g_levelSymOffset;
+  saveConstOffset    = g_levelConstOffset;
 
   /* Set the current symbol, constant, and initializer table offsets for this
    * level
    */
 
-  g_levelSymOffset         = g_nSym;
-  g_levelConstOffset       = g_nConst;
-  g_levelInitializerOffset = g_nInitializer;
+  g_levelSymOffset   = g_nSym;
+  g_levelConstOffset = g_nConst;
 
   /* FORM: declarative-part = { declaration-group }
    * FORM: declaration-group =
@@ -404,6 +391,9 @@ void pas_DeclarationGroup(int32_t beginLabel)
    * NOTE:  a JMP to the executable body of this block is generated
    * if there are nested procedures and this is not level=0
    */
+
+  saveInitializerOffset    = g_levelInitializerOffset;
+  g_levelInitializerOffset = g_nInitializer;
 
   for (; ; )
     {

@@ -1402,6 +1402,7 @@ FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
 
   /* Set up info needed to perform a simulated reset */
 
+  st->stralloc  = attr->stralloc;
   st->strsize   = attr->strsize;
   st->rosize    = adjusted_rosize;
   st->entry     = attr->entry;

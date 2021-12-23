@@ -57,6 +57,7 @@ function show_usage ()
     echo "USAGE:"
     echo "  ${0} [OPTION] <pas-file-basename>"
     echo "OPTIONS:"
+    echo "  -a <stralloc>: Select string buffer allocation size"
     echo "  -t <strstksz>: Select string stack size"
     echo "  -h:            Show this text"
     exit 1
@@ -116,7 +117,7 @@ function test_program ()
     echo "Don't know how to run REGM programs yet"
     else
     echo "Using string stack size = ${STRSTKSZ}"
-    PRUNOPTS="-t ${STRSTKSZ}"
+    PRUNOPTS="-t ${STRSTKSZ} -a ${STKALLOC}"
 
     if [ ! -f src/${PASBASENAME}.pex ]; then
         echo "No p-code executable"
@@ -133,11 +134,16 @@ function test_program ()
 
 # Parse command line
 
+STKALLOC=128
 STRSTKSZ=1024
 PASFILENAME=
 
 while [ -n "$1" ]; do
     case "$1" in
+    -a )
+        STKALLOC=$2
+        shift
+        ;;
     -t )
         STRSTKSZ=$2
         shift

@@ -201,12 +201,17 @@
 /* void _lbval(const string s, int *v, int *code); */
 
 #define lbVAL_INIT \
-    { "_lbval", 0, 2, { sSTRING_SIZE, sPTR_SIZE, sPTR_SIZE }}
+    { "_lbval", 0, 3, { sSTRING_SIZE, sPTR_SIZE, sPTR_SIZE }}
 
-/* _lbstrinit(VAR str : string); */
+/* procedure _lbstrinit(VAR str : string); */
 
 #define lbSTRINIT_INIT \
     { "_lbstrinit",  0, 1, { sPTR_SIZE }}
+
+/* function _lbstrtmp : string; */
+
+#define lbSTRTMP_INIT \
+    { "_lbstrtmp",  1, 0, { 0 }}
 
 /* function strdup(name : string) : string; */
 

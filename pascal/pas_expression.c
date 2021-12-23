@@ -2742,10 +2742,10 @@ static exprType_t basePtrFactor(symbol_t *varPtr, uint8_t factorFlags)
 
 static exprType_t functionDesignator(void)
 {
-  symbol_t  *funcPtr = g_tknPtr;
-  symbol_t  *typePtr = funcPtr->sParm.p.parent;
+  symbol_t  *funcPtr      = g_tknPtr;
+  symbol_t  *typePtr      = funcPtr->sParm.p.parent;
   exprType_t factorType;
-  int        size = 0;
+  int        size         = 0;
 
   TRACE(g_lstFile,"[functionDesignator]");
 
@@ -2753,12 +2753,26 @@ static exprType_t functionDesignator(void)
    *       function-identifier [ actual-parameter-list ]
    */
 
-  /* Allocate stack space for a reference instance of the type
-   * returned by the function.  This is an uninitalized "container"
-   * that will catch the valued returned by the function.
+  /* Allocate stack space for a reference instance of the type returned by
+   * the function.  This is an "container" that will catch the valued
+   * returned by the function.
+   *
+   * STRING return value containers need some special initialization.
    */
 
-   pas_GenerateDataOperation(opINDS, typePtr->sParm.t.rsize);
+  if (typePtr->sKind == sTYPE && typePtr->sParm.t.type == sSTRING)
+    {
+      /* REVISIT:  This string container really needs to be enclosed in PUSHS
+       * and POPS.  Need to assure that in order to release string stack as
+       * soon as possible after the temporary container is released.
+       */
+
+      pas_StandardFunctionCall(lbSTRTMP);
+    }
+  else
+    {
+      pas_GenerateDataOperation(opINDS, typePtr->sParm.t.rsize);
+    }
 
   /* Get the type of the function */
 

@@ -57,7 +57,7 @@
 #include "pdbg.h"
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 #define MIN_STACK_SIZE       1024
@@ -65,15 +65,12 @@
 #define DEFAULT_STKSTR_SIZE     0
 
 /****************************************************************************
- * Private Type Definitions
- ****************************************************************************/
-
-/****************************************************************************
  * Private Constant Data
  ****************************************************************************/
 
 static const struct option long_options[] =
 {
+  {"alloc",  1, NULL, 'a'},
   {"stack",  1, NULL, 's'},
   {"string", 1, NULL, 't'},
   {"debug",  0, NULL, 'd'},
@@ -86,13 +83,10 @@ static const struct option long_options[] =
  ****************************************************************************/
 
 static const char  *g_pofffilename;
+static int32_t      g_strallocsize = STRING_BUFFER_SIZE;
 static int32_t      g_varstacksize = DEFAULT_STACK_SIZE;
 static int32_t      g_strstacksize = DEFAULT_STKSTR_SIZE;
 static int          g_debug        = 0;
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
 
 /****************************************************************************
  * Private Functions
@@ -108,6 +102,11 @@ static void prun_showusage(const char *progname)
   fprintf(stderr, "  %s [options] <program-filename>\n",
           progname);
   fprintf(stderr, "options:\n");
+  fprintf(stderr, "  -a <string-buffer-size>\n");
+  fprintf(stderr, "  --alloc <string-buffer-size>\n");
+  fprintf(stderr, "    Size of the string buffer to be allocated whenever a\n");
+  fprintf(stderr, "    'string' variable is created (default: %d)\n",
+          STRING_BUFFER_SIZE);
   fprintf(stderr, "  -s <stack-size>\n");
   fprintf(stderr, "  --stack <stack-size>\n");
   fprintf(stderr, "    Memory in bytes to allocate for the pascal program\n");
@@ -134,6 +133,7 @@ static void prun_showusage(const char *progname)
 static void prun_parseargs(int argc, char **argv)
 {
   int option_index;
+  int alloc;
   int size;
   int c;
 
@@ -143,18 +143,29 @@ static void prun_parseargs(int argc, char **argv)
     {
       fprintf(stderr, "ERROR: Filename required\n");
       prun_showusage(argv[0]);
-    } /* end if */
+    }
 
   /* Parse the command line options */
 
   do
     {
-      c = getopt_long (argc, argv, "t:s:dh",
-                       long_options, &option_index);
+      c = getopt_long(argc, argv, "a:t:s:dh",
+                      long_options, &option_index);
       if (c != -1)
         {
           switch (c)
             {
+            case 'a' :
+              alloc = atoi(optarg);
+              if (alloc < 0)
+                {
+                  fprintf(stderr, "ERROR: String buffer size\n");
+                  prun_showusage(argv[0]);
+                }
+
+              g_strallocsize = (alloc + 1) & ~1;
+              break;
+
             case 's' :
               size = atoi(optarg);
               if (size < MIN_STACK_SIZE)
@@ -163,7 +174,7 @@ static void prun_parseargs(int argc, char **argv)
                   prun_showusage(argv[0]);
                 }
 
-	      g_varstacksize = (size + 3) & ~3;
+              g_varstacksize = (size + 3) & ~3;
               break;
 
             case 't' :
@@ -174,7 +185,7 @@ static void prun_parseargs(int argc, char **argv)
                   prun_showusage(argv[0]);
                 }
 
-	      g_strstacksize = ((size + 3) & ~3);
+              g_strstacksize = ((size + 3) & ~3);
               break;
 
             case 'd' :
@@ -257,7 +268,8 @@ int main(int argc, char *argv[], char *envp[])
 
   /* Initialize the P-machine and load the POFF file */
 
-  st = pexec_Load(fileName, g_varstacksize, g_strstacksize);
+  st = pexec_Load(fileName, g_strallocsize, g_varstacksize,
+                  g_strstacksize);
   if (!st)
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);

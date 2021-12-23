@@ -155,19 +155,20 @@ struct pexec_attr_s
 {
   /* Instruction space (I-Space) */
 
-  FAR uint8_t *ispace;  /* Allocated I-Space containing p-code data */
-  paddr_t      entry;   /* Entry point */
-  paddr_t      maxpc;   /* Last valid p-code address */
+  FAR uint8_t *ispace;   /* Allocated I-Space containing p-code data */
+  paddr_t      entry;    /* Entry point */
+  paddr_t      maxpc;    /* Last valid p-code address */
 
   /* Read-only data block */
 
-  FAR uint8_t *rodata;  /* Address of read-only data block */
-  paddr_t      rosize;  /* Size of read-only data block */
+  FAR uint8_t *rodata;   /* Address of read-only data block */
+  paddr_t      rosize;   /* Size of read-only data block */
 
   /* Allocate for variable storage */
 
-  paddr_t      varsize; /* Variable storage size */
-  paddr_t      strsize; /* String storage size */
+  paddr_t      stralloc; /* Size of string buffer allocation */
+  paddr_t      varsize;  /* Variable storage size */
+  paddr_t      strsize;  /* String storage size */
 };
 
 /* This structure defines the current state of the p-code interpreter */
@@ -212,6 +213,7 @@ struct pexec_s
    *  strsize + rosize : "Normal" Pascal stack
    */
 
+  paddr_t stralloc;   /* String buffer allocation size */
   paddr_t strsize;    /* String stack size */
   paddr_t rosize;     /* Read-only stack size */
   paddr_t entry;      /* Entry point */
@@ -230,8 +232,8 @@ extern "C"
 #define EXTERN extern
 #endif
 
-FAR struct pexec_s *pexec_Load(const char *filename, paddr_t varsize,
-                               paddr_t strsize);
+FAR struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
+                               paddr_t varsize, paddr_t strsize);
 FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr);
 int pexec_Execute(FAR struct pexec_s *st);
 void pexec_Reset(struct pexec_s *st);

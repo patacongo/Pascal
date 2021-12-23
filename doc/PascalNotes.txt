@@ -186,10 +186,6 @@ o BUGS
 - In FUNC/PROC calls, if simpleExpression fails to find a parameter (eg.,
   proc (,,), no error is detected.
 - Type FILE OF is totally busted -- fix it
-- Need to get max string size into stack somehow.  Runtime routines like
-  strcat and strcatc need to know how big the string storage space is.
-- Need logic to release string stack used by actual parameters after
-  function/procedure call.
 - There are lots of cases where the string stack is not being managed
   correctly (e.g., usesSection()).
 - Redirection of input and output is not supported (e.g. see setting of
@@ -202,16 +198,12 @@ o BUGS
   verified.
 - Unit files with data declarations, but no implementation generate an
   error.
-- There is a string stack memory leak:  There is no explicit logic to free
-  string stack allocated for constant strings.  It eventually gets freed
-  when a procedure, function, or program exits, but can waste log of memory within.
 
 o IMPROVEMENTS
 - In PTKN, verify that string stack does not overflow when
   character added.
 - Option to turn on listing
 - Option to interleave assembly language with listing
-- Option to select string stack size (or let it grow dynamically)
 - Option to select symbol table size (or let it grow dynamically)
 - List file should only be produced if option provided.
 - Provide instrumentation to use the line number data in the
@@ -227,8 +219,6 @@ o IMPROVEMENTS
 - Full extended pascal string support
 - Other things from extended pascal:  'list of'
 - Need to optimize out JMP .+1
-- Need to review all uses of string stack for identifiers and strings
-  that get discarded.  Probably should get a get infrastructure.
 - Add 16-bit word type
 
 o ISSUES

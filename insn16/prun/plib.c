@@ -155,11 +155,11 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
            * Make sure that the string length will fit into the destination.
            */
 
-          if (size >= STRING_BUFFER_SIZE)
+          if (size >= st->stralloc)
             {
               /* Clip to the maximum size */
 
-              size = STRING_BUFFER_SIZE;
+              size = st->stralloc;
             }
 
           /* Transfer the string buffer contents */
@@ -211,12 +211,12 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
           /* Make sure that the string length will fit into the
            * destination. */
 
-          if (uparm1 >= STRING_BUFFER_SIZE)
+          if (uparm1 >= st->stralloc)
             {
               /* Clip to the maximum size */
 
-              uparm1 = STRING_BUFFER_SIZE;
-              size    = STRING_BUFFER_SIZE;
+              uparm1 = st->stralloc;
+              size    = st->stralloc;
             }
           else
             {
@@ -285,6 +285,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Initialize a new string variable. Create a string buffer.
        *   procedure mkstk(VAR str : string);
+       *
        * ON INPUT
        *   TOS(st, 1)=pointer to the newly string variable to be initialized
        * ON RETURN
@@ -295,19 +296,67 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       POP(st, addr1);                  /* Address of dest string variable */
 
+      /* Check if there is space on the string stack for the new string
+       * buffer.
+       */
+
+      if (st->csp + st->stralloc >= st->spb)
+        {
+          return eSTRSTKOVERFLOW;
+        }
+
       /* Allocate a string buffer on the string stack for the new string. */
 
       addr2   = ((st->csp + 1) & ~1);
-      st->csp = addr2 + STRING_BUFFER_SIZE;
+      st->csp = addr2 + st->stralloc;
 
       /* Initialize the new string.  Order:
        *
-       *   TOS(n)     = String size
-       *   TOS(n + 1) = 16-bit pointer to the string data.
+       *   TOS(n)     = 16-bit pointer to the string data.
+       *   TOS(n + 1) = String size
        */
 
       PUTSTACK(st, addr2, addr1 + sSTRING_DATA_OFFSET);
       PUTSTACK(st, 0,     addr1 + sSTRING_SIZE_OFFSET);
+      break;
+
+      /* Initialize a temporary string variable on the stack. It is similar
+       * to lbSTRINIT except that the form of its arguments are different.
+       * This is currently used only when calling a function that returns a
+       * string in order to catch the returned string value in an initialized
+       * container.
+       *
+       *   function strtmp : string;
+       *
+       * ON INPUT
+       * ON RETURN
+       *   TOS(0)=Pointer to the string buffer on the stack.
+       *   TOS(1)=String size (zero)
+       */
+
+    case lbSTRTMP :
+      /* Check if there is space on the string stack for the new string
+       * buffer.
+       */
+
+      if (st->csp + st->stralloc >= st->spb)
+        {
+          return eSTRSTKOVERFLOW;
+        }
+
+      /* Allocate a string buffer on the string stack for the new string. */
+
+      addr1   = ((st->csp + 1) & ~1);
+      st->csp = addr1 + st->stralloc;
+
+      /* Create the new string.  Order:
+       *
+       *   TOS(n)     = 16-bit pointer to the string data.
+       *   TOS(n + 1) = String size
+       */
+
+      PUSH(st, 0);     /* String size */
+      PUSH(st, addr1); /* String buffer address */
       break;
 
       /* Replace a string with a duplicate string residing in allocated
@@ -336,7 +385,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        * default size!
        */
 
-      if (st->csp + STRING_BUFFER_SIZE >= st->spb)
+      if (st->csp + st->stralloc >= st->spb)
         {
           return eSTRSTKOVERFLOW;
         }
@@ -344,7 +393,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* Allocate space on the string stack for the new string */
 
       addr2    = ((st->csp + 1) & ~1);
-      st->csp += STRING_BUFFER_SIZE;              /* Allocate max size */
+      st->csp += st->stralloc;                    /* Allocate max size */
 
       /* Copy the string into the string stack */
 
@@ -367,12 +416,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbMKSTKC :
-      /* Check if there is space on the string stack for the new string
-       * FIXME:  This logic does not handle strings with other than the
-       * default size!
-       */
+      /* Check if there is space on the string stack for the new string */
 
-      if (st->csp + STRING_BUFFER_SIZE >= st->spb)
+      if (st->csp + st->stralloc >= st->spb)
         {
           return eSTRSTKOVERFLOW;
         }
@@ -380,7 +426,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* Allocate space on the string stack for the new string */
 
       addr2    = ((st->csp + 1) & ~1);
-      st->csp += STRING_BUFFER_SIZE;               /* Allocate max size */
+      st->csp += st->stralloc;                     /* Allocate max size */
 
       /* Save the length at the beginning of the copy */
 
@@ -420,7 +466,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Check for string overflow. */
 
-      if (uparm1 + uparm2 > STRING_BUFFER_SIZE)
+      if (uparm1 + uparm2 > st->stralloc)
         {
           return eSTRSTKOVERFLOW;
         }
@@ -464,7 +510,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        * strings with other than the default size!
        */
 
-      if (size + 1 >= STRING_BUFFER_SIZE)
+      if (size + 1 >= st->stralloc)
         {
           return eSTRSTKOVERFLOW;
         }
@@ -546,7 +592,6 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
     default :
       return eBADSYSLIBCALL;
-
     }
 
   return eNOERROR;

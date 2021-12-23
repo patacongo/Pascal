@@ -52,8 +52,8 @@
  * Public Functions
  ****************************************************************************/
 
-FAR struct pexec_s *pexec_Load(const char *filename, paddr_t varsize,
-                               paddr_t strsize)
+FAR struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
+                               paddr_t varsize, paddr_t strsize)
 {
   struct pexec_attr_s attr;
   struct pexec_s *st;
@@ -103,8 +103,9 @@ FAR struct pexec_s *pexec_Load(const char *filename, paddr_t varsize,
 
   /* Initialize the attribute structure */
 
-  attr.varsize = varsize;
-  attr.strsize = strsize;
+  attr.stralloc = stralloc;
+  attr.varsize  = varsize;
+  attr.strsize  = strsize;
 
   /* Extract the program entry point from the pascal executable */
 

@@ -74,6 +74,8 @@ Token:
  92 #define sRECORD_OBJECT   0x54
 
 Analysis:
+The parsing logic currently expects a RECORD name to be following by '.' in
+this context.
 
 ########src/013-filerecordarray.pas########
 Line 0:0010 Error 1e Token 01 (NameString)
@@ -117,9 +119,11 @@ But accessed without indexing:
 
    writeln(name.title, ': ', name.info);
 
-Even though title is an array, no index is required for the special case of packed array of char.
+Even though title is an array, no index is required for the special case of
+packed array of char.
 
-More modern Pascal implement added type string for these cases.  Is backward compatible support needed?
+More modern Pascal implement added type string for these cases.  Is backward
+compatible support needed?
 
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b
@@ -142,8 +146,8 @@ the bitset is currently limited to 32-bits:
 ########src/106-bubblesort.pas########
 ########src/107-quicksort.pas########
 
-These two examples compile fine but no output appears on stdout.
-(Perhaps they crash silently?  Perhaps they hang reading input?)
+These two examples compile fine but no output appears on stdout.  Perhaps
+they crash silently?  Perhaps they hang reading input? (I think the latter)
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)
@@ -170,17 +174,6 @@ Fails because recdata is not defined yet and the forward reference is not suppor
 Line 0:0018 Error 1e Token 01 (list)
 
 Same issue as src/108-pointerrecode.pas
-
-########src/202-strcat.pas########
-Runtime error 0x82 -- Execution Stopped
-
-Analysis:
-This file compiled and ran properly in the past but now fails with a runtime
-error.  This is because an internal function, inquote, returns a string value
-via STRCPY.  The compiler's functionDesignator() allocates an unitialized
-string to catch the return value using INDS.  Because the string is never
-initalized, the STRCPY that returns the value can crash because STRCPY
-assumes that the target string is initialized with a valid string buffer.
 
 ########src/601-writefile.pas########
 Compiles okay, runs without error, creates the students.dat file.  However

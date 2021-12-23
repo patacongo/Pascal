@@ -120,11 +120,26 @@
  *   procedure strinit(VAR str : string);
  *
  * ON INPUT
- *   TOS(st, 1)=pointer to the newly string variable to be initialized
+ *   TOS(0)=address of the newly string variable to be initialized
  * ON RETURN
  */
 
 #define lbSTRINIT       (0x0005)
+
+/* Initialize a temporary string variable on the stack. It is similar to
+ * lbSTRINIT except that the form of its arguments are different.  This
+ * is currently used only when calling a function that returns a string in
+ * order to catch the returned string value in an initialized container.
+ *
+ *   function strtmp : string;
+ *
+ * ON INPUT
+ * ON RETURN
+ *   TOS(0)=Pointer to the string buffer on the stack.
+ *   TOS(1)=String size (zero)
+ */
+
+#define lbSTRTMP        (0x0006)
 
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
@@ -139,7 +154,7 @@
  *   TOS(1)=length of new string
  */
 
-#define lbSTRDUP        (0x0006)
+#define lbSTRDUP        (0x0007)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -150,7 +165,7 @@
  *   TOS(1)=length of new string
  */
 
-#define lbMKSTKC        (0x0007)
+#define lbMKSTKC        (0x0008)
 
 /* Concatenate a string to the end of a string.
  *
@@ -166,7 +181,7 @@
  *   TOS(st, 1)=new length of dest string2
  */
 
-#define lbSTRCAT        (0x0008)
+#define lbSTRCAT        (0x0009)
 
 /* Concatenate a character to the end of a string.
  *
@@ -181,7 +196,7 @@
  *   TOS(1)=new length of string
  */
 
-#define lbSTRCATC       (0x0009)
+#define lbSTRCATC       (0x000a)
 
 /* Compare two pascal strings
  *
@@ -196,8 +211,8 @@
  *   TOS(0)=(-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x000a)
+#define lbSTRCMP        (0x000b)
 
-#define MAX_LBOP        (0x000b)
+#define MAX_LBOP        (0x000c)
 
 #endif /* __PAS_LIBRARY_H */
