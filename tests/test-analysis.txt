@@ -178,23 +178,6 @@ Same issue as src/108-pointerrecode.pas
 ########src/601-writefile.pas########
 Compiles okay, runs without error, creates the students.dat file.  However
 the content of the file is garbage.
-########src/602-datafile.pas########
-Compiles without error but generates errors at run-time:
-
-ERROR: pexec_WriteString: bad file number: 1073
-ERROR: pexec_WriteChar: bad file number: 16
-ERROR: pexec_WriteChar: Not open for writing: 0
-ERROR: pexec_WriteString: bad file number: 256
-ERROR: pexec_WriteChar: Not open for writing: 2
-ERROR: pexec_WriteString: bad file number: 1073
-ERROR: pexec_WriteChar: bad file number: 16
-ERROR: pexec_WriteChar: Not open for writing: 0
-ERROR: pexec_WriteString: bad file number: 256
-ERROR: pexec_WriteChar: Not open for writing: 2
-src/602-datafile.pex Loaded
-Name: Address: ^PºBatch Code: Name: Address: ^PºBatch Code:
-
-Looks like stack corruption.
 
 ########src/603-appendfile.pas########
 Line 0:0020 Error 2d Token 4b
@@ -318,6 +301,8 @@ Token:
 
 Analysis:
 Function Length() is not defined.  This appears to be a part of Smart Pascal?
+
+Can it be replaces with SIZEOF?  Are that compatible?
 
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory
