@@ -73,7 +73,6 @@ static void       constantSuccFunc(void);
 static void       constantOddFunc(void);
 static void       constantChrFunc(void);
 static void       constantReal2IntFunc(int kind);
-static exprType_t builtInSizeOf(void);
 static void       isOrdinalConstant(void);
 
 /***************************************************************/
@@ -171,38 +170,6 @@ void pas_StandardFunctionOfConstant(void)
           break;
         }
     }
-}
-
-/***************************************************************/
-/* Process a built-in function */
-
-exprType_t pas_BuiltInFunction(void)
-{
-  exprType_t exprType = exprUnknown;
-
-  TRACE(g_lstFile,"[pas_BuiltInFunction]");
-
-  /* Is the token a builtin function? */
-
-  if (g_token == tBUILTIN)
-    {
-      /* Yes, process it procedure according to the extended token type */
-
-      switch (g_tknSubType)
-        {
-          /* Functions returning an integer */
-
-        case txSIZEOF :
-          exprType = builtInSizeOf();
-          break;
-
-        default :
-          error(eINVALIDFUNC);
-          break;
-        }
-    }
-
-  return exprType;
 }
 
 /**********************************************************************/
@@ -382,62 +349,6 @@ static void constantReal2IntFunc(int kind)
 
 /***********************************************************************/
 
-static exprType_t builtInSizeOf(void)
-{
-  uint16_t size;
-
-  /* FORM:  sizeof '(' variable | type ')' */
-
-  pas_CheckLParen();
-  switch (g_token)
-    {
-      /* Variables */
-
-      case sFILE :
-      case sTEXTFILE :
-      case sINT :
-      case sBOOLEAN :
-      case sCHAR :
-      case sREAL :
-      case sSTRING :
-      case sSCALAR :
-      case sSUBRANGE :
-      case sSET_OF :
-      case sARRAY :
-      case sRECORD :
-        size = g_tknPtr->sParm.v.size;
-        break;
-
-      /* Pointers variables and VAR parameters are always the size of a point */
-      
-      case sPOINTER :
-      case sVAR_PARM :
-        size = sPTR_SIZE;
-        break;
-        
-      /* Types */
-
-      case sTYPE :
-        size = g_tknPtr->sParm.t.asize;
-        break;
-
-      default:
-        error(eINVARG);
-        size = 0;
-        break;;
-    }
-
-  /* Push the size on the stack */
-
-  pas_GenerateDataOperation(opPUSH, size);
-
-  getToken();
-  pas_CheckRParen();
-  return exprInteger;
-}
-
-/***********************************************************************/
-
 static void isOrdinalConstant(void)
 {
   if (constantToken == tINT_CONST     || /* integer value */
@@ -451,6 +362,3 @@ static void isOrdinalConstant(void)
       error(eINVARG);
     }
 }
-
-/***********************************************************************/
-

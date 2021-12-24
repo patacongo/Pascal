@@ -288,17 +288,28 @@ Analysis:
 The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-Line 0:0122 Error 3b Token 01 (Length)
-
-Error:
-237 #define eUNDEFSYM        ((uint16_t) 0x3b)
+Line 0:0122 Error 1e Token 4b
 
 Line:
 122                     WHILE (Ch <> ' ') AND (Length(DayStr) < DaySize) DO
 
-Token:
- 44 #define tIDENT           0x01
+Where:
+ 52     CONST
+ 54         DaySize = 3;
+ 55     TYPE
+ 57         DayStrType = STRING[DaySize];
+103         VAR
+105             DayStr: DayStrType;                (* Input string of chars. *)
 
+Error:
+209 #define eINVTYPE         ((uint16_t) 0x1e)
+
+Token:
+257 #define eSUBRANGETYPE    ((uint16_t) 0x4b)
+
+Analysis:
+I have not really looked into this yet, but I suspect the type definition at
+line 57 is the issue:  Sized strings like this are not supported.
 Analysis:
 Function Length() is not defined.  This appears to be a part of Smart Pascal?
 

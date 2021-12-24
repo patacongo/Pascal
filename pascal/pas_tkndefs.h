@@ -219,6 +219,7 @@
 /* Built-in, compile-time operations */
 
 #define txSIZEOF         0x91
+#define txLENGTH         0x92
 
 /* "Less than standard" Procedures 0xc0-0xff */
 

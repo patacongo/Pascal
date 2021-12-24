@@ -136,6 +136,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"INITIALIZATION", tINITIALIZATION, txNONE},       /* (4) */
   {"INTERFACE",      tINTERFACE,      txNONE},       /* (4) */
   {"LABEL",          tLABEL,          txNONE},       /* (1) */
+  {"LENGTH",         tBUILTIN,        txLENGTH},     /* (7) */
   {"LN",             tSTDFUNC,        txLN},         /* (2) */
   {"MOD",            tMOD,            txNONE},       /* (1) */
   {"NEW",            tSTDPROC,        txNEW},        /* (3) */

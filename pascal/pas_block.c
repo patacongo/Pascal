@@ -100,6 +100,8 @@ static symbol_t *pas_GetArrayBaseType      (symbol_t *indexTypePtr);
 static symbol_t *pas_DeclareRecordType     (char *recordName);
 static symbol_t *pas_DeclareField          (symbol_t *recordPtr);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
+static void      pas_AddRecordInitializers (symbol_t *varPtr,
+                                            symbol_t *typePtr);
 static bool      pas_IntAlignRequired      (symbol_t *typePtr);
 
 /****************************************************************************
@@ -110,538 +112,9 @@ static int32_t g_nParms;
 static int32_t g_dwVarSize;
 
 /****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/* Process BLOCK.  This function implements:
- *
- * block = declaration-group compound-statement
- *
- * Where block can appear in the followinging:
- *
- * function-block = block
- * function-declaration =
- *     function-heading ';' directive |
- *     function-heading ';' function-block
- *
- * procedure-block = block
- * procedure-declaration =
- *     procedure-heading ';' directive |
- *     procedure-heading ';' procedure-block
- *
- * program = program-heading ';' [ uses-section ] block '.'
- */
-
-void pas_Block(int32_t preAllocatedDStack)
-{
-  uint16_t beginLabel;                /* BEGIN label */
-  int32_t saveDStack;                 /* Saved DSEG size */
-  char   *saveStringSP;               /* Saved top of string stack */
-  unsigned int saveNSym;              /* Saved top of symbol table */
-  unsigned int saveNConst;            /* Saved top of constant table */
-  unsigned int saveNInitializer;      /* Saved top of initializer stack */
-  unsigned int saveSymOffset;         /* Saved previous level symbol offset */
-  unsigned int saveConstOffset;       /* Saved previous level constant offset */
-  unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
-
-  TRACE(g_lstFile,"[pas_Block]");
-
-  /* Set the begin label number */
-
-  beginLabel              = ++g_label;
-
-  /* Save the DSEG and string stack sizes.  These will grow within the block,
-   * but we use these saved values to restore the sizes at the END of the
-   * block.
-   */
-
-  saveDStack              = g_dStack;
-  saveStringSP            = g_stringSP;
-
-  /* Save the current top-of-stack data for symbols, constants, but not
-   * initializers (we'll get those later).
-   */
-
-  saveNSym                 = g_nSym;
-  saveNConst               = g_nConst;
-  saveNInitializer         = g_nInitializer;
-
-  saveSymOffset            = g_levelSymOffset;
-  saveConstOffset          = g_levelConstOffset;
-  saveInitializerOffset    = g_levelInitializerOffset;
-
-  /* Set the current symbol and constant table offsets for this level */
-
-  g_levelSymOffset         = saveNSym;
-  g_levelConstOffset       = saveNConst;
-  g_levelInitializerOffset = saveNInitializer;
-
-  /* When we enter block at level zero, then we must be at the
-   * entry point to the program.  Save the entry point label
-   * in the POFF file.
-   */
-
-  if (g_level == 0 && FP0->kind == eIsProgram)
-    {
-      poffSetEntryPoint(poffHandle, g_label);
-    }
-
-  /* Init size of the new DSEG.  Normally nothing is preallocated on the
-   * stack.  The exception is at the program level where the INPUT and OUTPUT
-   * (and maybe other) file variables are created.
-   */
-
-  g_dStack = preAllocatedDStack;
-
-  /* FORM: block = declaration-group compound-statement
-   * Process the declaration-group
-   *
-   * declaration-group =
-   *     label-declaration-group |
-   *     constant-definition-group |
-   *     type-definition-group |
-   *     variable-declaration-group |
-   *     function-declaration  |
-   *     procedure-declaration
-   */
-
-  pas_DeclarationGroup(beginLabel);
-
-  /* Process the compound-statement
-   *
-   * FORM: compound-statement = 'begin' statement-sequence 'end'
-   */
-
-  /* Verify that the compound-statement begins with BEGIN */
-
-  if (g_token != tBEGIN)
-    {
-      error(eBEGIN);
-    }
-
-  /* It may be necessary to jump around some local functions to
-   * get to the main body of the block.  If any jumps are generated,
-   * they will come to the beginLabel emitted here.
-   */
-
-  pas_GenerateDataOperation(opLABEL, (int32_t)beginLabel);
-
-  /* Since we don't know for certain how we got here, invalidate
-   * the level stack pointer (LSP).  This is, of course, only
-   * meaningful on architectures that implement an LSP.
-   */
-
-  pas_InvalidateCurrentStackLevel();
-
-  /* Allocate data stack */
-
-  if (g_dStack)
-    {
-      /* Make sure that the data stack is aligned */
-
-      g_dStack = INT_ALIGNUP(g_dStack);
-      pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
-    }
-
-  /* Generate the initializers */
-
-  g_levelInitializerOffset = saveInitializerOffset;
-  pas_Initialization();
-
-  /* Then emit the compound statement itself */
-
-  g_levelInitializerOffset = g_nInitializer;
-  pas_CompoundStatement();
-
-  /* Release the allocated data stack */
-
-  if (g_dStack)
-    {
-      pas_GenerateDataOperation(opINDS, -(int32_t)g_dStack);
-    }
-
-
-  /* Generate finalizers */
-
-  g_levelInitializerOffset = saveInitializerOffset;
-  pas_Finalization();
-
-  /* Make sure all declared labels were defined in the block */
-
-  pas_VerifyLabels(saveNSym);
-
-  /* "Pop" declarations local to this block */
-
-  g_dStack                 = saveDStack;       /* Restore old DSEG size */
-  g_stringSP               = saveStringSP;     /* Restore top of string stack */
-
-  /* Restore the symbol and constant table offsets for the previous level. */
-
-  g_levelSymOffset         = saveSymOffset;
-  g_levelConstOffset       = saveConstOffset;
-  g_levelInitializerOffset = saveInitializerOffset;
-
-  /* Release the symbols, constants, and initializers used by this level */
-
-  g_nSym                   = saveNSym;         /* Restore top of symbol table */
-  g_nConst                 = saveNConst;       /* Restore top of constant table */
-  g_nInitializer           = saveNInitializer; /* Restore top of initializers */
-}
-
-/****************************************************************************/
-/* Process declarative-part */
-
-void pas_DeclarationGroup(int32_t beginLabel)
-{
-  unsigned int notFirst = 0;          /* Init count of nested procs */
-  unsigned int saveSymOffset;         /* Saved previous level symbol offset */
-  unsigned int saveConstOffset;       /* Saved previous level constant offset */
-  unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
-
-  TRACE(g_lstFile,"[pas_DeclarationGroup]");
-
-  /* Save the current top-of-stack data for symbols and constants. */
-
-  saveSymOffset      = g_levelSymOffset;
-  saveConstOffset    = g_levelConstOffset;
-
-  /* Set the current symbol, constant, and initializer table offsets for this
-   * level
-   */
-
-  g_levelSymOffset   = g_nSym;
-  g_levelConstOffset = g_nConst;
-
-  /* FORM: declarative-part = { declaration-group }
-   * FORM: declaration-group =
-   *       label-declaration-group | constant-definition-group |
-   *       type-definition-group   | variable-declaration-group |
-   *       function-declaration    | procedure-declaration
-   */
-
-  /* Process label-declaration-group.
-   * FORM: label-declaration-group = 'label' label { ',' label } ';'
-   */
-
-  if (g_token == tLABEL) pas_DeclareLabel();
-
-  /* Process constant-definition-group.
-   * FORM: constant-definition-group =
-   *       'const' constant-definition ';' { constant-definition ';' }
-   */
-
-  if (g_token == tCONST)
-    {
-      /* Limit search to present level */
-
-      getLevelToken();
-
-      /* Process constant-definition.
-       * FORM: constant-definition = identifier '=' constant
-       */
-
-      pas_ConstantDefinitionGroup();
-    }
-
-  /* Process type-definition-group
-   * FORM: type-definition-group =
-   *       'type' type-definition ';' { type-definition ';' }
-   */
-
-  if (g_token == tTYPE)
-    {
-      /* Limit search to present level */
-
-      getLevelToken();
-
-      /* Process the type-definitions in the type-definition-group
-       * FORM: type-definition = identifier '=' type-denoter
-       */
-
-      pas_TypeDefinitionGroup();
-    }
-
-  /* Process variable-declaration-group
-   * FORM: variable-declaration-group =
-   *       'var' variable-declaration { ';' variable-declaration }
-   */
-
-  if (g_token == tVAR)
-    {
-      /* Limit search to present level */
-
-      getLevelToken();
-
-      /* Process the variable declarations
-       * FORM: variable-declaration = identifier-list ':' type-denoter
-       * FORM: identifier-list = identifier { ',' identifier }
-       */
-
-      pas_VariableDeclarationGroup();
-    }
-
-  /* Process procedure/function-declaration(s) if present
-   * FORM: function-declaration =
-   *       function-heading ';' directive |
-   *       function-heading ';' function-block
-   * FORM: procedure-declaration =
-   *       procedure-heading ';' directive |
-   *       procedure-heading ';' procedure-block
-   *
-   * NOTE:  a JMP to the executable body of this block is generated
-   * if there are nested procedures and this is not level=0
-   */
-
-  saveInitializerOffset    = g_levelInitializerOffset;
-  g_levelInitializerOffset = g_nInitializer;
-
-  for (; ; )
-    {
-      /* FORM: function-heading =
-       *       'function' identifier [ formal-parameter-list ] ':' result-type
-       */
-
-      if (g_token == tFUNCTION)
-        {
-          /* Check if we need to put a jump around the function */
-
-          if ((beginLabel > 0) && !(notFirst) && (g_level > 0))
-            {
-              pas_GenerateDataOperation(opJMP, (int32_t)beginLabel);
-            }
-
-          /* Get the procedure-identifier */
-          /* Limit search to present level */
-
-          getLevelToken();
-
-          /* Define the function */
-
-          pas_FunctionDeclaration();
-          notFirst++;                 /* No JMP next time */
-        }
-
-      /* FORM: procedure-heading =
-       *       'procedure' identifier [ formal-parameter-list ]
-       */
-
-      else if (g_token == tPROCEDURE)
-        {
-          /* Check if we need to put a jump around the function */
-
-          if ((beginLabel > 0) && !(notFirst) && (g_level > 0))
-            {
-              pas_GenerateDataOperation(opJMP, (int32_t)beginLabel);
-            }
-
-          /* Get the procedure-identifier */
-          /* Limit search to present level */
-
-          getLevelToken();
-
-          /* Define the procedure */
-
-          pas_ProcedureDeclaration();
-          notFirst++;                 /* No JMP next time */
-        }
-      else
-       {
-         break;
-       }
-    }
-
-  /* Restore the symbol/constant table offsets for the previous level */
-
-  g_levelSymOffset         = saveSymOffset;
-  g_levelConstOffset       = saveConstOffset;
-  g_levelInitializerOffset = saveInitializerOffset;
-}
-
-/****************************************************************************/
-
-void pas_ConstantDefinitionGroup(void)
-{
-  /* Process constant-definition-group.
-   * FORM: constant-definition-group =
-   *       'const' constant-definition ';' { constant-definition ';' }
-   * FORM: constant-definition = identifier '=' constant
-   *
-   * On entry, g_token should point to the identifier of the first
-   * constant-definition.
-   */
-
-  for (; ; )
-    {
-      if (g_token == tIDENT)
-        {
-          pas_DeclareConst();
-          if (g_token != ';') break;
-          else getToken();
-        }
-      else break;
-    }
-}
-
-/****************************************************************************/
-
-void pas_TypeDefinitionGroup(void)
-{
-  char   *typeName;
-
-  /* Process type-definition-group
-   * FORM: type-definition-group =
-   *       'type' type-definition ';' { type-definition ';' }
-   * FORM: type-definition = identifier '=' type-denoter
-   *
-   * On entry, g_token refers to the first identifier (if any) of
-   * the type-definition list.
-   */
-
-  for (; ; )
-    {
-      if (g_token == tIDENT)
-        {
-          /* Save the type identifier */
-
-          typeName = g_tokenString;
-          getToken();
-
-          /* Verify that '=' follows the type identifier */
-
-          if (g_token != '=') error(eEQ);
-          else getToken();
-
-          (void)pas_DeclareType(typeName);
-          if (g_token != ';') break;
-          else getToken();
-
-        }
-      else break;
-    }
-}
-
-/****************************************************************************/
-
-void pas_VariableDeclarationGroup(void)
-{
-   /* Process variable-declaration-group
-    * FORM: variable-declaration-group =
-    *       'var' variable-declaration { ';' variable-declaration }
-    * FORM: variable-declaration = identifier-list ':' type-denoter
-    * FORM: identifier-list = identifier { ',' identifier }
-    *
-    * Only entry, g_token holds the first identfier (if any) of the
-    * variable-declaration list.
-    */
-
-  while (g_token == tIDENT)
-    {
-      (void)pas_DeclareVar();
-      if (g_token != ';') break;
-      else getToken();
-    }
-}
-
-/****************************************************************************/
-/* Process formal-parameter-list */
-
-int16_t pas_FormalParameterList(symbol_t *procPtr)
-{
-  int16_t parameterOffset;
-  int16_t i;
-  bool    pointerType;
-
-  TRACE(g_lstFile,"[pas_FormalParameterList]");
-
-  /* FORM: formal-parameter-list =
-   *       '(' formal-parameter-section { ';' formal-parameter-section } ')'
-   * FORM: formal-parameter-section =
-   *       value-parameter-specification |
-   *       variable-parameter-specification |
-   *       procedure-parameter-specification |
-   *       function-parameter-specification
-   * FORM: value-parameter-specification =
-   *       identifier-list ':' type-identifier
-   * FORM: variable-parameter-specification =
-   *       'var' identifier-list ':' type-identifier
-   *
-   * On entry g_token should refer to the '(' at the beginning of the
-   * (optional) formal parameter list.
-   */
-
-  g_nParms = 0;
-
-  /* Check if the formal-parameter-list is present.  It is optional in
-   * all contexts in which this function is called.
-   */
-
-  if (g_token == '(')
-    {
-      /* Process each formal-parameter-section */
-
-      do
-        {
-          /* Get the formal parameter name.  Symbol search is restricted
-           * to the current level.
-           */
-
-          getLevelToken();
-
-          /* Check for variable-parameter-specification */
-
-          if (g_token == tVAR)
-            {
-              pointerType = 1;
-              getLevelToken();
-            }
-          else
-            {
-              pointerType = 0;
-            }
-
-          /* Process the common part of the variable-parameter-specification
-           * and the value-parameter specification.
-           * NOTE that procedure-parameter-specification and
-           * function-parameter-specification are not yet supported.
-           */
-
-          (void)pas_DeclareParameter(pointerType);
-        }
-      while (g_token == ';');
-
-      /* Verify that the formal parameter list terminates with a
-       * right parenthesis.
-       */
-
-      if (g_token != ')') error(eRPAREN);
-      else getToken();
-    }
-
-  /* Save the number of parameters found in sPROC/sFUNC symbol table entry */
-
-  procPtr->sParm.p.nParms = g_nParms;
-
-  /* Now, calculate the parameter offsets from the size of each parameter */
-
-  parameterOffset = -sRETURN_SIZE;
-  for (i = g_nParms; i > 0; i--)
-    {
-      /* The offset to the next parameter is the offset to the previous
-       * parameter minus the size of the new parameter (aligned to
-       * multiples of size of INTEGER).
-       */
-
-      parameterOffset -= procPtr[i].sParm.v.size;
-      parameterOffset  = INT_ALIGNUP(parameterOffset);
-      procPtr[i].sParm.v.offset = parameterOffset;
-    }
-
-  return parameterOffset;
-}
-
-/****************************************************************************
  * Private Functions
  ****************************************************************************/
+
 /* Process LABEL block */
 
 static void pas_DeclareLabel(void)
@@ -941,59 +414,7 @@ static symbol_t *pas_DeclareVar(void)
 
           else if (varType == sRECORD)
             {
-              symbol_t *recordTypePtr = varPtr->sParm.v.parent;
-              if (recordTypePtr == NULL ||
-                  recordTypePtr->sKind != sTYPE ||
-                  recordTypePtr->sParm.t.type != sRECORD)
-                {
-                  error(eRECORDTYPE);
-                }
-
-              /* Looks like a good RECORD type */
-
-              else
-                {
-                  int nObjects = recordTypePtr->sParm.t.maxValue;
-                  int objectIndex;
-
-                  /* The parent is the RECORD type.  That is followed by the
-                   * RECORD OBJECT symbols.  The number of following RECORD
-                   * OBJECT symbols is given by the maxValue field of the
-                   * RECORD type entry.
-                   */
-
-                  for (objectIndex = 1;
-                       objectIndex < nObjects;
-                       objectIndex++)
-                    {
-                      symbol_t *recordObjectPtr = &typePtr[objectIndex];
-                      symbol_t *parentTypePtr;
-
-                      if (recordObjectPtr->sKind != sRECORD_OBJECT)
-                        {
-                          /* The symbol table must be corrupted */
-
-                          error(eHUH);
-                        }
-
-                      /* If this field is a string, then set up to initialize
-                       * it.
-                       */
-
-                      parentTypePtr = recordObjectPtr->sParm.r.parent;
-
-                      if (parentTypePtr->sKind != sTYPE) error(eHUH);
-                      else if (parentTypePtr->sParm.t.type == sSTRING)
-                        {
-                           pas_AddRecordStringInitializer(recordObjectPtr);
-                        }
-                      else if (parentTypePtr->sParm.t.type == sFILE ||
-                               parentTypePtr->sParm.t.type == sTEXTFILE)
-                        {
-                           pas_AddRecordFileInitializer(recordObjectPtr);
-                        }
-                    }
-                }
+              pas_AddRecordInitializers(varPtr, typePtr);
             }
 
           /* If the variable is declared in an interface section at level
@@ -2691,6 +2112,66 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
 
 /****************************************************************************/
 
+static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
+{
+  symbol_t *recordTypePtr = varPtr->sParm.v.parent;
+
+  if (recordTypePtr == NULL ||
+      recordTypePtr->sKind != sTYPE ||
+      recordTypePtr->sParm.t.type != sRECORD)
+    {
+      error(eRECORDTYPE);
+    }
+
+  /* Looks like a good RECORD type */
+
+  else
+    {
+      int nObjects = recordTypePtr->sParm.t.maxValue;
+      int objectIndex;
+
+      /* The parent is the RECORD type.  That is followed by the
+       * RECORD OBJECT symbols.  The number of following RECORD
+       * OBJECT symbols is given by the maxValue field of the
+       * RECORD type entry.
+       */
+
+      for (objectIndex = 1;
+           objectIndex < nObjects;
+           objectIndex++)
+        {
+          symbol_t *recordObjectPtr = &typePtr[objectIndex];
+          symbol_t *parentTypePtr;
+
+          if (recordObjectPtr->sKind != sRECORD_OBJECT)
+            {
+              /* The symbol table must be corrupted */
+
+              error(eHUH);
+            }
+
+          /* If this field is a string, then set up to initialize
+           * it.
+           */
+
+          parentTypePtr = recordObjectPtr->sParm.r.parent;
+
+          if (parentTypePtr->sKind != sTYPE) error(eHUH);
+          else if (parentTypePtr->sParm.t.type == sSTRING)
+            {
+               pas_AddRecordStringInitializer(recordObjectPtr);
+            }
+          else if (parentTypePtr->sParm.t.type == sFILE ||
+                               parentTypePtr->sParm.t.type == sTEXTFILE)
+            {
+               pas_AddRecordFileInitializer(recordObjectPtr);
+            }
+        }
+    }
+}
+
+/****************************************************************************/
+
 static bool pas_IntAlignRequired(symbol_t *typePtr)
 {
   bool returnValue = false;
@@ -2719,4 +2200,532 @@ static bool pas_IntAlignRequired(symbol_t *typePtr)
   return returnValue;
 }
 
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/* Process BLOCK.  This function implements:
+ *
+ * block = declaration-group compound-statement
+ *
+ * Where block can appear in the followinging:
+ *
+ * function-block = block
+ * function-declaration =
+ *     function-heading ';' directive |
+ *     function-heading ';' function-block
+ *
+ * procedure-block = block
+ * procedure-declaration =
+ *     procedure-heading ';' directive |
+ *     procedure-heading ';' procedure-block
+ *
+ * program = program-heading ';' [ uses-section ] block '.'
+ */
+
+void pas_Block(int32_t preAllocatedDStack)
+{
+  uint16_t beginLabel;                /* BEGIN label */
+  int32_t saveDStack;                 /* Saved DSEG size */
+  char   *saveStringSP;               /* Saved top of string stack */
+  unsigned int saveNSym;              /* Saved top of symbol table */
+  unsigned int saveNConst;            /* Saved top of constant table */
+  unsigned int saveNInitializer;      /* Saved top of initializer stack */
+  unsigned int saveSymOffset;         /* Saved previous level symbol offset */
+  unsigned int saveConstOffset;       /* Saved previous level constant offset */
+  unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
+
+  TRACE(g_lstFile,"[pas_Block]");
+
+  /* Set the begin label number */
+
+  beginLabel              = ++g_label;
+
+  /* Save the DSEG and string stack sizes.  These will grow within the block,
+   * but we use these saved values to restore the sizes at the END of the
+   * block.
+   */
+
+  saveDStack              = g_dStack;
+  saveStringSP            = g_stringSP;
+
+  /* Save the current top-of-stack data for symbols, constants, but not
+   * initializers (we'll get those later).
+   */
+
+  saveNSym                 = g_nSym;
+  saveNConst               = g_nConst;
+  saveNInitializer         = g_nInitializer;
+
+  saveSymOffset            = g_levelSymOffset;
+  saveConstOffset          = g_levelConstOffset;
+  saveInitializerOffset    = g_levelInitializerOffset;
+
+  /* Set the current symbol and constant table offsets for this level */
+
+  g_levelSymOffset         = saveNSym;
+  g_levelConstOffset       = saveNConst;
+  g_levelInitializerOffset = saveNInitializer;
+
+  /* When we enter block at level zero, then we must be at the
+   * entry point to the program.  Save the entry point label
+   * in the POFF file.
+   */
+
+  if (g_level == 0 && FP0->kind == eIsProgram)
+    {
+      poffSetEntryPoint(poffHandle, g_label);
+    }
+
+  /* Init size of the new DSEG.  Normally nothing is preallocated on the
+   * stack.  The exception is at the program level where the INPUT and OUTPUT
+   * (and maybe other) file variables are created.
+   */
+
+  g_dStack = preAllocatedDStack;
+
+  /* FORM: block = declaration-group compound-statement
+   * Process the declaration-group
+   *
+   * declaration-group =
+   *     label-declaration-group |
+   *     constant-definition-group |
+   *     type-definition-group |
+   *     variable-declaration-group |
+   *     function-declaration  |
+   *     procedure-declaration
+   */
+
+  pas_DeclarationGroup(beginLabel);
+
+  /* Process the compound-statement
+   *
+   * FORM: compound-statement = 'begin' statement-sequence 'end'
+   */
+
+  /* Verify that the compound-statement begins with BEGIN */
+
+  if (g_token != tBEGIN)
+    {
+      error(eBEGIN);
+    }
+
+  /* It may be necessary to jump around some local functions to
+   * get to the main body of the block.  If any jumps are generated,
+   * they will come to the beginLabel emitted here.
+   */
+
+  pas_GenerateDataOperation(opLABEL, (int32_t)beginLabel);
+
+  /* Since we don't know for certain how we got here, invalidate
+   * the level stack pointer (LSP).  This is, of course, only
+   * meaningful on architectures that implement an LSP.
+   */
+
+  pas_InvalidateCurrentStackLevel();
+
+  /* Allocate data stack */
+
+  if (g_dStack)
+    {
+      /* Make sure that the data stack is aligned */
+
+      g_dStack = INT_ALIGNUP(g_dStack);
+      pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
+    }
+
+  /* Generate the initializers */
+
+  g_levelInitializerOffset = saveInitializerOffset;
+  pas_Initialization();
+
+  /* Then emit the compound statement itself */
+
+  g_levelInitializerOffset = g_nInitializer;
+  pas_CompoundStatement();
+
+  /* Release the allocated data stack */
+
+  if (g_dStack)
+    {
+      pas_GenerateDataOperation(opINDS, -(int32_t)g_dStack);
+    }
+
+
+  /* Generate finalizers */
+
+  g_levelInitializerOffset = saveInitializerOffset;
+  pas_Finalization();
+
+  /* Make sure all declared labels were defined in the block */
+
+  pas_VerifyLabels(saveNSym);
+
+  /* "Pop" declarations local to this block */
+
+  g_dStack                 = saveDStack;       /* Restore old DSEG size */
+  g_stringSP               = saveStringSP;     /* Restore top of string stack */
+
+  /* Restore the symbol and constant table offsets for the previous level. */
+
+  g_levelSymOffset         = saveSymOffset;
+  g_levelConstOffset       = saveConstOffset;
+  g_levelInitializerOffset = saveInitializerOffset;
+
+  /* Release the symbols, constants, and initializers used by this level */
+
+  g_nSym                   = saveNSym;         /* Restore top of symbol table */
+  g_nConst                 = saveNConst;       /* Restore top of constant table */
+  g_nInitializer           = saveNInitializer; /* Restore top of initializers */
+}
+
 /****************************************************************************/
+/* Process declarative-part */
+
+void pas_DeclarationGroup(int32_t beginLabel)
+{
+  unsigned int notFirst = 0;          /* Init count of nested procs */
+  unsigned int saveSymOffset;         /* Saved previous level symbol offset */
+  unsigned int saveConstOffset;       /* Saved previous level constant offset */
+  unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
+
+  TRACE(g_lstFile,"[pas_DeclarationGroup]");
+
+  /* Save the current top-of-stack data for symbols and constants. */
+
+  saveSymOffset      = g_levelSymOffset;
+  saveConstOffset    = g_levelConstOffset;
+
+  /* Set the current symbol, constant, and initializer table offsets for this
+   * level
+   */
+
+  g_levelSymOffset   = g_nSym;
+  g_levelConstOffset = g_nConst;
+
+  /* FORM: declarative-part = { declaration-group }
+   * FORM: declaration-group =
+   *       label-declaration-group | constant-definition-group |
+   *       type-definition-group   | variable-declaration-group |
+   *       function-declaration    | procedure-declaration
+   */
+
+  /* Process label-declaration-group.
+   * FORM: label-declaration-group = 'label' label { ',' label } ';'
+   */
+
+  if (g_token == tLABEL) pas_DeclareLabel();
+
+  /* Process constant-definition-group.
+   * FORM: constant-definition-group =
+   *       'const' constant-definition ';' { constant-definition ';' }
+   */
+
+  if (g_token == tCONST)
+    {
+      /* Limit search to present level */
+
+      getLevelToken();
+
+      /* Process constant-definition.
+       * FORM: constant-definition = identifier '=' constant
+       */
+
+      pas_ConstantDefinitionGroup();
+    }
+
+  /* Process type-definition-group
+   * FORM: type-definition-group =
+   *       'type' type-definition ';' { type-definition ';' }
+   */
+
+  if (g_token == tTYPE)
+    {
+      /* Limit search to present level */
+
+      getLevelToken();
+
+      /* Process the type-definitions in the type-definition-group
+       * FORM: type-definition = identifier '=' type-denoter
+       */
+
+      pas_TypeDefinitionGroup();
+    }
+
+  /* Process variable-declaration-group
+   * FORM: variable-declaration-group =
+   *       'var' variable-declaration { ';' variable-declaration }
+   */
+
+  if (g_token == tVAR)
+    {
+      /* Limit search to present level */
+
+      getLevelToken();
+
+      /* Process the variable declarations
+       * FORM: variable-declaration = identifier-list ':' type-denoter
+       * FORM: identifier-list = identifier { ',' identifier }
+       */
+
+      pas_VariableDeclarationGroup();
+    }
+
+  /* Process procedure/function-declaration(s) if present
+   * FORM: function-declaration =
+   *       function-heading ';' directive |
+   *       function-heading ';' function-block
+   * FORM: procedure-declaration =
+   *       procedure-heading ';' directive |
+   *       procedure-heading ';' procedure-block
+   *
+   * NOTE:  a JMP to the executable body of this block is generated
+   * if there are nested procedures and this is not level=0
+   */
+
+  saveInitializerOffset    = g_levelInitializerOffset;
+  g_levelInitializerOffset = g_nInitializer;
+
+  for (; ; )
+    {
+      /* FORM: function-heading =
+       *       'function' identifier [ formal-parameter-list ] ':' result-type
+       */
+
+      if (g_token == tFUNCTION)
+        {
+          /* Check if we need to put a jump around the function */
+
+          if ((beginLabel > 0) && !(notFirst) && (g_level > 0))
+            {
+              pas_GenerateDataOperation(opJMP, (int32_t)beginLabel);
+            }
+
+          /* Get the procedure-identifier */
+          /* Limit search to present level */
+
+          getLevelToken();
+
+          /* Define the function */
+
+          pas_FunctionDeclaration();
+          notFirst++;                 /* No JMP next time */
+        }
+
+      /* FORM: procedure-heading =
+       *       'procedure' identifier [ formal-parameter-list ]
+       */
+
+      else if (g_token == tPROCEDURE)
+        {
+          /* Check if we need to put a jump around the function */
+
+          if ((beginLabel > 0) && !(notFirst) && (g_level > 0))
+            {
+              pas_GenerateDataOperation(opJMP, (int32_t)beginLabel);
+            }
+
+          /* Get the procedure-identifier */
+          /* Limit search to present level */
+
+          getLevelToken();
+
+          /* Define the procedure */
+
+          pas_ProcedureDeclaration();
+          notFirst++;                 /* No JMP next time */
+        }
+      else
+       {
+         break;
+       }
+    }
+
+  /* Restore the symbol/constant table offsets for the previous level */
+
+  g_levelSymOffset         = saveSymOffset;
+  g_levelConstOffset       = saveConstOffset;
+  g_levelInitializerOffset = saveInitializerOffset;
+}
+
+/****************************************************************************/
+
+void pas_ConstantDefinitionGroup(void)
+{
+  /* Process constant-definition-group.
+   * FORM: constant-definition-group =
+   *       'const' constant-definition ';' { constant-definition ';' }
+   * FORM: constant-definition = identifier '=' constant
+   *
+   * On entry, g_token should point to the identifier of the first
+   * constant-definition.
+   */
+
+  for (; ; )
+    {
+      if (g_token == tIDENT)
+        {
+          pas_DeclareConst();
+          if (g_token != ';') break;
+          else getToken();
+        }
+      else break;
+    }
+}
+
+/****************************************************************************/
+
+void pas_TypeDefinitionGroup(void)
+{
+  char   *typeName;
+
+  /* Process type-definition-group
+   * FORM: type-definition-group =
+   *       'type' type-definition ';' { type-definition ';' }
+   * FORM: type-definition = identifier '=' type-denoter
+   *
+   * On entry, g_token refers to the first identifier (if any) of
+   * the type-definition list.
+   */
+
+  for (; ; )
+    {
+      if (g_token == tIDENT)
+        {
+          /* Save the type identifier */
+
+          typeName = g_tokenString;
+          getToken();
+
+          /* Verify that '=' follows the type identifier */
+
+          if (g_token != '=') error(eEQ);
+          else getToken();
+
+          (void)pas_DeclareType(typeName);
+          if (g_token != ';') break;
+          else getToken();
+
+        }
+      else break;
+    }
+}
+
+/****************************************************************************/
+
+void pas_VariableDeclarationGroup(void)
+{
+   /* Process variable-declaration-group
+    * FORM: variable-declaration-group =
+    *       'var' variable-declaration { ';' variable-declaration }
+    * FORM: variable-declaration = identifier-list ':' type-denoter
+    * FORM: identifier-list = identifier { ',' identifier }
+    *
+    * Only entry, g_token holds the first identfier (if any) of the
+    * variable-declaration list.
+    */
+
+  while (g_token == tIDENT)
+    {
+      (void)pas_DeclareVar();
+      if (g_token != ';') break;
+      else getToken();
+    }
+}
+
+/****************************************************************************/
+/* Process formal-parameter-list */
+
+int16_t pas_FormalParameterList(symbol_t *procPtr)
+{
+  int16_t parameterOffset;
+  int16_t i;
+  bool    pointerType;
+
+  TRACE(g_lstFile,"[pas_FormalParameterList]");
+
+  /* FORM: formal-parameter-list =
+   *       '(' formal-parameter-section { ';' formal-parameter-section } ')'
+   * FORM: formal-parameter-section =
+   *       value-parameter-specification |
+   *       variable-parameter-specification |
+   *       procedure-parameter-specification |
+   *       function-parameter-specification
+   * FORM: value-parameter-specification =
+   *       identifier-list ':' type-identifier
+   * FORM: variable-parameter-specification =
+   *       'var' identifier-list ':' type-identifier
+   *
+   * On entry g_token should refer to the '(' at the beginning of the
+   * (optional) formal parameter list.
+   */
+
+  g_nParms = 0;
+
+  /* Check if the formal-parameter-list is present.  It is optional in
+   * all contexts in which this function is called.
+   */
+
+  if (g_token == '(')
+    {
+      /* Process each formal-parameter-section */
+
+      do
+        {
+          /* Get the formal parameter name.  Symbol search is restricted
+           * to the current level.
+           */
+
+          getLevelToken();
+
+          /* Check for variable-parameter-specification */
+
+          if (g_token == tVAR)
+            {
+              pointerType = 1;
+              getLevelToken();
+            }
+          else
+            {
+              pointerType = 0;
+            }
+
+          /* Process the common part of the variable-parameter-specification
+           * and the value-parameter specification.
+           * NOTE that procedure-parameter-specification and
+           * function-parameter-specification are not yet supported.
+           */
+
+          (void)pas_DeclareParameter(pointerType);
+        }
+      while (g_token == ';');
+
+      /* Verify that the formal parameter list terminates with a
+       * right parenthesis.
+       */
+
+      if (g_token != ')') error(eRPAREN);
+      else getToken();
+    }
+
+  /* Save the number of parameters found in sPROC/sFUNC symbol table entry */
+
+  procPtr->sParm.p.nParms = g_nParms;
+
+  /* Now, calculate the parameter offsets from the size of each parameter */
+
+  parameterOffset = -sRETURN_SIZE;
+  for (i = g_nParms; i > 0; i--)
+    {
+      /* The offset to the next parameter is the offset to the previous
+       * parameter minus the size of the new parameter (aligned to
+       * multiples of size of INTEGER).
+       */
+
+      parameterOffset -= procPtr[i].sParm.v.size;
+      parameterOffset  = INT_ALIGNUP(parameterOffset);
+      procPtr[i].sParm.v.offset = parameterOffset;
+    }
+
+  return parameterOffset;
+}

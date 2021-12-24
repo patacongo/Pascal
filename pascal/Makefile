@@ -52,8 +52,8 @@ BINDIR-$(CONFIG_INSN32) = $(PASCAL)/bin32
 
 PASSRCS  = pas_main.c pas_program.c pas_unit.c pas_block.c pas_initializer.c
 PASSRCS += pas_statement.c pas_expression.c pas_constexpr.c pas_procedure.c
-PASSRCS += pas_stdfunc.c pas_constfunc.c pas_codegen.c pas_token.c
-PASSRCS += pas_symtable.c pas_error.c
+PASSRCS += pas_stdfunc.c pas_constfunc.c pas_builtin.c pas_codegen.c
+PASSRCS += pas_token.c pas_symtable.c pas_error.c
 PASOBJS  = $(PASSRCS:.c=.o)
 
 OBJS     = $(PASOBJS)
