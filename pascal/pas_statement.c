@@ -88,7 +88,8 @@ static void pas_ComplexAssignment(void);
 static void pas_SimpleAssignment (symbol_t *varPtr, uint8_t assignFlags);
 static void pas_Assignment       (uint16_t storeOp, exprType_t assignType,
                                   symbol_t *varPtr, symbol_t *typePtr);
-static void pas_StringAssignment (symbol_t *varPtr, symbol_t *typePtr);
+static void pas_StringAssignment (symbol_t *varPtr, symbol_t *typePtr,
+                                  uint8_t assignFlags);
 static void pas_LargeAssignment  (uint16_t storeOp, exprType_t assignType,
                                   symbol_t *varPtr, symbol_t *typePtr);
 
@@ -173,7 +174,7 @@ void pas_Statement(void)
     case sSTRING :
       symPtr = g_tknPtr;
       getToken();
-      pas_StringAssignment(symPtr, symPtr->sParm.v.parent);
+      pas_StringAssignment(symPtr, symPtr->sParm.v.parent, 0);
       break;
 
       /* Complex assignments statements */
@@ -384,56 +385,39 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
      * large, multi-word LValues.
      */
 
-    case sREAL         :
-    case sSTRING       :
-      {
-        exprType_t leftExprType;
-        exprType_t leftExprPtrType;
-
-        if (varPtr->sKind == sREAL)
-          {
-            leftExprType    = exprReal;
-            leftExprPtrType = exprRealPtr;
-          }
-        else
-          {
-            leftExprType    = exprString;
-            leftExprPtrType = exprStringPtr;
-          }
-
-        if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
-          {
-            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
-              {
-                pas_GenerateStackReference(opLDSX, varPtr);
-                pas_LargeAssignment(opSTIM, leftExprType, varPtr, typePtr);
-              }
-            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-              {
-                pas_Assignment(opSTSX, leftExprPtrType, varPtr, typePtr);
-              }
-            else
-              {
-                pas_LargeAssignment(opSTSXM, leftExprType, varPtr, typePtr);
-              }
-          }
-        else
-          {
-            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
-              {
-                pas_GenerateStackReference(opLDS, varPtr);
-                pas_LargeAssignment(opSTIM, leftExprType, varPtr, typePtr);
-              }
-            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
-              {
-                pas_Assignment(opSTS, leftExprPtrType, varPtr, typePtr);
-              }
-            else
-              {
-                pas_LargeAssignment(opSTSM, leftExprType, varPtr, typePtr);
-              }
-          }
-      }
+    case sREAL :
+      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+        {
+          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+              pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
+            }
+          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+            {
+              pas_Assignment(opSTSX, exprRealPtr, varPtr, typePtr);
+            }
+          else
+            {
+              pas_LargeAssignment(opSTSXM, exprReal, varPtr, typePtr);
+            }
+        }
+      else
+        {
+          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+              pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
+            }
+          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+            {
+              pas_Assignment(opSTS, exprRealPtr, varPtr, typePtr);
+            }
+          else
+            {
+              pas_LargeAssignment(opSTSM, exprReal, varPtr, typePtr);
+            }
+        }
       break;
 
     case sSCALAR :
@@ -511,6 +495,49 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
     case sSUBRANGE :
       varPtr->sKind = typePtr->sParm.t.subType;
       pas_SimpleAssignment(varPtr, assignFlags);
+      break;
+
+    case sSTRING :
+      {
+        if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+          {
+            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+              {
+                /* REVISIT -- Needs some thought */
+
+                error(eNOTYET);
+              }
+            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+              {
+                /* REVISIT -- Needs some thought */
+
+                error(eNOTYET);
+              }
+            else
+              {
+                pas_StringAssignment(varPtr, typePtr, assignFlags);
+              }
+          }
+        else
+          {
+            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+              {
+                /* REVISIT -- Needs some thought */
+
+                error(eNOTYET);
+              }
+            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+              {
+                /* REVISIT -- Needs some thought */
+
+                error(eNOTYET);
+              }
+            else
+              {
+                pas_StringAssignment(varPtr, typePtr, assignFlags);
+              }
+          }
+      }
       break;
 
     case sRECORD :
@@ -828,15 +855,17 @@ static void pas_Assignment(uint16_t storeOp, exprType_t assignType,
 /***********************************************************************/
 /* Process the assignment to a variable length string record */
 
-static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
+static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
+                                 uint8_t assignFlags)
 {
   exprType_t stringKind;
+  uint16_t libOpcode;
 
   TRACE(g_lstFile,"[pas_StringAssignment]");
 
   /* FORM:  <variable OR function identifer> := <expression> */
 
-  /* Verify that the assignment token follows the indentifier */
+  /* Verify that the assignment token follows the identifier */
 
   if (g_token != tASSIGN) error (eASSIGN);
   else getToken();
@@ -865,23 +894,53 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr)
     {
       /* It is a pascal string type. Current stack representation is:
        *
-       *   TOS(0)=address of dest string buffer
-       *   TOS(1)=length of source string
-       *   TOS(2)=pointer to source string
+       *   TOS(0)=Address of dest string variable
+       *   TOS(1)=Pointer to source string buffer
+       *   TOS(2)=Length of source string
+       *
+       * And in the indexed case:
+       *
+       *   TOS(3)=Dest string variable address offset
+       *
+       * REVISIT:  This is awkward.  Life would be much easier if the
+       * array index could be made to be emitted later in the stack and
+       * so could be added to the dest sting variable address easily.
        */
 
-      pas_StandardFunctionCall(lbSTRCPY);
+      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+        {
+          libOpcode = lbSTRCPYX;
+        }
+      else
+        {
+          libOpcode = lbSTRCPY;
+        }
+
+      pas_StandardFunctionCall(libOpcode);
     }
   else if (stringKind == exprCString)
      {
       /* It is a 32-bit C string point.  Current stack representation is:
        *
-       *   TOS(0)=address of dest string buffer
+       *   TOS(0)=Address of dest string buffer
        *   TOS(1)=MS 16-bits of 32-bit C source string pointer
        *   TOS(2)=LS 16-bits of 32-bit C source string pointer
+       *
+       * And in the indexed case:
+       *
+       *   TOS(3)=Dest string variable address offset
        */
 
-      pas_StandardFunctionCall(lbCSTR2STR);
+      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+        {
+          libOpcode = lbCSTR2STRX;
+        }
+      else
+        {
+          libOpcode = lbCSTR2STR;
+        }
+
+      pas_StandardFunctionCall(libOpcode);
     }
 }
 

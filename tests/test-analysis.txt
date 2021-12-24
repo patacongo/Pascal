@@ -51,20 +51,6 @@ following the constant identifier.
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
-########src/009-stringarray.pas########
-Compiles okay but there are run-time errors in the output:
-
-  To come to the aid of their part
-  To come to the aid of their party.
-
-Instead of:
-
-  Now is the time for all good men
-  To come to the aid of their party.
-
-Analysis:
-I have not looked at this yet.  I am suspecting an indexing problem.
-
 ########src/012-stringrecordarray.pas########
 Line 0:0020 Error 52 Token 54
 

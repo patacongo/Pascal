@@ -193,10 +193,20 @@
 #define lbSTRCPY_INIT \
     { "_lbstrcpy", 0, 2, { sSTRING_SIZE, sPTR_SIZE }}
 
+/* void _lbstrcpyx(string src, string *dest); */
+
+#define lbSTRCPYX_INIT \
+    { "_lbstrcpyx", 0, 3, { sSTRING_SIZE, sPTR_SIZE, sINT_SIZE }}
+
 /* void _lbcstr2str(string src, string dest); */
 
 #define lbCSTR2STR_INIT \
     { "_lbcstr2str", 0, 2, { sSTRING_SIZE, sSTRING_SIZE }}
+
+/* void _lbcstr2strx(string src, string dest); */
+
+#define lbCSTR2STRX_INIT \
+    { "_lbcstr2strx", 0, 3, { sSTRING_SIZE, sSTRING_SIZE, sINT_SIZE }}
 
 /* void _lbval(const string s, int *v, int *code); */
 

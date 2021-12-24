@@ -64,18 +64,38 @@
 #define lbGETENV        (0x0001)
 
 /* Copy pascal string to a pascal string
+ *
  *   procedure strcpy(src : string; var dest : string)
  *
  * ON INPUT:
- *   TOS(0)=address of dest string variable
- *   TOS(st, 1) = pointer to source string buffer
- *   TOS(st, 2) = length of source string
+ *   TOS(0)=Address of dest string variable
+ *   TOS(1)=Pointer to source string buffer
+ *   TOS(2)=Length of source string
  * ON RETURN: actual parameters released.
  */
 
 #define lbSTRCPY        (0x0002)
 
+/* Copy pascal string to a element of a pascal string array
+ *
+ *   procedure strcpy(src : string; var dest : string; offset : integer)
+ *
+ * ON INPUT:
+ *   TOS(0)=Address of dest string variable
+ *   TOS(1)=Pointer to source string buffer
+ *   TOS(2)=Length of source string
+ *   TOS(3)=Dest string variable address offset
+ * ON RETURN: actual parameters released.
+ *
+ * REVISIT:  This is awkward.  Life would be much easier if the
+ * array index could be made to be emitted later in the stack and
+ * so could be added to the dest sting variable address easily.
+ */
+
+#define lbSTRCPYX       (0x0003)
+
 /* Copy C string to a pascal string
+ *
  *   procedure cstr2str(src : cstring; var dest : string)
  *
  * ON INPUT:
@@ -84,9 +104,27 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbCSTR2STR      (0x0003)
+#define lbCSTR2STR      (0x0004)
+
+/* Copy C string to an element of a pascal string array
+ *
+ *   procedure cstr2str(src : cstring; var dest : string)
+ *
+ * ON INPUT:
+ *   TOS(0)=Address of dest string variable
+ *   TOS(1,2)=32-bit absolute address of C string
+ *   TOS(3)=Dest string variable address offset
+ * ON RETURN: actual parameters released
+ *
+ * REVISIT:  This is awkward.  Life would be much easier if the
+ * array index could be made to be emitted later in the stack and
+ * so could be added to the dest sting variable address easily.
+ */
+
+#define lbCSTR2STRX     (0x0005)
 
 /* Convert a string to a numeric value
+ *
  *   procedure val(const s : string; var v; var code : word);
  *
  * Description:
@@ -112,7 +150,7 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x0004)
+#define lbVAL           (0x0006)
 
 /* Initialize a new string variable. Create a string buffer.  This is called
  * only at entrance into a new Pascal block.
@@ -124,7 +162,7 @@
  * ON RETURN
  */
 
-#define lbSTRINIT       (0x0005)
+#define lbSTRINIT       (0x0007)
 
 /* Initialize a temporary string variable on the stack. It is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
@@ -139,7 +177,7 @@
  *   TOS(1)=String size (zero)
  */
 
-#define lbSTRTMP        (0x0006)
+#define lbSTRTMP        (0x0008)
 
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
@@ -154,7 +192,7 @@
  *   TOS(1)=length of new string
  */
 
-#define lbSTRDUP        (0x0007)
+#define lbSTRDUP        (0x0009)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -165,7 +203,7 @@
  *   TOS(1)=length of new string
  */
 
-#define lbMKSTKC        (0x0008)
+#define lbMKSTKC        (0x000a)
 
 /* Concatenate a string to the end of a string.
  *
@@ -181,7 +219,7 @@
  *   TOS(st, 1)=new length of dest string2
  */
 
-#define lbSTRCAT        (0x0009)
+#define lbSTRCAT        (0x000b)
 
 /* Concatenate a character to the end of a string.
  *
@@ -196,7 +234,7 @@
  *   TOS(1)=new length of string
  */
 
-#define lbSTRCATC       (0x000a)
+#define lbSTRCATC       (0x000c)
 
 /* Compare two pascal strings
  *
@@ -211,8 +249,8 @@
  *   TOS(0)=(-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x000b)
+#define lbSTRCMP        (0x000d)
 
-#define MAX_LBOP        (0x000c)
+#define MAX_LBOP        (0x000e)
 
 #endif /* __PAS_LIBRARY_H */

@@ -57,6 +57,124 @@
  ****************************************************************************/
 
 static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen);
+static void     pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
+                           uint16_t srcStringSize, uint16_t destVarAddr,
+                           uint16_t varOffset);
+static void     pas_Cstr2str(struct pexec_s *st, uint8_t *srcCString,
+                             uint16_t destVarAddr, uint16_t varOffset);
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: pexec_mkcstring
+ ****************************************************************************/
+
+static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen)
+{
+  uint8_t *string;
+
+  string = malloc(buflen + 1);
+  if (string != NULL)
+    {
+      memcpy(string, buffer, buflen);
+      string[buflen] = '\0';
+    }
+
+  return string;
+}
+
+static void pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
+                       uint16_t srcStringSize, uint16_t destVarAddr,
+                       uint16_t varOffset)
+{
+  /* Copy pascal string to a pascal string */
+
+  uint16_t destBufferAddr;
+  const uint8_t *src;
+  uint8_t *dest;
+
+  /* Offset the destination address */
+
+  destVarAddr += varOffset;
+
+  /* Do nothing if the source and destination buffer addresses are the
+   * same string buffer.  This happens normally on cases like:
+   *
+   *   string name;
+   *   char   c;
+   *   name := name + c;
+   */
+
+  destBufferAddr = GETSTACK(st, destVarAddr + sSTRING_DATA_OFFSET);
+  if (destBufferAddr != srcBufferAddr)
+    {
+      /* The source and destination strings are different.
+       * Make sure that the string length will fit into the destination.
+       */
+
+      if (srcStringSize >= st->stralloc)
+        {
+          /* Clip to the maximum size */
+
+          srcStringSize = st->stralloc;
+        }
+
+      /* Transfer the string buffer contents */
+
+      dest = ATSTACK(st, destBufferAddr);
+      src  = ATSTACK(st, srcBufferAddr);
+      memcpy(dest, src, srcStringSize);
+
+      /* And set the new string size */
+
+      PUTSTACK(st, srcStringSize, destVarAddr + sSTRING_SIZE_OFFSET);
+    }
+}
+
+static void pas_Cstr2str(struct pexec_s *st, uint8_t *srcCString,
+                         uint16_t destVarAddr, uint16_t varOffset)
+{
+  /* Copy C string to a pascal string */
+
+  uint8_t *destStringBuffer;
+  int len;
+
+  /* Offset the destination address */
+
+  destVarAddr += varOffset;
+
+  /* Get the destination string pointer */
+
+  destStringBuffer = ATSTACK(st, destVarAddr + sSTRING_DATA_OFFSET);
+
+  /* Handle null src pointer */
+
+  if (srcCString == NULL)
+    {
+      *destStringBuffer = 0;
+    }
+  else
+    {
+      /* Get the length of the string */
+
+      len = strlen((char *)srcCString);
+
+      /* Make sure that the string length will fit into the destination. */
+
+      if (len >= st->stralloc)
+        {
+          /* Clip to the maximum size */
+
+          len  = st->stralloc;
+        }
+
+      /* Then transfer the string contents */
+
+      memcpy(destStringBuffer, srcCString, len);
+    }
+}
 
 /****************************************************************************
  * Public Functions
@@ -74,9 +192,10 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 {
   ustack_t  uparm1;
   ustack_t  uparm2;
+  ustack_t  offset;
+  ustack_t  size;
   paddr_t   addr1;
   paddr_t   addr2;
-  ustack_t  size;
   uint8_t  *src;
   uint8_t  *dest;
   uint8_t  *name;
@@ -140,38 +259,40 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       POP(st, addr2);  /* Address of source string buffer */
       POP(st, size);   /* Length of valid source data */
 
-      /* Do nothing if the source and destination buffer addresses are the
-       * same string buffer.  This happens normally on cases like:
-       *
-       *   string name;
-       *   char   c;
-       *   name := name + c;
-       */
+      /* And perform the string copy */
 
-      uparm1 = GETSTACK(st, addr1 + sSTRING_DATA_OFFSET);
-      if (uparm1 != addr2)
-        {
-          /* The source and destination strings are different.
-           * Make sure that the string length will fit into the destination.
-           */
+      pas_strcpy(st, addr2, size, addr1, 0);
+      break;
 
-          if (size >= st->stralloc)
-            {
-              /* Clip to the maximum size */
+    /* Copy pascal string to a element of a pascal string array
+     *
+     *   procedure strcpy(src : string; var dest : string;
+     *                    offset : integer)
+     *
+     * ON INPUT:
+     *   TOS(0)=Address of dest string variable
+     *   TOS(1)=Pointer to source string buffer
+     *   TOS(2)=Length of source string
+     *   TOS(3)=Dest string variable address offset
+     * ON RETURN: actual parameters released.
+     *
+     * REVISIT:  This is awkward.  Life would be much easier if the
+     * array index could be made to be emitted later in the stack and
+     * so could be added to the dest sting variable address easily.
+     */
 
-              size = st->stralloc;
-            }
+    case lbSTRCPYX :
 
-          /* Transfer the string buffer contents */
+      /* "Pop" in the input parameters from the stack */
 
-          dest = ATSTACK(st, uparm1);
-          src  = ATSTACK(st, addr2);
-          memcpy(dest, src, size);
+      POP(st, addr1);  /* Address of dest string variable  */
+      POP(st, addr2);  /* Address of source string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, offset); /* Offset from dest string address */
 
-          /* And set the new string size */
+      /* And perform the string copy */
 
-          PUTSTACK(st, size, addr1 + sSTRING_SIZE_OFFSET);
-        }
+      pas_strcpy(st, addr2, size, addr1, offset);
       break;
 
       /* Copy C string to a pascal string
@@ -191,44 +312,49 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
       POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
 
-      /* Get proper string pointers */
+      /* Get the source string pointer */
 
-      dest = ATSTACK(st, addr1);
-      src  = (uint8_t *)((unsigned long)uparm1 << 16 | (unsigned long)uparm2);
+      src  = (uint8_t *)((uintptr_t)uparm1 << 16 |
+                         (uintptr_t)uparm2);
 
-      /* Handle null src pointer */
+      /* And perform the copy */
 
-      if (src == NULL)
-        {
-          *dest = 0;
-        }
-      else
-        {
-          /* Get the length of the string */
+      pas_Cstr2str(st, src, addr1, 0);
+      break;
 
-          uparm1 = strlen((char *)src);
+    /* Copy pascal string to a element of a pascal string array
+     *
+     *   procedure strcpy(src : string; var dest : string; offset : integer)
+     *
+     * ON INPUT:
+     *   TOS(0)=Address of dest string variable
+     *   TOS(1)=Pointer to source string buffer
+     *   TOS(2)=Length of source string
+     *   TOS(3)=Dest string variable address offset
+     * ON RETURN: actual parameters released.
+     *
+     * REVISIT:  This is awkward.  Life would be much easier if the
+     * array index could be made to be emitted later in the stack and
+     * so could be added to the dest sting variable address easily.
+     */
 
-          /* Make sure that the string length will fit into the
-           * destination. */
+    case lbCSTR2STRX :
 
-          if (uparm1 >= st->stralloc)
-            {
-              /* Clip to the maximum size */
+      /* "Pop" in the input parameters from the stack */
 
-              uparm1 = st->stralloc;
-              size    = st->stralloc;
-            }
-          else
-            {
-              /* We have space */
+      POP(st, addr1);  /* Addr of dest string header */
+      POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
+      POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
+      POP(st, offset); /* Offset from dest string address */
 
-              size = (int)uparm1;
-            }
+      /* Get the source string pointer */
 
-          /* Then transfer the string contents */
+      src  = (uint8_t *)((uintptr_t)uparm1 << 16 |
+                         (uintptr_t)uparm2);
 
-          memcpy(dest, src, size);
-        }
+      /* And perform the copy */
+
+      pas_Cstr2str(st, src, addr1, offset);
       break;
 
       /* Convert a string to a numeric value
@@ -278,6 +404,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
         {
           return eINTEGEROVERFLOW;
         }
+
       PUTSTACK(st, TOS(st, 0), 0);
       PUTSTACK(st, TOS(st, 1), value);
       DISCARD(st, 4);
@@ -595,26 +722,4 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
     }
 
   return eNOERROR;
-}
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: pexec_mkcstring
- ****************************************************************************/
-
-static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen)
-{
-  uint8_t *string;
-
-  string = malloc(buflen + 1);
-  if (string != NULL)
-    {
-      memcpy(string, buffer, buflen);
-      string[buflen] = '\0';
-    }
-
-  return string;
 }
