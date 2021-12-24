@@ -102,6 +102,8 @@ static symbol_t *pas_DeclareField          (symbol_t *recordPtr);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
 static void      pas_AddRecordInitializers (symbol_t *varPtr,
                                             symbol_t *typePtr);
+static void      pas_AddArrayInitializers  (symbol_t *varPtr,
+                                            symbol_t *typePtr);
 static bool      pas_IntAlignRequired      (symbol_t *typePtr);
 
 /****************************************************************************
@@ -415,6 +417,16 @@ static symbol_t *pas_DeclareVar(void)
           else if (varType == sRECORD)
             {
               pas_AddRecordInitializers(varPtr, typePtr);
+            }
+
+          /* Or an array that may contain variables that need initialization.
+           * (OR an array or records with fields that are arrays that ... and
+           * all need to be initialized).
+           */
+
+          else if (varType == sARRAY)
+            {
+              pas_AddArrayInitializers(varPtr, typePtr);
             }
 
           /* If the variable is declared in an interface section at level
@@ -2162,10 +2174,131 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
                pas_AddRecordStringInitializer(recordObjectPtr);
             }
           else if (parentTypePtr->sParm.t.type == sFILE ||
-                               parentTypePtr->sParm.t.type == sTEXTFILE)
+                   parentTypePtr->sParm.t.type == sTEXTFILE)
             {
                pas_AddRecordFileInitializer(recordObjectPtr);
             }
+          else if (parentTypePtr->sParm.t.type == sARRAY)
+            {
+              symbol_t varInfo;
+
+              /* "Fake" a variable symbol at the offset of the array */
+
+              varInfo.sName            = varPtr->sName;
+              varInfo.sKind            = parentTypePtr->sParm.t.type;
+              varInfo.sLevel           = varPtr->sLevel;
+
+              varInfo.sParm.v.flags    = varPtr->sParm.v.flags;
+              varInfo.sParm.v.xfrUnit  = varPtr->sParm.v.xfrUnit;
+              varInfo.sParm.v.offset   = varPtr->sParm.v.offset;
+              varInfo.sParm.v.size     = parentTypePtr->sParm.t.asize;
+              varInfo.sParm.v.symIndex = 0;
+              varInfo.sParm.v.parent   = parentTypePtr;
+
+              pas_AddArrayInitializers(&varInfo, parentTypePtr);
+            }
+        }
+    }
+}
+
+/****************************************************************************/
+
+static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
+{
+  symbol_t *nextPtr;
+  symbol_t *baseTypePtr;
+  uint16_t  arrayKind;
+
+  /* Some sanity checks */
+
+  if (typePtr->sKind          != sTYPE  ||
+      typePtr->sParm.t.type   != sARRAY ||
+      typePtr->sParm.t.parent == NULL   ||
+      typePtr->sParm.t.index  == NULL)
+    {
+      error(eHUH);  /* Should never happen */
+    }
+
+  /* We are only interested if the parent type is a FILE, STRING, or abort
+   * RECORD that may contain file or string fields.
+   */
+
+  /* Get a pointer to the underlying base type symbol */
+
+  nextPtr         = typePtr->sParm.t.parent;
+  baseTypePtr     = nextPtr;
+
+  while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+    {
+      baseTypePtr = nextPtr;
+      nextPtr     = baseTypePtr->sParm.t.parent;
+    }
+
+  if (baseTypePtr->sParm.t.type == sFILE     ||
+      baseTypePtr->sParm.t.type == sTEXTFILE ||
+      baseTypePtr->sParm.t.type == sSTRING   ||
+      baseTypePtr->sParm.t.type == sRECORD)
+    {
+      symbol_t  varInfo;
+      symbol_t *indexPtr;
+      int       nElements;
+      int       index;
+
+      /* "Fake" a variable symbol at the offset of the array */
+
+      varInfo.sName            = varPtr->sName;
+      varInfo.sKind            = baseTypePtr->sParm.t.type;
+      varInfo.sLevel           = varPtr->sLevel;
+
+      varInfo.sParm.v.flags    = varPtr->sParm.v.flags;
+      varInfo.sParm.v.xfrUnit  = varPtr->sParm.v.xfrUnit;
+      varInfo.sParm.v.offset   = varPtr->sParm.v.offset;
+      varInfo.sParm.v.size     = baseTypePtr->sParm.t.asize;
+      varInfo.sParm.v.symIndex = 0;
+      varInfo.sParm.v.parent   = baseTypePtr;
+
+      /* The index should be a SUBRANGE type */
+
+      indexPtr = typePtr->sParm.t.index;
+      if (indexPtr->sKind != sTYPE ||
+          indexPtr->sParm.t.type != sSUBRANGE)
+        {
+          error(eHUH);  /* Should not happen */
+        }
+
+      /* Now loop for each element of the array */
+
+      nElements = (int)indexPtr->sParm.t.maxValue -
+                  (int)indexPtr->sParm.t.minValue + 1;
+
+      for (index = 0; index < nElements; index++)
+        {
+          switch (baseTypePtr->sParm.t.type)
+            {
+              case sFILE :
+              case sTEXTFILE :
+                pas_AddFileInitializer(&varInfo, false, 0);
+                break;
+
+              case sSTRING :
+                pas_AddStringInitializer(&varInfo);
+                break;
+
+              case sRECORD :
+                pas_AddRecordInitializers(&varInfo, baseTypePtr);
+                break;
+
+              default:
+                error(eHUH);
+                break;
+            }
+
+          /* Set the offset to the next array element.
+           * REVISIT:  If the array is not packed, then need to align the
+           * size.
+           */
+
+          varInfo.sParm.v.offset += baseTypePtr->sParm.t.asize;
         }
     }
 }

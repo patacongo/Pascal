@@ -68,7 +68,9 @@
 
 struct initializer_s
 {
-  symbol_t *symbol;                 /* Symbol table reference */
+  symbol_t varInfo;                /* Copy of the symbol table entry */
+
+  /* Information specific to a symbol type */
 
   union
     {
@@ -107,75 +109,59 @@ int g_levelInitializerOffset = 0;  /* Index to initializers for this level */
  * Private Functions
  **********************************************************************/
 
-void pas_AddFileInitializer(symbol_t *stringPtr, bool preallocated,
-                            uint16_t fileNumber)
+static initializer_t *pas_AddInitializer(symbol_t *varPtr)
 {
-  /* Remember the string variable info so that we can use it at the appropriate
-   * time.
-   */
+  initializer_t *initializer = NULL;
 
-  if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
-  else
-    {
-      initializer_t *initializer = &g_initializers[g_nInitializer];
-
-      memset(initializer, 0, sizeof(initializer_t));
-      initializer->symbol        = stringPtr;
-      initializer->preallocated  = preallocated;
-      initializer->fileNumber    = fileNumber;
-      g_nInitializer++;
-    }
-}
-
-void pas_AddStringInitializer(symbol_t *stringPtr)
-{
-  /* Remember the string variable info so that we can use it at the
+  /* Remember the variable information so that we can use it at the
    * appropriate time.
    */
 
   if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
   else
     {
-      initializer_t *initializer = &g_initializers[g_nInitializer];
+      initializer         = &g_initializers[g_nInitializer];
 
       memset(initializer, 0, sizeof(initializer_t));
-      initializer->symbol        = stringPtr;
+      memcpy(&initializer->varInfo, varPtr, sizeof(symbol_t));
       g_nInitializer++;
     }
+
+  return initializer;
+}
+
+/**********************************************************************
+ * Public Functions
+ **********************************************************************/
+
+void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
+                            uint16_t fileNumber)
+{
+  initializer_t *initializer = pas_AddInitializer(filePtr);
+  if (initializer != NULL)
+    {
+      /* Remember the file variable info so that we can use it at the
+       * appropriate time.
+       */
+
+      initializer->preallocated  = preallocated;
+      initializer->fileNumber    = fileNumber;
+    }
+}
+
+void pas_AddStringInitializer(symbol_t *stringPtr)
+{
+  (void)pas_AddInitializer(stringPtr);
 }
 
 void pas_AddRecordFileInitializer(symbol_t *fileObjectPtr)
 {
-  /* Remember the file variable info so that we can use it at the appropriate
-   * time.
-   */
-
-  if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
-  else
-    {
-      initializer_t *initializer = &g_initializers[g_nInitializer];
-
-      memset(initializer, 0, sizeof(initializer_t));
-      initializer->symbol        = fileObjectPtr;
-      g_nInitializer++;
-    }
+  (void)pas_AddInitializer(fileObjectPtr);
 }
 
 void pas_AddRecordStringInitializer(symbol_t *recordObjectPtr)
 {
-  /* Remember the file variable info so that we can use it at the appropriate
-   * time.
-   */
-
-  if (g_nInitializer >= MAX_INITIALIZERS) error(eTOOMANYINIT);
-  else
-    {
-      initializer_t *initializer = &g_initializers[g_nInitializer];
-
-      memset(initializer, 0, sizeof(initializer_t));
-      initializer->symbol        = recordObjectPtr;
-      g_nInitializer++;
-    }
+  (void)pas_AddInitializer(recordObjectPtr);
 }
 
 void pas_Initialization(void)
@@ -190,7 +176,7 @@ void pas_Initialization(void)
        index++)
     {
       initializer_t *initializer = &g_initializers[index];
-      symbol_t      *varPtr      = initializer->symbol;
+      symbol_t      *varPtr      = &initializer->varInfo;
 
       switch (varPtr->sKind)
         {
@@ -308,7 +294,7 @@ void pas_Finalization(void)
 
       if (!initializer->preallocated)
         {
-          symbol_t   *varPtr      = initializer->symbol;
+          symbol_t  *varPtr      = &initializer->varInfo;
 
           switch (varPtr->sKind)
             {

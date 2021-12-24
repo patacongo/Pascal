@@ -54,12 +54,11 @@ part that creates the (nameless) type could be called from pas_DeclareConst().
 ########src/009-stringarray.pas########
 Compiles okay but there are run-time errors in the output:
 
-Now is the time
-^@To come to the ai^@To come to th
+  ^@To come to the ai of their part
+  ^@To come to the ai of their party.
 
 Analysis:
-I have not looked at this yet but it is almost certainly because the strings
-in the array are not yet initialized.
+I have not looked at this yet.  I am suspecting an indexing problem.
 
 ########src/012-stringrecordarray.pas########
 Line 0:0020 Error 52 Token 54
@@ -288,32 +287,27 @@ Analysis:
 The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-Line 0:0122 Error 1e Token 4b
++Line 0:0060 Error 0d Token 3b
 
 Line:
-122                     WHILE (Ch <> ' ') AND (Length(DayStr) < DaySize) DO
+        DayMap: ARRAY[DayType] of DayStrType;
 
 Where:
- 52     CONST
- 54         DaySize = 3;
- 55     TYPE
- 57         DayStrType = STRING[DaySize];
-103         VAR
-105             DayStr: DayStrType;                (* Input string of chars. *)
+ 14    TYPE
+ 16        DayType = (Sun, Mon, Tue, Wed, Thu, Fri, Sat, BadDay);
+ 52    CONST
+ 54        DaySize = 3;
+ 55    TYPE
+ 57        DayStrType = STRING[DaySize];
 
 Error:
-209 #define eINVTYPE         ((uint16_t) 0x1e)
+191 #define eHUH             ((uint16_t) 0x0d)
 
-Token:
-257 #define eSUBRANGETYPE    ((uint16_t) 0x4b)
+Token: '='
 
 Analysis:
 I have not really looked into this yet, but I suspect the type definition at
 line 57 is the issue:  Sized strings like this are not supported.
-Analysis:
-Function Length() is not defined.  This appears to be a part of Smart Pascal?
-
-Can it be replaces with SIZEOF?  Are that compatible?
 
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory
