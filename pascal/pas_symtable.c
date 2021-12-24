@@ -266,7 +266,7 @@ const reservedWord_t *pas_FindReservedWord(const char *name)
   return (reservedWord_t *)NULL;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_FindSymbol(const char *inName, int tableOffset)
 {
@@ -286,7 +286,7 @@ symbol_t *pas_FindSymbol(const char *inName, int tableOffset)
   return (symbol_t *)NULL;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 static symbol_t *addSymbol(char *name, int16_t kind)
 {
@@ -315,7 +315,7 @@ static symbol_t *addSymbol(char *name, int16_t kind)
    }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
                             symbol_t *parent, symbol_t *index)
@@ -354,7 +354,7 @@ symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
    return typePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
                           symbol_t *parent)
@@ -381,7 +381,7 @@ symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
    return constPtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
 {
@@ -405,7 +405,7 @@ symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
   return stringPtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
                       uint16_t xfrUnit, symbol_t *typePtr)
@@ -432,7 +432,7 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
   return filePtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
                            uint16_t nParms, symbol_t *parent)
@@ -459,7 +459,7 @@ symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
    return procPtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
                           uint16_t size, symbol_t *parent)
@@ -485,7 +485,7 @@ symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
   return varPtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddLabel(char *name, uint16_t label)
 {
@@ -509,7 +509,7 @@ symbol_t *pas_AddLabel(char *name, uint16_t label)
   return labelPtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 symbol_t *pas_AddField(char *name, symbol_t *record)
 {
@@ -532,7 +532,7 @@ symbol_t *pas_AddField(char *name, symbol_t *record)
   return fieldPtr;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 {
@@ -636,7 +636,7 @@ void pas_VerifyLabels(int32_t symIndex)
      }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
 #if CONFIG_DEBUG
 const char noName[] = "********";

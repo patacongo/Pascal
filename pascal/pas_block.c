@@ -2207,7 +2207,6 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 {
   symbol_t *nextPtr;
   symbol_t *baseTypePtr;
-  uint16_t  arrayKind;
 
   /* Some sanity checks */
 

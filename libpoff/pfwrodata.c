@@ -1,8 +1,8 @@
-/**********************************************************************
+/****************************************************************************
  * pfwrodata.c
  * Write to the RODATA section of a POFF file
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -46,14 +46,15 @@
 
 #include "pas_debug.h"    /* Standard types */
 #include "pas_errcodes.h" /* error code definitions */
-
 #include "pas_error.h"    /* error() */
+#include "pas_machine.h"  /* INT_ALIGNUP() */
+
 #include "pofflib.h"      /* POFF library interface */
 #include "pfprivate.h"    /* POFF private definitions */
 
-/***********************************************************************
+/****************************************************************************
  * Private Functions
- ***********************************************************************/
+ ****************************************************************************/
 
 static uint16_t poffCheckRoDataAlloc(poffInfo_t *poffInfo)
 {
@@ -136,12 +137,12 @@ uint32_t poffAddRoDataByte(poffHandle_t handle, uint8_t dataByte)
 
   /* Set the new size of the string table */
 
-  poffInfo->roDataSection.sh_size++;
+  poffInfo->roDataSection.sh_size += INT_ALIGNUP(sCHAR_SIZE);
   return offset;
 }
 #endif
 
-/***********************************************************************/
+/****************************************************************************/
 
 uint32_t poffAddRoDataString(poffHandle_t handle, const char *string)
 {
@@ -170,8 +171,6 @@ uint32_t poffAddRoDataString(poffHandle_t handle, const char *string)
 
   /* Set the new size of the string table */
 
-  poffInfo->roDataSection.sh_size += len;
+  poffInfo->roDataSection.sh_size += INT_ALIGNUP(len);
   return offset;
 }
-
-/***********************************************************************/

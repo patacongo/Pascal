@@ -54,8 +54,13 @@ part that creates the (nameless) type could be called from pas_DeclareConst().
 ########src/009-stringarray.pas########
 Compiles okay but there are run-time errors in the output:
 
-  ^@To come to the ai of their part
-  ^@To come to the ai of their party.
+  To come to the aid of their part
+  To come to the aid of their party.
+
+Instead of:
+
+  Now is the time for all good men
+  To come to the aid of their party.
 
 Analysis:
 I have not looked at this yet.  I am suspecting an indexing problem.

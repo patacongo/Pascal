@@ -1286,10 +1286,10 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
 
     case oSTSXM :
 /* FIX ME --> Need to handle the unaligned case */
-      POP(st, uparm1);                /* Size */
+      POP(st, uparm1);            /* Size */
       uparm3 = uparm1;            /* Save for stack discard */
-      sparm = ROUNDBTOI(uparm1); /* Size in 16-bit words */
-      uparm2 = TOS(st, sparm);       /* index */
+      sparm = ROUNDBTOI(uparm1);  /* Size in 16-bit words */
+      uparm2 = TOS(st, sparm);    /* index */
       sparm--;
       uparm2 += pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
       while (uparm1 > 0)
