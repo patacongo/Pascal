@@ -572,6 +572,19 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
       else if (g_token == '.')
         {
+          symbol_t *nextPtr;
+          symbol_t *baseTypePtr;
+
+          /* Get a pointer to the underlying base type symbol */
+
+          nextPtr         = typePtr;
+          baseTypePtr     = typePtr;
+          while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+            {
+              baseTypePtr = nextPtr;
+              nextPtr     = baseTypePtr->sParm.t.parent;
+            }
+
           /* Skip over the period */
 
           getToken();
@@ -580,8 +593,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
            * follows the period.
            */
 
-          if ((g_token != sRECORD_OBJECT) ||
-              (g_tknPtr->sParm.r.record != typePtr))
+          if (g_token != sRECORD_OBJECT ||
+              g_tknPtr->sParm.r.record != baseTypePtr)
             {
               error(eRECORDOBJECT);
             }

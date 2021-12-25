@@ -68,18 +68,19 @@ The parsing logic currently expects a RECORD name to be following by '.' in
 this context.
 
 ########src/013-filerecordarray.pas########
-Line 0:0010 Error 1e Token 01 (NameString)
+Line 0:0013 Error 52 Token 54
 
 Line:
- 10    Files : array[1..3] of NameString;
+ 13    Files[1].name := 'File1.dat';
 
 Error:
-209 #define eINVTYPE         ((uint16_t) 0x1e)
+265 #define eRECORDOBJECT    ((uint16_t) 0x52)
 
 Token:
- 44 #define tIDENT           0x01
+ 92 #define sRECORD_OBJECT   0x54
 
 Analysis:
+Same as src/012-stringrecordarray.pas
 
 ########src/014-arrayrecord.pas########
 Line 0:0014 Error 21 Token 2c
@@ -112,8 +113,9 @@ But accessed without indexing:
 Even though title is an array, no index is required for the special case of
 packed array of char.
 
-More modern Pascal implement added type string for these cases.  Is backward
-compatible support needed?
+More modern Pascal implement added type string for these cases and this could
+be fixed by simply changing 'packed array [1..50] of char;' to 'string''.  Is
+backward compatible support needed?
 
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b

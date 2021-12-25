@@ -27,4 +27,5 @@ begin
    printName(Names[1]);
    printName(Names[2]);
    printName(Names[3]);
-end
+end.
+

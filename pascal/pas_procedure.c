@@ -63,9 +63,16 @@
  * Private Function Prototypes
  ****************************************************************************/
 
+static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
+                                   uint16_t *pFileSize,
+                                   symbol_t *defaultFilePtr);
+static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
+                                  uint16_t *pFileSize);
+
 /* Helpers for standard procedures  */
 
 static void haltProc(void);                     /* HALT procedure */
+
 static void readProc(void);                     /* READ procedure */
 static void readlnProc(void);                   /* READLN procedure */
 static void readProcCommon(bool text,           /* READ[LN] common logic */
@@ -205,84 +212,28 @@ void pas_StandardProcedure(void)
 
 /***********************************************************************/
 
-uint16_t pas_GenerateFileNumber(uint16_t *pFileSize, symbol_t *defaultFilePtr)
+uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
+                                symbol_t *defaultFilePtr)
 {
-  symbol_t *varPtr   = g_tknPtr; /* Remember the variable symbol */
-  uint16_t fileType;
-  uint16_t fileSize;
-
   /* If the token is not a symbol table related token, then abort returning
    * the default.  For example, suppose the first argument is a constant
    * string.
    */
 
-  if (varPtr == NULL)
+  if (g_tknPtr != NULL)
     {
-      varPtr = defaultFilePtr;
+      /* Make a write-able copy of the variable symbol table entry */
+
+      symbol_t varCopy = *g_tknPtr;
+
+      /* Then work with the write-able copy */
+
+      return simplifyFileNumber(&varCopy, 0, pFileSize, defaultFilePtr);
     }
-
-  /* Check if this is a VAR parameter */
-
-  if (varPtr->sKind == sVAR_PARM)
+  else
     {
-      return genVarFileNumber(varPtr, pFileSize, defaultFilePtr);
+      return defaultFileNumber(defaultFilePtr, pFileSize);
     }
-
-#if 0
-  /* Check for other exotic forms that have not yet be implemented */
-
-  else if (varPtr->sKind == sARRAY ||
-           varPtr->sKind == sPOINTER ||
-           varPtr->sKind == sTYPE)
-    {
-      error(eNOTYET);
-    }
-#endif
-
-  /* Is this a variable representing a type binary or text FILE? */
-
-  else if (g_token == sFILE || g_token == sTEXTFILE)
-    {
-      fileType = varPtr->sKind;
-      if (g_token == sTEXTFILE)
-        {
-          fileSize = sCHAR_SIZE;
-        }
-      else
-        {
-          fileSize = varPtr->sParm.v.xfrUnit;
-        }
-
-      pas_GenerateStackReference(opLDS, varPtr);
-
-      /* Return the file size */
-
-      if (pFileSize != NULL)
-        {
-          *pFileSize = fileSize;
-        }
-
-      /* Skip over the variable identifer */
-
-      getToken();
-
-      return fileType;
-    }
-
-  /* Not a file-type variable.  Use the default file number (which we assume
-   * to be of type sTEXTFILE)
-   */
-
-  fileType   = sTEXTFILE;
-  fileSize   = sCHAR_SIZE;
-  pas_GenerateStackReference(opLDS, defaultFilePtr);
-
-  if (pFileSize != NULL)
-    {
-      *pFileSize = fileSize;
-    }
-
-  return fileType;
 }
 
 /***********************************************************************/
@@ -427,7 +378,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
               {
                 symbol_t *arrayType;
                 symbol_t *nextType;
-                uint16_t  arrayKind;
+                uint16_t arrayKind;
 
                 /* Get the base type of the array */
 
@@ -564,6 +515,237 @@ int pas_ActualParameterList(symbol_t *procPtr)
     }
 
   return size;
+}
+
+/***********************************************************************/
+
+static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
+                                   uint16_t *pFileSize,
+                                   symbol_t *defaultFilePtr)
+{
+  uint16_t fileType;
+  uint16_t fileSize;
+
+  /* Check if this is a VAR parameter */
+
+  switch (varPtr->sKind)
+    {
+      case sVAR_PARM :
+        {
+          return genVarFileNumber(varPtr, pFileSize, defaultFilePtr);
+        }
+
+      case sRECORD :
+        {
+          /* We expect the RECORD array to be followed by a field
+           * selector.  On input the current token may be a RECORD
+           * or, if we get here via an array, it may be the '.'
+           * field separator.
+           */
+
+          if (g_token != '.')
+            {
+              getToken();
+            }
+
+          if (g_token != '.')
+            {
+              error(eRECORDOBJECT);
+              return defaultFileNumber(defaultFilePtr, pFileSize);
+            }
+          else
+            {
+              getToken();
+            }
+
+          if (g_token != sRECORD_OBJECT)
+            {
+              error(eRECORDOBJECT);
+              return defaultFileNumber(defaultFilePtr, pFileSize);
+            }
+          else
+            {
+              symbol_t *fieldPtr = g_tknPtr;
+              symbol_t *baseTypePtr;
+              symbol_t *nextPtr;
+
+              /* Verify that the field selector resolves to a
+               * file type.
+               */
+
+              nextPtr         = fieldPtr->sParm.r.parent;
+              baseTypePtr     = nextPtr;
+              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+                {
+                  baseTypePtr = nextPtr;
+                  nextPtr     = baseTypePtr->sParm.t.parent;
+                }
+
+              fileType        = baseTypePtr->sParm.t.type;
+
+              if (fileType != sFILE && fileType != sTEXTFILE)
+                {
+                  error(eINVFILETYPE);
+                }
+
+              /* If the field offset is non-zero, add that to the array
+               * offset.
+               */
+
+              if (baseTypePtr->sParm.r.offset != 0)
+                {
+                  /* Add the field offset */
+
+                  pas_GenerateDataOperation(opPUSH,
+                                                fieldPtr->sParm.r.offset);
+                  pas_GenerateSimple(opADD);
+                }
+
+              /* Generate the indexed load */
+
+              pas_GenerateStackReference(opLDSX, varPtr);
+
+              getToken();
+              return fileType;
+            }
+        }
+        break;
+
+      /* Check for other exotic forms that have not yet been implemented */
+
+      case sARRAY :
+        {
+          symbol_t *typePtr;
+
+          fileFlags |= INDEXED_FACTOR;
+
+          /* REVISIT:  Before we consume the input, we must be certain that
+           * this is going to resolve into a file type.  All we know now is
+           * that this is an arry... but and array of what?
+           *
+           * The complex case is an array of records which may or may not
+           * contain a file field.  We can't know which field is selected
+           * until we parse the field selector.
+           */
+
+          symbol_t *nextPtr;
+          symbol_t *baseTypePtr;
+
+          /* Get a pointer to the underlying base type symbol */
+
+          nextPtr         = typePtr;
+          baseTypePtr     = typePtr;
+          while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+            {
+              baseTypePtr = nextPtr;
+              nextPtr     = baseTypePtr->sParm.t.parent;
+            }
+
+          if (baseTypePtr->sParm.t.type == sRECORD)
+            {
+              /* REVISIT:  This is the problem case */
+            }
+          else if (baseTypePtr->sParm.t.type != sFILE &&
+                   baseTypePtr->sParm.t.type != sTEXTFILE)
+            {
+              return defaultFileNumber(defaultFilePtr, pFileSize);
+            }
+
+          /* Skip over the array name */
+
+          getToken();
+
+          /* Then handle the bracketed array index */
+
+          typePtr = varPtr->sParm.v.parent;
+          if (typePtr == NULL)
+            {
+              error(eHUH);
+              return defaultFileNumber(defaultFilePtr, pFileSize);
+            }
+          else
+            {
+              symbol_t *indexTypePtr = typePtr->sParm.t.index;
+              if (indexTypePtr == NULL) error(eHUH);
+              else
+                {
+                  /* Generate the array offset calculation */
+
+                  pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+
+                  /* Return the parent type of the array */
+
+                  varPtr->sKind        = baseTypePtr->sParm.t.type;
+                  varPtr->sParm.v.size = baseTypePtr->sParm.t.asize;
+
+                  return simplifyFileNumber(varPtr, fileFlags, pFileSize,
+                                            defaultFilePtr);
+                }
+            }
+        }
+
+      /* Is this a variable representing a type binary or text FILE? */
+
+      case sFILE :
+      case sTEXTFILE :
+        {
+          fileType = varPtr->sKind;
+          if (g_token == sTEXTFILE)
+            {
+              fileSize = sCHAR_SIZE;
+            }
+          else
+            {
+              fileSize = varPtr->sParm.v.xfrUnit;
+            }
+
+          pas_GenerateStackReference(opLDS, varPtr);
+
+          /* Skip over the variable identifer */
+
+          getToken();
+        }
+        break;
+
+      /* Check for other exotic forms that have not yet been implemented */
+
+      case sPOINTER :
+      case sTYPE :
+        error(eNOTYET);  /* Fall-through to the default case */
+
+      /* Not a file-type variable.  Use the default file number (which we
+       * assume to be of type sTEXTFILE)
+       */
+
+      default :
+        return defaultFileNumber(defaultFilePtr, pFileSize);
+    }
+
+  if (pFileSize != NULL)
+    {
+      *pFileSize = fileSize;
+    }
+
+  return fileType;
+}
+
+/***********************************************************************/
+
+static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
+                                  uint16_t *pFileSize)
+{
+  /* Push the default file number */
+
+  pas_GenerateStackReference(opLDS, defaultFilePtr);
+
+  /* Return the file type and size for a TEXTFILE */
+
+  if (pFileSize != NULL)
+    {
+      *pFileSize = sCHAR_SIZE;
+    }
+
+  return sTEXTFILE;
 }
 
 /***********************************************************************/
@@ -1303,7 +1485,7 @@ static void writeProcCommon(bool text, uint16_t fileSize)
       /* Should be followed by ':' meaning that there are more parameter, or
        * by ')' meaning that we have processed all of the parameters.
        *
-       * NOTE:  Some test cases use ',' as the separator.  Let's supported
+       * NOTE:  Some test cases use ',' as the separator.  Let's support
        * either.
        */
 
@@ -1613,9 +1795,7 @@ static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
 
   else
     {
-      fileType   = sTEXTFILE;
-      fileSize   = sCHAR_SIZE;
-      pas_GenerateStackReference(opLDS, defaultFilePtr);
+      return defaultFileNumber(defaultFilePtr, pFileSize);
     }
 
   if (pFileSize != NULL)

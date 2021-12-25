@@ -1448,6 +1448,9 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
       else if (g_token == '.')
         {
+          symbol_t *baseTypePtr;
+          symbol_t *nextPtr;
+
           if (((factorFlags & ADDRESS_DEREFERENCE) != 0) &&
               ((factorFlags & VAR_PARM_FACTOR) == 0))
             {
@@ -1458,11 +1461,20 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
           getToken();
 
-          /* Verify that a field identifier associated with this record */
-          /* follows the period. */
+          /* Verify that a field identifier associated with this record.
+           * follows the period.
+           */
+
+          nextPtr         = typePtr->sParm.t.parent;
+          baseTypePtr     = typePtr;
+          while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+            {
+              baseTypePtr = nextPtr;
+              nextPtr     = baseTypePtr->sParm.t.parent;
+            }
 
           if ((g_token != sRECORD_OBJECT) ||
-              (g_tknPtr->sParm.r.record != typePtr))
+              (g_tknPtr->sParm.r.record != baseTypePtr))
             {
               error(eRECORDOBJECT);
               factorType = exprInteger;
@@ -1684,12 +1696,12 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               /* Get a pointer to the underlying base type symbol */
 
-              nextPtr          = typePtr;
-              baseTypePtr      = typePtr;
+              nextPtr         = typePtr;
+              baseTypePtr     = typePtr;
               while (nextPtr != NULL && nextPtr->sKind == sTYPE)
                 {
-                   baseTypePtr = nextPtr;
-                   nextPtr     = baseTypePtr->sParm.t.parent;
+                  baseTypePtr = nextPtr;
+                  nextPtr     = baseTypePtr->sParm.t.parent;
                 }
 
               /* Generate the array offset calculation and indexed load */
@@ -1712,7 +1724,7 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
                 }
 
               varPtr->sKind  = arrayKind;
-              factorType     = baseFactor(varPtr, factorFlags);
+              factorType     = simplifyFactor(varPtr, factorFlags);
 
               if (factorType == exprUnknown)
                 {
@@ -2274,7 +2286,9 @@ static exprType_t simplifyPtrFactor(symbol_t *varPtr, uint8_t factorFlags)
       if (g_token != '.')
         {
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
-            error(ePOINTERTYPE);
+            {
+              error(ePOINTERTYPE);
+            }
 
           if ((factorFlags & INDEXED_FACTOR) != 0)
             {

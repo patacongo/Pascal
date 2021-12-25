@@ -7,7 +7,7 @@ FileInfo =
   end;
 
 var
-   Files : array[1..3] of NameString;
+   Files : array[1..3] of FileInfo;
 
 begin
    Files[1].name := 'File1.dat';
@@ -17,4 +17,4 @@ begin
    AssignFile(Files[1].f, Files[1].name);
    AssignFile(Files[2].f, Files[2].name);
    AssignFile(Files[3].f, Files[3].name);
-end
+end.
