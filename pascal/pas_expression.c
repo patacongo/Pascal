@@ -2185,6 +2185,19 @@ static exprType_t ptrFactor(void)
         factorType = exprSetPtr;
         break;
 
+      case sSTRING           :
+        pas_GenerateStackReference(opLAS, g_tknPtr);
+        getToken();
+        factorType = exprStringPtr;
+        break;
+
+      case sFILE             :
+      case sTEXTFILE         :
+        pas_GenerateStackReference(opLAS, g_tknPtr);
+        getToken();
+        factorType = exprFilePtr;
+        break;
+
       /* Complex factors */
 
       case sSUBRANGE :
@@ -2212,7 +2225,6 @@ static exprType_t ptrFactor(void)
         break;
 
       default :
-
         error(ePTRADR);
         factorType = exprUnknown;
         break;
@@ -2472,8 +2484,20 @@ static exprType_t simplifyPtrFactor(symbol_t *varPtr, uint8_t factorFlags)
                   arrayKind = baseTypePtr->sParm.t.subType;
                 }
 
-              varPtr->sKind  = arrayKind;
-              factorType     = basePtrFactor(varPtr, factorFlags);
+              /* If this is an array of records, then are not finished. */
+
+              varPtr->sKind = arrayKind;
+              if (arrayKind == sRECORD)
+                {
+                  factorType = simplifyPtrFactor(varPtr, factorFlags);
+                }
+
+              /* Load the indexed base type */
+
+              else
+                {
+                  factorType = basePtrFactor(varPtr, factorFlags);
+                }
 
               if (factorType == exprUnknown)
                 {
@@ -2482,8 +2506,8 @@ static exprType_t simplifyPtrFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               /* Return the parent type of the array */
 
-              varPtr->sKind        = typePtr->sParm.t.type;
-              varPtr->sParm.v.size = typePtr->sParm.t.asize;
+              varPtr->sKind        = baseTypePtr->sParm.t.type;
+              varPtr->sParm.v.size = baseTypePtr->sParm.t.asize;
             }
         }
       break;

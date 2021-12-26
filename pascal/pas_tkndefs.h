@@ -53,7 +53,9 @@
 #define tASSIGN          0x09
 #define tSUBRANGE        0x0a
 
-/* Token Values 0x21-0x2F (except 0x24) are for ASCII character tokens */
+/* Token Values 0x21-0x2F (except 0x24) are for ASCII character tokens:
+ * '!', '"', '#', '$' '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/'
+ */
 
 #define tNE              ('#')
 #define SQUOTE           0x27
@@ -62,7 +64,9 @@
 
 /* Token Values 0x30-0x39 are spare */
 
-/* Token Values 0x3A-0x40 are for ASCII character tokens */
+/* Token Values 0x3A-0x40 are for ASCII character tokens:
+ * ':', ';', '<', '=', '>', '?', '@'
+ */
 
 #define tLT              ('<')
 #define tEQ              ('=')
@@ -92,11 +96,15 @@
 #define sRECORD_OBJECT   0x54
 #define sVAR_PARM        0x55
 
-/* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens */
+/* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens:
+ * '[', '\', ']', '^', '_', '`'
+ */
 
 /* Token Values 0x61-0x7a are SYMBOL TABLE definitions */
 
-/* Token Values 0x7b-0x7f are for ASCII character tokens */
+/* Token Values 0x7b-0x7f are for ASCII character tokens:
+ * '{', '|', '}''~', DEL
+ */
 
 /* Token Value  0x7f is spare */
 
@@ -143,15 +151,16 @@
 #define tSET             0x9f
 #define tSHL             0xa0
 #define tSHR             0xa1
-#define tTHEN            0xa2
-#define tTO              0xa3
-#define tTYPE            0xa4
-#define tUNIT            0xa5 /* Extended pascal */
-#define tUNTIL           0xa6
-#define tUSES            0xa7 /* Extended pascal */
-#define tVAR             0xa8
-#define tWHILE           0xa9
-#define tWITH            0xaa
+#define tTEXTFILE        0xa2
+#define tTHEN            0xa3
+#define tTO              0xa4
+#define tTYPE            0xa5
+#define tUNIT            0xa6 /* Extended pascal */
+#define tUNTIL           0xa7
+#define tUSES            0xa8 /* Extended pascal */
+#define tVAR             0xa9
+#define tWHILE           0xaa
+#define tWITH            0xab
 
 /* The following codes indicate that the token is a built-in procedure
  * or function recognized by the compiler.  An additional code will be

@@ -8,18 +8,14 @@ writing, the following errors are reported when testall.sh is ran:
     undefined functions, and  procedures (fsplit, addr, length, lowercase,
     etc.).  These test cases have been removed because there will never
     compile.
- 2. Currently a set is limited to 32 elements so that they can be represented
-    internally as a 32-bit bit set.
- 3. I/O operations on most types of arrays and records are not fully
-    implemented.  See src/107-quicksort.pas
- 4. Forward references to variables before they are defined do not work.  See
+ 2. Forward references to variables before they are defined do not work.  See
     failure in src/108-pointerrecode.pas.
- 5. There are a couple of files with initialization like:
+ 3. There are a couple of files with initialization like:
       input = 1;
       output = 2;
     I am not sure what these mean and have just commented them out for now.
     Assignment of a numeric value to a file is not supported.
- 6. Pascal runtime memory is divided into three regions:  String stack, RO
+ 4. Pascal runtime memory is divided into three regions:  String stack, RO
     data, and the Pascal run-time stack.  The size of the string stack is
     set with the -t option to prun and 1024 is the default size used by the
     testone.sh script.  String allocations are large, 256 bytes, and the
@@ -52,37 +48,10 @@ An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
 ########src/012-stringrecordarray.pas########
-Line 0:0020 Error 52 Token 54
+Compiles without error, but then crashes writing the POFF file.  Apparently
+some information in the debug section is corrupted.
 
-Line:
- 20    Names[1].title := 'Name 1';
-
-Error:
-265 #define eRECORDOBJECT    ((uint16_t) 0x52)
-
-Token:
- 92 #define sRECORD_OBJECT   0x54
-
-Analysis:
-The parsing logic currently expects a RECORD name to be following by '.' in
-this context.
-
-########src/013-filerecordarray.pas########
-Line 0:0013 Error 52 Token 54
-
-Line:
- 13    Files[1].name := 'File1.dat';
-
-Error:
-265 #define eRECORDOBJECT    ((uint16_t) 0x52)
-
-Token:
- 92 #define sRECORD_OBJECT   0x54
-
-Analysis:
-Same as src/012-stringrecordarray.pas
-
-########src/014-arrayrecord.pas########
+########src/013-arrayrecord.pas########
 Line 0:0014 Error 21 Token 2c
 
 Line:
@@ -187,41 +156,23 @@ Analysis:
 Not yet analyzed.  Perhaps an issue related to string types.
 
 ########src/604-addfiledata.pas########
-Line 0:0052 Error 2d Token 4b
+Compiles fine and almost runs.  I am seeing errors at run-time in this loop:
 
-Line:
- 52    readln(filename);
-Where:O
-  7 var
-  9    filename: string;
+   while not eof(x) do
 
-Error:
-224 #define ePTRADR          ((uint16_t) 0x2d)
+   begin
+      read(x, d);
+      sum := sum + d;
+   end;
 
-Token:
- 83 #define sSTRING          0x4b /* String storage type */
+where x is a parameter VAR x : raindata.
 
-Analysis:
-Same as src/605-subprogram.pas
+It appears that the read (xREAD_BINARY) clobbers x.  Apparently x and d
+overlap, x was at 450 and d was at 44e but the sizeof(d) was 8.
 
 ########src/605-subprogram.pas########
-Line 0:0052 Error 2d Token 4b
-
-Line:
- 52    readln(filename);
-Where:O
-  7 var
-  9    filename: string;
-
-Error:
-224 #define ePTRADR          ((uint16_t) 0x2d)
-
-Token:
- 83 #define sSTRING          0x4b /* String storage type */
-
-Analysis:
-The error occurs in ptrFactor().  Pointers to strings not supported because
-there are no pointer variables in memory yet.
+Compiles fine and almost runs.  I am seeing the same errors at run-time as
+with src/604-addfiledata.pas
 
 ########sinecos.pas########
 ########unit-cosine.pas########

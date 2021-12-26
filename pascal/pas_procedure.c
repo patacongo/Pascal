@@ -63,6 +63,28 @@
  * Private Function Prototypes
  ****************************************************************************/
 
+/* There is an issue with using file types as the first argument of most
+ * standard file I/O procedures and functions.  This is a one-pass compiler
+ * and before we consume the input, we must be certain that that first
+ * argument this is going to resolve into a file type.
+ *
+ * A RECORD could contain a file field.  All we know is that it is a RECORD
+ * and we cannot know the type of the RECORD field that is selected until
+ * we parse a little more.  So the logic will make bad decisions with
+ * RECORDS (and worse, with ARRAYs of RECORDs).
+ *
+ * The option below disables all support for files in RECORDs and at least
+ * makes the behavior consistent by disallowing RECORDs containing files.
+ * Perhaps, in the future, we will add some kind of parse ahead logic to
+ * handle this case.
+ */
+
+#undef CONFIG_PAS_FILERECORD
+
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
 static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
                                    uint16_t *pFileSize,
                                    symbol_t *defaultFilePtr);
@@ -240,8 +262,8 @@ uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
 
 int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
 {
-  /* These sizes must agree with the sizes used in pas_ActualParameterListg()
-   * below.
+  /* These sizes must agree with the sizes used in
+   * pas_ActualParameterListg() below.
    */
 
   symbol_t *typePtr = procPtr[parmNo].sParm.v.parent;
@@ -485,6 +507,12 @@ int pas_ActualParameterList(symbol_t *procPtr)
                       size += sPTR_SIZE;
                       break;
 
+                    case sFILE :
+                    case sTEXTFILE :
+                      pas_VarParameter(exprFilePtr, typePtr);
+                      size += sPTR_SIZE;
+                      break;
+
                     default :
                       error(eVARPARMTYPE);
                       break;
@@ -535,6 +563,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           return genVarFileNumber(varPtr, pFileSize, defaultFilePtr);
         }
 
+#ifdef CONFIG_PAS_FILERECORD
       case sRECORD :
         {
           /* We expect the RECORD array to be followed by a field
@@ -597,7 +626,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
                   /* Add the field offset */
 
                   pas_GenerateDataOperation(opPUSH,
-                                                fieldPtr->sParm.r.offset);
+                                            fieldPtr->sParm.r.offset);
                   pas_GenerateSimple(opADD);
                 }
 
@@ -610,12 +639,16 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
             }
         }
         break;
+#endif
 
-      /* Check for other exotic forms that have not yet been implemented */
+      /* Check if this is an array of files */
 
       case sARRAY :
         {
           symbol_t *typePtr;
+          symbol_t *nextPtr;
+          symbol_t *baseTypePtr;
+          symbol_t *indexTypePtr;
 
           fileFlags |= INDEXED_FACTOR;
 
@@ -628,8 +661,12 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
            * until we parse the field selector.
            */
 
-          symbol_t *nextPtr;
-          symbol_t *baseTypePtr;
+          typePtr = varPtr->sParm.v.parent;
+          if (typePtr == NULL)
+            {
+              error(eHUH);
+              return defaultFileNumber(defaultFilePtr, pFileSize);
+            }
 
           /* Get a pointer to the underlying base type symbol */
 
@@ -641,12 +678,15 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
               nextPtr     = baseTypePtr->sParm.t.parent;
             }
 
+#ifdef CONFIG_PAS_FILERECORD
           if (baseTypePtr->sParm.t.type == sRECORD)
             {
               /* REVISIT:  This is the problem case */
             }
-          else if (baseTypePtr->sParm.t.type != sFILE &&
-                   baseTypePtr->sParm.t.type != sTEXTFILE)
+          else
+#endif
+          if (baseTypePtr->sParm.t.type != sFILE &&
+              baseTypePtr->sParm.t.type != sTEXTFILE)
             {
               return defaultFileNumber(defaultFilePtr, pFileSize);
             }
@@ -657,30 +697,21 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 
           /* Then handle the bracketed array index */
 
-          typePtr = varPtr->sParm.v.parent;
-          if (typePtr == NULL)
-            {
-              error(eHUH);
-              return defaultFileNumber(defaultFilePtr, pFileSize);
-            }
+          indexTypePtr = typePtr->sParm.t.index;
+          if (indexTypePtr == NULL) error(eHUH);
           else
             {
-              symbol_t *indexTypePtr = typePtr->sParm.t.index;
-              if (indexTypePtr == NULL) error(eHUH);
-              else
-                {
-                  /* Generate the array offset calculation */
+              /* Generate the array offset calculation */
 
-                  pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
 
-                  /* Return the parent type of the array */
+              /* Return the parent type of the array */
 
-                  varPtr->sKind        = baseTypePtr->sParm.t.type;
-                  varPtr->sParm.v.size = baseTypePtr->sParm.t.asize;
+              varPtr->sKind        = baseTypePtr->sParm.t.type;
+              varPtr->sParm.v.size = baseTypePtr->sParm.t.asize;
 
-                  return simplifyFileNumber(varPtr, fileFlags, pFileSize,
-                                            defaultFilePtr);
-                }
+              return simplifyFileNumber(varPtr, fileFlags, pFileSize,
+                                        defaultFilePtr);
             }
         }
 
@@ -742,10 +773,10 @@ static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
 
   if (pFileSize != NULL)
     {
-      *pFileSize = sCHAR_SIZE;
+      *pFileSize = defaultFilePtr->sParm.v.xfrUnit;
     }
 
-  return sTEXTFILE;
+  return defaultFilePtr->sKind;
 }
 
 /***********************************************************************/
@@ -983,14 +1014,14 @@ static void readText(void)
             rPtr->sParm.t.type == sCHAR &&
             getNextCharacter(true) != '[')
           {
-            /* READ_STRING: TOS   = Read size
-             *              TOS+1 = Read address
+            /* READ_STRING: TOS   = Read address (array address)
+             *              TOS+1 = Read size    (array size)
              *              TOS+2 = File number
              */
 
             pas_GenerateSimple(opDUP);
-            pas_GenerateStackReference(opLAS, rPtr);
             pas_GenerateDataOperation(opPUSH, rPtr->sParm.v.size);
+            pas_GenerateStackReference(opLAS, rPtr);
             pas_GenerateIoOperation(xREAD_STRING);
           }
 
@@ -1036,12 +1067,15 @@ static void readText(void)
               pas_GenerateIoOperation(xREAD_REAL);
               break;
 
-            /* READ_STRING: TOS   = Read size
-             *              TOS+1 = Read address
+            /* READ_STRING: TOS   = Read address
+             *              TOS+1 = Read size
              *              TOS+2 = File number
+             *
+             * REVISIT:  Won't that be the current string size?  Not the
+             * maximum read size?
              */
 
-            case exprString :
+            case exprStringPtr :
               pas_GenerateIoOperation(xREAD_STRING);
               break;
 
@@ -1124,15 +1158,15 @@ static void readBinary(uint16_t fileSize)
   if (size != fileSize) error(eREADPARMTYPE);
   else
     {
-      /* READ_BINARY: TOS   = Read size
-       *              TOS+1 = Read address
+      /* READ_BINARY: TOS   = Read address
+       *              TOS+1 = Read size
        *              TOS+2 = File number
        */
 
       pas_GenerateSimple(opDUP);
+      pas_GenerateDataOperation(opPUSH, size);
       pas_GenerateLevelReference(opLAS, g_tknPtr->sLevel,
                                  g_tknPtr->sParm.v.offset);
-      pas_GenerateDataOperation(opPUSH, size);
       pas_GenerateIoOperation(xREAD_BINARY);
     }
 
@@ -1266,8 +1300,8 @@ static void fileProc(uint16_t opcode)
 
 static void assignFileProc(void)       /* ASSIGNFILE procedure */
 {
-  uint32_t fileType;
-  uint32_t exprType;
+  exprType_t exprType;
+  uint32_t   fileType;
 
   TRACE(g_lstFile, "[assignFileProc]");
 
@@ -1296,10 +1330,14 @@ static void assignFileProc(void)       /* ASSIGNFILE procedure */
 
        fileType = pas_GenerateFileNumber(NULL, g_outputFile);
 
-       /* The file variable must be followed by a comma. */
+       /* If the default as not used and a file variable provided as the
+        * first argument, then it must be followed by a comma.
+        */
 
-       if (g_token != ',') error(eCOMMA);
-       else getToken();
+       if (g_token == ',')
+        {
+          getToken();
+        }
 
        /* Push the file type:  binary or text */
 
@@ -1519,12 +1557,12 @@ static void writeText(void)
 
         uint32_t offset = poffAddRoDataString(poffHandle, g_tokenString);
 
-        /* WRITE_STRING: TOS   = Write size
+        /* Set the file number, offset and size on the stack
+         *
+         * WRITE_STRING: TOS   = Write size
          *               TOS+1 = Write address
          *               TOS+2 = File number
          */
-
-        /* Set the file number, offset and size on the stack */
 
         pas_GenerateSimple(opDUP);
         pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
@@ -1689,15 +1727,15 @@ static void writeBinary(uint16_t fileSize)
   if (size != fileSize) error(eWRITEPARMTYPE);
   else
     {
-      /* WRITE_BINARY: TOS   = Write size
-       *               TOS+1 = Write address
+      /* WRITE_BINARY: TOS   = Write address
+       *               TOS+1 = Write size
        *               TOS+2 = File number
        */
 
       pas_GenerateSimple(opDUP);
+      pas_GenerateDataOperation(opPUSH, size);
       pas_GenerateLevelReference(opLAS, g_tknPtr->sLevel,
                                  g_tknPtr->sParm.v.offset);
-      pas_GenerateDataOperation(opPUSH, size);
       pas_GenerateIoOperation(xWRITE_BINARY);
     }
 

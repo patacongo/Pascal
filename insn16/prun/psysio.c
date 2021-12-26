@@ -776,14 +776,14 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, fileNumber);  /* File number from stack */
       break;
 
-    /* READ_BINARY: TOS   = Read size
-     *              TOS+1 = Read address
+    /* READ_BINARY: TOS   = Read address
+     *              TOS+1 = Read size
      *              TOS+2 = File number
      */
 
     case xREAD_BINARY :
-      POP(st, size);        /* Read size */
       POP(st, address);     /* Read address */
+      POP(st, size);        /* Read size */
       POP(st, fileNumber);  /* File number from stack */
 
       pexec_ReadBinary(fileNumber,
@@ -816,14 +816,14 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
                      (uint8_t *)&st->dstack.b[address]);
       break;
 
-    /* READ_STRING: TOS   = Read size
-     *              TOS+1 = Read address
+    /* READ_STRING: TOS   = Read address
+     *              TOS+1 = Read size
      *              TOS+2 = File number
      */
 
     case xREAD_STRING :
-      POP(st, size);        /* Read address */
       POP(st, address);     /* Read address */
+      POP(st, size);        /* Read size */
       POP(st, fileNumber);  /* File number from stack */
 
       pexec_ReadString(fileNumber,
@@ -863,8 +863,8 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
      */
 
     case xWRITE_BINARY :
-      POP(st, size);        /* Write size */
       POP(st, address);     /* Write address */
+      POP(st, size);        /* Write size */
       POP(st, fileNumber);  /* File number from stack */
 
       pexec_WriteBinary(fileNumber,

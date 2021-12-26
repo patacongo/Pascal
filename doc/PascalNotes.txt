@@ -222,7 +222,7 @@ o IMPROVEMENTS
 - Add 16-bit word type
 
 o ISSUES
-- What happens in TYPE block if type is sTYPE or sFILE_OF?  Need
+- What happens in TYPE block if type is sTYPE or sFILE?  Need
   to re-think all typing.  Maybe replace sTYPE and sFILE_OF with
   sINT_TYPE, sINT_ARRAY_TYPE, ..., sFILE_OF_INT,
   sFILE_OF_INT_ARRAY, etc.
@@ -230,4 +230,19 @@ o ISSUES
   file buffers.
 - Revisit procedure call logic in pexec.c & pdbg.c.  First stack parameter
   is calculated but never used.
-- Decide what to do about type filename in tests/src/cgimail.pas
+- There is an issue with using file types as the first argument of most
+  standard file I/O procedures and functions.  This is a one-pass compiler
+  and before we consume the input, we must be certain that that first
+  argument this is going to resolve into a file type.
+
+  There is a particular problem if the first argument is a READ (or an
+  ARRAY of RECORDS).  A RECORD could contain a file field that is selected
+  further on.  All we know at the point of encountering the RECORD is that
+  it is a RECORD; we cannot know the type of the RECORD field that is
+  selected until we parse a little more.  So the logic will make bad
+  decisions with RECORDS (and worse, with ARRAYs of RECORDs).
+
+  An option disables all support for files in RECORDs and at least
+  makes the behavior consistent by disallowing RECORDs containing files.
+  Perhaps, in the future, we will add some kind of parse ahead logic to
+  handle this case.

@@ -312,12 +312,23 @@ static symbol_t *pas_DeclareVar(void)
     }
   else
     {
-      /* No.. verify that the identifer-list is followed by ';' */
+      symbol_t *baseTypePtr;
+      symbol_t *nextType;
+
+      /* No.. verify that the identifer-list is followed by ':' */
 
       if (g_token != ':') error(eCOLON);
       else getToken();
 
-      /* Let's handle files differently. */
+      /* Let's handle files differently.  There are three possibilities
+       * here for files.
+       *
+       *   FORM: file-variable-name : FILE OF type-name;
+       *   FORM: file-variable-name : TEXFILE;
+       *   FORM: file-variable-name : file-type-name
+       *
+       * Let's handle the first two forms first.
+       */
 
       if (g_token == tFILE || g_token == sTEXTFILE)
         {
@@ -340,12 +351,12 @@ static symbol_t *pas_DeclareVar(void)
               if (g_token != sTYPE) error(eINVTYPE);
               else
                 {
-                   /* Save the size and type of the file */
+                  /* Save the size and type of the file */
 
-                   fileTypePtr = g_tknPtr;
-                   fileKind    = sFILE;
-                   fileSize    = fileTypePtr->sParm.t.asize;
-                   getToken();
+                  fileTypePtr = g_tknPtr;
+                  fileKind    = sFILE;
+                  fileSize    = g_tknPtr->sParm.t.asize;
+                  getToken();
                 }
             }
 
@@ -355,6 +366,54 @@ static symbol_t *pas_DeclareVar(void)
                                   fileTypePtr);
           pas_AddFileInitializer(filePtr, false, 0);
           g_dStack += sINT_SIZE;
+          return filePtr;
+        }
+
+      /* Get a pointer to the base type symbol (in case it is a defined
+       * type).  Loop until we hit the last type in the chain OR until we
+       * hit a file type (in that case, the last type may be the type of the
+       * binary file, not the type of the file type).
+       */
+
+      baseTypePtr = g_tknPtr;
+      nextType    = g_tknPtr->sParm.t.parent;
+
+      while (nextType != NULL &&
+             baseTypePtr->sKind == sTYPE &&
+             baseTypePtr->sParm.t.type != sFILE &&
+             baseTypePtr->sParm.t.type != sTEXTFILE)
+        {
+          baseTypePtr = nextType;
+          nextType    = baseTypePtr->sParm.t.parent;
+        }
+
+      /* Did we find a typed file? */
+
+      if (baseTypePtr->sParm.t.type == sFILE ||
+          baseTypePtr->sParm.t.type == sTEXTFILE)
+        {
+          symbol_t *filePtr;
+          symbol_t *fileTypePtr = NULL;
+          uint16_t fileKind     = sTEXTFILE;
+          uint16_t fileSize     = sCHAR_SIZE;
+
+          if (baseTypePtr->sParm.t.type == sFILE)
+            {
+              /* Save the size and type of the binary file */
+
+              fileTypePtr = baseTypePtr->sParm.t.parent;
+              fileKind    = sFILE;
+              fileSize    = fileTypePtr->sParm.t.asize;
+            }
+
+          /* Add the file to the symbol table */
+
+          filePtr   = pas_AddFile(varName, fileKind, g_dStack, fileSize,
+                                  fileTypePtr);
+          pas_AddFileInitializer(filePtr, false, 0);
+
+          g_dStack += sINT_SIZE;
+          getToken();
           return filePtr;
         }
       else
