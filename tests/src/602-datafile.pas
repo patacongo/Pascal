@@ -1,9 +1,10 @@
 program DataFiles;
 type
-   StudentRecord = Record
-      s_name: String;
-      s_addr: String;
-      s_batchcode: String;
+   StudentRecord =
+   Record
+     s_name: String;
+     s_addr: String;
+     s_batchcode: String;
    end;
 
 var
@@ -13,12 +14,12 @@ var
 begin
    assign(f, 'students.dat');
    reset(f);
-   while not eof(f) do
 
+   while not eof(f) do
    begin
-      read(f,Student);
-      writeln('Name: ',Student.s_name);
-      writeln('Address: ',Student.s_addr);
+      read(f, Student);
+      writeln('Name: ', Student.s_name);
+      writeln('Address: ', Student.s_addr);
       writeln('Batch Code: ', Student.s_batchcode);
    end;
 

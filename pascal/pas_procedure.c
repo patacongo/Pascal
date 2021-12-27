@@ -1165,8 +1165,7 @@ static void readBinary(uint16_t fileSize)
 
       pas_GenerateSimple(opDUP);
       pas_GenerateDataOperation(opPUSH, size);
-      pas_GenerateLevelReference(opLAS, g_tknPtr->sLevel,
-                                 g_tknPtr->sParm.v.offset);
+      pas_GenerateStackReference(opLAS, g_tknPtr);
       pas_GenerateIoOperation(xREAD_BINARY);
     }
 
@@ -1734,8 +1733,7 @@ static void writeBinary(uint16_t fileSize)
 
       pas_GenerateSimple(opDUP);
       pas_GenerateDataOperation(opPUSH, size);
-      pas_GenerateLevelReference(opLAS, g_tknPtr->sLevel,
-                                 g_tknPtr->sParm.v.offset);
+      pas_GenerateStackReference(opLAS, g_tknPtr);
       pas_GenerateIoOperation(xWRITE_BINARY);
     }
 

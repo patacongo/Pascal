@@ -92,6 +92,7 @@ static void      pas_FunctionDeclaration   (void);
 static void      pas_SetTypeSize           (symbol_t *typePtr, bool allocate);
 static symbol_t *pas_TypeIdentifier        (bool allocate);
 static symbol_t *pas_TypeDenoter           (char *typeName, bool allocate);
+static symbol_t *pas_FileTypeDenoter       (void);
 static symbol_t *pas_NewComplexType        (char *typeName);
 static symbol_t *pas_NewOrdinalType        (char *typeName);
 static symbol_t *pas_OrdinalTypeIdentifier (bool allocate);
@@ -312,111 +313,17 @@ static symbol_t *pas_DeclareVar(void)
     }
   else
     {
-      symbol_t *baseTypePtr;
-      symbol_t *nextType;
-
       /* No.. verify that the identifer-list is followed by ':' */
 
       if (g_token != ':') error(eCOLON);
       else getToken();
 
-      /* Let's handle files differently.  There are three possibilities
-       * here for files.
-       *
-       *   FORM: file-variable-name : FILE OF type-name;
-       *   FORM: file-variable-name : TEXFILE;
-       *   FORM: file-variable-name : file-type-name
-       *
-       * Let's handle the first two forms first.
+      /* Let's handle files differently.  There are a few quirks to
+       * address.
        */
 
-      if (g_token == tFILE || g_token == sTEXTFILE)
-        {
-          symbol_t *filePtr;
-          symbol_t *fileTypePtr = NULL;
-          uint16_t fileKind     = sTEXTFILE;
-          uint16_t fileSize     = sCHAR_SIZE;
-
-          if (g_token == tFILE)
-            {
-              getToken();
-
-              /* Make sure that 'file' is followed by 'of' */
-
-              if (g_token != tOF) error(eOF);
-              else getToken();
-
-              /* Make sure that the token following 'of' is a type */
-
-              if (g_token != sTYPE) error(eINVTYPE);
-              else
-                {
-                  /* Save the size and type of the file */
-
-                  fileTypePtr = g_tknPtr;
-                  fileKind    = sFILE;
-                  fileSize    = g_tknPtr->sParm.t.asize;
-                  getToken();
-                }
-            }
-
-          /* Add the file to the symbol table */
-
-          filePtr   = pas_AddFile(varName, fileKind, g_dStack, fileSize,
-                                  fileTypePtr);
-          pas_AddFileInitializer(filePtr, false, 0);
-          g_dStack += sINT_SIZE;
-          return filePtr;
-        }
-
-      /* Get a pointer to the base type symbol (in case it is a defined
-       * type).  Loop until we hit the last type in the chain OR until we
-       * hit a file type (in that case, the last type may be the type of the
-       * binary file, not the type of the file type).
-       */
-
-      baseTypePtr = g_tknPtr;
-      nextType    = g_tknPtr->sParm.t.parent;
-
-      while (nextType != NULL &&
-             baseTypePtr->sKind == sTYPE &&
-             baseTypePtr->sParm.t.type != sFILE &&
-             baseTypePtr->sParm.t.type != sTEXTFILE)
-        {
-          baseTypePtr = nextType;
-          nextType    = baseTypePtr->sParm.t.parent;
-        }
-
-      /* Did we find a typed file? */
-
-      if (baseTypePtr->sParm.t.type == sFILE ||
-          baseTypePtr->sParm.t.type == sTEXTFILE)
-        {
-          symbol_t *filePtr;
-          symbol_t *fileTypePtr = NULL;
-          uint16_t fileKind     = sTEXTFILE;
-          uint16_t fileSize     = sCHAR_SIZE;
-
-          if (baseTypePtr->sParm.t.type == sFILE)
-            {
-              /* Save the size and type of the binary file */
-
-              fileTypePtr = baseTypePtr->sParm.t.parent;
-              fileKind    = sFILE;
-              fileSize    = fileTypePtr->sParm.t.asize;
-            }
-
-          /* Add the file to the symbol table */
-
-          filePtr   = pas_AddFile(varName, fileKind, g_dStack, fileSize,
-                                  fileTypePtr);
-          pas_AddFileInitializer(filePtr, false, 0);
-
-          g_dStack += sINT_SIZE;
-          getToken();
-          return filePtr;
-        }
-      else
+      typePtr = pas_FileTypeDenoter();
+      if (typePtr == NULL)
         {
           /* Process the normal type-denoter */
 
@@ -432,17 +339,21 @@ static symbol_t *pas_DeclareVar(void)
     {
       uint16_t varType = typePtr->sParm.t.type;
 
-      if (typePtr->sKind == sFILE || typePtr->sKind == sTEXTFILE)
+      if (varType == sFILE || varType == sTEXTFILE)
         {
+          symbol_t *filePtr;
+
           /* For the FILE case, typePtr is not a type at all but the pointer
            * to the file variable that was declared from a more nested
            * recusion.  We can use that symbol to clone the one at this
            * nesting level.
            */
 
-          (void)pas_AddFile(varName, typePtr->sKind, g_dStack,
-                            typePtr->sParm.v.xfrUnit,
-                            typePtr->sParm.v.parent);
+          filePtr = pas_AddFile(varName, typePtr->sParm.t.type, g_dStack,
+                                typePtr->sParm.t.asize,
+                                typePtr->sParm.t.parent);
+
+          pas_AddFileInitializer(filePtr, false, 0);
           g_dStack += sINT_SIZE;
         }
       else
@@ -492,7 +403,7 @@ static symbol_t *pas_DeclareVar(void)
            * zero, then it is a candidate to be imported or exported.
            */
 
-          if ((!g_level) && (FP->section == eIsInterfaceSection))
+          if (!g_level && FP->section == eIsInterfaceSection)
             {
               /* Are we importing or exporting the interface?
                *
@@ -616,7 +527,7 @@ static void pas_ProcedureDeclaration(void)
    * should export every procedure declared at level zero.
    */
 
-  if ((g_level == 1) && (FP->kind == eIsUnit))
+  if (g_level == 1 && FP->kind == eIsUnit)
     {
       /* EXPORT the procedure symbol. */
 
@@ -1172,6 +1083,129 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
     }
 
   return typePtr;
+}
+
+/****************************************************************************/
+
+static symbol_t *pas_FileTypeDenoter(void)
+{
+  symbol_t *fileTypePtr = NULL;
+
+  /* There are three possibilities here for files.
+   *
+   *   FORM: file-variable-name : FILE OF type-name;
+   *   FORM: file-variable-name : TEXFILE;
+   *   FORM: file-variable-name : file-type-name
+   *
+   * Let's handle the first two forms first.
+   */
+
+  if (g_token == tFILE || g_token == sTEXTFILE)
+    {
+      /* TEXTFILE is a pre-defined type */
+
+      if (g_token == sTEXTFILE)
+        {
+          fileTypePtr = g_tknPtr;
+          getToken();
+        }
+
+      /* There are many different binary files, differing in the size of
+       * transfer unit.
+       */
+
+      else /* if (g_token == tFILE) */
+        {
+          getToken();
+
+          /* Make sure that 'file' is followed by 'of' */
+
+          if (g_token != tOF) error(eOF);
+          else getToken();
+
+          /* Make sure that the token following 'of' is a type */
+
+          if (g_token != sTYPE) error(eINVTYPE);
+          else
+            {
+              symbol_t *parentTypePtr = g_tknPtr;
+
+              /* Create an un-named type for the file */
+
+              fileTypePtr =
+                pas_AddTypeDefine("", sFILE, parentTypePtr->sParm.t.asize,
+                                  parentTypePtr, NULL);
+              if (fileTypePtr != NULL)
+                {
+                  fileTypePtr->sParm.t.subType  = parentTypePtr->sParm.t.type;
+                  fileTypePtr->sParm.t.minValue = parentTypePtr->sParm.t.minValue;
+                  fileTypePtr->sParm.t.maxValue = parentTypePtr->sParm.t.maxValue;
+                }
+
+              getToken();
+            }
+        }
+    }
+
+  /* Now we expect the beginning of some kind of type */
+
+  if (g_tknPtr != NULL)
+    {
+      symbol_t *baseTypePtr;
+      symbol_t *nextType;
+
+      /* Get a pointer to the base type symbol (in case it is a defined
+       * type).  Loop until we hit the last type in the chain OR until we
+       * hit a file type (in that case, the last type may be the type of the
+       * binary file, not the type of the file type).
+       */
+
+      baseTypePtr = g_tknPtr;
+      nextType    = g_tknPtr->sParm.t.parent;
+
+      while (nextType != NULL &&
+             baseTypePtr->sKind == sTYPE &&
+             baseTypePtr->sParm.t.type != sFILE &&
+             baseTypePtr->sParm.t.type != sTEXTFILE)
+        {
+          baseTypePtr = nextType;
+          nextType    = baseTypePtr->sParm.t.parent;
+        }
+
+      /* Did we find a typed file? */
+
+      if (baseTypePtr->sParm.t.type == sFILE ||
+          baseTypePtr->sParm.t.type == sTEXTFILE)
+        {
+          /* TEXTFILE is a pre-defined type and has no parent */
+
+          if (baseTypePtr->sParm.t.type == sTEXTFILE)
+            {
+              fileTypePtr = baseTypePtr;
+              getToken();
+            }
+          else /* if (baseTypePtr->sParm.t.type == sFILE) */
+            {
+              symbol_t *parentTypePtr = baseTypePtr->sParm.t.parent;
+
+              /* Create an un-named type for the file */
+
+              fileTypePtr =
+                pas_AddTypeDefine("", sFILE, parentTypePtr->sParm.t.asize,
+                                  parentTypePtr, NULL);
+              if (fileTypePtr != NULL)
+                {
+                  fileTypePtr->sParm.t.subType  = parentTypePtr->sParm.t.type;
+                  fileTypePtr->sParm.t.minValue = parentTypePtr->sParm.t.minValue;
+                  fileTypePtr->sParm.t.maxValue = parentTypePtr->sParm.t.maxValue;
+                }
+
+              getToken();
+            }
+        }
+    }
+
+  return fileTypePtr;
 }
 
 /****************************************************************************/
@@ -2208,7 +2242,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
        */
 
       for (objectIndex = 1;
-           objectIndex < nObjects;
+           objectIndex <= nObjects;
            objectIndex++)
         {
           symbol_t *recordObjectPtr = &typePtr[objectIndex];

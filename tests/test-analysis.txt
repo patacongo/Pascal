@@ -156,23 +156,12 @@ Analysis:
 Not yet analyzed.  Perhaps an issue related to string types.
 
 ########src/604-addfiledata.pas########
-Compiles fine and almost runs.  I am seeing errors at run-time in this loop:
-
-   while not eof(x) do
-
-   begin
-      read(x, d);
-      sum := sum + d;
-   end;
-
-where x is a parameter VAR x : raindata.
-
-It appears that the read (xREAD_BINARY) clobbers x.  Apparently x and d
-overlap, x was at 450 and d was at 44e but the sizeof(d) was 8.
-
 ########src/605-subprogram.pas########
-Compiles fine and almost runs.  I am seeing the same errors at run-time as
-with src/604-addfiledata.pas
+
+Both of these examples compile fine and appear to run, but give the wrong
+final answer:
+
+Average Rainfall:  3.23500072
 
 ########sinecos.pas########
 ########unit-cosine.pas########
