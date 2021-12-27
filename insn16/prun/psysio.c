@@ -497,7 +497,8 @@ static void  pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
       fprintf(stderr, g_badFileNumber, "pexec_WriteBinary", fileNumber);
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_WRITE)
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       fprintf(stderr, g_notOpenForWrite, "pexec_WriteBinary", fileNumber);
     }
@@ -520,7 +521,8 @@ static void pexec_WriteInteger(uint16_t fileNumber, int16_t value)
       fprintf(stderr, g_badFileNumber, "pexec_WriteInteger", fileNumber);
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_WRITE)
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       fprintf(stderr, g_notOpenForWrite, "pexec_WriteInteger", fileNumber);
     }
@@ -542,7 +544,8 @@ static void pexec_WriteChar(uint16_t fileNumber, uint8_t value)
       fprintf(stderr, g_badFileNumber, "pexec_WriteChar", fileNumber);
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_WRITE)
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       fprintf(stderr, g_notOpenForWrite, "pexec_WriteChar", fileNumber);
     }
@@ -565,7 +568,8 @@ static void pexec_WriteReal(uint16_t fileNumber, double value)
       fprintf(stderr, g_badFileNumber, "pexec_WriteReal", fileNumber);
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_WRITE)
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       fprintf(stderr, g_notOpenForWrite, "pexec_WriteReal", fileNumber);
     }
@@ -588,7 +592,8 @@ static void pexec_WriteString(uint16_t fileNumber, const char *strPtr,
       fprintf(stderr, g_badFileNumber, "pexec_WriteString", fileNumber);
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_WRITE)
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       fprintf(stderr, g_notOpenForWrite, "pexec_WriteString", fileNumber);
     }

@@ -99,7 +99,8 @@ static symbol_t *pas_OrdinalTypeIdentifier (bool allocate);
 static symbol_t *pas_GetArrayIndexType     (void);
 static symbol_t *pas_GetArrayBaseType      (symbol_t *indexTypePtr);
 static symbol_t *pas_DeclareRecordType     (char *recordName);
-static symbol_t *pas_DeclareField          (symbol_t *recordPtr);
+static symbol_t *pas_DeclareField          (symbol_t *recordPtr,
+                                            symbol_t *lastField);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
 static void      pas_AddRecordInitializers (symbol_t *varPtr,
                                             symbol_t *typePtr);
@@ -1713,6 +1714,7 @@ static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
 static symbol_t *pas_DeclareRecordType(char *recordName)
 {
   symbol_t *recordPtr;
+  symbol_t *fieldPtr;
   int16_t recordOffset;
   int recordCount;
   int symbolIndex;
@@ -1737,8 +1739,11 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
    * FORM: fixed-part = record-section { ';' record-section }
    * FORM: record-section = identifier-list ':' type-denoter
    * FORM: identifier-list = identifier { ',' identifier }
+   *
+   * The first RECORD OBJECT is guaranteed to for the RECORD type
    */
 
+  fieldPtr = NULL;
   for (; ; )
     {
       /* Terminate parsing of the fixed-part when we encounter
@@ -1753,7 +1758,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
        * of the next fixed field.
        */
 
-      (void)pas_DeclareField(recordPtr);
+      fieldPtr = pas_DeclareField(recordPtr, fieldPtr);
 
       /* If the field declaration terminates with a semicolon, then
        * we expect to see another <fixed part> declaration in the
@@ -1791,21 +1796,22 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
    * field within the RECORD.
    */
 
-  for (recordOffset = 0, symbolIndex = 1, recordCount = 0;
-       recordCount < recordPtr->sParm.t.maxValue;
-       symbolIndex++)
+  fieldPtr = &recordPtr[1];
+  for (recordOffset = 0, recordCount = 0;
+       recordCount < recordPtr->sParm.t.maxValue && fieldPtr != NULL;
+       recordCount++, fieldPtr = fieldPtr->sParm.r.next)
     {
       /* We know that 'maxValue' sRECORD_OBJECT symbols follow the sRECORD
        * type declaration.  However, these may not be sequential due to the
        * possible declaration of sTYPEs associated with each field.
        */
 
-      if (recordPtr[symbolIndex].sKind == sRECORD_OBJECT)
+      if (fieldPtr->sKind == sRECORD_OBJECT)
         {
           /* Align the recordOffset (if necessary) */
 
           if (!INT_ISALIGNED(recordOffset) &&
-              pas_IntAlignRequired(recordPtr[symbolIndex].sParm.r.parent))
+              pas_IntAlignRequired(fieldPtr->sParm.r.parent))
             {
               recordOffset = INT_ALIGNUP(recordOffset);
             }
@@ -1814,9 +1820,8 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
            * offset to the next field (if there is one)
            */
 
-          recordPtr[symbolIndex].sParm.r.offset = recordOffset;
-          recordOffset += recordPtr[symbolIndex].sParm.r.size;
-          recordCount++;
+          fieldPtr->sParm.r.offset = recordOffset;
+          recordOffset            += fieldPtr->sParm.r.size;
         }
     }
 
@@ -1862,15 +1867,13 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
           /* Get the ordinal-type-identifier */
 
-          typePtr = pas_OrdinalTypeIdentifier(1);
+          typePtr  = pas_OrdinalTypeIdentifier(1);
           if (!typePtr) error(eINVTYPE);
           else
             {
-              symbol_t *fieldPtr;
-
               /* Declare a <field> with this <identifier> as its name */
 
-              fieldPtr = pas_AddField(fieldName, recordPtr);
+              fieldPtr = pas_AddField(fieldName, recordPtr, fieldPtr);
 
               /* Increment the number of fields in the record */
 
@@ -1900,7 +1903,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                */
 
               fieldPtr->sParm.r.offset = recordOffset;
-              recordOffset += recordPtr[symbolIndex].sParm.r.size;
+              recordOffset += fieldPtr->sParm.r.size;
             }
         }
 
@@ -1985,7 +1988,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                    * beginning of the next variablefield.
                    */
 
-                  (void)pas_DeclareField(recordPtr);
+                  fieldPtr = pas_DeclareField(recordPtr, fieldPtr);
 
                   /* If the field declaration terminates with a semicolon,
                    * then we expect to see another <variable part>
@@ -2017,6 +2020,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                * field within the RECORD.
                */
 
+              fieldPtr = &recordPtr[1];
               for (recordOffset = variantOffset;
                    recordCount < recordPtr->sParm.t.maxValue;
                    symbolIndex++)
@@ -2027,25 +2031,27 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                    * associated with each field.
                    */
 
-                  if (recordPtr[symbolIndex].sKind == sRECORD_OBJECT)
+                  if (fieldPtr->sKind == sRECORD_OBJECT)
                     {
-                      /* Align the recordOffset (if necessary) */
-
-                      if (!INT_ISALIGNED(recordOffset) &&
-                          pas_IntAlignRequired(recordPtr[symbolIndex].sParm.r.parent))
-                        {
-                          recordOffset = INT_ALIGNUP(recordOffset);
-                        }
-
-                      /* Save the offset associated with this field, and
-                       * determine the offset to the next field (if there
-                       * is one)
-                       */
-
-                      recordPtr[symbolIndex].sParm.r.offset = recordOffset;
-                      recordOffset += recordPtr[symbolIndex].sParm.r.size;
-                      recordCount++;
+                      error(eHUH);  /* RECORD OBJECT is not where it should be */
                     }
+
+                  /* Align the recordOffset (if necessary) */
+
+                  if (!INT_ISALIGNED(recordOffset) &&
+                      pas_IntAlignRequired(fieldPtr->sParm.r.parent))
+                    {
+                      recordOffset = INT_ALIGNUP(recordOffset);
+                    }
+
+                  /* Save the offset associated with this field, and
+                   * determine the offset to the next field (if there
+                   * is one)
+                   */
+
+                  fieldPtr->sParm.r.offset = recordOffset;
+                  recordOffset            += fieldPtr->sParm.r.size;
+                  recordCount++;
                 }
 
               /* Check if this is the largest variant that we have found
@@ -2053,7 +2059,9 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                */
 
               if (recordOffset > maxRecordSize)
-                maxRecordSize = recordOffset;
+                {
+                  maxRecordSize = recordOffset;
+                }
             }
 
           /* Verify that the <field list> is enclosed in parentheses */
@@ -2085,7 +2093,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
 /****************************************************************************/
 
-static symbol_t *pas_DeclareField(symbol_t *recordPtr)
+static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
 {
   symbol_t *fieldPtr = NULL;
   symbol_t *typePtr;
@@ -2102,7 +2110,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr)
     {
       /* Declare a <field> with this <identifier> as its name */
 
-      fieldPtr = pas_AddField(g_tokenString, recordPtr);
+      fieldPtr = pas_AddField(g_tokenString, recordPtr, lastField);
       getToken();
 
       /* Check for multiple fields of this <type> */
@@ -2110,7 +2118,11 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr)
       if (g_token == ',')
         {
           getToken();
-          typePtr = pas_DeclareField(recordPtr);
+          fieldPtr = pas_DeclareField(recordPtr, fieldPtr);
+          if (fieldPtr != NULL)
+            {
+              typePtr = fieldPtr->sParm.r.parent;
+            }
         }
       else
         {
@@ -2123,7 +2135,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr)
         }
 
       recordPtr->sParm.t.maxValue++;
-      if (typePtr)
+      if (typePtr != NULL)
         {
           /* Copy the size of field from the sTYPE entry into the <field>
            * type entry.  NOTE:  This element is not essential since it
@@ -2138,7 +2150,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr)
         }
     }
 
-  return typePtr;
+  return fieldPtr;
 }
 
 /****************************************************************************/
@@ -2232,6 +2244,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
   else
     {
+      symbol_t *recordObjectPtr;
       int nObjects = recordTypePtr->sParm.t.maxValue;
       int objectIndex;
 
@@ -2239,13 +2252,17 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
        * RECORD OBJECT symbols.  The number of following RECORD
        * OBJECT symbols is given by the maxValue field of the
        * RECORD type entry.
+       *
+       * RECORD OBJECTS may not be contiguous but may be interspersed
+       * with spurious (un-named) type symbols.  The first RECORD
+       * OBJECT symbol is, however, guaranteed to immediately follow
+       * the RECORD type.
        */
 
-      for (objectIndex = 1;
-           objectIndex <= nObjects;
-           objectIndex++)
+      for (objectIndex = 1, recordObjectPtr = &typePtr[1];
+           objectIndex <= nObjects && recordObjectPtr != NULL;
+           objectIndex++, recordObjectPtr = recordObjectPtr->sParm.r.next)
         {
-          symbol_t *recordObjectPtr = &typePtr[objectIndex];
           symbol_t *parentTypePtr;
 
           if (recordObjectPtr->sKind != sRECORD_OBJECT)

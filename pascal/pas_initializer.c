@@ -219,7 +219,7 @@ void pas_Initialization(void)
             {
               symbol_t *recordPtr     = varPtr->sParm.r.record;
               symbol_t *recordTypePtr = varPtr->sParm.r.parent;
-              int offset = recordPtr->sParm.r.offset;
+              int offset              = recordPtr->sParm.r.offset;
 
               /* Check if the field is a string */
 

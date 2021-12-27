@@ -1774,6 +1774,7 @@ static void pas_ForStatement(void)
 }
 
 /***********************************************************************/
+
 static void pas_WithStatement(void)
 {
    with_t saveWithRecord;

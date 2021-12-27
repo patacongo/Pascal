@@ -167,7 +167,6 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"SQR",            tSTDFUNC,        txSQR},        /* (2) */
   {"SQRT",           tSTDFUNC,        txSQRT},       /* (2) */
   {"SUCC",           tSTDFUNC,        txSUCC},       /* (2) */
-  {"TEXTFILE",       tTEXTFILE,       txNONE},       /* (1) */
   {"THEN",           tTHEN,           txNONE},       /* (1) */
   {"TO",             tTO,             txNONE},       /* (1) */
   {"TRUNC",          tSTDFUNC,        txTRUNC},      /* (2) */
@@ -512,7 +511,7 @@ symbol_t *pas_AddLabel(char *name, uint16_t label)
 
 /****************************************************************************/
 
-symbol_t *pas_AddField(char *name, symbol_t *record)
+symbol_t *pas_AddField(char *name, symbol_t *record, symbol_t *lastField)
 {
   symbol_t *fieldPtr;
 
@@ -526,7 +525,14 @@ symbol_t *pas_AddField(char *name, symbol_t *record)
       /* Add the field to the symbol table */
 
       fieldPtr->sParm.r.record = record;
-     }
+
+      /* Link the previous field to this one */
+
+      if (lastField != NULL)
+        {
+          lastField->sParm.r.next = fieldPtr;
+        }
+    }
 
   /* Return a pointer to the new variable symbol */
 
@@ -750,11 +756,12 @@ void pas_DumpTables(void)
         case sRECORD_OBJECT :
           fprintf(g_lstFile,
                   "offset=%" PRId32 " size=%" PRId32 " record=[%p] "
-                  "parent=[%p]\n",
+                  "parent=[%p] next=[%p]\n",
                   g_symbolTable[i].sParm.r.offset,
                   g_symbolTable[i].sParm.r.size,
                   g_symbolTable[i].sParm.r.record,
-                  g_symbolTable[i].sParm.r.parent);
+                  g_symbolTable[i].sParm.r.parent,
+                  g_symbolTable[i].sParm.r.next);
           break;
 
           /* Constant strings */

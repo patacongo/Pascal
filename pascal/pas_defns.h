@@ -208,6 +208,7 @@ struct symRecord_s         /* for sKind == sRECORD_OBJECT */
 
   struct symbol_s *record; /* pointer to parent sRECORD type */
   struct symbol_s *parent; /* pointer to parent field type */
+  struct symbol_s *next;   /* pointer to next sRECORD_OBJECT */
 };
 typedef struct symRecord_s symRecord_t;
 
