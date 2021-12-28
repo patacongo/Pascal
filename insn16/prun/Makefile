@@ -69,7 +69,7 @@ all: prun
 .PHONY: all prun check_libs clean
 
 $(DEPS): %.d: %.c
-	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
+	$(CC) $(CFLAGS) -MM $< -MF $@
 
 $(OBJS): %.o: %.c
 	@$(CC) -c $(CFLAGS) $< -o $@
