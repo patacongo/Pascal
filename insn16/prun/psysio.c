@@ -68,6 +68,7 @@ struct pexecFileTable_s
   char fileName[MAX_FILE_NAME];
   bool inUse;
   bool text;
+  bool eoln;
   uint16_t recordSize;
   int16_t eof;
   FILE *stream;
@@ -82,29 +83,33 @@ typedef struct pexecFileTable_s pexecFileTable_t;
 
 static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
 static void     pexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
+static void     pexec_CheckEoln(uint16_t fileNumber, char *buffer);
 static ustack_t pexec_AllocateFile(void);
-static void     pexec_FreeFile(uint16_t fileNumber);
-static void     pexec_AssignFile(uint16_t fileNumber, bool text,
+static int      pexec_FreeFile(uint16_t fileNumber);
+static int      pexec_AssignFile(uint16_t fileNumber, bool text,
                                  const char *fileName, uint16_t size);
-static void     pexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
-static void     pexec_CloseFile(uint16_t fileNumber);
-static void     pexec_RecordSize(uint16_t fileNumber, uint16_t size);
-static void     pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest,
+static int      pexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
+static int      pexec_CloseFile(uint16_t fileNumber);
+static int      pexec_RecordSize(uint16_t fileNumber, uint16_t size);
+static int      pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest,
                                  uint16_t size);
-static void     pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
-static void     pexec_ReadChar(uint16_t fileNumber, uint8_t *dest);
-static void     pexec_ReadString(uint16_t fileNumber, char *strPtr,
-                                 uint16_t);
-static void     pexec_ReadReal(uint16_t fileNumber, uint16_t *dest);
-static void     pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
+static int      pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
+static int      pexec_ReadChar(uint16_t fileNumber, uint8_t *dest);
+static int      pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
+                                 uint16_t *stringVarPtr);
+static int      pexec_ReadBinString(uint16_t fileNumber, char *arrayPtr,
+                                    uint16_t arraySize);
+static int      pexec_ReadReal(uint16_t fileNumber, uint16_t *dest);
+static int      pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
                                  uint16_t size);
-static void     pexec_WriteInteger(uint16_t fileNumber, int16_t value);
-static void     pexec_WriteChar(uint16_t fileNumber, uint8_t value);
-static void     pexec_WriteReal(uint16_t fileNumber, double value);
-static void     pexec_WriteString(uint16_t fileNumber,
+static int      pexec_WriteInteger(uint16_t fileNumber, int16_t value);
+static int      pexec_WriteChar(uint16_t fileNumber, uint8_t value);
+static int      pexec_WriteReal(uint16_t fileNumber, double value);
+static int      pexec_WriteString(uint16_t fileNumber,
                                   const char *string,
                                   uint16_t size);
-static uint16_t pexec_Eof(uint16_t fileNumber);
+static int      pexec_Eof(struct pexec_s *st, uint16_t fileNumber);
+static int      pexec_Eoln(struct pexec_s *st, uint16_t fileNumber);
 
 /****************************************************************************
  * Private Data
@@ -115,21 +120,6 @@ static uint16_t pexec_Eof(uint16_t fileNumber);
  */
 
 static pexecFileTable_t g_fileTable[MAX_OPEN_FILES];
-
-/* Common error message formats */
-
-static const char *g_badFileNumber   = "ERROR: %s: bad file number: %u\n";
-static const char *g_NotInUse        = "ERROR: %s: File not in use: %u\n";
-static const char *g_NoFreeFile      = "ERROR: %s: No free file: %u\n";
-static const char *g_fileAlreadyOpen = "ERROR: %s: File already open: %u\n";
-static const char *g_fileNotOpen     = "ERROR: %s: File not open: %u\n";
-static const char *g_badOpenMode     = "ERROR: %s: Bad open mode %d: %u\n";
-static const char *g_openFailed      = "ERROR: %s: Bad open mode,\"%s\": %u\n";
-static const char *g_integerOverFlow = "ERROR: %s: Integer overflow: %u\n";
-static const char *g_notOpenForRead  = "ERROR: %s: Not open for reading: %u\n";
-static const char *g_readFailed      = "ERROR: %s: Read failed, \"%s\": %u\n";
-static const char *g_notOpenForWrite = "ERROR: %s: Not open for writing: %u\n";
-static const char *g_writeFailed     = "ERROR: %s: Write failed, \"%s\": %u\n";
 
 /* Working buffer */
 
@@ -160,8 +150,8 @@ static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr)
 
       if (value > UINT16_MAX)
         {
-          fprintf(stderr, g_integerOverFlow, "pexec_ConvertInteger",
-                  fileNumber);
+          /* errorCode = eINTEGEROVERFLOW; */
+          value = UINT16_MAX;
           break;
         }
     }
@@ -231,6 +221,29 @@ static void pexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
   *dest   = result.hw[3];
 }
 
+static void pexec_CheckEoln(uint16_t fileNumber, char *buffer)
+{
+  bool eoln = false;
+  int len;
+
+  /* fgets will always consume the terminating newline character unless the
+   * line is only that the provided read buffer.  The newline character
+   * should be the last character read.
+   */
+
+  len = strlen(buffer) - 1;
+  if (len > 0)
+    {
+      if (buffer[len] == '\n')
+        {
+          buffer[len] = '\0';
+          eoln = true;
+        }
+    }
+
+  g_fileTable[fileNumber].eoln = eoln;
+}
+
 static ustack_t pexec_AllocateFile(void)
 {
   uint16_t fileNumber;
@@ -244,19 +257,20 @@ static ustack_t pexec_AllocateFile(void)
         }
     }
 
-  fprintf(stderr, g_NoFreeFile, "pexec_AllocateFile", fileNumber);
   return fileNumber;  /* Return the out-of-range file number */
 }
 
-static void pexec_FreeFile(uint16_t fileNumber)
+static int pexec_FreeFile(uint16_t fileNumber)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_FreeFile", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (!g_fileTable[fileNumber].inUse)
     {
-      fprintf(stderr, g_NotInUse, "pexec_FreeFile", fileNumber);
+      errorCode = eFILENOTINUSE;
     }
   else
     {
@@ -271,33 +285,41 @@ static void pexec_FreeFile(uint16_t fileNumber)
 
       memset(&g_fileTable[fileNumber], 0, sizeof(pexecFileTable_t));
     }
+
+  return errorCode;
 }
 
-static void pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
+static int pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
                              uint16_t size)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_AssignFile", fileNumber);
+      errorCode = eBADFILE;
     }
   else
     {
       strncpy(g_fileTable[fileNumber].fileName, fileName, MAX_FILE_NAME);
       g_fileTable[fileNumber].text = text;
     }
+
+  return errorCode;
 }
 
-static void pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
+static int pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
 {
+  int errorCode = eNOERROR;
+
   const char *modeString;
 
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_OpenFile", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream != NULL)
     {
-      fprintf(stderr, g_fileAlreadyOpen, "pexec_OpenFile", fileNumber);
+      errorCode = eFILEALREADYOPEN;
     }
   else
     {
@@ -316,317 +338,439 @@ static void pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
             break;
 
           default :
-            fprintf(stderr, g_badOpenMode, "pexec_OpenFile", (int)openMode,
-                    fileNumber);
-            return;
+            return eBADOPENMODE;
         }
 
       g_fileTable[fileNumber].stream = fopen(g_fileTable[fileNumber].fileName,
                                              modeString);
       if (g_fileTable[fileNumber].stream == NULL)
         {
-          fprintf(stderr, g_openFailed, "pexec_OpenFile",
-                  strerror(errno), fileNumber);
+          errorCode = eOPENFAILED;
         }
       else
         {
           g_fileTable[fileNumber].openMode = openMode;
         }
     }
+
+  return errorCode;
 }
 
-static void pexec_CloseFile(uint16_t fileNumber)
+static int pexec_CloseFile(uint16_t fileNumber)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_CloseFile", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream == NULL)
     {
-      fprintf(stderr, g_fileNotOpen, "pexec_CloseFile", fileNumber);
+      errorCode = eFILENOTOPEN;
     }
   else
     {
       (void)fclose(g_fileTable[fileNumber].stream);
       g_fileTable[fileNumber].stream = NULL;
     }
+
+  return errorCode;
 }
 
-static void pexec_RecordSize(uint16_t fileNumber, uint16_t size)
+static int pexec_RecordSize(uint16_t fileNumber, uint16_t size)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_RecordSize", fileNumber);
+      errorCode = eBADFILE;
     }
   else
     {
       g_fileTable[fileNumber].recordSize = size;
     }
+
+  return errorCode;
 }
 
-static void pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
+static int pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_ReadBinary", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            g_fileTable[fileNumber].openMode != eOPEN_READ)
     {
-      fprintf(stderr, g_notOpenForRead, "pexec_ReadBinary", fileNumber);
+      errorCode = eNOTOPENFORREAD;
     }
   else
     {
       size_t nitems = fread(dest, 1, size, g_fileTable[fileNumber].stream);
       if (nitems < size && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_readFailed, "pexec_ReadBinary", strerror(errno),
-                  fileNumber);
+          errorCode = eREADFAILED;
           clearerr(g_fileTable[fileNumber].stream);
         }
     }
+
+  return errorCode;
 }
 
-static void pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
+static int pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_ReadInteger", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            g_fileTable[fileNumber].openMode != eOPEN_READ)
     {
-      fprintf(stderr, g_notOpenForRead, "pexec_ReadInteger", fileNumber);
+      errorCode = eNOTOPENFORREAD;
     }
   else
     {
       char *ptr = fgets((char *)g_ioLine, LINE_SIZE,
                          g_fileTable[fileNumber].stream);
+
       if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_readFailed, "pexec_ReadInteger", strerror(errno),
-                  fileNumber);
+          errorCode = eREADFAILED;
           clearerr(g_fileTable[fileNumber].stream);
         }
-
-      *dest = pexec_ConvertInteger(fileNumber, g_ioLine);
+      else
+        {
+          pexec_CheckEoln(fileNumber, (char *)g_ioLine);
+          *dest = pexec_ConvertInteger(fileNumber, g_ioLine);
+        }
     }
+
+  return errorCode;
 }
 
-static void pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
+static int pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_ReadChar", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            g_fileTable[fileNumber].openMode != eOPEN_READ)
     {
-      fprintf(stderr, g_notOpenForRead, "pexec_ReadChar", fileNumber);
+      errorCode = eNOTOPENFORREAD;
     }
   else
     {
       char *ptr = fgets((char *)g_ioLine, LINE_SIZE,
                         g_fileTable[fileNumber].stream);
+
       if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_readFailed, "pexec_ReadChar", strerror(errno),
-                  fileNumber);
+          errorCode = eREADFAILED;
           clearerr(g_fileTable[fileNumber].stream);
         }
-
-      *dest = g_ioLine[0];
+      else
+        {
+          pexec_CheckEoln(fileNumber, (char *)g_ioLine);
+          *dest = g_ioLine[0];
+        }
     }
+
+  return errorCode;
 }
 
-static void pexec_ReadString(uint16_t fileNumber, char *strPtr,
-                             uint16_t size)
+static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
+                            uint16_t *stringVarPtr)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_ReadString", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            g_fileTable[fileNumber].openMode != eOPEN_READ)
     {
-      fprintf(stderr, g_notOpenForRead, "pexec_ReadString", fileNumber);
+      errorCode = eNOTOPENFORREAD;
     }
   else
     {
-      char *ptr = fgets(strPtr, size, g_fileTable[fileNumber].stream);
+      uint16_t stringBufferStack;
+      char    *stringBufferPtr;
+      char    *ptr;
+
+      stringBufferStack = stringVarPtr[sSTRING_DATA_OFFSET / sINT_SIZE];
+      stringBufferPtr   = (char *)&st->dstack.b[stringBufferStack];
+      ptr               = fgets(stringBufferPtr, st->strsize,
+                                g_fileTable[fileNumber].stream);
+
       if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_readFailed, "pexec_ReadString", strerror(errno),
-                  fileNumber);
+          errorCode = eREADFAILED;
           clearerr(g_fileTable[fileNumber].stream);
         }
+      else
+        {
+          pexec_CheckEoln(fileNumber, stringBufferPtr);
+          stringVarPtr[sSTRING_SIZE_OFFSET / sINT_SIZE] =
+            strlen(stringBufferPtr);
+        }
     }
+
+  return errorCode;
 }
 
-static void pexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
+static int pexec_ReadBinString(uint16_t fileNumber, char *arrayPtr,
+                               uint16_t arraySize)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_ReadReal", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            g_fileTable[fileNumber].openMode != eOPEN_READ)
     {
-      fprintf(stderr, g_notOpenForRead, "pexec_ReadReal", fileNumber);
+      errorCode = eNOTOPENFORREAD;
+    }
+  else
+    {
+      char *ptr = fgets(arrayPtr, arraySize,
+                        g_fileTable[fileNumber].stream);
+
+      if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
+        {
+          errorCode = eREADFAILED;
+          clearerr(g_fileTable[fileNumber].stream);
+        }
+      else
+        {
+          pexec_CheckEoln(fileNumber, arrayPtr);
+        }
+    }
+
+  return errorCode;
+}
+
+static int pexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
+{
+  int errorCode = eNOERROR;
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream    == NULL ||
+           g_fileTable[fileNumber].openMode != eOPEN_READ)
+    {
+      errorCode = eNOTOPENFORREAD;
     }
   else
     {
       char *ptr = fgets((char*)g_ioLine, LINE_SIZE,
                         g_fileTable[fileNumber].stream);
+
       if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_readFailed, "pexec_ReadReal", strerror(errno),
-                  fileNumber);
+          errorCode = eREADFAILED;
           clearerr(g_fileTable[fileNumber].stream);
         }
-
-      pexec_ConvertReal(dest, g_ioLine);
+      else
+        {
+          pexec_CheckEoln(fileNumber, (char *)g_ioLine);
+          pexec_ConvertReal(dest, g_ioLine);
+        }
     }
+
+  return errorCode;
 }
 
-static void  pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
-                               uint16_t size)
+static int pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
+                             uint16_t size)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_WriteBinary", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
             g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
-      fprintf(stderr, g_notOpenForWrite, "pexec_WriteBinary", fileNumber);
+      errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       ssize_t nitems = fwrite(src, 1, size, g_fileTable[fileNumber].stream);
       if (nitems < 0 && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_readFailed, "pexec_WriteBinary", strerror(errno),
-                  fileNumber);
+          errorCode = eWRITEFAILED;
           clearerr(g_fileTable[fileNumber].stream);
         }
     }
+
+  return errorCode;
 }
 
-static void pexec_WriteInteger(uint16_t fileNumber, int16_t value)
+static int pexec_WriteInteger(uint16_t fileNumber, int16_t value)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_WriteInteger", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
             g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
-      fprintf(stderr, g_notOpenForWrite, "pexec_WriteInteger", fileNumber);
+      errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       int nbytes = fprintf(g_fileTable[fileNumber].stream, "%d", value);
       if (nbytes < 0)
         {
-          fprintf(stderr, g_writeFailed, "pexec_WriteInteger", strerror(errno),
-                  fileNumber);
+          errorCode = eWRITEFAILED;
         }
     }
+
+  return errorCode;
 }
 
-static void pexec_WriteChar(uint16_t fileNumber, uint8_t value)
+static int pexec_WriteChar(uint16_t fileNumber, uint8_t value)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_WriteChar", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
             g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
-      fprintf(stderr, g_notOpenForWrite, "pexec_WriteChar", fileNumber);
+      errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       int result = fputc(value, g_fileTable[fileNumber].stream);
       if (result == EOF && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_writeFailed, "pexec_WriteChar", strerror(errno),
-                  fileNumber);
+          errorCode = eWRITEFAILED;
           clearerr(g_fileTable[fileNumber].stream);
         }
     }
+
+  return errorCode;
 }
 
-static void pexec_WriteReal(uint16_t fileNumber, double value)
+static int pexec_WriteReal(uint16_t fileNumber, double value)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_WriteReal", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
             g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
-      fprintf(stderr, g_notOpenForWrite, "pexec_WriteReal", fileNumber);
+      errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       int nbytes = fprintf(g_fileTable[fileNumber].stream, "%f", value);
       if (nbytes < 0)
         {
-          fprintf(stderr, g_writeFailed, "pexec_WriteReal", strerror(errno),
-                  fileNumber);
+          errorCode = eWRITEFAILED;
         }
     }
+
+  return errorCode;
 }
 
-static void pexec_WriteString(uint16_t fileNumber, const char *strPtr,
-                              uint16_t size)
+static int pexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
+                             uint16_t size)
 {
+  int errorCode = eNOERROR;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-      fprintf(stderr, g_badFileNumber, "pexec_WriteString", fileNumber);
+      errorCode = eBADFILE;
     }
   else if (g_fileTable[fileNumber].stream    == NULL ||
            (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
             g_fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
-      fprintf(stderr, g_notOpenForWrite, "pexec_WriteString", fileNumber);
+      errorCode = eNOTOPENFORWRITE;
     }
   else
     {
-      ssize_t nitems = fwrite(strPtr, 1, size,
+      ssize_t nitems = fwrite(stringDataPtr, 1, size,
                               g_fileTable[fileNumber].stream);
       if (nitems < 0 && ferror(g_fileTable[fileNumber].stream))
         {
-          fprintf(stderr, g_readFailed, "pexec_WriteString", strerror(errno),
-                  fileNumber);
+          errorCode = eREADFAILED;
         }
     }
+
+  return errorCode;
 }
 
-static uint16_t pexec_Eof(uint16_t fileNumber)
+static int pexec_Eof(struct pexec_s *st, uint16_t fileNumber)
 {
+  int errorCode = eNOERROR;
+  uint16_t eof;
+
   if (fileNumber >= MAX_OPEN_FILES)
     {
-       fprintf(stderr, g_badFileNumber, "pexec_Eof", fileNumber);
-       return PASCAL_FALSE;
+      errorCode = eBADFILE;
+      eof       = PASCAL_TRUE;
     }
   else
     {
       if (feof(g_fileTable[fileNumber].stream))
         {
-          return PASCAL_TRUE;
+          eof = PASCAL_TRUE;
         }
       else
         {
-          return PASCAL_FALSE;
+          eof = PASCAL_FALSE;
         }
     }
+
+  PUSH(st, eof);
+  return errorCode;
+}
+
+static int pexec_Eoln(struct pexec_s *st, uint16_t fileNumber)
+{
+  int errorCode = eNOERROR;
+  uint16_t eoln;
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+      eoln      = PASCAL_TRUE;
+    }
+  else
+    {
+      eoln      = g_fileTable[fileNumber].eoln
+                  ? PASCAL_TRUE : PASCAL_FALSE;
+    }
+
+  PUSH(st, eoln);
+  return errorCode;
 }
 
 /****************************************************************************
@@ -674,40 +818,48 @@ void pexec_InitializeFile(void)
  *
  ****************************************************************************/
 
-uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
+int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 {
   fparg_t  fp;
   uint16_t fileNumber;
   uint16_t size;
   uint16_t address;
   uint16_t value;
+  int      errorCode = eNOERROR;
 
   switch (subfunc)
     {
     /* ALLOCFILE: No stack arguments */
 
     case xALLOCFILE :
-       PUSH(st, pexec_AllocateFile());
+       fileNumber = pexec_AllocateFile();
+       if (fileNumber >= MAX_OPEN_FILES)
+         {
+           errorCode = eTOOMANYFILES;
+         }
+
+       PUSH(st, fileNumber);
        break;
 
     /* FREEFILE: TOS = File number */
 
     case xFREEFILE :
        POP(st, fileNumber); /* File number */
-       pexec_FreeFile(fileNumber);
+       errorCode = pexec_FreeFile(fileNumber);
        break;
 
     /* EOF: TOS = File number */
 
     case xEOF :
-      TOS(st, 0) = pexec_Eof(TOS(st, 0));
+      POP(st, fileNumber); /* File number */
+      errorCode = pexec_Eof(st, fileNumber);
       break;
 
     /* EOLN: TOS = File number */
 
     case xEOLN :
-      /* REVISIT:  Not implemented */
-      TOS(st, 0) =  0;
+      POP(st, fileNumber); /* File number */
+      errorCode = pexec_Eoln(st, fileNumber);
       break;
 
     /* ASSIGNFILE: TOS(0) = File name pointer
@@ -720,15 +872,16 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* File name string size */
       POP(st, value);       /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
-      pexec_AssignFile(fileNumber, (value != 0),
-                       (const char *)&st->dstack.b[address], size);
+      errorCode = pexec_AssignFile(fileNumber, (value != 0),
+                                   (const char *)&st->dstack.b[address],
+                                   size);
       break;
 
     /* RESET: TOS = File number */
 
     case xRESET :
       POP(st, fileNumber);  /* File number from stack */
-      pexec_OpenFile(fileNumber, eOPEN_READ);
+      errorCode = pexec_OpenFile(fileNumber, eOPEN_READ);
       break;
 
     /* RESETR: TOS   = New record size
@@ -738,15 +891,15 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     case xRESETR :
       POP(st, size);  /* File number from stack */
       POP(st, fileNumber);  /* File number from stack */
-      pexec_OpenFile(fileNumber, eOPEN_READ);
-      pexec_RecordSize(fileNumber, size);
+      errorCode = pexec_OpenFile(fileNumber, eOPEN_READ);
+      errorCode = pexec_RecordSize(fileNumber, size);
       break;
 
     /* REWRITE: TOS = File number */
 
     case xREWRITE :
       POP(st, fileNumber);  /* File number from stack */
-      pexec_OpenFile(fileNumber, eOPEN_WRITE);
+      errorCode = pexec_OpenFile(fileNumber, eOPEN_WRITE);
       break;
 
     /* RESETR: TOS   = New record size
@@ -756,22 +909,22 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     case xREWRITER :
       POP(st, size);  /* File number from stack */
       POP(st, fileNumber);  /* File number from stack */
-      pexec_OpenFile(fileNumber, eOPEN_WRITE);
-      pexec_RecordSize(fileNumber, size);
+      errorCode = pexec_OpenFile(fileNumber, eOPEN_WRITE);
+      errorCode = pexec_RecordSize(fileNumber, size);
       break;
 
     /* APPEND: TOS = File number */
 
     case xAPPEND :
       POP(st, fileNumber);  /* File number from stack */
-      pexec_OpenFile(fileNumber, eOPEN_APPEND);
+      errorCode = pexec_OpenFile(fileNumber, eOPEN_APPEND);
       break;
 
     /* CLOSEFILE: TOS = File number */
 
     case xCLOSEFILE :
       POP(st, fileNumber);  /* File number from stack */
-      pexec_CloseFile(fileNumber);
+      errorCode = pexec_CloseFile(fileNumber);
       break;
 
     /* READLN: TOS = File number */
@@ -791,9 +944,9 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* Read size */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_ReadBinary(fileNumber,
-                       (uint8_t *)&st->dstack.b[address],
-                       size);
+      errorCode = pexec_ReadBinary(fileNumber,
+                                   (uint8_t *)&st->dstack.b[address],
+                                   size);
       break;
 
     /* READ_INT: TOS   = Read address
@@ -805,8 +958,8 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_ReadInteger(fileNumber,
-                        (ustack_t *)&st->dstack.b[address]);
+      errorCode = pexec_ReadInteger(fileNumber,
+                                    (ustack_t *)&st->dstack.b[address]);
       break;
 
     /* READ_CHAR: TOS   = Read address
@@ -817,8 +970,20 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_ReadChar(fileNumber,
-                     (uint8_t *)&st->dstack.b[address]);
+      errorCode = pexec_ReadChar(fileNumber,
+                                 (uint8_t *)&st->dstack.b[address]);
+      break;
+
+    /* READ_STRING: TOS   = String variable address
+     *              TOS+1 = File number
+     */
+
+    case xREAD_STRING :
+      POP(st, address);     /* String variable address */
+      POP(st, fileNumber);  /* File number */
+
+      errorCode = pexec_ReadString(st, fileNumber,
+                                   (uint16_t *)&st->dstack.b[address]);
       break;
 
     /* READ_STRING: TOS   = Read address
@@ -826,14 +991,14 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
      *              TOS+2 = File number
      */
 
-    case xREAD_STRING :
+    case xREAD_BINSTRING :
       POP(st, address);     /* Read address */
       POP(st, size);        /* Read size */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_ReadString(fileNumber,
-                       (char *)&st->dstack.b[address],
-                       size);
+      errorCode = pexec_ReadBinString(fileNumber,
+                                      (char *)&st->dstack.b[address],
+                                      size);
       break;
 
     /* READ_REAL: TOS   = Read address
@@ -844,22 +1009,22 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_ReadReal(fileNumber,
-                     (uint16_t *)&st->dstack.b[address]);
+      errorCode = pexec_ReadReal(fileNumber,
+                                 (uint16_t *)&st->dstack.b[address]);
       break;
 
     /* WRITELN: TOS = File number */
 
     case xWRITELN :
       POP(st, fileNumber);  /* File number from stack */
-      pexec_WriteChar(fileNumber, '\n');
+      errorCode = pexec_WriteChar(fileNumber, '\n');
       break;
 
     /* WRITE_PAGE: TOS = File number */
 
     case xWRITE_PAGE :
       POP(st, fileNumber);  /* File number from stack */
-      pexec_WriteChar(fileNumber, '\f');
+      errorCode = pexec_WriteChar(fileNumber, '\f');
       break;
 
     /* WRITE_BINARY: TOS   = Write size
@@ -872,9 +1037,9 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* Write size */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_WriteBinary(fileNumber,
-                        (const uint8_t *)&st->dstack.b[address],
-                        size);
+      errorCode = pexec_WriteBinary(fileNumber,
+                                    (const uint8_t *)&st->dstack.b[address],
+                                    size);
       break;
 
     /* WRITE_INT: TOS   = Write value
@@ -885,7 +1050,7 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, value);       /* Write address */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_WriteInteger(fileNumber, (int16_t)value);
+      errorCode = pexec_WriteInteger(fileNumber, (int16_t)value);
       break;
 
     /* WRITE_CHAR: TOS   = Write value
@@ -896,7 +1061,7 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, value);       /* Write value */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_WriteChar(fileNumber, (uint8_t)value);
+      errorCode = pexec_WriteChar(fileNumber, (uint8_t)value);
       break;
 
     /* WRITE_STRING: TOS(0) = Write address
@@ -909,9 +1074,9 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* String size */
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_WriteString(fileNumber,
-                        (const char *)&st->dstack.b[address],
-                        size);
+      errorCode = pexec_WriteString(fileNumber,
+                                    (const char *)&st->dstack.b[address],
+                                    size);
       break;
 
     /* WRITE_REAL: TOS-TOS+3 = Write value
@@ -925,14 +1090,15 @@ uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, fp.hw[0]);
       POP(st, fileNumber);  /* File number from stack */
 
-      pexec_WriteReal(fileNumber, fp.f);
+      errorCode = pexec_WriteReal(fileNumber, fp.f);
       break;
 
     default :
-      return eBADSYSIOFUNC;
+      errorCode = eBADSYSIOFUNC;
+      break;
     }
 
-  return eNOERROR;
+  return errorCode;
 }
 
 

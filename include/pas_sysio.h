@@ -45,39 +45,40 @@
 
 /* These are for internal use by the compiler and run-time */
 
-#define xALLOCFILE      (0x0001)  /* Allocate a file number */
-#define xFREEFILE       (0x0002)  /* Release the allocated file */
+#define xALLOCFILE       (0x0001)  /* Allocate a file number */
+#define xFREEFILE        (0x0002)  /* Release the allocated file */
 
 /* These correspond to Pascal Standard I/O functions */
 
-#define xEOF            (0x0003)  /* Test for end of file */
-#define xEOLN           (0x0004)  /* Test for end of line */
-#define xASSIGNFILE     (0x0005)  /* Assign a name and type to the file */
-#define xRESET          (0x0006)  /* Open the file for reading */
-#define xRESETR         (0x0007)  /* Open the file for reading and reset
-                                   * record size */
-#define xREWRITE        (0x0008)  /* Open the file for writing */
-#define xREWRITER       (0x0009)  /* Open the file for writing and reset
-                                   * record size */
-#define xAPPEND         (0x000a)  /* Open the file for appending */
-#define xCLOSEFILE      (0x000b)  /* Close the file */
+#define xEOF             (0x0003)  /* Test for end of file */
+#define xEOLN            (0x0004)  /* Test for end of line */
+#define xASSIGNFILE      (0x0005)  /* Assign a name and type to the file */
+#define xRESET           (0x0006)  /* Open the file for reading */
+#define xRESETR          (0x0007)  /* Open the file for reading and reset
+                                    * record size */
+#define xREWRITE         (0x0008)  /* Open the file for writing */
+#define xREWRITER        (0x0009)  /* Open the file for writing and reset
+                                    * record size */
+#define xAPPEND          (0x000a)  /* Open the file for appending */
+#define xCLOSEFILE       (0x000b)  /* Close the file */
 
-#define xREADLN         (0x0010)  /* Move to the next line */
-#define xREAD_PAGE      (0x0011)  /* Move to the next page */
-#define xREAD_BINARY    (0x0012)  /* Read from a binary file */
-#define xREAD_INT       (0x0013)  /* Read an integer from a text file */
-#define xREAD_CHAR      (0x0014)  /* Read an character from a text file */
-#define xREAD_STRING    (0x0015)  /* Read an string from a text file */
-#define xREAD_REAL      (0x0016)  /* Read an real value from a text file */
+#define xREADLN          (0x0010)  /* Move to the next line */
+#define xREAD_PAGE       (0x0011)  /* Move to the next page */
+#define xREAD_BINARY     (0x0012)  /* Read from a binary file */
+#define xREAD_INT        (0x0013)  /* Read an integer from a text file */
+#define xREAD_CHAR       (0x0014)  /* Read an character from a text file */
+#define xREAD_STRING     (0x0015)  /* Read an string from a text file */
+#define xREAD_BINSTRING  (0x0016)  /* Read an string from a binary file */
+#define xREAD_REAL       (0x0017)  /* Read an real value from a text file */
 
-#define xWRITELN        (0x0020)  /* Move to the next line */
-#define xWRITE_PAGE     (0x0021)  /* Move to the next page */
-#define xWRITE_BINARY   (0x0022)  /* Write to a binary file */
-#define xWRITE_INT      (0x0023)  /* Write an integer to a text file */
-#define xWRITE_CHAR     (0x0024)  /* Write an character to a text file */
-#define xWRITE_STRING   (0x0025)  /* Write an string to a text file */
-#define xWRITE_REAL     (0x0026)  /* Write an real value to a text file */
+#define xWRITELN         (0x0020)  /* Move to the next line */
+#define xWRITE_PAGE      (0x0021)  /* Move to the next page */
+#define xWRITE_BINARY    (0x0022)  /* Write to a binary file */
+#define xWRITE_INT       (0x0023)  /* Write an integer to a text file */
+#define xWRITE_CHAR      (0x0024)  /* Write an character to a text file */
+#define xWRITE_STRING    (0x0025)  /* Write an string to a text file */
+#define xWRITE_REAL      (0x0026)  /* Write an real value to a text file */
 
-#define MAX_XOP         (0x0027)
+#define MAX_XOP          (0x0027)
 
 #endif /* __PAS_SYSIO_H */

@@ -292,7 +292,19 @@
 #define eBADSYSIOFUNC    ((uint16_t) 0x85)
 #define eBADSYSLIBCALL   ((uint16_t) 0x86)
 #define eBADFPOPCODE     ((uint16_t) 0x87)
-#define eINTEGEROVERFLOW ((uint16_t) 0x89)
-#define eFAILEDLIBCALL   ((uint16_t) 0x8a)
+#define eINTEGEROVERFLOW ((uint16_t) 0x88)
+#define eFAILEDLIBCALL   ((uint16_t) 0x89)
+
+#define eBADFILE         ((uint16_t) 0xa0)
+#define eFILENOTINUSE    ((uint16_t) 0xa1)
+#define eTOOMANYFILES    ((uint16_t) 0xa2)
+#define eFILENOTOPEN     ((uint16_t) 0xa3)
+#define eFILEALREADYOPEN ((uint16_t) 0xa4)
+#define eBADOPENMODE     ((uint16_t) 0xa5)
+#define eOPENFAILED      ((uint16_t) 0xa6)
+#define eNOTOPENFORREAD  ((uint16_t) 0xa7)
+#define eREADFAILED      ((uint16_t) 0xa8)
+#define eNOTOPENFORWRITE ((uint16_t) 0xa9)
+#define eWRITEFAILED     ((uint16_t) 0xaa)
 
 #endif /* __PAS_ERRCODES_H */

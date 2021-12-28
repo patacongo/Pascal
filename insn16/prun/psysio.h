@@ -71,7 +71,7 @@ typedef enum openMode_e openMode_t;
  * Public Function Prototypes
  ***************************************************************************/
 
-void     pexec_InitializeFile(void);
-uint16_t pexec_sysio(struct pexec_s *st, uint16_t subfunc);
+void pexec_InitializeFile(void);
+int  pexec_sysio(struct pexec_s *st, uint16_t subfunc);
 
 #endif /* __PFILE_H */

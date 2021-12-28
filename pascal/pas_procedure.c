@@ -1006,23 +1006,26 @@ static void readText(void)
 
   switch (g_token)
     {
-      /* SPECIAL CASE: Array of type CHAR without indexing */
+      /* SPECIAL CASE: Array of type CHAR without indexing.  Treat like
+       * TEXTFILE type.
+       */
 
       case sARRAY :
         rPtr = g_tknPtr->sParm.v.parent;
-        if (rPtr != NULL && rPtr->sKind == sTYPE &&
-            rPtr->sParm.t.type == sCHAR &&
+        if (rPtr                   != NULL  &&
+            rPtr->sKind            == sTYPE &&
+            rPtr->sParm.t.type     == sCHAR &&
             getNextCharacter(true) != '[')
           {
-            /* READ_STRING: TOS   = Read address (array address)
-             *              TOS+1 = Read size    (array size)
-             *              TOS+2 = File number
+            /* READ_BINSTRING: TOS   = Address of array
+             *                 TOS+1 = Size of array (bytes)
+             *                 TOS+2 = File number
              */
 
             pas_GenerateSimple(opDUP);
             pas_GenerateDataOperation(opPUSH, rPtr->sParm.v.size);
             pas_GenerateStackReference(opLAS, rPtr);
-            pas_GenerateIoOperation(xREAD_STRING);
+            pas_GenerateIoOperation(xREAD_BINSTRING);
           }
 
         /* Otherwise, we fall through to process the ARRAY like any
@@ -1067,9 +1070,8 @@ static void readText(void)
               pas_GenerateIoOperation(xREAD_REAL);
               break;
 
-            /* READ_STRING: TOS   = Read address
-             *              TOS+1 = Read size
-             *              TOS+2 = File number
+            /* READ_STRING: TOS   = Address of string variable
+             *              TOS+1 = File number
              *
              * REVISIT:  Won't that be the current string size?  Not the
              * maximum read size?

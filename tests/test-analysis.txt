@@ -140,21 +140,6 @@ Same issue as src/108-pointerrecode.pas
 Compiles okay, runs without error, creates the students.dat file.  However
 the content of the file is garbage.
 
-########src/603-appendfile.pas########
-Line 0:0020 Error 2d Token 4b
-
-Line:
- 20      readln(myfile, info);
-
-Error:
-222 #define ePTRADR          ((uint16_t) 0x2d)
-
-Token:
- 83 #define sSTRING          0x4b /* String storage type */
-
-Analysis:
-Not yet analyzed.  Perhaps an issue related to string types.
-
 ########src/604-addfiledata.pas########
 ########src/605-subprogram.pas########
 
