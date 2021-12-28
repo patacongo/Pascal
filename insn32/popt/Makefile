@@ -35,35 +35,41 @@
 #
 # Directories
 #
-POPTDIR		= ${shell pwd}
-INSNDIR		= $(POPTDIR)/..
-PASCAL		= $(POPTDIR)/../..
+POPTDIR  = ${shell pwd}
+INSNDIR  = $(POPTDIR)/..
+PASCAL  = $(POPTDIR)/../..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR		= $(PASCAL)/include
-LIBDIR		= $(PASCAL)/lib
-BINDIR		= $(PASCAL)/bin32
+INCDIR    = $(PASCAL)/include
+LIBDIR    = $(PASCAL)/lib
+BINDIR    = $(PASCAL)/bin32
 
 # ----------------------------------------------------------------------
 # Tools
 
-EXTRA_INCLUDES	= -I$(INSNDIR)/include
-INCLUDES	+= $(EXTRA_INCLUDES)
-CFLAGS		+= $(EXTRA_INCLUDES)
+EXTRA_INCLUDES = -I$(INSNDIR)/include
+INCLUDES += $(EXTRA_INCLUDES)
+CFLAGS   += $(EXTRA_INCLUDES)
 
 # ----------------------------------------------------------------------
 # Objects and targets
 
-POPTSRCS	= popt.c psopt.c polocal.c pcopt.c pjopt.c plopt.c pfopt.c
-POPTOBJS	= $(POPTSRCS:.c=.o)
+POPTSRCS  = popt.c psopt.c polocal.c pcopt.c pjopt.c plopt.c pfopt.c
+POPTOBJS  = $(POPTSRCS:.c=.o)
 
-OBJS		= $(POPTOBJS)
-LIBS		= libpoff.a libpas.a
+OBJS      = $(POPTOBJS)
+DEPS      = $(POPTSRCS:.c=.d)
+LIBS      = libpoff.a libpas.a
+
+SUFFIXES += .d
 
 all: popt
-.PHONY: all check_libs popt clean
+.PHONY: all check_libs popt check_libs clean
+
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
 
 $(OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
@@ -82,12 +88,14 @@ check_libs:
 		exit 1 ; \
 	fi
 
-$(BINDIR)/popt: check_libs $(POPTOBJS)
-	$(CC) -o $@ $(LDFLAGS) $(POPTOBJS) -linsn -lpoff -lpas
+$(BINDIR)/popt: check_libs $(DEPS) $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 popt: $(BINDIR)/popt
 
 clean:
-	$(RM) popt *.o core *~
+	$(RM) popt *.o *.d core *~
 
-# ----------------------------------------------------------------------
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif

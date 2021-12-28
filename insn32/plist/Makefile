@@ -35,34 +35,40 @@
 #
 # Directories
 #
-PLISTDIR	= ${shell pwd}
-INSNDIR		= $(PLISTDIR)/..
-PASCAL		= $(PLISTDIR)/../..
+PLISTDIR = ${shell pwd}
+INSNDIR  = $(PLISTDIR)/..
+PASCAL  = $(PLISTDIR)/../..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR		= $(PASCAL)/include
-LIBDIR		= $(PASCAL)/lib
-BINDIR		= $(PASCAL)/bin32
+INCDIR    = $(PASCAL)/include
+LIBDIR    = $(PASCAL)/lib
+BINDIR    = $(PASCAL)/bin32
 
 #
 # Tools
 #
-EXTRA_INCLUDES	= -I$(INSNDIR)/include
-INCLUDES	+= $(EXTRA_INCLUDES)
-CFLAGS		+= $(EXTRA_INCLUDES)
+EXTRA_INCLUDES = -I$(INSNDIR)/include
+INCLUDES += $(EXTRA_INCLUDES)
+CFLAGS   += $(EXTRA_INCLUDES)
 
 #
 # Objects and targets
 #
-PLISTSRCS		= plist.c
-PLISTOBJS		= $(PLISTSRCS:.c=.o)
+PLISTSRCS = plist.c
+PLISTOBJS = $(PLISTSRCS:.c=.o)
 
-OBJS			= $(PLISTOBJS)
+OBJS      = $(PLISTOBJS)
+DEPS      = $(PLISTSRCS:.c=.d)
+
+SUFFIXES += .d
 
 all: plist
-.PHONY: all plist clean
+.PHONY: all plist check_libs clean
+
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
 
 $(OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
@@ -81,10 +87,14 @@ check_libs:
 		exit 1 ; \
 	fi
 
-$(BINDIR)/plist: check_libs $(PLISTOBJS)
-	$(CC) -o $@ $(LDFLAGS) $(PLISTOBJS) -lpoff -linsn -lpas
+$(BINDIR)/plist: check_libs $(DEPS) $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) -lpoff -linsn -lpas
 
 plist: $(BINDIR)/plist
 
 clean:
-	$(RM) plist *.o core *~
+	$(RM) plist *.o *.d core *~
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif

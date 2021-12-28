@@ -36,34 +36,40 @@
 #
 # Directories
 #
-PRUNDIR		= ${shell pwd}
-INSNDIR		= $(PRUNDIR)/..
-PASCAL		= $(PRUNDIR)/../..
+PRUNDIR = ${shell pwd}
+INSNDIR = $(PRUNDIR)/..
+PASCAL = $(PRUNDIR)/../..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR		= $(PASCAL)/include
-LIBDIR		= $(PASCAL)/lib
-BINDIR		= $(PASCAL)/bin16
+INCDIR    = $(PASCAL)/include
+LIBDIR    = $(PASCAL)/lib
+BINDIR    = $(PASCAL)/bin16
 
 #
 # Tools
 #
-EXTRA_INCLUDES	= -I$(INSNDIR)/include
-INCLUDES	+= $(EXTRA_INCLUDES)
-CFLAGS		+= $(EXTRA_INCLUDES)
+EXTRA_INCLUDES = -I$(INSNDIR)/include
+INCLUDES += $(EXTRA_INCLUDES)
+CFLAGS   += $(EXTRA_INCLUDES)
 
 #
 # Objects and targets
 #
-RUNSRCS			= prun.c pdbg.c pload.c pexec.c psysio.c plib.c
-RUNOBJS			= $(RUNSRCS:.c=.o)
+RUNSRCS   = prun.c pdbg.c pload.c pexec.c psysio.c plib.c
+RUNOBJS   = $(RUNSRCS:.c=.o)
 
-OBJS			= $(RUNOBJS)
+OBJS      = $(RUNOBJS)
+DEPS      = $(RUNSRCS:.c=.d)
+
+SUFFIXES += .d
 
 all: prun
-.PHONY: all prun clean
+.PHONY: all prun check_libs clean
+
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
 
 $(OBJS): %.o: %.c
 	@$(CC) -c $(CFLAGS) $< -o $@
@@ -78,10 +84,14 @@ check_libs:
 		exit 1 ; \
 	fi
 
-$(BINDIR)/prun: check_libs $(RUNOBJS)
-	@$(CC) -o $@ $(LDFLAGS) $(RUNOBJS) -linsn -lpoff -lpas -lm
+$(BINDIR)/prun: check_libs $(DEPS) $(OBJS)
+	@$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
 
 prun: $(BINDIR)/prun
 
 clean:
-	$(RM) prun *.o core *~
+	$(RM) prun *.o *.d core *~
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif

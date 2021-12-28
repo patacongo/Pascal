@@ -35,42 +35,52 @@
 #
 # Directories
 #
-LIBINSNDIR		= ${shell pwd}
-INSNDIR			= $(LIBINSNDIR)/..
-PASCAL			= $(LIBINSNDIR)/../..
+LIBINSNDIR  = ${shell pwd}
+INSNDIR     = $(LIBINSNDIR)/..
+PASCAL      = $(LIBINSNDIR)/../..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR			= $(PASCAL)/include
-LIBDIR			= $(PASCAL)/lib
+INCDIR      = $(PASCAL)/include
+LIBDIR      = $(PASCAL)/lib
 
 #
 # Tools
 #
-EXTRA_INCLUDES		= -I$(INSNDIR)/include
-INCLUDES		+= $(EXTRA_INCLUDES)
-CFLAGS			+= $(EXTRA_INCLUDES)
+EXTRA_INCLUDES = -I$(INSNDIR)/include
+INCLUDES   += $(EXTRA_INCLUDES)
+CFLAGS     += $(EXTRA_INCLUDES)
 
 #
 # Objects and targets
 #
-LIBINSNSRCS		= paddopcode.c paddtmpopcode.c pdasm.c pgen.c \
-			  pgetopcode.c preloc.c
-LIBINSNOBJS		= $(LIBINSNSRCS:.c=.o)
+LIBINSNSRCS = paddopcode.c paddtmpopcode.c pdasm.c pgen.c \
+              pgetopcode.c preloc.c
+LIBINSNOBJS = $(LIBINSNSRCS:.c=.o)
 
-OBJS			= $(LIBINSNOBJS)
+OBJS        = $(LIBINSNOBJS)
+DEPS        = $(LIBINSNSRCS:.c=.d)
+
+SUFFIXES   += .d
 
 all: libinsn.a
-.PHONY: all libinsn.a clean
+.PHONY: all libinsn.a check_libs clean
+
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
 
 $(OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(LIBDIR)/libinsn.a: $(LIBINSNOBJS)
+$(LIBDIR)/libinsn.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
-libinsn.a: $(LIBDIR)/libinsn.a
+libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
 
 clean:
-	$(RM) libinsn.a *.o core *~
+	$(RM) libinsn.a *.o *.d core *~
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif

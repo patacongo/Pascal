@@ -35,33 +35,43 @@
 #
 # Directories
 #
-LIBPASDIR		= ${shell pwd}
-PASCAL			= $(LIBPASDIR)/..
+LIBPASDIR  = ${shell pwd}
+PASCAL     = $(LIBPASDIR)/..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR			= $(PASCAL)/include
-LIBDIR			= $(PASCAL)/lib
+INCDIR     = $(PASCAL)/include
+LIBDIR     = $(PASCAL)/lib
 
 #
 # Objects and targets
 #
-LIBPASSRCS		= pextension.c psignextend16.c pswap.c
-LIBPASOBJS		= $(LIBPASSRCS:.c=.o)
+LIBPASSRCS = pextension.c psignextend16.c pswap.c
+LIBPASOBJS = $(LIBPASSRCS:.c=.o)
 
-OBJS			= $(LIBPASOBJS)
+OBJS       = $(LIBPASOBJS)
+DEPS       = $(LIBPASSRCS:.c=.d)
+
+SUFFIXES  += .d
 
 all: libpas.a
 .PHONY: all libpas.a clean
 
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
+
 $(OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(LIBDIR)/libpas.a: $(LIBPASOBJS)
+$(LIBDIR)/libpas.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
-libpas.a: $(LIBDIR)/libpas.a
+libpas.a: $(DEPS) $(LIBDIR)/libpas.a
 
 clean:
-	$(RM) libpas.a *.o core *~
+	$(RM) libpas.a *.o *.d core *~
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif

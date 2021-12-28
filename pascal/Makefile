@@ -57,9 +57,15 @@ PASSRCS += pas_token.c pas_symtable.c pas_error.c
 PASOBJS  = $(PASSRCS:.c=.o)
 
 OBJS     = $(PASOBJS)
+DEPS     = $(PASSRCS:.c=.d)
+
+SUFFIXES += .d
 
 all: pascal
-.PHONY: all pascal clean
+.PHONY: all pascal check_libs clean
+
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
 
 $(OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
@@ -78,10 +84,14 @@ check_libs:
 		exit 1 ; \
 	fi
 
-$(BINDIR-y)/pascal: check_libs $(PASOBJS)
-	$(CC) -o $@ $(LDFLAGS) $(PASOBJS) -linsn -lpoff -lpas -lm
+$(BINDIR-y)/pascal: check_libs $(DEPS) $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
 
 pascal: $(BINDIR-y)/pascal
 
 clean:
-	$(RM) pascal *.o core *~
+	$(RM) pascal *.o *.d core *~
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif

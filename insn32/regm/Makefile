@@ -35,36 +35,42 @@
 #
 # Directories
 #
-REGMDIR		= ${shell pwd}
-INSNDIR		= $(REGMDIR)/..
-PASCAL		= $(REGMDIR)/../..
+REGMDIR   = ${shell pwd}
+INSNDIR   = $(REGMDIR)/..
+PASCAL    = $(REGMDIR)/../..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR		= $(PASCAL)/include
-LIBDIR		= $(PASCAL)/lib
-BINDIR		= $(PASCAL)/bin32
+INCDIR    = $(PASCAL)/include
+LIBDIR    = $(PASCAL)/lib
+BINDIR    = $(PASCAL)/bin32
 
 # ----------------------------------------------------------------------
 # Tools
 
-EXTRA_INCLUDES	= -I$(INSNDIR)/include
-INCLUDES	+= $(EXTRA_INCLUDES)
-CFLAGS		+= $(EXTRA_INCLUDES)
+EXTRA_INCLUDES = -I$(INSNDIR)/include
+INCLUDES += $(EXTRA_INCLUDES)
+CFLAGS   += $(EXTRA_INCLUDES)
 
 # ----------------------------------------------------------------------
 # Objects and targets
 
-REGMSRCS	= regm.c regm_pass1.c regm_pass2.c regm_registers2.c \
-		  regm_tree.c
-REGMOBJS	= $(REGMSRCS:.c=.o)
+REGMSRCS  = regm.c regm_pass1.c regm_pass2.c regm_registers2.c \
+            regm_tree.c
+REGMOBJS  = $(REGMSRCS:.c=.o)
 
-OBJS		= $(REGMOBJS)
-LIBS		= libpoff.a libpas.a
+OBJS      = $(REGMOBJS)
+DEPS      = $(REGMSRCS:.c=.d)
+LIBS      = libpoff.a libpas.a
+
+SUFFIXES += .d
 
 all: regm
-.PHONY: all check_libs regm clean
+.PHONY: all check_libs regm check_libs clean
+
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
 
 $(OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
@@ -83,12 +89,14 @@ check_libs:
 		exit 1 ; \
 	fi
 
-$(BINDIR)/regm: check_libs $(REGMOBJS)
-	$(CC) -o $@ $(LDFLAGS) $(REGMOBJS) -linsn -lpoff -lpas
+$(BINDIR)/regm: check_libs $(DEPS) $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 regm: $(BINDIR)/regm
 
 clean:
-	$(RM) regm *.o core *~
+	$(RM) regm *.o *.d core *~
 
-# ----------------------------------------------------------------------
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif

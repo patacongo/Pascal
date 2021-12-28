@@ -35,27 +35,33 @@
 #
 # Directories
 #
-PLINKDIR		= ${shell pwd}
-PASCAL			= $(PLINKDIR)/..
+PLINKDIR  = ${shell pwd}
+PASCAL    = $(PLINKDIR)/..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR			= $(PASCAL)/include
-LIBDIR			= $(PASCAL)/lib
-BINDIR-$(CONFIG_INSN16)	= $(PASCAL)/bin16
-BINDIR-$(CONFIG_INSN32)	= $(PASCAL)/bin32
+INCDIR    = $(PASCAL)/include
+LIBDIR    = $(PASCAL)/lib
+BINDIR-$(CONFIG_INSN16) = $(PASCAL)/bin16
+BINDIR-$(CONFIG_INSN32) = $(PASCAL)/bin32
 
 #
 # Objects and targets
 #
-PLINKSRCS		= plink.c plsym.c plreloc.c
-PLINKOBJS		= $(PLINKSRCS:.c=.o)
+PLINKSRCS = plink.c plsym.c plreloc.c
+PLINKOBJS = $(PLINKSRCS:.c=.o)
 
-OBJS			= $(PLINKOBJS)
+OBJS      = $(PLINKOBJS)
+DEPS      = $(PLINKSRCS:.c=.d)
+
+SUFFIXES += .d
 
 all: plink
-.PHONY: all plink clean
+.PHONY: all plink check_libs clean
+
+$(DEPS): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MT '$(patsubst src/%.c,obj/%.o,$<)' $< -MF $@
 
 $(OBJS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
@@ -74,10 +80,14 @@ check_libs:
 		exit 1 ; \
 	fi
 
-$(BINDIR-y)/plink: check_libs $(PLINKOBJS)
-	$(CC) -o $@ $(LDFLAGS) $(PLINKOBJS) -linsn -lpoff -lpas
+$(BINDIR-y)/plink: check_libs $(DEPS) $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 plink: $(BINDIR-y)/plink
 
 clean:
-	$(RM) plink *.o core *~
+	$(RM) plink *.o *.d core *~
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(DEPS)
+endif
