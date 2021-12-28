@@ -27,17 +27,27 @@ begin
   employee1.rateperhour := 2.75;
   employee1.reghours    := 40;
   employee1.overtime    := 3;
-  writeln(employee1.rateperhour, employee1.reghours, employee1.overtime);
+  writeln('payclass = hourly',
+          ' rateperhour = ', employee1.rateperhour,
+          ' reghours = ',    employee1.reghours,
+          ' overtime = ',    employee1.overtime);
 
-  {this should bomb as there is no monthlyrate because payclass=hourly}
+  {this should print garbage as there is no monthlyrate because payclass=hourly}
 
-  writeln(employee1.monthlyrate);
+  writeln('monthlyrate = ',  employee1.monthlyrate,
+          ' startdate = ',   employee1.startdate);
 
   employee2.payclass    := salaried;
   employee2.monthlyrate := 575.0;
   employee2.startdate   := 13085;
 
-  {this should bomb as there are no rateperhour, etc. because payclass=salaried}
+  writeln('payclass = salaried',
+          ' monthlyrate = ', employee2.monthlyrate,
+          ' startdate = ',   employee2.startdate);
 
-  writeln(employee2.rateperhour, employee2.reghours. employee2.overtime);
+  {this should print garbage as there are no rateperhour, etc. because payclass=salaried}
+
+  writeln('rateperhour = ', employee2.rateperhour,
+          ' reghours = ',   employee2.reghours,
+          ' overtime = ',   employee2.overtime);
 end.

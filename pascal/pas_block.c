@@ -2077,10 +2077,24 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
           /* A semicolon at this position means that another <variant>
            * follows.  Keep looping until all of the variants have been
            * processed (i.e., no semi-colon)
+           *
+           * Hmm.. real world examples that I have seen do allow a semi-colon
+           * on the final variant.  So will I.
            */
 
-          if (g_token == ';') getToken();
-          else break;
+          if (g_token == ';')
+            {
+              getToken();
+            }
+          else
+            {
+              break;
+            }
+
+          if (g_token == tEND)
+            {
+              break;
+            }
         }
 
       /* Update the RECORD entry for the maximum size of all variants */
