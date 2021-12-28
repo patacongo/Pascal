@@ -23,6 +23,12 @@ writing, the following errors are reported when testall.sh is ran:
     result, programs with functions that do a lot of string operations need
     a start larger than the 1024 default.  All of the test files here work
     OK with a string stack of 1024.
+ 5. Some modern Pacal compilers support and string buffer size argument like:
+ 
+      VAR
+        foobar : STRING[18];
+
+    Where the value in brackets provides the allocated string size.
 
 Successful test results are not shown.
 
@@ -47,11 +53,38 @@ following the constant identifier.
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
-########src/012-stringrecordarray.pas########
+########src/011-variantrecord.pas########
+Line 0:0015 Error 0d Token 29
+
+Line:
+  7   employee1, employee2 :
+  8     record
+  9       id   : integer;
+ 10       dept : integer;
+ 11       age  : integer;
+ 12       case payclass: paytype of
+ 13         salaried:
+ 14           (monthlyrate : real;
+ 15            startdate : integer); <<< HERE
+ 16         hourly:
+ 17           (rateperhour : real;
+ 18            reghours : integer;
+ 19            overtime : integer);
+ 20     end;
+
+Error:
+192 #define eHUH             ((uint16_t) 0x0d)
+
+Token: ')'
+
+Analysis:
+This test of RECORD variants was newly added and has not yet been studied.
+
+########src/013-stringrecordarray.pas########
 Compiles without error, but then crashes writing the POFF file.  Apparently
 some information in the debug section is corrupted.
 
-########src/013-arrayrecord.pas########
+########src/014-arrayrecord.pas########
 Line 0:0014 Error 21 Token 2c
 
 Line:
@@ -155,17 +188,10 @@ Average Rainfall:  3.23500072
 ########sinecos.pex########
 NOW:
 ---
-
-ERROR: pexec_WriteString: Not open for writing: 0
-ERROR: pexec_WriteReal: Not open for writing: 0
-ERROR: pexec_WriteString: Not open for writing: 0
-ERROR: pexec_WriteReal: Not open for writing: 0
-ERROR: pexec_WriteString: Not open for writing: 0
-ERROR: pexec_WriteReal: Not open for writing: 0
-ERROR: pexec_WriteChar: Not open for writing: 0
 sinecos.pex Loaded
 Enter radians   : cos(0.707107)=0.707107
 sin(0.707107)=0.000000
+Runtime error 0xa9 -- Execution Stopped
 
 Analysis:
 The error occurs in the main block in the statement:
@@ -189,10 +215,10 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0055 Error 2f Token 2c
+Line 0:0055 Error 30 Token 2c
 
 Error:
-#define eRBRACKET        ((uint16_t) 0x2f)
+#define eRBRACKET        ((uint16_t) 0x30)
 
 Line:
  55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
@@ -205,10 +231,10 @@ Analysis:
 The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
 
 ########DayIO.pas########
-+Line 0:0060 Error 0d Token 3b
+Line 0:0060 Error 0d Token 3b
 
 Line:
-        DayMap: ARRAY[DayType] of DayStrType;
+ 60       DayMap: ARRAY[DayType] of DayStrType;
 
 Where:
  14    TYPE

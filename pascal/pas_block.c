@@ -1717,7 +1717,6 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
   symbol_t *fieldPtr;
   int16_t recordOffset;
   int recordCount;
-  int symbolIndex;
 
   TRACE(g_lstFile,"[pas_DeclareRecordType]");
 
@@ -1971,6 +1970,8 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
           if (g_token != ')')
             {
+              symbol_t *firstFieldPtr = NULL;
+
               /* Now process the <field list> for the variant.  This works
                * just like the field list of the fixed part, except the
                * offset is reset for each variant.
@@ -1985,10 +1986,14 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
               for (; ; )
                 {
                   /* We now expect to see and indentifier representating the
-                   * beginning of the next variablefield.
+                   * beginning of the next variable field.
                    */
 
                   fieldPtr = pas_DeclareField(recordPtr, fieldPtr);
+                  if (firstFieldPtr == NULL)
+                    {
+                      firstFieldPtr = fieldPtr;
+                    }
 
                   /* If the field declaration terminates with a semicolon,
                    * then we expect to see another <variable part>
@@ -2021,9 +2026,9 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                */
 
               fieldPtr = &recordPtr[1];
-              for (recordOffset = variantOffset;
-                   recordCount < recordPtr->sParm.t.maxValue;
-                   symbolIndex++)
+              for (fieldPtr = firstFieldPtr, recordOffset = variantOffset;
+                   fieldPtr != NULL && recordCount < recordPtr->sParm.t.maxValue;
+                   fieldPtr = fieldPtr->sParm.r.next)
                 {
                   /* We know that 'maxValue' sRECORD_OBJECT symbols follow
                    * the sRECORD type declaration.  However, these may not
@@ -2031,7 +2036,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                    * associated with each field.
                    */
 
-                  if (fieldPtr->sKind == sRECORD_OBJECT)
+                  if (fieldPtr->sKind != sRECORD_OBJECT)
                     {
                       error(eHUH);  /* RECORD OBJECT is not where it should be */
                     }
