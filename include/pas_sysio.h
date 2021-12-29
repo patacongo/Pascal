@@ -68,8 +68,7 @@
 #define xREAD_INT        (0x0013)  /* Read an integer from a text file */
 #define xREAD_CHAR       (0x0014)  /* Read an character from a text file */
 #define xREAD_STRING     (0x0015)  /* Read an string from a text file */
-#define xREAD_BINSTRING  (0x0016)  /* Read an string from a binary file */
-#define xREAD_REAL       (0x0017)  /* Read an real value from a text file */
+#define xREAD_REAL       (0x0016)  /* Read an real value from a text file */
 
 #define xWRITELN         (0x0020)  /* Move to the next line */
 #define xWRITE_PAGE      (0x0021)  /* Move to the next page */

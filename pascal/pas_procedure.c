@@ -998,93 +998,60 @@ static void readProcCommon(bool text, uint16_t fileSize)
 static void readText(void)
 {
   exprType_t exprType;
-  symbol_t *rPtr;
 
   TRACE(g_lstFile, "[readText]");
 
-  /* The general form is <VAR parm> */
+  /* Get TOS = file number by duplicating the one that is already there (but
+   * that we also need to preserve).
+   */
 
-  switch (g_token)
+  pas_GenerateSimple(opDUP);
+
+  /* pas_VarParameter() will place a pointer to the variable to read at the
+   * TOS and return the address of the pointer.
+   */
+
+  exprType = pas_VarParameter(exprUnknown, NULL);
+  switch (exprType)
     {
-      /* SPECIAL CASE: Array of type CHAR without indexing.  Treat like
-       * TEXTFILE type.
+      /* READ_INT: TOS   = Read address
+       *           TOS+1 = File number
        */
 
-      case sARRAY :
-        rPtr = g_tknPtr->sParm.v.parent;
-        if (rPtr                   != NULL  &&
-            rPtr->sKind            == sTYPE &&
-            rPtr->sParm.t.type     == sCHAR &&
-            getNextCharacter(true) != '[')
-          {
-            /* READ_BINSTRING: TOS   = Address of array
-             *                 TOS+1 = Size of array (bytes)
-             *                 TOS+2 = File number
-             */
+      case exprIntegerPtr :
+        pas_GenerateIoOperation(xREAD_INT);
+        break;
 
-            pas_GenerateSimple(opDUP);
-            pas_GenerateDataOperation(opPUSH, rPtr->sParm.v.size);
-            pas_GenerateStackReference(opLAS, rPtr);
-            pas_GenerateIoOperation(xREAD_BINSTRING);
-          }
+      /* READ_CHAR: TOS   = Read address
+       *            TOS+1 = File number
+       */
 
-        /* Otherwise, we fall through to process the ARRAY like any
-         * expression.
-         */
+      case exprCharPtr :
+        pas_GenerateIoOperation(xREAD_CHAR);
+        break;
+
+      /* READ_REAL: TOS   = Read address
+       *            TOS+1 = File number
+       */
+
+      case exprRealPtr :
+        pas_GenerateIoOperation(xREAD_REAL);
+        break;
+
+      /* READ_STRING: TOS   = Address of string variable
+       *              TOS+1 = File number
+       *
+       * REVISIT:  Won't that be the current string size?  Not the
+       * maximum read size?
+       */
+
+      case exprStringPtr :
+        pas_GenerateIoOperation(xREAD_STRING);
+        break;
 
       default :
-        /* Get TOS = file number by duplicating the one that is already
-         * there (but that also need to preserve).
-         */
-
-        pas_GenerateSimple(opDUP);
-
-        /* pas_VarParameter() will place a pointer to the variable to read at the
-         * TOS and return the address of the pointer.
-         */
-
-        exprType = pas_VarParameter(exprUnknown, NULL);
-        switch (exprType)
-          {
-            /* READ_INT: TOS   = Read address
-             *           TOS+1 = File number
-             */
-
-            case exprIntegerPtr :
-              pas_GenerateIoOperation(xREAD_INT);
-              break;
-
-            /* READ_CHAR: TOS   = Read address
-             *            TOS+1 = File number
-             */
-
-            case exprCharPtr :
-              pas_GenerateIoOperation(xREAD_CHAR);
-              break;
-
-            /* READ_REAL: TOS   = Read address
-             *            TOS+1 = File number
-             */
-
-            case exprRealPtr :
-              pas_GenerateIoOperation(xREAD_REAL);
-              break;
-
-            /* READ_STRING: TOS   = Address of string variable
-             *              TOS+1 = File number
-             *
-             * REVISIT:  Won't that be the current string size?  Not the
-             * maximum read size?
-             */
-
-            case exprStringPtr :
-              pas_GenerateIoOperation(xREAD_STRING);
-              break;
-
-            default :
-              error(eINVARG);
-              break;
-          }
+        error(eINVARG);
+        break;
     }
 }
 
@@ -1649,7 +1616,6 @@ static void writeText(void)
           break;
 
         case exprString :
-        case exprStkString :
           /* WRITE_STRING: TOS   = Write address
            *               TOS+1 = Write size
            *               TOS+2 = File number

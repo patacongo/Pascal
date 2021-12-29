@@ -57,7 +57,8 @@
 
 /* These are all the format codes that apply to opcodes with an argument */
 
-enum {
+enum
+{
   SIMPLE = 0,        /* No argument */
   HEX,               /* Hexadecimal argument */
   DECIMAL,           /* Signed Decimal argument (w/shift) */
@@ -329,9 +330,9 @@ static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
 /* 0x00 */ "HALT",      "GETENV",     "STRCPY",     "STRPCYX",
-/* 0x04 */ "CSTR2STR",  "CSTR2STRX",  "VAL",        "STRINIT",
-/* 0x08 */ "STRTMP",    "STRDUP",     "MKSTKC",     "STRCAT",
-/* 0x0c */ "STRCATC",    "STRCMP"
+/* 0x04 */ "CSTR2STR",  "BSTR2STR",   "CSTR2STRX",  "VAL",
+/* 0x08 */ "STRINIT",   "STRTMP",     "STRDUP",     "MKSTKC",
+/* 0x0c */ "STRCAT",    "STRCATC",    "STRCMP"
 };
 
 #define MAX_FOP 16

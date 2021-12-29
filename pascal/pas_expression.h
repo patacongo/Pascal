@@ -86,11 +86,10 @@ enum exprType_e
   exprBoolean    = 0x06,    /* TOS = boolean(integer) value */
   exprScalar     = 0x07,    /* TOS = scalar(integer) value */
   exprString     = 0x08,    /* TOS = variable length string reference */
-  exprStkString  = 0x09,    /* TOS = reference to string on string stack */
-  exprCString    = 0x0a,    /* TOS = pointer to C string */
-  exprSet        = 0x0b,    /* TOS = set(integer) value */
-  exprFile       = 0x0c,    /* TOS = file */
-  exprRecord     = 0x0d,    /* TOS = record */
+  exprCString    = 0x09,    /* TOS = pointer to C string */
+  exprSet        = 0x0a,    /* TOS = set(integer) value */
+  exprFile       = 0x0b,    /* TOS = file */
+  exprRecord     = 0x0c,    /* TOS = record */
 
   /* Expressions that evaluate to pointers to standard type */
 
@@ -100,9 +99,9 @@ enum exprType_e
   exprBooleanPtr = 0x86,    /* TOS = pointer to a boolean value */
   exprScalarPtr  = 0x87,    /* TOS = pointer to a scalar value */
   exprStringPtr  = 0x88,    /* TOS = variable length string reference */
-  exprSetPtr     = 0x8b,    /* TOS = pointer to a set value */
-  exprFilePtr    = 0x8c,    /* TOS = pointer to a file */
-  exprRecordPtr  = 0x8d     /* TOS = pointer to a record */
+  exprSetPtr     = 0x8a,    /* TOS = pointer to a set value */
+  exprFilePtr    = 0x8b,    /* TOS = pointer to a file */
+  exprRecordPtr  = 0x8c     /* TOS = pointer to a record */
 };
 
 typedef enum exprType_e exprType_t;

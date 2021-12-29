@@ -374,7 +374,7 @@ static const struct regm_builtin_s g_rgSysIoBuiltIns[MAX_XOP] =
   /* 0x20 */ xWRITELN_INIT,             xWRITE_PAGE_INIT,
   /* 0x22 */ xWRITE_BINARY_INIT,        xWRITE_INT_INIT,
   /* 0x24 */ xWRITE_CHAR_INIT,          xWRITE_STRING_INIT,
-  /* 0x25 */ xWRITE_REAL_INIT
+  /* 0x26 */ xWRITE_REAL_INIT
 };
 
 static const struct regm_builtin_s g_rgLibCallBuiltIns[MAX_LBOP] =

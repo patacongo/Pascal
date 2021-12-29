@@ -134,7 +134,7 @@
 /* void _xread_string(int fileno, int stringSize, char *string); */
 
 #define xREAD_STRING_INIT \
-    { "_xread_string", 0, 3, { sINT_SIZE, sINT_SIZE, sPTR_SIZE }}
+    { "_xread_string", 0, 2, { sINT_SIZE, sINT_SIZE }}
 
 /* void _xread_real(int fileno, real *value); */
 
@@ -154,7 +154,7 @@
 /* void _write_binary(int fileno, char *buffer, int buffersize); */
 
 #define xWRITE_BINARY_INIT \
-    { "_xwrite_binary", 0, 3, { sINT_SIZE, sPTR_SIZE, sINT_SIZE }}
+    { "_xwrite_binary", 0, 3, { sINT_SIZE, sINT_SIZE, sPTR_SIZE }}
 
 /* void _write_int(int fileno, int value); */
 

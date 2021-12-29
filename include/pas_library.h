@@ -55,10 +55,10 @@
 /* Get an environment string.
  *   function getent(name : string) : cstring;
  * ON INPUT:
- *   TOS(0)=length of string
- *   TOS(1)=pointer to string
+ *   TOS(0) = length of string
+ *   TOS(1) = pointer to string
  * ON RETURN:  actual parameters released
- *   TOS(0,1)=32-bit absolute address of string
+ *   TOS(0,1) = 32-bit absolute address of string
  */
 
 #define lbGETENV        (0x0001)
@@ -68,9 +68,9 @@
  *   procedure strcpy(src : string; var dest : string)
  *
  * ON INPUT:
- *   TOS(0)=Address of dest string variable
- *   TOS(1)=Pointer to source string buffer
- *   TOS(2)=Length of source string
+ *   TOS(0) = Address of dest string variable
+ *   TOS(1) = Pointer to source string buffer
+ *   TOS(2) = Length of source string
  * ON RETURN: actual parameters released.
  */
 
@@ -81,10 +81,10 @@
  *   procedure strcpy(src : string; var dest : string; offset : integer)
  *
  * ON INPUT:
- *   TOS(0)=Address of dest string variable
- *   TOS(1)=Pointer to source string buffer
- *   TOS(2)=Length of source string
- *   TOS(3)=Dest string variable address offset
+ *   TOS(0) = Address of dest string variable
+ *   TOS(1) = Pointer to source string buffer
+ *   TOS(2) = Length of source string
+ *   TOS(3) = Dest string variable address offset
  * ON RETURN: actual parameters released.
  *
  * REVISIT:  This is awkward.  Life would be much easier if the
@@ -99,21 +99,36 @@
  *   procedure cstr2str(src : cstring; var dest : string)
  *
  * ON INPUT:
- *   TOS(0)=address of dest string
- *   TOS(1,2)=32-bit absolute address of C string
+ *   TOS(0)   = address of dest string
+ *   TOS(1,2) = 32-bit absolute address of C string
  * ON RETURN: actual parameters released
  */
 
 #define lbCSTR2STR      (0x0004)
+
+/* Copy binary file character array to a pascal string
+ *
+ *   function bstr2str(fileNumber : Integer, arraySize : Integer,
+ *                     arrayAddress : Integer) : String;
+ *
+ * ON INPUT:
+ *   TOS(0) = Array address
+ *   TOS(1) = Array size
+ * ON RETURN:
+ *   TOS(0) = String character buffer address
+ *   TOS(1) = String size
+ */
+
+#define lbBSTR2STR      (0x0005)
 
 /* Copy C string to an element of a pascal string array
  *
  *   procedure cstr2str(src : cstring; var dest : string)
  *
  * ON INPUT:
- *   TOS(0)=Address of dest string variable
- *   TOS(1,2)=32-bit absolute address of C string
- *   TOS(3)=Dest string variable address offset
+ *   TOS(0) = Address of dest string variable
+ *   TOS(1,2) = 32-bit absolute address of C string
+ *   TOS(3) = Dest string variable address offset
  * ON RETURN: actual parameters released
  *
  * REVISIT:  This is awkward.  Life would be much easier if the
@@ -121,7 +136,7 @@
  * so could be added to the dest sting variable address easily.
  */
 
-#define lbCSTR2STRX     (0x0005)
+#define lbCSTR2STRX     (0x0006)
 
 /* Convert a string to a numeric value
  *
@@ -143,14 +158,14 @@
  * position where the conversion went wrong.
  *
  * ON INPUT
- *   TOS(0)=address of Code
- *   TOS(1)=address of v
- *   TOS(2)=length of source string
- *   TOS(3)=pointer to source string
+ *   TOS(0) = address of Code
+ *   TOS(1) = address of v
+ *   TOS(2) = length of source string
+ *   TOS(3) = pointer to source string
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x0006)
+#define lbVAL           (0x0007)
 
 /* Initialize a new string variable. Create a string buffer.  This is called
  * only at entrance into a new Pascal block.
@@ -158,11 +173,11 @@
  *   procedure strinit(VAR str : string);
  *
  * ON INPUT
- *   TOS(0)=address of the newly string variable to be initialized
+ *   TOS(0) = address of the newly string variable to be initialized
  * ON RETURN
  */
 
-#define lbSTRINIT       (0x0007)
+#define lbSTRINIT       (0x0008)
 
 /* Initialize a temporary string variable on the stack. It is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
@@ -173,11 +188,11 @@
  *
  * ON INPUT
  * ON RETURN
- *   TOS(0)=Pointer to the string buffer on the stack.
- *   TOS(1)=String size (zero)
+ *   TOS(0) = Pointer to the string buffer on the stack.
+ *   TOS(1) = String size (zero)
  */
 
-#define lbSTRTMP        (0x0008)
+#define lbSTRTMP        (0x0009)
 
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
@@ -185,72 +200,72 @@
  *   function strdup(name : string) : string;
  *
  * ON INPUT
- *   TOS(0)=pointer to original string
- *   TOS(1)=length of original string
+ *   TOS(0) = pointer to original string
+ *   TOS(1) = length of original string
  * ON RETURN
- *   TOS(9)=pointer to new string
- *   TOS(1)=length of new string
+ *   TOS(9) = pointer to new string
+ *   TOS(1) = length of new string
  */
 
-#define lbSTRDUP        (0x0009)
+#define lbSTRDUP        (0x000a)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
  * ON INPUT
- *   TOS(0)=Character value
+ *   TOS(0) = Character value
  * ON RETURN
- *   TOS(0)=pointer to new string
- *   TOS(1)=length of new string
+ *   TOS(0) = pointer to new string
+ *   TOS(1) = length of new string
  */
 
-#define lbMKSTKC        (0x000a)
+#define lbMKSTKC        (0x000b)
 
 /* Concatenate a string to the end of a string.
  *
  *   function strcat(name : string1, c : char) : string;
  *
  * ON INPUT
- *   TOS(st, 0)=pointer to source string1 data
- *   TOS(st, 1)=length of source string1
- *   TOS(st, 2)=pointer to dest string2 data
- *   TOS(st, 3)=length of dest string2
+ *   TOS(st, 0) = pointer to source string1 data
+ *   TOS(st, 1) = length of source string1
+ *   TOS(st, 2) = pointer to dest string2 data
+ *   TOS(st, 3) = length of dest string2
  * ON OUTPUT
- *   TOS(st, 0)=pointer to dest string2 (unchanged)
- *   TOS(st, 1)=new length of dest string2
+ *   TOS(st, 0) = pointer to dest string2 (unchanged)
+ *   TOS(st, 1) = new length of dest string2
  */
 
-#define lbSTRCAT        (0x000b)
+#define lbSTRCAT        (0x000c)
 
 /* Concatenate a character to the end of a string.
  *
  *   function strcatc(name : string, c : char) : string;
  *
  * ON INPUT
- *   TOS(0)=character to concatenate
- *   TOS(1)=pointer to string
- *   TOS(2)=length of string
+ *   TOS(0) = character to concatenate
+ *   TOS(1) = pointer to string
+ *   TOS(2) = length of string
  * ON OUTPUT
- *   TOS(0)=pointer to string
- *   TOS(1)=new length of string
+ *   TOS(0) = pointer to string
+ *   TOS(1) = new length of string
  */
 
-#define lbSTRCATC       (0x000c)
+#define lbSTRCATC       (0x000d)
 
 /* Compare two pascal strings
  *
  *   function strcmp(name1 : string, name2 : string) : integer;
  *
  * ON INPUT
- *   TOS(2)=address of string2 data
- *   TOS(1)=length of string2
- *   TOS(4)=address of string1 data
- *   TOS(3)=length of string1
+ *   TOS(2) = address of string2 data
+ *   TOS(1) = length of string2
+ *   TOS(4) = address of string1 data
+ *   TOS(3) = length of string1
  * ON OUTPUT
- *   TOS(0)=(-1=less than, 0=equal, 1=greater than}
+ *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x000d)
+#define lbSTRCMP        (0x000e)
 
-#define MAX_LBOP        (0x000e)
+#define MAX_LBOP        (0x000f)
 
 #endif /* __PAS_LIBRARY_H */

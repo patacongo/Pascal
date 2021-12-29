@@ -106,6 +106,7 @@ clean:
 	find tests -name "*.pex" -exec rm -f {} \;
 	find tests -name "*.o1" -exec rm -f {} \;
 	find tests -name "*.o" -exec rm -f {} \;
+	find tests -name "*.d" -exec rm -f {} \;
 
 deep-clean: clean
 	rm -f .config include/config.h Make.config

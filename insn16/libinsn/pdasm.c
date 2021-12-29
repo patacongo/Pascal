@@ -460,9 +460,9 @@ static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
 /* 0x00 */ "HALT",      "GETENV",     "STRCPY",     "STRPCYX",
-/* 0x04 */ "CSTR2STR",  "CSTR2STRX",  "VAL",        "STRINIT",
-/* 0x08 */ "STRTMP",    "STRDUP",     "MKSTKC",     "STRCAT",
-/* 0x0c */ "STRCATC",    "STRCMP"
+/* 0x04 */ "CSTR2STR",  "BSTR2STR",   "CSTR2STRX",  "VAL",
+/* 0x08 */ "STRINIT",   "STRTMP",     "STRDUP",     "MKSTKC",
+/* 0x0c */ "STRCAT",    "STRCATC",    "STRCMP"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";
@@ -495,6 +495,7 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 
     default   :
       fprintf(lfile, "        ");
+      break;
     }
 
   /* Special Case Comment line format */
@@ -506,10 +507,14 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
         {
           fprintf(lfile, "%d", pop->arg1);
           if (pop->op & o16)
-            fprintf(lfile, ":%d", pop->arg2);
+            {
+              fprintf(lfile, ":%d", pop->arg2);
+            }
         }
       else if (pop->op & o16)
-        fprintf(lfile, "%d", pop->arg2);
+        {
+          fprintf(lfile, "%d", pop->arg2);
+        }
     }
 
   /* Print normal opCode mnemonic */
@@ -520,49 +525,76 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 
       /* Print pop->arg1 (if present) */
 
-      if (pop->op & o8) fprintf(lfile, "%d", pop->arg1);
+      if ((pop->op & o8) != 0)
+        {
+          fprintf(lfile, "%d", pop->arg1);
+        }
 
       /* Print ar16 (if present) */
 
-      if (pop->op & o16)
+      if ((pop->op & o16) != 0)
         {
           switch (opTable[pop->op].format)
             {
             case HEX       :
-              if (pop->op & o8) fprintf(lfile, ", ");
+              if ((pop->op & o8) != 0)
+                {
+                  fprintf(lfile, ", ");
+                }
+
               fprintf(lfile, "0x%04x", pop->arg2);
               break;
 
             case COMMENT   :
             case DECIMAL   :
-              if (pop->op & o8) fprintf(lfile, ", ");
+              if ((pop->op & o8) != 0)
+                {
+                  fprintf(lfile, ", ");
+                }
+
               fprintf(lfile, "%" PRId32, signExtend16(pop->arg2));
               break;
 
             case UDECIMAL   :
-              if (pop->op & o8) fprintf(lfile, ", ");
+              if ((pop->op & o8) != 0)
+                {
+                  fprintf(lfile, ", ");
+                }
+
               fprintf(lfile, "%u", pop->arg2);
               break;
 
             case fpOP       :
               if ((pop->arg1 & fpMASK) < MAX_FOP)
-                fprintf(lfile, "%s", fpName[(pop->arg1 & 0x3f)]);
+                {
+                  fprintf(lfile, "%s", fpName[(pop->arg1 & 0x3f)]);
+                }
               else
-                fprintf(lfile, "%s", invFpOp);
+                {
+                  fprintf(lfile, "%s", invFpOp);
+                }
               break;
 
             case xOP       :
               if (pop->arg2 < MAX_XOP)
-                fprintf(lfile, "%s", xName[pop->arg2]);
+                {
+                  fprintf(lfile, "%s", xName[pop->arg2]);
+                }
               else
-                fprintf(lfile, "%s", invXOp);
+                {
+                  fprintf(lfile, "%s", invXOp);
+                }
               break;
 
             case lbOP :
               if (pop->arg2 < MAX_LBOP)
-                fprintf(lfile, "%s", lbName[pop->arg2]);
+                {
+                  fprintf(lfile, "%s", lbName[pop->arg2]);
+                }
               else
-                fprintf(lfile, "%s", invLbOp);
+                {
+                  fprintf(lfile, "%s", invLbOp);
+                }
               break;
 
             case LABEL_DEC :

@@ -62,6 +62,8 @@ static void     pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
                            uint16_t varOffset);
 static void     pas_Cstr2str(struct pexec_s *st, uint8_t *srcCString,
                              uint16_t destVarAddr, uint16_t varOffset);
+static int      pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
+                             uint16_t arraySize);
 
 /****************************************************************************
  * Private Functions
@@ -176,6 +178,63 @@ static void pas_Cstr2str(struct pexec_s *st, uint8_t *srcCString,
     }
 }
 
+static int pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
+                        uint16_t arraySize)
+{
+  const char *src;
+  char *dest;
+  uint16_t bufferAddress;
+  int errorCode = eNOERROR;
+  int len;
+
+  /* Get a pointer to the array in the stack */
+
+  src  = (const char *)&GETSTACK(st, arrayAddress);
+
+  /* Get the length of the string in the array.  Here we assume that the
+   * string is represented as a NUL-terminated C string.
+   */
+
+  len = strnlen(src, arraySize);
+
+  /* Clip the string if necessary to fit into the string buffer allocation */
+
+  if (len > st->stralloc)
+   {
+     len = st->stralloc;
+   }
+
+  /* Check if there is space on the string stack for the new string buffer. */
+
+  if (st->csp + st->stralloc >= st->spb)
+    {
+      errorCode = eSTRSTKOVERFLOW;
+    }
+  else
+    {
+      /* Allocate a string buffer on the string stack for the new string. */
+
+      bufferAddress = INT_ALIGNUP(st->csp);
+      st->csp       = bufferAddress + st->stralloc;
+
+      /* Copy the array into the string buffer */
+
+      dest = (char *)&GETSTACK(st, bufferAddress);
+      memcpy(dest, src, len);
+
+      /* Put the new string at the top of the stack.  Order:
+       *
+       *   TOS(n)     = 16-bit pointer to the string data.
+       *   TOS(n + 1) = String size
+       */
+
+      PUSH(st, len);           /* String size */
+      PUSH(st, bufferAddress); /* String buffer address */
+    }
+
+  return errorCode;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -200,13 +259,15 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
   uint8_t  *dest;
   uint8_t  *name;
   int32_t   value;
+  int       errorCode = eNOERROR;
 
   switch (subfunc)
     {
       /* Halt processing */
 
     case lbHALT:
-      return eEXIT;
+      errorCode = eEXIT;
+      break;
 
       /* Get the value of an environment string
        *
@@ -227,18 +288,20 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       name = pexec_mkcstring(src, size);
       if (name == NULL)
         {
-          return eNOMEMORY;
+          errorCode = eNOMEMORY;
         }
+      else
+        {
+          /* Make the C-library call and free the string copy */
 
-      /* Make the C-library call and free the string copy */
+          src = (uint8_t *)getenv((char *)name);
+          free_cstring(name);
 
-      src = (uint8_t *)getenv((char *)name);
-      free_cstring(name);
+          /* Save the returned pointer in the stack */
 
-      /* Save the returned pointer in the stack */
-
-      TOS(st, 0) = (ustack_t)((uintptr_t)src >> 16);
-      TOS(st, 1) = (ustack_t)((uintptr_t)src & 0x0000ffff);
+          TOS(st, 0) = (ustack_t)((uintptr_t)src >> 16);
+          TOS(st, 1) = (ustack_t)((uintptr_t)src & 0x0000ffff);
+        }
       break;
 
       /* Copy pascal string to a pascal string
@@ -270,10 +333,10 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
      *                    offset : integer)
      *
      * ON INPUT:
-     *   TOS(0)=Address of dest string variable
-     *   TOS(1)=Pointer to source string buffer
-     *   TOS(2)=Length of source string
-     *   TOS(3)=Dest string variable address offset
+     *   TOS(0) = Address of dest string variable
+     *   TOS(1) = Pointer to source string buffer
+     *   TOS(2) = Length of source string
+     *   TOS(3) = Dest string variable address offset
      * ON RETURN: actual parameters released.
      *
      * REVISIT:  This is awkward.  Life would be much easier if the
@@ -322,15 +385,40 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       pas_Cstr2str(st, src, addr1, 0);
       break;
 
+    /* Copy binary file character array to a pascal string
+     *
+     *   function bstr2str(fileNumber : Integer, arraySize : Integer,
+     *                     arrayAddress : Integer) : String;
+     *
+     * ON INPUT:
+     *   TOS(0) = Array address
+     *   TOS(1) = Array size
+     * ON RETURN:
+     *   TOS(0) = String character buffer address
+     *   TOS(1) = String size
+     */
+
+    case lbBSTR2STR :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr1);  /* Address of the array */
+      POP(st, size);   /* Size of the array */
+
+      /* And perform the copy */
+
+      errorCode = pas_Bstr2str(st, addr1, size);
+      break;
+
     /* Copy pascal string to a element of a pascal string array
      *
      *   procedure strcpy(src : string; var dest : string; offset : integer)
      *
      * ON INPUT:
-     *   TOS(0)=Address of dest string variable
-     *   TOS(1)=Pointer to source string buffer
-     *   TOS(2)=Length of source string
-     *   TOS(3)=Dest string variable address offset
+     *   TOS(0) = Address of dest string variable
+     *   TOS(1) = Pointer to source string buffer
+     *   TOS(2) = Length of source string
+     *   TOS(3) = Dest string variable address offset
      * ON RETURN: actual parameters released.
      *
      * REVISIT:  This is awkward.  Life would be much easier if the
@@ -376,10 +464,10 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        * position where the conversion went wrong.
        *
        * ON INPUT
-       *   TOS(st, 0)=address of code
-       *   TOS(st, 1)=address of value
-       *   TOS(st, 2)=length of source string
-       *   TOS(st, 3)=pointer to source string
+       *   TOS(st, 0) = address of code
+       *   TOS(st, 1) = address of value
+       *   TOS(st, 2) = length of source string
+       *   TOS(st, 3) = pointer to source string
        * ON RETURN: actual parameters released
        */
 
@@ -394,27 +482,31 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       name = pexec_mkcstring(src, size);
       if (name == NULL)
         {
-          return eNOMEMORY;
+          errorCode = eNOMEMORY;
         }
-
-      /* Convert the string to an integer */
-
-      value = atoi((char *)name);
-      if ((value < MININT) || (value > MAXINT))
+      else
         {
-          return eINTEGEROVERFLOW;
-        }
+          /* Convert the string to an integer */
 
-      PUTSTACK(st, TOS(st, 0), 0);
-      PUTSTACK(st, TOS(st, 1), value);
-      DISCARD(st, 4);
+          value = atoi((char *)name);
+          if ((value < MININT) || (value > MAXINT))
+            {
+              errorCode = eINTEGEROVERFLOW;
+            }
+          else
+            {
+              PUTSTACK(st, TOS(st, 0), 0);
+              PUTSTACK(st, TOS(st, 1), value);
+              DISCARD(st, 4);
+            }
+        }
       break;
 
       /* Initialize a new string variable. Create a string buffer.
        *   procedure mkstk(VAR str : string);
        *
        * ON INPUT
-       *   TOS(st, 1)=pointer to the newly string variable to be initialized
+       *   TOS(st, 1) = pointer to the newly string variable to be initialized
        * ON RETURN
        */
 
@@ -429,22 +521,24 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       if (st->csp + st->stralloc >= st->spb)
         {
-          return eSTRSTKOVERFLOW;
+          errorCode = eSTRSTKOVERFLOW;
         }
+      else
+        {
+          /* Allocate a string buffer on the string stack for the new string. */
 
-      /* Allocate a string buffer on the string stack for the new string. */
+          addr2   = INT_ALIGNUP(st->csp);
+          st->csp = addr2 + st->stralloc;
 
-      addr2   = ((st->csp + 1) & ~1);
-      st->csp = addr2 + st->stralloc;
+          /* Initialize the new string.  Order:
+           *
+           *   TOS(n)     = 16-bit pointer to the string data.
+           *   TOS(n + 1) = String size
+           */
 
-      /* Initialize the new string.  Order:
-       *
-       *   TOS(n)     = 16-bit pointer to the string data.
-       *   TOS(n + 1) = String size
-       */
-
-      PUTSTACK(st, addr2, addr1 + sSTRING_DATA_OFFSET);
-      PUTSTACK(st, 0,     addr1 + sSTRING_SIZE_OFFSET);
+          PUTSTACK(st, addr2, addr1 + sSTRING_DATA_OFFSET);
+          PUTSTACK(st, 0,     addr1 + sSTRING_SIZE_OFFSET);
+        }
       break;
 
       /* Initialize a temporary string variable on the stack. It is similar
@@ -457,8 +551,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *
        * ON INPUT
        * ON RETURN
-       *   TOS(0)=Pointer to the string buffer on the stack.
-       *   TOS(1)=String size (zero)
+       *   TOS(0) = Pointer to the string buffer on the stack.
+       *   TOS(1) = String size (zero)
        */
 
     case lbSTRTMP :
@@ -468,22 +562,24 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       if (st->csp + st->stralloc >= st->spb)
         {
-          return eSTRSTKOVERFLOW;
+          errorCode = eSTRSTKOVERFLOW;
         }
+      else
+        {
+          /* Allocate a string buffer on the string stack for the new string. */
 
-      /* Allocate a string buffer on the string stack for the new string. */
+          addr1   = INT_ALIGNUP(st->csp);
+          st->csp = addr1 + st->stralloc;
 
-      addr1   = ((st->csp + 1) & ~1);
-      st->csp = addr1 + st->stralloc;
+          /* Create the new string.  Order:
+           *
+           *   TOS(n)     = 16-bit pointer to the string data.
+           *   TOS(n + 1) = String size
+           */
 
-      /* Create the new string.  Order:
-       *
-       *   TOS(n)     = 16-bit pointer to the string data.
-       *   TOS(n + 1) = String size
-       */
-
-      PUSH(st, 0);     /* String size */
-      PUSH(st, addr1); /* String buffer address */
+          PUSH(st, 0);     /* String size */
+          PUSH(st, addr1); /* String buffer address */
+        }
       break;
 
       /* Replace a string with a duplicate string residing in allocated
@@ -492,11 +588,11 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   function strdup(name : string) : string;
        *
        * ON INPUT
-       *   TOS(st, 0)=pointer to original string data
-       *   TOS(st, 1)=length of original string
+       *   TOS(st, 0) = pointer to original string data
+       *   TOS(st, 1) = length of original string
        * ON RETURN
-       *   TOS(st, 0)=pointer to new string data
-       *   TOS(st, 1)=length of new string (unchanged)
+       *   TOS(st, 0) = pointer to new string data
+       *   TOS(st, 1) = length of new string (unchanged)
        */
 
     case lbSTRDUP :
@@ -514,32 +610,34 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       if (st->csp + st->stralloc >= st->spb)
         {
-          return eSTRSTKOVERFLOW;
+          errorCode = eSTRSTKOVERFLOW;
         }
+      else
+        {
+          /* Allocate space on the string stack for the new string */
 
-      /* Allocate space on the string stack for the new string */
+          addr2    = INT_ALIGNUP(st->csp);
+          st->csp += st->stralloc;                    /* Allocate max size */
 
-      addr2    = ((st->csp + 1) & ~1);
-      st->csp += st->stralloc;                    /* Allocate max size */
+          /* Copy the string into the string stack */
 
-      /* Copy the string into the string stack */
+          src      = (uint8_t *)&GETSTACK(st, addr1); /* Pointer to original string */
+          dest     = (uint8_t *)&GETSTACK(st, addr2); /* Pointer to new string */
+          memcpy(dest, src, size);
 
-      src      = (uint8_t *)&GETSTACK(st, addr1); /* Pointer to original string */
-      dest     = (uint8_t *)&GETSTACK(st, addr2); /* Pointer to new string */
-      memcpy(dest, src, size);
+          /* Update the string buffer address */
 
-      /* Update the string buffer address */
-
-      TOS(st, 0) = addr2;
+          TOS(st, 0) = addr2;
+        }
       break;
 
       /* Replace a character with a string residing in allocated string stack.
        *   function mkstkc(c : char) : string;
        * ON INPUT
-       *   TOS(st, 0)=Character value
+       *   TOS(st, 0) = Character value
        * ON RETURN
-       *   TOS(st, 0)=pointer to new string
-       *   TOS(st, 1)=length of new string
+       *   TOS(st, 0) = pointer to new string
+       *   TOS(st, 1) = length of new string
        */
 
     case lbMKSTKC :
@@ -547,39 +645,41 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       if (st->csp + st->stralloc >= st->spb)
         {
-          return eSTRSTKOVERFLOW;
+          errorCode = eSTRSTKOVERFLOW;
         }
+      else
+        {
+          /* Allocate space on the string stack for the new string */
 
-      /* Allocate space on the string stack for the new string */
+          addr2    = INT_ALIGNUP(st->csp);
+          st->csp += st->stralloc;                     /* Allocate max size */
 
-      addr2    = ((st->csp + 1) & ~1);
-      st->csp += st->stralloc;                     /* Allocate max size */
+          /* Save the length at the beginning of the copy */
 
-      /* Save the length at the beginning of the copy */
+          dest     = (uint8_t *)&GETSTACK(st, addr2);  /* Pointer to new string */
 
-      dest     = (uint8_t *)&GETSTACK(st, addr2);  /* Pointer to new string */
+          /* Copy the character into the string stack */
 
-      /* Copy the character into the string stack */
+          *dest++  = TOS(st, 0);                       /* Save character as string */
 
-      *dest++  = TOS(st, 0);                       /* Save character as string */
+          /* Update the stack content */
 
-      /* Update the stack content */
-
-      TOS(st, 0) = 1;                             /* String length */
-      PUSH(st, addr2);                            /* String address */
+          TOS(st, 0) = 1;                             /* String length */
+          PUSH(st, addr2);                            /* String address */
+        }
       break;
 
       /* Concatenate a string to the end of a string.
        *   function strcat(name : string1, c : char) : string;
        *
        * ON INPUT
-       *   TOS(st, 0)=pointer to source string1 data
-       *   TOS(st, 1)=length of source string1
-       *   TOS(st, 2)=pointer to dest string2 data
-       *   TOS(st, 3)=length of dest string2
+       *   TOS(st, 0) = pointer to source string1 data
+       *   TOS(st, 1) = length of source string1
+       *   TOS(st, 2) = pointer to dest string2 data
+       *   TOS(st, 3) = length of dest string2
        * ON OUTPUT
-       *   TOS(st, 0)=pointer to dest string2 (unchanged)
-       *   TOS(st, 1)=new length of dest string2
+       *   TOS(st, 0) = pointer to dest string2 (unchanged)
+       *   TOS(st, 1) = new length of dest string2
        */
 
     case lbSTRCAT :
@@ -595,7 +695,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       if (uparm1 + uparm2 > st->stralloc)
         {
-          return eSTRSTKOVERFLOW;
+          errorCode = eSTRSTKOVERFLOW;
         }
       else
         {
@@ -617,12 +717,12 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   function strcatc(name : string, c : char) : string;
        *
        * ON INPUT
-       *   TOS(st, 0)=character to concatenate
-       *   TOS(st, 1)=pointer to string
-       *   TOS(st, 2)=length of string
+       *   TOS(st, 0) = character to concatenate
+       *   TOS(st, 1) = pointer to string
+       *   TOS(st, 2) = length of string
        * ON OUTPUT
-       *   TOS(st, 0)=pointer to string
-       *   TOS(st, 1)=new length of string
+       *   TOS(st, 0) = pointer to string
+       *   TOS(st, 1) = new length of string
        */
 
     case lbSTRCATC :
@@ -639,7 +739,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       if (size + 1 >= st->stralloc)
         {
-          return eSTRSTKOVERFLOW;
+          errorCode = eSTRSTKOVERFLOW;
         }
       else
         {
@@ -657,12 +757,12 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* Compare two pascal strings
        *   function strcmp(name1 : string, name2 : string) : integer;
        * ON INPUT
-       *   TOS(st, 2)=address of string2 data
-       *   TOS(st, 1)=length of string2
-       *   TOS(st, 4)=address of string1 data
-       *   TOS(st, 3)=length of string1
+       *   TOS(st, 2) = address of string2 data
+       *   TOS(st, 1) = length of string2
+       *   TOS(st, 4) = address of string1 data
+       *   TOS(st, 3) = length of string1
        * ON OUTPUT
-       *   TOS(st, 0)=(-1=less than, 0=equal, 1=greater than}
+       *   TOS(st, 0) = (-1=less than, 0=equal, 1=greater than}
        */
 
     case lbSTRCMP :
@@ -713,13 +813,15 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
           {
             result = memcmp(dest, src, uparm1);
           }
+
         TOS(st, 0) = result;
       }
       break;
 
     default :
-      return eBADSYSLIBCALL;
+      errorCode = eBADSYSLIBCALL;
+      break;
     }
 
-  return eNOERROR;
+  return errorCode;
 }

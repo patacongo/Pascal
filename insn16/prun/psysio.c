@@ -97,8 +97,6 @@ static int      pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
 static int      pexec_ReadChar(uint16_t fileNumber, uint8_t *dest);
 static int      pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
                                  uint16_t *stringVarPtr);
-static int      pexec_ReadBinString(uint16_t fileNumber, char *arrayPtr,
-                                    uint16_t arraySize);
 static int      pexec_ReadReal(uint16_t fileNumber, uint16_t *dest);
 static int      pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
                                  uint16_t size);
@@ -520,39 +518,6 @@ static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
           pexec_CheckEoln(fileNumber, stringBufferPtr);
           stringVarPtr[sSTRING_SIZE_OFFSET / sINT_SIZE] =
             strlen(stringBufferPtr);
-        }
-    }
-
-  return errorCode;
-}
-
-static int pexec_ReadBinString(uint16_t fileNumber, char *arrayPtr,
-                               uint16_t arraySize)
-{
-  int errorCode = eNOERROR;
-
-  if (fileNumber >= MAX_OPEN_FILES)
-    {
-      errorCode = eBADFILE;
-    }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_READ)
-    {
-      errorCode = eNOTOPENFORREAD;
-    }
-  else
-    {
-      char *ptr = fgets(arrayPtr, arraySize,
-                        g_fileTable[fileNumber].stream);
-
-      if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
-        {
-          errorCode = eREADFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
-        }
-      else
-        {
-          pexec_CheckEoln(fileNumber, arrayPtr);
         }
     }
 
@@ -984,21 +949,6 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 
       errorCode = pexec_ReadString(st, fileNumber,
                                    (uint16_t *)&st->dstack.b[address]);
-      break;
-
-    /* READ_STRING: TOS   = Read address
-     *              TOS+1 = Read size
-     *              TOS+2 = File number
-     */
-
-    case xREAD_BINSTRING :
-      POP(st, address);     /* Read address */
-      POP(st, size);        /* Read size */
-      POP(st, fileNumber);  /* File number from stack */
-
-      errorCode = pexec_ReadBinString(fileNumber,
-                                      (char *)&st->dstack.b[address],
-                                      size);
       break;
 
     /* READ_REAL: TOS   = Read address

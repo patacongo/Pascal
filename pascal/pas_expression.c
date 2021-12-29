@@ -308,13 +308,6 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
    *    calls to system functions that return exprCString pointers
    *    that must be converted to exprString records upon assignment.
    *
-   * 5. We have a hack in the name space.  You use a bogus name
-   *    to represent a string reference that has string stack
-   *    allocated with it.  For expression processing purposes,
-   *    exprString and exprStkString are the same thing.  The
-   *    difference is that we have to clean up the string stack
-   *    for the latter.
-   *
    * Special case:
    *
    *    We will perform automatic conversions to real from integer
@@ -700,27 +693,24 @@ static exprType_t simpleExpression(exprType_t findExprType)
 
       if (term1Type == exprString && operation == '+')
         {
-          /* Duplicate the string on the string stack.  And
-           * change the expression type to reflect this.
-           */
+          /* Duplicate the string on the string stack. */
 
           pas_StandardFunctionCall(lbSTRDUP);
-          term1Type = exprStkString;
         }
 
-      /* If we are going to add something to a char, then the
-       * result must be a string.  We will similarly have to
-       * convert the character to a string.
+      /* If we are going to add something to a char, then the result must be
+       * a string.  We will similarly have to convert the character to a
+       * string.
        */
 
       else if (term1Type == exprChar && operation == '+')
         {
-          /* Duplicate the string on the string stack.  And
+          /* Expand the character to a string on the string stack.  And
            * change the expression type to reflect this.
            */
 
           pas_StandardFunctionCall(lbMKSTKC);
-          term1Type = exprStkString;
+          term1Type = exprString;
         }
 
       /* Get the 2nd term */
@@ -811,8 +801,8 @@ static exprType_t simpleExpression(exprType_t findExprType)
                * made the conversion for the case of exprString.
                */
 
-            case exprStkString :
-              if (term2Type == exprString || term2Type == exprStkString)
+            case exprString :
+              if (term2Type == exprString)
                 {
                   /* We are concatenating one string with another.*/
 
@@ -1138,10 +1128,10 @@ static exprType_t factor(exprType_t findExprType)
       break;
 
     case tREAL_CONST     :
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+0));
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+1));
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+2));
-      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal)+3));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal) + 0));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal) + 1));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal) + 2));
+      pas_GenerateDataOperation(opPUSH, (int32_t)*(((uint16_t*)&g_tknReal) + 3));
       getToken();
       factorType = exprReal;
       break;
@@ -1398,7 +1388,10 @@ static exprType_t complexFactor(void)
 static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 {
   symbol_t  *typePtr;
+  symbol_t  *baseTypePtr;
+  symbol_t  *nextPtr;
   exprType_t factorType;
+  uint16_t   arrayKind;
 
   TRACE(g_lstFile,"[simplifyFactor]");
 
@@ -1448,9 +1441,6 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
       else if (g_token == '.')
         {
-          symbol_t *baseTypePtr;
-          symbol_t *nextPtr;
-
           if (((factorFlags & ADDRESS_DEREFERENCE) != 0) &&
               ((factorFlags & VAR_PARM_FACTOR) == 0))
             {
@@ -1642,8 +1632,7 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
       if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.type == sPOINTER)
         {
-          symbol_t *baseTypePtr = typePtr->sParm.t.parent;
-
+          baseTypePtr   = typePtr->sParm.t.parent;
           varPtr->sKind = baseTypePtr->sParm.t.type;
 
           /* REVISIT:  What if the type is a pointer to a pointer? */
@@ -1677,6 +1666,31 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
           error(eARRAYTYPE);
         }
 
+      /* Get a pointer to the underlying base type of the array */
+
+      nextPtr         = typePtr;
+      baseTypePtr     = typePtr;
+      while (nextPtr != NULL && nextPtr->sKind == sTYPE)
+        {
+          baseTypePtr = nextPtr;
+          nextPtr     = baseTypePtr->sParm.t.parent;
+        }
+
+      /* Extract the base type */
+
+      arrayKind = baseTypePtr->sParm.t.type;
+
+      /* REVISIT:  For subranges, we use the base type of the subrange. */
+
+      if (arrayKind == sSUBRANGE)
+        {
+          arrayKind = baseTypePtr->sParm.t.subType;
+        }
+
+      /* The "normal" case, an array will be followed by an index within
+       * braces.
+       */
+
       if (g_token == '[')
         {
           /* Get the type of the index.  We will need minimum value of
@@ -1688,21 +1702,7 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
-              symbol_t *nextPtr;
-              symbol_t *baseTypePtr;
-              uint16_t arrayKind;
-
               factorFlags     |= INDEXED_FACTOR;
-
-              /* Get a pointer to the underlying base type symbol */
-
-              nextPtr         = typePtr;
-              baseTypePtr     = typePtr;
-              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-                {
-                  baseTypePtr = nextPtr;
-                  nextPtr     = baseTypePtr->sParm.t.parent;
-                }
 
               /* Generate the array offset calculation and indexed load */
 
@@ -1711,17 +1711,6 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
               /* We have reduced this to a base type.  So we can generate
                * the indexed load from that base type.
                */
-
-              arrayKind = baseTypePtr->sParm.t.type;
-
-             /* REVISIT:  For subranges, we use the base type of the
-              * subrange.
-              */
-
-              if (arrayKind == sSUBRANGE)
-                {
-                  arrayKind = baseTypePtr->sParm.t.subType;
-                }
 
               varPtr->sKind  = arrayKind;
               factorType     = simplifyFactor(varPtr, factorFlags);
@@ -1736,6 +1725,25 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
               varPtr->sKind        = typePtr->sParm.t.type;
               varPtr->sParm.v.size = typePtr->sParm.t.asize;
             }
+        }
+
+      /* A very special case is 'PACKED ARRAY[] OF CHAR' which legacy pascal
+       * treats as a STRING.
+       */
+
+      else if (arrayKind == sCHAR)
+        {
+          /* Convert the char array to a string using the BSTR2STR run-time
+           * library function.  We need:
+           *
+           *    TOS   = Address of array
+           *    TOS+1 = Size of array (bytes)
+           */
+
+          pas_GenerateStackReference(opLAS, varPtr);
+          pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.size);
+          pas_StandardFunctionCall(lbBSTR2STR);
+          factorType = exprString;
         }
 
       /* An ARRAY name may be a valid factor as the input parameter of
@@ -2442,7 +2450,7 @@ static exprType_t simplifyPtrFactor(symbol_t *varPtr, uint8_t factorFlags)
         {
           /* Get the type of the index.  We will need minimum value of
            * if the index type in order to offset the array index
-           * calcaultion
+           * calculation
            */
 
           symbol_t *indexTypePtr = typePtr->sParm.t.index;
@@ -3464,7 +3472,6 @@ static bool isOrdinalType(exprType_t testExprType)
 static bool isAnyStringType(exprType_t testExprType)
 {
   if (testExprType == exprString ||
-      testExprType == exprStkString ||
       testExprType == exprCString)
     {
       return true;
@@ -3477,8 +3484,7 @@ static bool isAnyStringType(exprType_t testExprType)
 
 static bool  isStringReference (exprType_t testExprType)
 {
-  if (testExprType == exprString ||
-      testExprType == exprStkString)
+  if (testExprType == exprString)
     {
       return true;
     }

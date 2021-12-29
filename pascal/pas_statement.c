@@ -903,7 +903,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
    * runtime call will account for any necesary string type conversion.
    */
 
-  if (stringKind == exprString || stringKind == exprStkString)
+  if (stringKind == exprString)
     {
       /* It is a pascal string type. Current stack representation is:
        *

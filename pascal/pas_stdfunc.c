@@ -453,18 +453,13 @@ static exprType_t getenvFunc(void)
 
   pas_CheckLParen();
 
-  /* Get the string expression representing the environment variable
-   * name.
-   */
+  /* Get the string expression representing the environment variable name. */
 
   stringType = pas_Expression(exprString, NULL);
 
-  /* Two possible kinds of strings could be returned.
-   * Anything else other then 'exprString' would be an error (but
-   * should happen).
-   */
+  /* Any expression other then 'exprString' would be an error. */
 
-  if (stringType != exprString && stringType != exprStkString)
+  if (stringType != exprString)
     {
       error(eINVARG);
     }
