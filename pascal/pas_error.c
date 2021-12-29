@@ -61,27 +61,27 @@
  **********************************************************************/
 
 #if CONFIG_DEBUG
-#define DUMPTABLES pas_DumpTables()
+#  define DUMPTABLES pas_DumpTables()
 #else
-#define DUMPTABLES
+#  define DUMPTABLES
 #endif
 
 /**********************************************************************
  * Private Variables
  **********************************************************************/
 
-static const char fmtErrNoToken[] =
+static const char g_fmtErrNoToken[] =
    "Line %d:%04" PRIu32 " Error %02x Token %02x\n";
-static const char fmtErrWithToken[] =
+static const char g_fmtErrWithToken[] =
    "Line %d:%04" PRIu32 " Error %02x Token %02x (%s)\n";
-static const char fmtErrAbort[] =
+static const char g_fmtErrAbort[] =
    "Fatal Error %d -- Compilation aborted\n";
 
 /**********************************************************************
  * Private Function Prototypes
  **********************************************************************/
 
-static void printError(uint16_t errcode);
+static void pas_PrintError(uint16_t errcode);
 
 /***********************************************************************/
 
@@ -112,7 +112,7 @@ void warn(uint16_t errcode)
 
    /* Write error record to the error and list files */
 
-   printError(errcode);
+   pas_PrintError(errcode);
 
    /* Increment the count of warning */
 
@@ -130,7 +130,7 @@ void error(uint16_t errcode)
 #else
    /* Write error record to the error and list files */
 
-   printError(errcode);
+   pas_PrintError(errcode);
 
    /* Check if the error count has been execeeded the max allowable */
 
@@ -150,7 +150,7 @@ void fatal(uint16_t errcode)
 
    /* Write error record to the error and list files */
 
-   printError( errcode );
+   pas_PrintError( errcode );
 
    /* Dump the tables (if CONFIG_DEBUG) */
 
@@ -158,8 +158,8 @@ void fatal(uint16_t errcode)
 
    /* And say goodbye */
 
-   printf(fmtErrAbort, errcode);
-   fprintf(g_lstFile, fmtErrAbort, errcode);
+   printf(g_fmtErrAbort, errcode);
+   fprintf(g_lstFile, g_fmtErrAbort, errcode);
 
    exit(1);
 
@@ -167,23 +167,23 @@ void fatal(uint16_t errcode)
 
 /***********************************************************************/
 
-static void printError(uint16_t errcode)
+static void pas_PrintError(uint16_t errcode)
 {
    /* Write error record to the error and list files */
 
    if ((g_tokenString) && (g_tokenString < g_stringSP))
      {
-       fprintf (g_errFile, fmtErrWithToken,
+       fprintf (g_errFile, g_fmtErrWithToken,
                 FP->include, FP->line, errcode, g_token, g_tokenString);
-       fprintf (g_lstFile, fmtErrWithToken,
+       fprintf (g_lstFile, g_fmtErrWithToken,
                 FP->include, FP->line, errcode, g_token, g_tokenString);
        g_stringSP = g_tokenString; /* Clean up string stack */
      }
    else
      {
-       fprintf (g_errFile, fmtErrNoToken,
+       fprintf (g_errFile, g_fmtErrNoToken,
                 FP->include, FP->line, errcode, g_token);
-       fprintf (g_lstFile, fmtErrNoToken,
+       fprintf (g_lstFile, g_fmtErrNoToken,
                 FP->include, FP->line, errcode, g_token);
      }
 }

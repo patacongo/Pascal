@@ -88,9 +88,9 @@
  * Private Function Prototypes
  ***************************************************************/
 
-static void constantSimpleExpression(void);
-static void constantTerm(void);
-static void constantFactor(void);
+static void pas_ConstantSimpleExpression(void);
+static void pas_ConstantTerm(void);
+static void pas_ConstantFactor(void);
 
 /***************************************************************
  * Public Data
@@ -114,7 +114,7 @@ void pas_ConstantExression(void)
 
   /* Get the value of a simple constant expression */
 
-  constantSimpleExpression();
+  pas_ConstantSimpleExpression();
 
   /* Is it followed by a relational operator? */
 
@@ -127,7 +127,7 @@ void pas_ConstantExression(void)
 
       /* Get the second simple expression */
 
-      constantSimpleExpression();
+      pas_ConstantSimpleExpression();
       if (simple1 != constantToken)
         {
           /* Handle the case where the 1st argument is REAL and the
@@ -236,14 +236,14 @@ void pas_ConstantExression(void)
 /***************************************************************/
 /* Process Simple Expression */
 
-static void constantSimpleExpression(void)
+static void pas_ConstantSimpleExpression(void)
 {
   int16_t unary = ' ';
   int     term;
   int32_t termInt;
   double  termReal;
 
-  TRACE(g_lstFile,"[constantSimpleExpression]");
+  TRACE(g_lstFile,"[pas_ConstantSimpleExpression]");
 
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]] */
   /* get +/- unary operation */
@@ -256,7 +256,7 @@ static void constantSimpleExpression(void)
 
   /* Process first (non-optional) term and apply unary operation */
 
-  constantTerm();
+  pas_ConstantTerm();
   term = constantToken;
   if ((unary != ' ') && !isAdditiveType(term))
     {
@@ -291,7 +291,7 @@ static void constantSimpleExpression(void)
       /* Get the 2nd term */
 
       getToken();
-      constantTerm();
+      pas_ConstantTerm();
 
       /* Before generating the operation, verify that the types match.
        * Perform automatic type conversion from INTEGER to REAL as
@@ -371,18 +371,18 @@ static void constantSimpleExpression(void)
 /***************************************************************/
 /* Evaluate a TERM */
 
-void constantTerm(void)
+void pas_ConstantTerm(void)
 {
   int     operator;
   int     factor;
   int32_t factorInt;
   double  factorReal;
 
-  TRACE(g_lstFile,"[constantTerm]");
+  TRACE(g_lstFile,"[pas_ConstantTerm]");
 
   /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
 
-  constantFactor();
+  pas_ConstantFactor();
   factor     = constantToken;
   factorInt  = constantInt;
   factorReal = constantReal;
@@ -418,7 +418,7 @@ void constantTerm(void)
     /* Get the next factor */
 
     getToken();
-    constantFactor();
+    pas_ConstantFactor();
 
     /* Before generating the operation, verify that the types match.
      * Perform automatic type conversion from INTEGER to REAL as
@@ -516,9 +516,9 @@ void constantTerm(void)
 /***************************************************************/
 /* Process a constant FACTOR */
 
-static void constantFactor(void)
+static void pas_ConstantFactor(void)
 {
-  TRACE(g_lstFile,"[constantFactor]");
+  TRACE(g_lstFile,"[pas_ConstantFactor]");
 
   /* Process by token type */
 
@@ -548,7 +548,7 @@ static void constantFactor(void)
 
     case tNOT:
       getToken();
-      constantFactor();
+      pas_ConstantFactor();
       if ((constantToken != tINT_CONST) && (constantToken != tBOOLEAN_CONST))
         {
           error(eFACTORTYPE);

@@ -56,8 +56,8 @@
  * Private Function Prototypes
  ***************************************************************/
 
-static exprType_t builtInSizeOf(void);
-static exprType_t builtInLength(void);
+static exprType_t pas_BuiltInSizeOf(void);
+static exprType_t pas_BuiltInLength(void);
 
 /***************************************************************
  * Private Functions
@@ -65,7 +65,7 @@ static exprType_t builtInLength(void);
 
 /***********************************************************************/
 
-static exprType_t builtInSizeOf(void)
+static exprType_t pas_BuiltInSizeOf(void)
 {
   uint16_t size;
 
@@ -121,7 +121,7 @@ static exprType_t builtInSizeOf(void)
 
 /***********************************************************************/
 
-static exprType_t builtInLength(void)
+static exprType_t pas_BuiltInLength(void)
 {
   exprType_t exprType;
 
@@ -178,11 +178,11 @@ exprType_t pas_BuiltInFunction(void)
           /* Functions returning an integer */
 
         case txSIZEOF :
-          exprType = builtInSizeOf();
+          exprType = pas_BuiltInSizeOf();
           break;
 
         case txLENGTH :
-          exprType = builtInLength();
+          exprType = pas_BuiltInLength();
           break;
 
         default :

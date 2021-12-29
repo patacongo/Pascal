@@ -291,13 +291,15 @@ static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
           inch   = poffGetProgByte(poffHandle);
 
           /* Is it LIB STRINIT? STRDUP? or other string library functions
-           * that we should not optimize?
+           * that we should not optimize?  These functions all allocate new
+           * memory from the string stack.
            */
 
-          if ((arg16 == lbSTRINIT) ||
-              (arg16 == lbSTRTMP) ||
-              (arg16 == lbSTRDUP) ||
-              (arg16 == lbMKSTKC))
+          if (arg16 == lbSTRINIT  ||
+              arg16 == lbSTRTMP   ||
+              arg16 == lbSTRDUP   ||
+              arg16 == lbMKSTKC   ||
+              arg16 == lbBSTR2STR)
             {
               /* Flush the buffered data with the PUSHS */
 
