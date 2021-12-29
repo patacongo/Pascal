@@ -64,6 +64,9 @@ static void     pas_Cstr2str(struct pexec_s *st, uint8_t *srcCString,
                              uint16_t destVarAddr, uint16_t varOffset);
 static int      pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
                              uint16_t arraySize);
+static int      pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
+                             uint16_t arraySize, uint16_t stringBufferAddress,
+                             uint16_t stringSize);
 
 /****************************************************************************
  * Private Functions
@@ -235,6 +238,37 @@ static int pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
   return errorCode;
 }
 
+static int pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
+                        uint16_t arraySize, uint16_t stringBufferAddress,
+                        uint16_t stringSize)
+{
+  const char *src;
+  char *dest;
+  int errorCode = eNOERROR;
+  int len;
+
+  /* Get a pointer to the source string buffer and the dest array. */
+
+  src  = (const char *)&GETSTACK(st, stringBufferAddress);
+  dest = (char *)&GETSTACK(st, arrayAddress);
+
+  /* Get the length of the string to transfer. */
+
+  len = stringSize;
+
+  /* Clip the string if necessary to fit into the array */
+
+  if (len > arraySize)
+    {
+      stringSize = arraySize;
+    }
+
+  /* Copy the string buffer into the array */
+
+  memcpy(dest, src, len);
+  return errorCode;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -385,7 +419,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       pas_Cstr2str(st, src, addr1, 0);
       break;
 
-    /* Copy binary file character array to a pascal string
+    /* Copy binary file character array to a pascal string.  Used when a non-
+     * indexed PACKED ARRAY[] OF CHAR appears as a factor in an RVALUE.
      *
      *   function bstr2str(fileNumber : Integer, arraySize : Integer,
      *                     arrayAddress : Integer) : String;
@@ -408,6 +443,37 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* And perform the copy */
 
       errorCode = pas_Bstr2str(st, addr1, size);
+      break;
+
+    /* Copy a pascal string into a binary file character array.  Use when a
+     * non-indexed PACKED ARRAY[] OF CHAR appears as the LVALUE in an
+     * assignment.
+     *
+     *   function str2bstr(arraySize : Integer, arrayAddress : Integer,
+     *                     source : String);
+     *
+     * ON INPUT:
+     *   TOS(0) = Address of the array (destination)
+     *   TOS(1) = Size of the array
+     *   TOS(2) = Address of the string (source)
+     *   TOS(3) = Size of the string
+     * ON RETURN:
+     *   All inputs consumbed
+     */
+
+    case lbSTR2BSTR :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr1);  /* Address of the array */
+      POP(st, uparm1);   /* Size of the array */
+
+      POP(st, addr2);  /* Address of the array */
+      POP(st, uparm2);   /* Size of the array */
+
+      /* And perform the copy */
+
+      errorCode = pas_Str2bstr(st, addr1, uparm1, addr2, uparm2);
       break;
 
     /* Copy pascal string to a element of a pascal string array

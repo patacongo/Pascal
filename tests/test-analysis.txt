@@ -58,18 +58,13 @@ Compiles without error, but then crashes writing the POFF file.  Apparently
 some information in the debug section is corrupted.
 
 ########src/014-arrayrecord.pas########
-Line 0:0014 Error 21 Token 2c
+Compiles OK, but the output is mostly blank:
 
-Line:
- 12 procedure printBook( var name : NameString );
- 13 begin
- 14   writeln(name.title, ': ', name.info);
- 15 end;
-
-Error:
-#define eLBRACKET        ((uint16_t) 0x21)
-
-Token: ','
+Using string stack size = 1024
+src/014-arrayrecord.pex Loaded
+:
+:
+:
 
 Analysis:
 This some of the traditonal Pascal behavior that is not implemented.  'title' is
@@ -81,16 +76,11 @@ NameString =
      info:  packed array [1..50] of char;
   end;
 
-But accessed without indexing:
-
-   writeln(name.title, ': ', name.info);
-
-Even though title is an array, no index is required for the special case of
-packed array of char.
+But accessed without indexing in all cases.  Even though title is an array, no
+index is required for the special case of packed array of char.
 
 More modern Pascal implement added type string for these cases and this could
-be fixed by simply changing 'packed array [1..50] of char;' to 'string''.  Is
-backward compatible support needed?
+be fixed by simply changing 'packed array [1..50] of char;' to 'string''.
 
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b

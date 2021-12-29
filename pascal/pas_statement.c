@@ -92,6 +92,7 @@ static void pas_StringAssignment (symbol_t *varPtr, symbol_t *typePtr,
                                   uint8_t assignFlags);
 static void pas_LargeAssignment  (uint16_t storeOp, exprType_t assignType,
                                   symbol_t *varPtr, symbol_t *typePtr);
+static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr);
 
 /* Other Statements */
 
@@ -637,6 +638,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                   varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
                 }
 
+              /* The RECORD OBJECT should not be indexed, even if the RECORD was */
+
+              assignFlags &= ~INDEXED_ASSIGNMENT;
+
+              /* Recurse to handle the RECORD OBJECT */
+
               getToken();
               pas_SimpleAssignment(varPtr, assignFlags);
             }
@@ -802,7 +809,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
          */
 
         if (assignFlags != 0) error(eARRAYTYPE);
-        assignFlags |= INDEXED_ASSIGNMENT;
 
         indexTypePtr = typePtr->sParm.t.index;
         if (indexTypePtr == NULL) error(eHUH);
@@ -818,13 +824,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
             nextType    = baseTypePtr->sParm.t.parent;
           }
 
-        /* Handle the array index */
-
-        pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
-
-        /* REVISIT:  Missing generation of the indexed load? */
-
-        /* Get the aize and base type of the array */
+        /* Get the size and base type of the array */
 
         size      = baseTypePtr->sParm.t.asize;
         arrayKind = baseTypePtr->sParm.t.type;
@@ -836,9 +836,32 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
             arrayKind = baseTypePtr->sParm.t.subType;
           }
 
-        varPtr->sKind        = arrayKind;
-        varPtr->sParm.v.size = size;
-        pas_SimpleAssignment(varPtr, assignFlags);
+        /* Handle the array index if present */
+
+        if (g_token == '[')
+          {
+            pas_ArrayIndex(indexTypePtr, size);
+
+            varPtr->sKind        = arrayKind;
+            varPtr->sParm.v.size = size;
+            assignFlags         |= INDEXED_ASSIGNMENT;
+            pas_SimpleAssignment(varPtr, assignFlags);
+          }
+
+        /* For old-time Pascal support, we need to be able to handler
+         * assignments to 'PACKED ARRAY[] OF CHAR'.
+         */
+
+        else if (arrayKind == sCHAR)
+          {
+            /* This should be followed by ':=' */
+
+            pas_ArrayAssignment(varPtr, typePtr);
+          }
+        else
+          {
+            error(eLBRACKET);
+          }
       }
       break;
 
@@ -973,6 +996,33 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType_t assignType,
    pas_Expression(assignType, typePtr);
    pas_GenerateDataSize(varPtr->sParm.v.size);
    pas_GenerateStackReference(storeOp, varPtr);
+}
+
+/***********************************************************************/
+/* Special Case: Process assignment to a 'PACKED ARRAY[] OF CHAR' */
+
+static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr)
+{
+   TRACE(g_lstFile,"[pas_ArrayAssignment]");
+
+   /* FORM:  <variable OR function identifer> := <expression> */
+
+   if (g_token != tASSIGN) error (eASSIGN);
+   else getToken();
+
+   pas_Expression(exprString, typePtr);
+
+   /* Set up the run-time library function call:
+    *
+    *    TOS(0) = Address of the array (destination)
+    *    TOS(1) = Size of the array
+    *    TOS(2) = Address of the string (source)
+    *    TOS(3) = Size of the string
+    */
+
+   pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.size);
+   pas_GenerateStackReference(opLAS, varPtr);
+   pas_StandardFunctionCall(lbSTR2BSTR);
 }
 
 /***********************************************************************/
