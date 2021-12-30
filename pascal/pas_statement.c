@@ -64,12 +64,13 @@
  * Private Definitions
  ****************************************************************************/
 
-/* REVIST: duplicated in pas_expression.h */
+/* Assignment flags */
 
-#define ADDRESS_DEREFERENCE  0x01
-#define ADDRESS_ASSIGNMENT   0x02
-#define INDEXED_ASSIGNMENT   0x04
-#define VAR_PARM_ASSIGNMENT  0x08
+#define ASSIGN_DEREFERENCE   (1 << 0)
+#define ASSIGN_ADDRESS       (1 << 1)
+#define ASSIGN_INDEXED       (1 << 2)
+#define ASSIGN_OUTER_INDEXED (1 << 3)
+#define ASSIGN_VAR_PARM      (1 << 4)
 
 #define isConstant(x) \
         (  ((x) == tINT_CONST) \
@@ -92,7 +93,8 @@ static void pas_StringAssignment (symbol_t *varPtr, symbol_t *typePtr,
                                   uint8_t assignFlags);
 static void pas_LargeAssignment  (uint16_t storeOp, exprType_t assignType,
                                   symbol_t *varPtr, symbol_t *typePtr);
-static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr);
+static void pas_ArrayAssignment  (symbol_t *varPtr, symbol_t *typePtr,
+                                  uint8_t assignFlags);
 
 /* Other Statements */
 
@@ -278,14 +280,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        */
 
     case sINT :
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprInteger, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTSX, exprIntegerPtr, varPtr, typePtr);
             }
@@ -296,12 +298,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       else
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprInteger, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTS, exprIntegerPtr, varPtr, typePtr);
             }
@@ -313,14 +315,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sCHAR :
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTIB, exprChar, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTSX, exprCharPtr, varPtr, typePtr);
             }
@@ -331,12 +333,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       else
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTIB, exprChar, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTS, exprCharPtr, varPtr, typePtr);
             }
@@ -348,14 +350,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sBOOLEAN :
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprBoolean, varPtr, NULL);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTSX, exprBooleanPtr, varPtr, typePtr);
             }
@@ -366,12 +368,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       else
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprBoolean, varPtr, NULL);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTS, exprBooleanPtr, varPtr, typePtr);
             }
@@ -387,14 +389,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
      */
 
     case sREAL :
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTSX, exprRealPtr, varPtr, typePtr);
             }
@@ -405,12 +407,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       else
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_LargeAssignment(opSTIM, exprReal, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTS, exprRealPtr, varPtr, typePtr);
             }
@@ -422,14 +424,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sSCALAR :
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprScalar, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTSX, exprScalarPtr, varPtr, typePtr);
             }
@@ -440,12 +442,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       else
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprScalar, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTS, exprScalarPtr, varPtr, typePtr);
             }
@@ -457,14 +459,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sSET_OF :
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
               pas_Assignment(opSTI, exprSet, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTSX, exprSetPtr, varPtr, typePtr);
             }
@@ -475,12 +477,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       else
         {
-          if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_Assignment(opSTI, exprSet, varPtr, typePtr);
             }
-          else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+          else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
               pas_Assignment(opSTS, exprSetPtr, varPtr, typePtr);
             }
@@ -500,15 +502,15 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sSTRING :
       {
-        if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+        if ((assignFlags & ASSIGN_INDEXED) != 0)
           {
-            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+            if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
               {
                 /* REVISIT -- Needs some thought */
 
                 error(eNOTYET);
               }
-            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+            else if ((assignFlags & ASSIGN_ADDRESS) != 0)
               {
                 /* REVISIT -- Needs some thought */
 
@@ -521,13 +523,13 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
           }
         else
           {
-            if ((assignFlags & ADDRESS_DEREFERENCE) != 0)
+            if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
               {
                 /* REVISIT -- Needs some thought */
 
                 error(eNOTYET);
               }
-            else if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+            else if ((assignFlags & ASSIGN_ADDRESS) != 0)
               {
                 /* REVISIT -- Needs some thought */
 
@@ -548,11 +550,11 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
       /* Check if this is a pointer to a record */
 
-      if ((assignFlags & ADDRESS_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_ADDRESS) != 0)
         {
           if (g_token == '.') error(ePOINTERTYPE);
 
-          if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+          if ((assignFlags & ASSIGN_INDEXED) != 0)
             {
               pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
             }
@@ -561,8 +563,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTS, exprRecordPtr, varPtr, typePtr);
             }
         }
-      else if (((assignFlags & ADDRESS_DEREFERENCE) != 0) &&
-               ((assignFlags & VAR_PARM_ASSIGNMENT) == 0))
+      else if (((assignFlags & ASSIGN_DEREFERENCE) != 0) &&
+               ((assignFlags & ASSIGN_VAR_PARM) == 0))
         {
           error(ePOINTERTYPE);
         }
@@ -619,8 +621,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
               /* Special case:  The record is a VAR parameter. */
 
-              if (assignFlags == (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
-                                  VAR_PARM_ASSIGNMENT))
+              if (assignFlags == (ASSIGN_INDEXED | ASSIGN_DEREFERENCE |
+                                  ASSIGN_VAR_PARM))
                 {
                   /* Add the offset to the record field to the RECORD address
                    * that should already be on the stack.
@@ -638,9 +640,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                   varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
                 }
 
-              /* The RECORD OBJECT should not be indexed, even if the RECORD was */
+              /* The RECORD OBJECT should not be indexed, even if the "outer"
+               * RECORD must be.
+               */
 
-              assignFlags &= ~INDEXED_ASSIGNMENT;
+              assignFlags &= ~ASSIGN_INDEXED;
+              assignFlags |= ASSIGN_OUTER_INDEXED;
 
               /* Recurse to handle the RECORD OBJECT */
 
@@ -655,8 +660,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         {
           /* Special case:  The record is a VAR parameter. */
 
-          if (assignFlags == (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
-                              VAR_PARM_ASSIGNMENT))
+          if (assignFlags == (ASSIGN_INDEXED | ASSIGN_DEREFERENCE |
+                              ASSIGN_VAR_PARM))
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opADD);
@@ -679,11 +684,11 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         {
           error(eINVTYPE);
         }
-      else if ((assignFlags && (ADDRESS_DEREFERENCE | ADDRESS_ASSIGNMENT)) != 0)
+      else if ((assignFlags && (ASSIGN_DEREFERENCE | ASSIGN_ADDRESS)) != 0)
         {
           error(ePOINTERTYPE);
         }
-      else if ((assignFlags && INDEXED_ASSIGNMENT) != 0)
+      else if ((assignFlags && ASSIGN_INDEXED) != 0)
         {
           error(eARRAYTYPE);
         }
@@ -712,12 +717,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
               if (g_withRecord.varParm)
                 {
-                  assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE |
-                                  VAR_PARM_ASSIGNMENT);
+                  assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE |
+                                  ASSIGN_VAR_PARM);
                 }
               else
                 {
-                  assignFlags |= (INDEXED_ASSIGNMENT | ADDRESS_DEREFERENCE);
+                  assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE);
                 }
 
               pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
@@ -755,11 +760,11 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       if (g_token == '^') /* value assignment? */
         {
           getToken();
-          assignFlags |= ADDRESS_DEREFERENCE;
+          assignFlags |= ASSIGN_DEREFERENCE;
         }
       else
         {
-          assignFlags |= ADDRESS_ASSIGNMENT;
+          assignFlags |= ASSIGN_ADDRESS;
         }
 
       /* If the parent type is itself a typed pointer, then get the
@@ -788,7 +793,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sVAR_PARM :
       if (assignFlags != 0) error(eVARPARMTYPE);
-      assignFlags |= (ADDRESS_DEREFERENCE | VAR_PARM_ASSIGNMENT);
+      assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM);
 
       varPtr->sKind = typePtr->sParm.t.type;
       pas_SimpleAssignment(varPtr, assignFlags);
@@ -808,7 +813,17 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
          * OR:   etc., etc., etc.
          */
 
-        if (assignFlags != 0) error(eARRAYTYPE);
+        /* REVISIT: The ASSIGN_OUTER_INDEXED flag may be set on entry in
+         * certain, more complex situations.  For example, an "outer" ARRAY
+         * of RECORDS needs to be indexed to assign a value to an "inner"
+         * RECORD OBJECT.  However, that inner RECORD OBJECT may itself be
+         * an ARRAY that requires indexing.
+         */
+
+        if ((assignFlags & ~ASSIGN_OUTER_INDEXED) != 0)
+          {
+            error(eARRAYTYPE);
+          }
 
         indexTypePtr = typePtr->sParm.t.index;
         if (indexTypePtr == NULL) error(eHUH);
@@ -844,7 +859,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
             varPtr->sKind        = arrayKind;
             varPtr->sParm.v.size = size;
-            assignFlags         |= INDEXED_ASSIGNMENT;
+            assignFlags         |= ASSIGN_INDEXED;
             pas_SimpleAssignment(varPtr, assignFlags);
           }
 
@@ -856,7 +871,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
           {
             /* This should be followed by ':=' */
 
-            pas_ArrayAssignment(varPtr, typePtr);
+            pas_ArrayAssignment(varPtr, typePtr, assignFlags);
           }
         else
           {
@@ -943,7 +958,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
        * so could be added to the dest sting variable address easily.
        */
 
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
           libOpcode = lbSTRCPYX;
         }
@@ -967,7 +982,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
        *   TOS(3)=Dest string variable address offset
        */
 
-      if ((assignFlags & INDEXED_ASSIGNMENT) != 0)
+      if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
           libOpcode = lbCSTR2STRX;
         }
@@ -1001,28 +1016,41 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType_t assignType,
 /***********************************************************************/
 /* Special Case: Process assignment to a 'PACKED ARRAY[] OF CHAR' */
 
-static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr)
+static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr,
+                                uint8_t assignFlags)
 {
-   TRACE(g_lstFile,"[pas_ArrayAssignment]");
+  uint16_t opCode;
 
-   /* FORM:  <variable OR function identifer> := <expression> */
+  TRACE(g_lstFile,"[pas_ArrayAssignment]");
 
-   if (g_token != tASSIGN) error (eASSIGN);
-   else getToken();
+  /* FORM:  <variable OR function identifer> := <expression> */
 
-   pas_Expression(exprString, typePtr);
+  if (g_token != tASSIGN) error (eASSIGN);
+  else getToken();
 
-   /* Set up the run-time library function call:
-    *
-    *    TOS(0) = Address of the array (destination)
-    *    TOS(1) = Size of the array
-    *    TOS(2) = Address of the string (source)
-    *    TOS(3) = Size of the string
-    */
+  pas_Expression(exprString, typePtr);
 
-   pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.size);
-   pas_GenerateStackReference(opLAS, varPtr);
-   pas_StandardFunctionCall(lbSTR2BSTR);
+  /* Set up the run-time library function call:
+   *
+   *    TOS(0) = Address of the array (destination)
+   *    TOS(1) = Size of the array
+   *    TOS(2) = Address of the string (source)
+   *    TOS(3) = Size of the string
+   */
+
+  pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.size);
+  pas_GenerateStackReference(opLAS, varPtr);
+
+  if ((assignFlags & ASSIGN_OUTER_INDEXED) != 0)
+    {
+      opCode = lbSTR2BSTRX;
+    }
+  else
+    {
+      opCode = lbSTR2BSTR;
+    }
+
+  pas_StandardFunctionCall(opCode);
 }
 
 /***********************************************************************/

@@ -1704,7 +1704,7 @@ static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
 
   g_dwVarSize = (indexTypePtr->sParm.t.maxValue -
                  indexTypePtr->sParm.t.minValue + 1) *
-                 sINT_SIZE;
+                 typeDenoter->sParm.t.asize;
 
   return typeDenoter;
 }

@@ -66,7 +66,7 @@ static int      pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
                              uint16_t arraySize);
 static int      pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
                              uint16_t arraySize, uint16_t stringBufferAddress,
-                             uint16_t stringSize);
+                             uint16_t stringSize, uint16_t offset);
 
 /****************************************************************************
  * Private Functions
@@ -240,7 +240,7 @@ static int pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
 
 static int pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
                         uint16_t arraySize, uint16_t stringBufferAddress,
-                        uint16_t stringSize)
+                        uint16_t stringSize, uint16_t offset)
 {
   const char *src;
   char *dest;
@@ -250,7 +250,7 @@ static int pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
   /* Get a pointer to the source string buffer and the dest array. */
 
   src  = (const char *)&GETSTACK(st, stringBufferAddress);
-  dest = (char *)&GETSTACK(st, arrayAddress);
+  dest = (char *)&GETSTACK(st, arrayAddress + offset);
 
   /* Get the length of the string to transfer. */
 
@@ -419,6 +419,41 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       pas_Cstr2str(st, src, addr1, 0);
       break;
 
+    /* Copy pascal string to a element of a pascal string array
+     *
+     *   procedure strcpy(src : string; var dest : string; offset : integer)
+     *
+     * ON INPUT:
+     *   TOS(0) = Address of dest string variable
+     *   TOS(1) = Pointer to source string buffer
+     *   TOS(2) = Length of source string
+     *   TOS(3) = Dest string variable address offset
+     * ON RETURN: actual parameters released.
+     *
+     * REVISIT:  This is awkward.  Life would be much easier if the
+     * array index could be made to be emitted later in the stack and
+     * so could be added to the dest sting variable address easily.
+     */
+
+    case lbCSTR2STRX :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr1);  /* Addr of dest string header */
+      POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
+      POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
+      POP(st, offset); /* Offset from dest string address */
+
+      /* Get the source string pointer */
+
+      src  = (uint8_t *)((uintptr_t)uparm1 << 16 |
+                         (uintptr_t)uparm2);
+
+      /* And perform the copy */
+
+      pas_Cstr2str(st, src, addr1, offset);
+      break;
+
     /* Copy binary file character array to a pascal string.  Used when a non-
      * indexed PACKED ARRAY[] OF CHAR appears as a factor in an RVALUE.
      *
@@ -466,49 +501,49 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of the array */
-      POP(st, uparm1);   /* Size of the array */
+      POP(st, uparm1); /* Size of the array */
 
       POP(st, addr2);  /* Address of the array */
-      POP(st, uparm2);   /* Size of the array */
+      POP(st, uparm2); /* Size of the array */
 
       /* And perform the copy */
 
-      errorCode = pas_Str2bstr(st, addr1, uparm1, addr2, uparm2);
+      errorCode = pas_Str2bstr(st, addr1, uparm1, addr2, uparm2, 0);
       break;
 
-    /* Copy pascal string to a element of a pascal string array
+    /* Copy a pascal string into a binary file character array.  Use when a
+     * non-indexed PACKED ARRAY[] OF CHAR appears within an array element
+     * (using as a field of an array of records) as the LVALUE in an
+     * assignment.
      *
-     *   procedure strcpy(src : string; var dest : string; offset : integer)
+     *   function str2bstr(arraySize : Integer, arrayAddress : Integer,
+     *                     source : String, offset : Integer);
      *
      * ON INPUT:
-     *   TOS(0) = Address of dest string variable
-     *   TOS(1) = Pointer to source string buffer
-     *   TOS(2) = Length of source string
-     *   TOS(3) = Dest string variable address offset
-     * ON RETURN: actual parameters released.
-     *
-     * REVISIT:  This is awkward.  Life would be much easier if the
-     * array index could be made to be emitted later in the stack and
-     * so could be added to the dest sting variable address easily.
+     *   TOS(0) = Address of the array (destination)
+     *   TOS(1) = Size of the array
+     *   TOS(2) = Address of the string (source)
+     *   TOS(3) = Size of the string
+     *   TOS(4) = Array address offset
+     * ON RETURN:
+     *   All inputs consumbed
      */
 
-    case lbCSTR2STRX :
+    case lbSTR2BSTRX :
 
       /* "Pop" in the input parameters from the stack */
 
-      POP(st, addr1);  /* Addr of dest string header */
-      POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
-      POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
-      POP(st, offset); /* Offset from dest string address */
+      POP(st, addr1);  /* Address of the array */
+      POP(st, uparm1); /* Size of the array */
 
-      /* Get the source string pointer */
+      POP(st, addr2);  /* Address of the array */
+      POP(st, uparm2); /* Size of the array */
 
-      src  = (uint8_t *)((uintptr_t)uparm1 << 16 |
-                         (uintptr_t)uparm2);
+      POP(st, offset); /* Address offset */
 
       /* And perform the copy */
 
-      pas_Cstr2str(st, src, addr1, offset);
+      errorCode = pas_Str2bstr(st, addr1, uparm1, addr2, uparm2, offset);
       break;
 
       /* Convert a string to a numeric value

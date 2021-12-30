@@ -1740,8 +1740,8 @@ static exprType_t simplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
            *    TOS+1 = Size of array (bytes)
            */
 
-          pas_GenerateStackReference(opLAS, varPtr);
           pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.size);
+          pas_GenerateStackReference(opLAS, varPtr);
           pas_StandardFunctionCall(lbBSTR2STR);
           factorType = exprString;
         }

@@ -203,10 +203,29 @@
 #define lbCSTR2STR_INIT \
     { "_lbcstr2str", 0, 2, { sSTRING_SIZE, sSTRING_SIZE }}
 
-/* void _lbcstr2strx(string src, string dest); */
+/* void _lbcstr2strx(string src, string dest, int offset); */
 
 #define lbCSTR2STRX_INIT \
     { "_lbcstr2strx", 0, 3, { sSTRING_SIZE, sSTRING_SIZE, sINT_SIZE }}
+
+/* function _lbbstr2str(arraySize : Integer, arrayAddress : Integer) : String; */
+
+#define lbBSTR2STR_INIT \
+    { "_lbbstr2str", 1, 2, { sINT_SIZE, sPTR_SIZE }}
+
+/* procedure _lbstr2bstr(arraySize : Integer, arrayAddress : Integer,
+ *                       source : String);
+ */
+
+#define lbSTR2BSTR_INIT \
+    { "_lbstr2bstr", 0, 3, { sINT_SIZE, sPTR_SIZE, sSTRING_SIZE }}
+
+/* procedure _lbstr2bstrx(arraySize : Integer, arrayAddress : Integer,
+ *                        source : String, addrOffset : Integer);
+ */
+
+#define lbSTR2BSTRX_INIT \
+    { "_lbstr2bstrx", 0, 4, { sINT_SIZE, sPTR_SIZE, sSTRING_SIZE, sINT_SIZE }}
 
 /* void _lbval(const string s, int *v, int *code); */
 

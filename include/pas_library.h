@@ -100,11 +100,28 @@
  *
  * ON INPUT:
  *   TOS(0)   = address of dest string
- *   TOS(1,2) = 32-bit absolute address of C string
+ *   TOS(1,2) = 32-bit absolute address of C string (big-endian)
  * ON RETURN: actual parameters released
  */
 
 #define lbCSTR2STR      (0x0004)
+
+/* Copy C string to an element of a pascal string array
+ *
+ *   procedure cstr2str(src : cstring; var dest : string)
+ *
+ * ON INPUT:
+ *   TOS(0)   = Address of dest string variable
+ *   TOS(1,2) = 32-bit absolute address of C string (big-endian)
+ *   TOS(3)   = Dest string variable address offset
+ * ON RETURN: actual parameters released
+ *
+ * REVISIT:  This is awkward.  Life would be much easier if the
+ * array index could be made to be emitted later in the stack and
+ * so could be added to the dest sting variable address easily.
+ */
+
+#define lbCSTR2STRX     (0x0005)
 
 /* Copy binary file character array to a pascal string.  Used when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as a factor in an RVALUE.
@@ -119,13 +136,13 @@
  *   TOS(1) = String size
  */
 
-#define lbBSTR2STR      (0x0005)
+#define lbBSTR2STR      (0x0006)
 
 /* Copy a pascal string into a binary file character array.  Use when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as the LVALUE in an assignment.
  *
- *   function str2bstr(arraySize : Integer, arrayAddress : Integer,
- *                     source : String);
+ *   procedure str2bstr(arraySize : Integer, arrayAddress : Integer,
+ *                      source : String);
  *
  * ON INPUT:
  *   TOS(0) = Address of the array (destination)
@@ -136,24 +153,26 @@
  *   All inputs consumbed
  */
 
-#define lbSTR2BSTR      (0x0006)
+#define lbSTR2BSTR      (0x0007)
 
-/* Copy C string to an element of a pascal string array
+/* Copy a pascal string into a binary file character array.  Use when a non-
+ * indexed PACKED ARRAY[] OF CHAR appears within an array element (using as
+ * a field of an array of records) as the LVALUE in an assignment.
  *
- *   procedure cstr2str(src : cstring; var dest : string)
+ *   function str2bstr(arraySize : Integer, arrayAddress : Integer,
+ *                     source : String, offset : Integer);
  *
  * ON INPUT:
- *   TOS(0) = Address of dest string variable
- *   TOS(1,2) = 32-bit absolute address of C string
- *   TOS(3) = Dest string variable address offset
- * ON RETURN: actual parameters released
- *
- * REVISIT:  This is awkward.  Life would be much easier if the
- * array index could be made to be emitted later in the stack and
- * so could be added to the dest sting variable address easily.
+ *   TOS(0) = Address of the array (destination)
+ *   TOS(1) = Size of the array
+ *   TOS(2) = Address of the string (source)
+ *   TOS(3) = Size of the string
+ *   TOS(4) = Array address offset
+ * ON RETURN:
+ *   All inputs consumbed
  */
 
-#define lbCSTR2STRX     (0x0007)
+#define lbSTR2BSTRX      (0x0008)
 
 /* Convert a string to a numeric value
  *
@@ -182,7 +201,7 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x0008)
+#define lbVAL           (0x0009)
 
 /* Initialize a new string variable. Create a string buffer.  This is called
  * only at entrance into a new Pascal block.
@@ -194,7 +213,7 @@
  * ON RETURN
  */
 
-#define lbSTRINIT       (0x0009)
+#define lbSTRINIT       (0x000a)
 
 /* Initialize a temporary string variable on the stack. It is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
@@ -209,7 +228,7 @@
  *   TOS(1) = String size (zero)
  */
 
-#define lbSTRTMP        (0x000a)
+#define lbSTRTMP        (0x000b)
 
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
@@ -224,7 +243,7 @@
  *   TOS(1) = length of new string
  */
 
-#define lbSTRDUP        (0x000b)
+#define lbSTRDUP        (0x000c)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -235,7 +254,7 @@
  *   TOS(1) = length of new string
  */
 
-#define lbMKSTKC        (0x000c)
+#define lbMKSTKC        (0x000d)
 
 /* Concatenate a string to the end of a string.
  *
@@ -251,7 +270,7 @@
  *   TOS(st, 1) = new length of dest string2
  */
 
-#define lbSTRCAT        (0x000d)
+#define lbSTRCAT        (0x000e)
 
 /* Concatenate a character to the end of a string.
  *
@@ -266,7 +285,7 @@
  *   TOS(1) = new length of string
  */
 
-#define lbSTRCATC       (0x000e)
+#define lbSTRCATC       (0x000f)
 
 /* Compare two pascal strings
  *
@@ -281,8 +300,8 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x000f)
+#define lbSTRCMP        (0x0010)
 
-#define MAX_LBOP        (0x0010)
+#define MAX_LBOP        (0x0011)
 
 #endif /* __PAS_LIBRARY_H */
