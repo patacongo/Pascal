@@ -269,7 +269,7 @@ static symbol_t *pas_DeclareOrdinalType(char *typeName)
        if (typeIdPtr)
          {
            typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.type,
-                                    g_dwVarSize, typeIdPtr, NULL);
+                                       g_dwVarSize, typeIdPtr, NULL);
          }
      }
 
@@ -426,8 +426,8 @@ static symbol_t *pas_DeclareVar(void)
                    * offset with this relative offset.
                    */
 
-                  varPtr->sParm.v.flags  |= SVAR_EXTERNAL;
-                  varPtr->sParm.v.offset  = g_dStack - FP->dstack;
+                  varPtr->sParm.v.flags   |= SVAR_EXTERNAL;
+                  varPtr->sParm.v.vOffset  = g_dStack - FP->dstack;
 
                   /* IMPORT the symbol; assign an offset relative to
                    * the dstack at the beginning of this file
@@ -663,7 +663,7 @@ static void pas_FunctionDeclaration(void)
       /* Save the TYPE for the function return value local variable */
 
       valPtr->sKind           = typePtr->sParm.t.rtype;
-      valPtr->sParm.v.offset  = parameterOffset;
+      valPtr->sParm.v.vOffset = parameterOffset;
       valPtr->sParm.v.size    = g_dwVarSize;
       valPtr->sParm.v.parent  = typePtr;
 
@@ -1819,8 +1819,8 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
            * offset to the next field (if there is one)
            */
 
-          fieldPtr->sParm.r.offset = recordOffset;
-          recordOffset            += fieldPtr->sParm.r.size;
+          fieldPtr->sParm.r.rOffset = recordOffset;
+          recordOffset             += fieldPtr->sParm.r.rSize;
         }
     }
 
@@ -1883,7 +1883,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                * since it  can be obtained from the parent type pointer
                */
 
-              fieldPtr->sParm.r.size = typePtr->sParm.t.asize;
+              fieldPtr->sParm.r.rSize = typePtr->sParm.t.asize;
 
               /* Save a pointer back to the parent field type */
 
@@ -1901,8 +1901,8 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                * the offset to the next field (if there is one)
                */
 
-              fieldPtr->sParm.r.offset = recordOffset;
-              recordOffset += fieldPtr->sParm.r.size;
+              fieldPtr->sParm.r.rOffset = recordOffset;
+              recordOffset             += fieldPtr->sParm.r.rSize;
             }
         }
 
@@ -2054,8 +2054,8 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                    * is one)
                    */
 
-                  fieldPtr->sParm.r.offset = recordOffset;
-                  recordOffset            += fieldPtr->sParm.r.size;
+                  fieldPtr->sParm.r.rOffset = recordOffset;
+                  recordOffset             += fieldPtr->sParm.r.rSize;
                   recordCount++;
                 }
 
@@ -2161,7 +2161,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
            * can be obtained from the parent type pointer.
            */
 
-          fieldPtr->sParm.r.size     = typePtr->sParm.t.asize;
+          fieldPtr->sParm.r.rSize    = typePtr->sParm.t.asize;
 
           /* Save a pointer back to the parent field type */
 
@@ -2229,7 +2229,7 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
 
        if (pointerType)
          {
-           varType = sVAR_PARM;
+           varType     = sVAR_PARM;
            g_dwVarSize = sPTR_SIZE;
          }
        else
@@ -2319,7 +2319,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
               varInfo.sParm.v.flags    = varPtr->sParm.v.flags;
               varInfo.sParm.v.xfrUnit  = varPtr->sParm.v.xfrUnit;
-              varInfo.sParm.v.offset   = varPtr->sParm.v.offset;
+              varInfo.sParm.v.vOffset  = varPtr->sParm.v.vOffset;
               varInfo.sParm.v.size     = parentTypePtr->sParm.t.asize;
               varInfo.sParm.v.symIndex = 0;
               varInfo.sParm.v.parent   = parentTypePtr;
@@ -2380,7 +2380,7 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
       varInfo.sParm.v.flags    = varPtr->sParm.v.flags;
       varInfo.sParm.v.xfrUnit  = varPtr->sParm.v.xfrUnit;
-      varInfo.sParm.v.offset   = varPtr->sParm.v.offset;
+      varInfo.sParm.v.vOffset  = varPtr->sParm.v.vOffset;
       varInfo.sParm.v.size     = baseTypePtr->sParm.t.asize;
       varInfo.sParm.v.symIndex = 0;
       varInfo.sParm.v.parent   = baseTypePtr;
@@ -2426,7 +2426,7 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
            * size.
            */
 
-          varInfo.sParm.v.offset += baseTypePtr->sParm.t.asize;
+          varInfo.sParm.v.vOffset += baseTypePtr->sParm.t.asize;
         }
     }
 }
@@ -2985,7 +2985,7 @@ int16_t pas_FormalParameterList(symbol_t *procPtr)
 
       parameterOffset -= procPtr[i].sParm.v.size;
       parameterOffset  = INT_ALIGNUP(parameterOffset);
-      procPtr[i].sParm.v.offset = parameterOffset;
+      procPtr[i].sParm.v.vOffset = parameterOffset;
     }
 
   return parameterOffset;

@@ -57,31 +57,6 @@ part that creates the (nameless) type could be called from pas_DeclareConst().
 Compiles without error, but then crashes writing the POFF file.  Apparently
 some information in the debug section is corrupted.
 
-########src/014-arrayrecord.pas########
-Compiles OK, but the output is mostly blank:
-
-Using string stack size = 1024
-src/014-arrayrecord.pex Loaded
-:
-:
-:
-
-Analysis:
-This some of the traditonal Pascal behavior that is not implemented.  'title' is
-declared as an array:
-
-NameString =
-  record
-     title: packed array [1..50] of char;
-     info:  packed array [1..50] of char;
-  end;
-
-But accessed without indexing in all cases.  Even though title is an array, no
-index is required for the special case of packed array of char.
-
-More modern Pascal implement added type string for these cases and this could
-be fixed by simply changing 'packed array [1..50] of char;' to 'string''.
-
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b
 

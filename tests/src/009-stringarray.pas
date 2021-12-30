@@ -10,6 +10,6 @@ begin
    lines[1] := ' of their party.';
    lines[1] := 'To come to the aid' + lines[1];
 
-   writeln (lines[0]);
-   writeln (lines[1]);
+   writeln(lines[0]);
+   writeln(lines[1]);
 end.

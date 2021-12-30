@@ -471,7 +471,9 @@ int16_t unaryOptimize(void)
                    deletePcode(i);
                  }
                else
-                 deletePcodePair(i, i + 1);
+                 {
+                   deletePcodePair(i, i + 1);
+                 }
                nchanges++;
                break;
 
@@ -494,7 +496,8 @@ int16_t unaryOptimize(void)
            /* If the oPUSH instruction is still there, see if we can now */
            /* represent it with an oPUSHB instruction */
 
-           if ((pptr[i]->op == oPUSH) && (pptr[i]->arg2 < 256))
+           if (pptr[i] != NULL && pptr[i]->op == oPUSH &&
+               pptr[i]->arg2 < 256)
              {
                pptr[i]->op   = oPUSHB;
                pptr[i]->arg1 = pptr[i]->arg2;

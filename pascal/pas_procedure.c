@@ -621,12 +621,12 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
                * offset.
                */
 
-              if (baseTypePtr->sParm.r.offset != 0)
+              if (baseTypePtr->sParm.r.rOffset != 0)
                 {
                   /* Add the field offset */
 
                   pas_GenerateDataOperation(opPUSH,
-                                            fieldPtr->sParm.r.offset);
+                                            fieldPtr->sParm.r.rOffset);
                   pas_GenerateSimple(opADD);
                 }
 
@@ -1549,8 +1549,8 @@ static void writeText(void)
        */
 
       pas_GenerateSimple(opDUP);
-      pas_GenerateDataOperation(opPUSH, (uint16_t)g_tknPtr->sParm.s.size);
-      pas_GenerateDataOperation(opLAC, (uint16_t)g_tknPtr->sParm.s.offset);
+      pas_GenerateDataOperation(opPUSH, (uint16_t)g_tknPtr->sParm.s.roSize);
+      pas_GenerateDataOperation(opLAC, (uint16_t)g_tknPtr->sParm.s.roOffset);
       pas_GenerateIoOperation(xWRITE_STRING);
 
       getToken();

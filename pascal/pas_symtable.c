@@ -396,8 +396,8 @@ symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
     {
       /* Add the value of the constant to the symbol table */
 
-      stringPtr->sParm.s.offset = offset;
-      stringPtr->sParm.s.size   = size;
+      stringPtr->sParm.s.roOffset = offset;
+      stringPtr->sParm.s.roSize   = size;
     }
 
   /* Return a pointer to the new string symbol */
@@ -422,7 +422,8 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
       /* Add the file to the symbol table */
 
       filePtr->sParm.v.xfrUnit    = xfrUnit;    /* Size of each transfer (binary) */
-      filePtr->sParm.v.offset     = offset;     /* Offset to variable */
+      filePtr->sParm.v.vOffset    = offset;     /* Offset to variable */
+      filePtr->sParm.v.fOffset    = 0;          /* Field offset from Variable */
       filePtr->sParm.v.size       = sINT_SIZE;  /* Run time storage size */
       filePtr->sParm.v.parent     = typePtr;    /* FILE OF Type (binary) */
     }
@@ -475,7 +476,7 @@ symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
     {
       /* Add the variable to the symbol table */
 
-      varPtr->sParm.v.offset   = offset;
+      varPtr->sParm.v.vOffset   = offset;
       varPtr->sParm.v.size     = size;
       varPtr->sParm.v.parent   = parent;
     }
@@ -746,7 +747,7 @@ void pas_DumpTables(void)
                   " size=%" PRId32 " parent=[%p]\n",
                   g_symbolTable[i].sParm.v.flags,
                   g_symbolTable[i].sParm.v.xfrUnit,
-                  g_symbolTable[i].sParm.v.offset,
+                  g_symbolTable[i].sParm.v.vOffset,
                   g_symbolTable[i].sParm.v.size,
                   g_symbolTable[i].sParm.v.parent);
           break;
@@ -757,8 +758,8 @@ void pas_DumpTables(void)
           fprintf(g_lstFile,
                   "offset=%" PRId32 " size=%" PRId32 " record=[%p] "
                   "parent=[%p] next=[%p]\n",
-                  g_symbolTable[i].sParm.r.offset,
-                  g_symbolTable[i].sParm.r.size,
+                  g_symbolTable[i].sParm.r.rOffset,
+                  g_symbolTable[i].sParm.r.rSize,
                   g_symbolTable[i].sParm.r.record,
                   g_symbolTable[i].sParm.r.parent,
                   g_symbolTable[i].sParm.r.next);
@@ -768,8 +769,8 @@ void pas_DumpTables(void)
 
         case sSTRING_CONST :
           fprintf(g_lstFile, "offset=%04" PRIx32 " size=%" PRId32 "\n",
-                  g_symbolTable[i].sParm.s.offset,
-                  g_symbolTable[i].sParm.s.size);
+                  g_symbolTable[i].sParm.s.roOffset,
+                  g_symbolTable[i].sParm.s.roSize);
           break;
 
         default :

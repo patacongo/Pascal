@@ -166,8 +166,8 @@ typedef struct symConst_s symConst_t;
 
 struct symStringConst_s    /* for sKind == sSTRING_CONST */
 {
-  uint32_t offset;         /* RO data section offset of string */
-  uint32_t size;           /* length of string in bytes */
+  uint32_t roOffset;       /* RO data section offset of string */
+  uint32_t roSize;         /* length of string in bytes */
 };
 typedef struct symStringConst_s symStringConst_t;
 
@@ -182,7 +182,8 @@ struct symVar_s            /* for sKind == Variable type identifier */
 {
   uint8_t   flags;         /* flags to customize a variable (see above) */
   uint16_t  xfrUnit;       /* File transfer unit (files only) */
-  int32_t   offset;        /* Data stack offset */
+  int16_t   fOffset;       /* Record field offset into variable (tmp) */
+  int32_t   vOffset;       /* Data stack offset to variable */
   uint32_t  size;          /* Size of variable */
   uint32_t  symIndex;      /* POFF symbol table index (if undefined) */
 
@@ -203,8 +204,8 @@ typedef struct symProc_s symProc_t;
 
 struct symRecord_s         /* for sKind == sRECORD_OBJECT */
 {
-  uint32_t  size;          /* size of this field */
-  uint32_t  offset;        /* offset into the RECORD */
+  uint32_t  rSize;         /* size of this field */
+  uint32_t  rOffset;       /* offset into the RECORD */
 
   struct symbol_s *record; /* pointer to parent sRECORD type */
   struct symbol_s *parent; /* pointer to parent field type */
@@ -237,7 +238,7 @@ struct with_s
   uint8_t   level;         /* static nesting level */
   bool      pointer;       /* true if offset is to pointer to RECORD */
   bool      varParm;       /* true if VAR param (+pointer) */
-  int32_t   offset;        /* Data stack offset */
+  int32_t   wOffset;       /* Data stack offset */
   uint16_t  index;         /* RECORD offset (if pointer) */
   symbol_t *parent;        /* pointer to parent RECORD type */
 };

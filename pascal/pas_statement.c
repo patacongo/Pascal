@@ -617,7 +617,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                * size of RECORD object.
                */
 
-              varPtr->sParm.v.size    = g_tknPtr->sParm.r.size;
+              varPtr->sParm.v.size    = g_tknPtr->sParm.r.rSize;
 
               /* Special case:  The record is a VAR parameter. */
 
@@ -628,7 +628,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                    * that should already be on the stack.
                    */
 
-                  pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.offset);
+                  pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.rOffset);
                   pas_GenerateSimple(opADD);
                 }
               else
@@ -637,7 +637,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                    * offset.
                    */
 
-                  varPtr->sParm.v.offset += g_tknPtr->sParm.r.offset;
+                  varPtr->sParm.v.vOffset += g_tknPtr->sParm.r.rOffset;
                 }
 
               /* The RECORD OBJECT should not be indexed, even if the "outer"
@@ -725,12 +725,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                   assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE);
                 }
 
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.offset + g_withRecord.index));
-              tempOffset = g_withRecord.offset;
+              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.rOffset + g_withRecord.index));
+              tempOffset = g_withRecord.wOffset;
             }
           else
             {
-              tempOffset = varPtr->sParm.r.offset + g_withRecord.offset;
+              tempOffset = varPtr->sParm.r.rOffset + g_withRecord.wOffset;
             }
 
           /* Modify the variable so that it has the characteristics of the
@@ -745,7 +745,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
           varPtr->sKind           = typePtr->sParm.t.type;
           varPtr->sLevel          = g_withRecord.level;
           varPtr->sParm.v.size    = typePtr->sParm.t.asize;
-          varPtr->sParm.v.offset  = tempOffset;
+          varPtr->sParm.v.vOffset = tempOffset;
           varPtr->sParm.v.parent  = typePtr;
 
           pas_SimpleAssignment(varPtr, assignFlags);
@@ -1883,7 +1883,7 @@ static void pas_WithStatement(void)
            g_withRecord.level   = g_tknPtr->sLevel;
            g_withRecord.pointer = false;
            g_withRecord.varParm = false;
-           g_withRecord.offset  = g_tknPtr->sParm.v.offset;
+           g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
            g_withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD variable */
@@ -1904,7 +1904,7 @@ static void pas_WithStatement(void)
            g_withRecord.level   = g_tknPtr->sLevel;
            g_withRecord.pointer = true;
            g_withRecord.varParm = true;
-           g_withRecord.offset  = g_tknPtr->sParm.v.offset;
+           g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
            g_withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD VAR parameter */
@@ -1925,7 +1925,7 @@ static void pas_WithStatement(void)
            g_withRecord.level   = g_tknPtr->sLevel;
            g_withRecord.pointer = true;
            g_withRecord.pointer = false;
-           g_withRecord.offset  = g_tknPtr->sParm.v.offset;
+           g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
            g_withRecord.parent  = g_tknPtr->sParm.v.parent;
 
            /* Skip over the RECORD pointer */
@@ -1950,11 +1950,11 @@ static void pas_WithStatement(void)
 
            if (g_withRecord.pointer)
              {
-               g_withRecord.index += g_tknPtr->sParm.r.offset;
+               g_withRecord.index += g_tknPtr->sParm.r.rOffset;
              }
            else
              {
-               g_withRecord.offset += g_tknPtr->sParm.r.offset;
+               g_withRecord.wOffset += g_tknPtr->sParm.r.rOffset;
              }
 
            g_withRecord.parent  = g_tknPtr->sParm.r.parent;

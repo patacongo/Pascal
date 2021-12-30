@@ -96,7 +96,7 @@ pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *varPtr)
    * a level zero reference, then the offset must be positive
    */
 
-  if (varPtr->sLevel != 0 || varPtr->sParm.v.offset < 0)
+  if (varPtr->sLevel != 0 || varPtr->sParm.v.vOffset < 0)
     {
       error(eHUH);
     }
@@ -104,7 +104,7 @@ pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *varPtr)
     {
       /* Generate the P-code */
 
-      insn_GenerateDataOperation(eOpCode, varPtr->sParm.v.offset);
+      insn_GenerateDataOperation(eOpCode, varPtr->sParm.v.vOffset);
 
       /* If the variable is undefined, also generate a relocation
        * record.
@@ -351,7 +351,7 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *varPtr)
    */
 
   insn_GenerateLevelReference(eOpCode, (g_level - varPtr->sLevel),
-                              varPtr->sParm.v.offset);
+                              varPtr->sParm.v.vOffset);
 }
 
 /***********************************************************************/
@@ -471,7 +471,7 @@ void pas_GenerateStackExport(symbol_t *varPtr)
   symbol.align = STA_8BIT; /* for now */
   symbol.flags = STF_NONE;
   symbol.name  = varPtr->sName;
-  symbol.value = varPtr->sParm.v.offset;
+  symbol.value = varPtr->sParm.v.vOffset;
   symbol.size  = varPtr->sParm.v.size;
 
   /* Add the symbol to the symbol table */
@@ -513,7 +513,7 @@ void pas_GenerateStackImport(symbol_t *varPtr)
   symbol.align = STA_8BIT; /* for now */
   symbol.flags = STF_UNDEFINED;
   symbol.name  = varPtr->sName;
-  symbol.value = varPtr->sParm.v.offset; /* for now */
+  symbol.value = varPtr->sParm.v.vOffset; /* for now */
   symbol.size  = varPtr->sParm.v.size;
 
   /* Add the symbol to the symbol table */
