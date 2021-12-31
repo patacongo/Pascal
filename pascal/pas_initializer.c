@@ -68,7 +68,7 @@
 
 struct initializer_s
 {
-  symbol_t varInfo;                /* Copy of the symbol table entry */
+  symbol_t variable;               /* Copy of the symbol table entry */
 
   /* Information specific to a symbol type */
 
@@ -80,13 +80,20 @@ struct initializer_s
         {
           bool      preallocated;  /* File number is pre-allocated */
           uint16_t  fileNumber;    /* Pre-allocted file number */
-        };
+        } f;
 
       /* String variable initialization data */
 
       struct
         {
-        };
+        } s;
+
+      /* Record file/string initialization data */
+
+      struct
+        {
+          symbol_t *recordObjectPtr;
+        } r;
     };
 };
 
@@ -123,7 +130,7 @@ static initializer_t *pas_AddInitializer(symbol_t *varPtr)
       initializer         = &g_initializers[g_nInitializer];
 
       memset(initializer, 0, sizeof(initializer_t));
-      memcpy(&initializer->varInfo, varPtr, sizeof(symbol_t));
+      memcpy(&initializer->variable, varPtr, sizeof(symbol_t));
       g_nInitializer++;
     }
 
@@ -144,8 +151,8 @@ void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
        * appropriate time.
        */
 
-      initializer->preallocated  = preallocated;
-      initializer->fileNumber    = fileNumber;
+      initializer->f.preallocated  = preallocated;
+      initializer->f.fileNumber    = fileNumber;
     }
 }
 
@@ -154,14 +161,16 @@ void pas_AddStringInitializer(symbol_t *stringPtr)
   (void)pas_AddInitializer(stringPtr);
 }
 
-void pas_AddRecordFileInitializer(symbol_t *fileObjectPtr)
+void pas_AddRecordObjectInitializer(symbol_t *recordVarPtr,
+                                    symbol_t *recordObjectPtr)
 {
-  (void)pas_AddInitializer(fileObjectPtr);
-}
+  initializer_t *initializer = pas_AddInitializer(recordVarPtr);
+  if (initializer != NULL)
+    {
+      /* Remember the record object too.*/
 
-void pas_AddRecordStringInitializer(symbol_t *recordObjectPtr)
-{
-  (void)pas_AddInitializer(recordObjectPtr);
+      initializer->r.recordObjectPtr = recordObjectPtr;
+    }
 }
 
 void pas_Initialization(void)
@@ -176,7 +185,7 @@ void pas_Initialization(void)
        index++)
     {
       initializer_t *initializer = &g_initializers[index];
-      symbol_t      *varPtr      = &initializer->varInfo;
+      symbol_t      *varPtr      = &initializer->variable;
 
       switch (varPtr->sKind)
         {
@@ -184,9 +193,9 @@ void pas_Initialization(void)
 
           case sFILE :
           case sTEXTFILE :
-            if (initializer->preallocated)
+            if (initializer->f.preallocated)
               {
-                pas_GenerateDataOperation(opPUSH, initializer->fileNumber);
+                pas_GenerateDataOperation(opPUSH, initializer->f.fileNumber);
               }
             else
               {
@@ -215,15 +224,29 @@ void pas_Initialization(void)
             pushs = true;
             break;
 
-          case sRECORD_OBJECT:
+          case sRECORD:
             {
-              symbol_t *recordPtr     = varPtr->sParm.r.record;
-              symbol_t *recordTypePtr = varPtr->sParm.r.parent;
-              int offset              = recordPtr->sParm.r.rOffset;
+              symbol_t *objectPtr     = initializer->r.recordObjectPtr;
+              symbol_t *objectTypePtr = objectPtr->sParm.r.rParent;
+              symbol_t *baseTypePtr;
+              symbol_t *nextTypeptr;
+              int fOffset             = objectPtr->sParm.r.rOffset;
 
-              /* Check if the field is a string */
+              /* Deals with cases where the type of the field is a series
+               * of type definitions.
+               */
 
-              if (recordTypePtr->sParm.t.type == sSTRING)
+              nextTypeptr     = objectTypePtr;
+              baseTypePtr     = objectTypePtr;
+              while (nextTypeptr != NULL && nextTypeptr->sKind == sTYPE)
+                {
+                  baseTypePtr = nextTypeptr;
+                  nextTypeptr = baseTypePtr->sParm.t.parent;
+                }
+
+              /* Check if the base type of the field is a string */
+
+              if (baseTypePtr->sParm.t.type == sSTRING)
                 {
                   /* Get TOS = Address of string variable to be initialized */
 
@@ -231,7 +254,7 @@ void pas_Initialization(void)
 
                   /* Add the offset to the string field to be initialized */
 
-                  pas_GenerateDataOperation(opPUSH, offset);
+                  pas_GenerateDataOperation(opPUSH, fOffset);
                   pas_GenerateSimple(opADD);
 
                   /* Then initialize the string */
@@ -239,20 +262,15 @@ void pas_Initialization(void)
                   pas_StandardFunctionCall(lbSTRINIT);
                   pushs = true;
                 }
-              else if (recordTypePtr->sParm.t.type == sFILE ||
-                       recordTypePtr->sParm.t.type == sTEXTFILE)
-                {
-                  /* Push the file number */
 
-                  if (initializer->preallocated)
-                    {
-                      pas_GenerateDataOperation(opPUSH,
-                                                initializer->fileNumber);
-                    }
-                  else
-                    {
-                      pas_GenerateIoOperation(xALLOCFILE);
-                    }
+              /* Check if the base type of the field is a file */
+
+              else if (baseTypePtr->sParm.t.type == sFILE ||
+                       baseTypePtr->sParm.t.type == sTEXTFILE)
+                {
+                  /* Allocate a file number */
+
+                  pas_GenerateIoOperation(xALLOCFILE);
 
                   /* Get TOS = Address of file variable to be initialized */
 
@@ -260,7 +278,7 @@ void pas_Initialization(void)
 
                   /* Add the offset to the file field to be initialized */
 
-                  pas_GenerateDataOperation(opPUSH, offset);
+                  pas_GenerateDataOperation(opPUSH, fOffset);
                   pas_GenerateSimple(opADD);
 
                   /* Then initialize the file */
@@ -292,9 +310,9 @@ void pas_Finalization(void)
 
       /* If the variable uses all pre-allocated resources, then do nothing. */
 
-      if (!initializer->preallocated)
+      if (!initializer->f.preallocated)
         {
-          symbol_t  *varPtr      = &initializer->varInfo;
+          symbol_t  *varPtr      = &initializer->variable;
 
           switch (varPtr->sKind)
             {

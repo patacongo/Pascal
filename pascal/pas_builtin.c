@@ -88,7 +88,7 @@ static exprType_t pas_BuiltInSizeOf(void)
       case sSET_OF :
       case sARRAY :
       case sRECORD :
-        size = g_tknPtr->sParm.v.size;
+        size = g_tknPtr->sParm.v.vSize;
         break;
 
       /* Pointers variables and VAR parameters are always the size of a point */

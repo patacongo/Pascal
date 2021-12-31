@@ -426,7 +426,7 @@ static symbol_t *pas_DeclareVar(void)
                    * offset with this relative offset.
                    */
 
-                  varPtr->sParm.v.flags   |= SVAR_EXTERNAL;
+                  varPtr->sParm.v.vFlags  |= SVAR_EXTERNAL;
                   varPtr->sParm.v.vOffset  = g_dStack - FP->dstack;
 
                   /* IMPORT the symbol; assign an offset relative to
@@ -664,8 +664,8 @@ static void pas_FunctionDeclaration(void)
 
       valPtr->sKind           = typePtr->sParm.t.rtype;
       valPtr->sParm.v.vOffset = parameterOffset;
-      valPtr->sParm.v.size    = g_dwVarSize;
-      valPtr->sParm.v.parent  = typePtr;
+      valPtr->sParm.v.vSize   = g_dwVarSize;
+      valPtr->sParm.v.vParent = typePtr;
 
       /* Save the TYPE for the function */
 
@@ -1798,7 +1798,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
   fieldPtr = &recordPtr[1];
   for (recordOffset = 0, recordCount = 0;
        recordCount < recordPtr->sParm.t.maxValue && fieldPtr != NULL;
-       recordCount++, fieldPtr = fieldPtr->sParm.r.next)
+       recordCount++, fieldPtr = fieldPtr->sParm.r.rNext)
     {
       /* We know that 'maxValue' sRECORD_OBJECT symbols follow the sRECORD
        * type declaration.  However, these may not be sequential due to the
@@ -1810,7 +1810,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
           /* Align the recordOffset (if necessary) */
 
           if (!INT_ISALIGNED(recordOffset) &&
-              pas_IntAlignRequired(fieldPtr->sParm.r.parent))
+              pas_IntAlignRequired(fieldPtr->sParm.r.rParent))
             {
               recordOffset = INT_ALIGNUP(recordOffset);
             }
@@ -1887,7 +1887,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
               /* Save a pointer back to the parent field type */
 
-              fieldPtr->sParm.r.parent = typePtr;
+              fieldPtr->sParm.r.rParent = typePtr;
 
               /* Align the recordOffset (if necessary) */
 
@@ -2028,7 +2028,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
               fieldPtr = &recordPtr[1];
               for (fieldPtr = firstFieldPtr, recordOffset = variantOffset;
                    fieldPtr != NULL && recordCount < recordPtr->sParm.t.maxValue;
-                   fieldPtr = fieldPtr->sParm.r.next)
+                   fieldPtr = fieldPtr->sParm.r.rNext)
                 {
                   /* We know that 'maxValue' sRECORD_OBJECT symbols follow
                    * the sRECORD type declaration.  However, these may not
@@ -2044,7 +2044,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                   /* Align the recordOffset (if necessary) */
 
                   if (!INT_ISALIGNED(recordOffset) &&
-                      pas_IntAlignRequired(fieldPtr->sParm.r.parent))
+                      pas_IntAlignRequired(fieldPtr->sParm.r.rParent))
                     {
                       recordOffset = INT_ALIGNUP(recordOffset);
                     }
@@ -2140,7 +2140,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
           fieldPtr = pas_DeclareField(recordPtr, fieldPtr);
           if (fieldPtr != NULL)
             {
-              typePtr = fieldPtr->sParm.r.parent;
+              typePtr = fieldPtr->sParm.r.rParent;
             }
         }
       else
@@ -2165,7 +2165,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
 
           /* Save a pointer back to the parent field type */
 
-          fieldPtr->sParm.r.parent   = typePtr;
+          fieldPtr->sParm.r.rParent  = typePtr;
         }
     }
 
@@ -2238,9 +2238,9 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
          }
 
        g_nParms++;
-       varPtr->sKind          = varType;
-       varPtr->sParm.v.size   = g_dwVarSize;
-       varPtr->sParm.v.parent = typePtr;
+       varPtr->sKind           = varType;
+       varPtr->sParm.v.vSize   = g_dwVarSize;
+       varPtr->sParm.v.vParent = typePtr;
      }
 
    return typePtr;
@@ -2250,7 +2250,7 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
 
 static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 {
-  symbol_t *recordTypePtr = varPtr->sParm.v.parent;
+  symbol_t *recordTypePtr = varPtr->sParm.v.vParent;
 
   if (recordTypePtr == NULL ||
       recordTypePtr->sKind != sTYPE ||
@@ -2280,7 +2280,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
       for (objectIndex = 1, recordObjectPtr = &typePtr[1];
            objectIndex <= nObjects && recordObjectPtr != NULL;
-           objectIndex++, recordObjectPtr = recordObjectPtr->sParm.r.next)
+           objectIndex++, recordObjectPtr = recordObjectPtr->sParm.r.rNext)
         {
           symbol_t *parentTypePtr;
 
@@ -2295,17 +2295,17 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
            * it.
            */
 
-          parentTypePtr = recordObjectPtr->sParm.r.parent;
+          parentTypePtr = recordObjectPtr->sParm.r.rParent;
 
           if (parentTypePtr->sKind != sTYPE) error(eHUH);
           else if (parentTypePtr->sParm.t.type == sSTRING)
             {
-               pas_AddRecordStringInitializer(recordObjectPtr);
+               pas_AddRecordObjectInitializer(varPtr, recordObjectPtr);
             }
           else if (parentTypePtr->sParm.t.type == sFILE ||
                    parentTypePtr->sParm.t.type == sTEXTFILE)
             {
-               pas_AddRecordFileInitializer(recordObjectPtr);
+               pas_AddRecordObjectInitializer(varPtr, recordObjectPtr);
             }
           else if (parentTypePtr->sParm.t.type == sARRAY)
             {
@@ -2313,16 +2313,16 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
               /* "Fake" a variable symbol at the offset of the array */
 
-              varInfo.sName            = varPtr->sName;
-              varInfo.sKind            = parentTypePtr->sParm.t.type;
-              varInfo.sLevel           = varPtr->sLevel;
+              varInfo.sName             = varPtr->sName;
+              varInfo.sKind             = parentTypePtr->sParm.t.type;
+              varInfo.sLevel            = varPtr->sLevel;
 
-              varInfo.sParm.v.flags    = varPtr->sParm.v.flags;
-              varInfo.sParm.v.xfrUnit  = varPtr->sParm.v.xfrUnit;
-              varInfo.sParm.v.vOffset  = varPtr->sParm.v.vOffset;
-              varInfo.sParm.v.size     = parentTypePtr->sParm.t.asize;
-              varInfo.sParm.v.symIndex = 0;
-              varInfo.sParm.v.parent   = parentTypePtr;
+              varInfo.sParm.v.vFlags    = varPtr->sParm.v.vFlags;
+              varInfo.sParm.v.vXfrUnit  = varPtr->sParm.v.vXfrUnit;
+              varInfo.sParm.v.vOffset   = varPtr->sParm.v.vOffset;
+              varInfo.sParm.v.vSize     = parentTypePtr->sParm.t.asize;
+              varInfo.sParm.v.vSymIndex = 0;
+              varInfo.sParm.v.vParent   = parentTypePtr;
 
               pas_AddArrayInitializers(&varInfo, parentTypePtr);
             }
@@ -2374,16 +2374,16 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
       /* "Fake" a variable symbol at the offset of the array */
 
-      varInfo.sName            = varPtr->sName;
-      varInfo.sKind            = baseTypePtr->sParm.t.type;
-      varInfo.sLevel           = varPtr->sLevel;
+      varInfo.sName             = varPtr->sName;
+      varInfo.sKind             = baseTypePtr->sParm.t.type;
+      varInfo.sLevel            = varPtr->sLevel;
 
-      varInfo.sParm.v.flags    = varPtr->sParm.v.flags;
-      varInfo.sParm.v.xfrUnit  = varPtr->sParm.v.xfrUnit;
-      varInfo.sParm.v.vOffset  = varPtr->sParm.v.vOffset;
-      varInfo.sParm.v.size     = baseTypePtr->sParm.t.asize;
-      varInfo.sParm.v.symIndex = 0;
-      varInfo.sParm.v.parent   = baseTypePtr;
+      varInfo.sParm.v.vFlags    = varPtr->sParm.v.vFlags;
+      varInfo.sParm.v.vXfrUnit  = varPtr->sParm.v.vXfrUnit;
+      varInfo.sParm.v.vOffset   = varPtr->sParm.v.vOffset;
+      varInfo.sParm.v.vSize     = baseTypePtr->sParm.t.asize;
+      varInfo.sParm.v.vSymIndex = 0;
+      varInfo.sParm.v.vParent   = baseTypePtr;
 
       /* The index should be a SUBRANGE type */
 
@@ -2983,7 +2983,7 @@ int16_t pas_FormalParameterList(symbol_t *procPtr)
        * multiples of size of INTEGER).
        */
 
-      parameterOffset -= procPtr[i].sParm.v.size;
+      parameterOffset -= procPtr[i].sParm.v.vSize;
       parameterOffset  = INT_ALIGNUP(parameterOffset);
       procPtr[i].sParm.v.vOffset = parameterOffset;
     }

@@ -421,11 +421,10 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
     {
       /* Add the file to the symbol table */
 
-      filePtr->sParm.v.xfrUnit    = xfrUnit;    /* Size of each transfer (binary) */
+      filePtr->sParm.v.vXfrUnit   = xfrUnit;    /* Size of each transfer (binary) */
       filePtr->sParm.v.vOffset    = offset;     /* Offset to variable */
-      filePtr->sParm.v.fOffset    = 0;          /* Field offset from Variable */
-      filePtr->sParm.v.size       = sINT_SIZE;  /* Run time storage size */
-      filePtr->sParm.v.parent     = typePtr;    /* FILE OF Type (binary) */
+      filePtr->sParm.v.vSize      = sINT_SIZE;  /* Run time storage size */
+      filePtr->sParm.v.vParent    = typePtr;    /* FILE OF Type (binary) */
     }
 
   /* Return a pointer to the new file variable symbol */
@@ -477,8 +476,8 @@ symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
       /* Add the variable to the symbol table */
 
       varPtr->sParm.v.vOffset   = offset;
-      varPtr->sParm.v.size     = size;
-      varPtr->sParm.v.parent   = parent;
+      varPtr->sParm.v.vSize     = size;
+      varPtr->sParm.v.vParent   = parent;
     }
 
   /* Return a pointer to the new variable symbol */
@@ -525,13 +524,13 @@ symbol_t *pas_AddField(char *name, symbol_t *record, symbol_t *lastField)
     {
       /* Add the field to the symbol table */
 
-      fieldPtr->sParm.r.record = record;
+      fieldPtr->sParm.r.rRecord = record;
 
       /* Link the previous field to this one */
 
       if (lastField != NULL)
         {
-          lastField->sParm.r.next = fieldPtr;
+          lastField->sParm.r.rNext = fieldPtr;
         }
     }
 
@@ -745,11 +744,11 @@ void pas_DumpTables(void)
         case sTEXTFILE :
           fprintf(g_lstFile, "flags=%02x xfrUnit=%u offset=%" PRId32
                   " size=%" PRId32 " parent=[%p]\n",
-                  g_symbolTable[i].sParm.v.flags,
-                  g_symbolTable[i].sParm.v.xfrUnit,
+                  g_symbolTable[i].sParm.v.vFlags,
+                  g_symbolTable[i].sParm.v.vXfrUnit,
                   g_symbolTable[i].sParm.v.vOffset,
-                  g_symbolTable[i].sParm.v.size,
-                  g_symbolTable[i].sParm.v.parent);
+                  g_symbolTable[i].sParm.v.vSize,
+                  g_symbolTable[i].sParm.v.vParent);
           break;
 
           /* Record objects */
@@ -760,9 +759,9 @@ void pas_DumpTables(void)
                   "parent=[%p] next=[%p]\n",
                   g_symbolTable[i].sParm.r.rOffset,
                   g_symbolTable[i].sParm.r.rSize,
-                  g_symbolTable[i].sParm.r.record,
-                  g_symbolTable[i].sParm.r.parent,
-                  g_symbolTable[i].sParm.r.next);
+                  g_symbolTable[i].sParm.r.rRecord,
+                  g_symbolTable[i].sParm.r.rParent,
+                  g_symbolTable[i].sParm.r.rNext);
           break;
 
           /* Constant strings */

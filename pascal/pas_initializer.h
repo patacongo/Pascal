@@ -49,10 +49,10 @@ extern int g_levelInitializerOffset; /* Index to initializers for this level */
  ***************************************************************************/
 
 void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
-                            uint16_t fileNumber);
+       uint16_t fileNumber);
 void pas_AddStringInitializer(symbol_t *stringPtr);
-void pas_AddRecordFileInitializer(symbol_t *fileObjectPtr);
-void pas_AddRecordStringInitializer(symbol_t *recordObjectPtr);
+void pas_AddRecordObjectInitializer(symbol_t *recordVarPtr,
+       symbol_t *recordObjectPtr);
 void pas_Initialization(void);
 void pas_Finalization(void);
 

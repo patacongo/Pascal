@@ -141,13 +141,13 @@ void pas_Statement(void)
     case sINT :
       symPtr = g_tknPtr;
       getToken();
-      pas_Assignment(opSTS, exprInteger, symPtr, symPtr->sParm.v.parent);
+      pas_Assignment(opSTS, exprInteger, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sCHAR :
       symPtr = g_tknPtr;
       getToken();
-      pas_Assignment(opSTSB, exprChar, symPtr, symPtr->sParm.v.parent);
+      pas_Assignment(opSTSB, exprChar, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sBOOLEAN :
@@ -159,25 +159,25 @@ void pas_Statement(void)
     case sREAL :
       symPtr = g_tknPtr;
       getToken();
-      pas_LargeAssignment(opSTSM, exprReal, symPtr, symPtr->sParm.v.parent);
+      pas_LargeAssignment(opSTSM, exprReal, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sSCALAR :
       symPtr = g_tknPtr;
       getToken();
-      pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.parent);
+      pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sSET_OF :
       symPtr = g_tknPtr;
       getToken();
-      pas_Assignment(opSTS, exprSet, symPtr, symPtr->sParm.v.parent);
+      pas_Assignment(opSTS, exprSet, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sSTRING :
       symPtr = g_tknPtr;
       getToken();
-      pas_StringAssignment(symPtr, symPtr->sParm.v.parent, 0);
+      pas_StringAssignment(symPtr, symPtr->sParm.v.vParent, 0);
       break;
 
       /* Complex assignments statements */
@@ -269,7 +269,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
   /* Get the parent type */
 
-  typePtr = varPtr->sParm.v.parent;
+  typePtr = varPtr->sParm.v.vParent;
 
   /* Now, handle the variable by its type */
 
@@ -597,7 +597,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
            */
 
           if (g_token != sRECORD_OBJECT ||
-              g_tknPtr->sParm.r.record != baseTypePtr)
+              g_tknPtr->sParm.r.rRecord != baseTypePtr)
             {
               error(eRECORDOBJECT);
             }
@@ -607,9 +607,9 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                * the field but with level and offset associated with the record
                */
 
-              typePtr                 = g_tknPtr->sParm.r.parent;
+              typePtr                 = g_tknPtr->sParm.r.rParent;
               varPtr->sKind           = typePtr->sParm.t.type;
-              varPtr->sParm.v.parent  = typePtr;
+              varPtr->sParm.v.vParent = typePtr;
 
               /* Adjust the variable size and offset.  Add the RECORD offset
                * to the RECORD data stack offset to get the data stack
@@ -617,7 +617,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                * size of RECORD object.
                */
 
-              varPtr->sParm.v.size    = g_tknPtr->sParm.r.rSize;
+              varPtr->sParm.v.vSize   = g_tknPtr->sParm.r.rSize;
 
               /* Special case:  The record is a VAR parameter. */
 
@@ -640,8 +640,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                   varPtr->sParm.v.vOffset += g_tknPtr->sParm.r.rOffset;
                 }
 
-              /* The RECORD OBJECT should not be indexed, even if the "outer"
-               * RECORD must be.
+              /* The RECORD OBJECT should not be indexed, even if the "outer",
+               * destination RECORD must be.
                */
 
               assignFlags &= ~ASSIGN_INDEXED;
@@ -697,7 +697,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.record != g_withRecord.parent)
+      else if (varPtr->sParm.r.rRecord != g_withRecord.parent)
         {
           error(eRECORDOBJECT);
         }
@@ -740,13 +740,13 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
            * variables!
            */
 
-          typePtr                 = varPtr->sParm.r.parent;
+          typePtr                 = varPtr->sParm.r.rParent;
 
           varPtr->sKind           = typePtr->sParm.t.type;
           varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.size    = typePtr->sParm.t.asize;
+          varPtr->sParm.v.vSize   = typePtr->sParm.t.asize;
           varPtr->sParm.v.vOffset = tempOffset;
-          varPtr->sParm.v.parent  = typePtr;
+          varPtr->sParm.v.vParent = typePtr;
 
           pas_SimpleAssignment(varPtr, assignFlags);
         }
@@ -857,9 +857,9 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
           {
             pas_ArrayIndex(indexTypePtr, size);
 
-            varPtr->sKind        = arrayKind;
-            varPtr->sParm.v.size = size;
-            assignFlags         |= ASSIGN_INDEXED;
+            varPtr->sKind         = arrayKind;
+            varPtr->sParm.v.vSize = size;
+            assignFlags          |= ASSIGN_INDEXED;
             pas_SimpleAssignment(varPtr, assignFlags);
           }
 
@@ -958,7 +958,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
        * so could be added to the dest sting variable address easily.
        */
 
-      if ((assignFlags & ASSIGN_INDEXED) != 0)
+      if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
         {
           libOpcode = lbSTRCPYX;
         }
@@ -1009,7 +1009,7 @@ static void pas_LargeAssignment(uint16_t storeOp, exprType_t assignType,
    else getToken();
 
    pas_Expression(assignType, typePtr);
-   pas_GenerateDataSize(varPtr->sParm.v.size);
+   pas_GenerateDataSize(varPtr->sParm.v.vSize);
    pas_GenerateStackReference(storeOp, varPtr);
 }
 
@@ -1038,7 +1038,7 @@ static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr,
    *    TOS(3) = Size of the string
    */
 
-  pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.size);
+  pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.vSize);
   pas_GenerateStackReference(opLAS, varPtr);
 
   if ((assignFlags & ASSIGN_OUTER_INDEXED) != 0)
@@ -1753,7 +1753,7 @@ static void pas_ForStatement(void)
 
        /* Generate the assignment to the integer variable */
 
-       pas_Assignment(opSTS, exprInteger, varPtr, varPtr->sParm.v.parent);
+       pas_Assignment(opSTS, exprInteger, varPtr, varPtr->sParm.v.vParent);
 
        /* Determine if this is a TO or a DOWNTO loop and set up the opCodes
         * to generate appropriately.
@@ -1778,7 +1778,7 @@ static void pas_ForStatement(void)
 
        /* Evaluate <expression> DO */
 
-       pas_Expression(exprInteger, varPtr->sParm.v.parent);
+       pas_Expression(exprInteger, varPtr->sParm.v.vParent);
 
        /* Verify that the <expression> is followed by the DO token */
 
@@ -1884,7 +1884,7 @@ static void pas_WithStatement(void)
            g_withRecord.pointer = false;
            g_withRecord.varParm = false;
            g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.parent  = g_tknPtr->sParm.v.parent;
+           g_withRecord.parent  = g_tknPtr->sParm.v.vParent;
 
            /* Skip over the RECORD variable */
 
@@ -1897,7 +1897,7 @@ static void pas_WithStatement(void)
 
        else if ((g_token == sVAR_PARM) &&
                 (!g_withRecord.parent) &&
-                (g_tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.v.vParent->sParm.t.type == sRECORD))
          {
            /* Save the RECORD VAR parameter as the new with record */
 
@@ -1905,7 +1905,7 @@ static void pas_WithStatement(void)
            g_withRecord.pointer = true;
            g_withRecord.varParm = true;
            g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.parent  = g_tknPtr->sParm.v.parent;
+           g_withRecord.parent  = g_tknPtr->sParm.v.vParent;
 
            /* Skip over the RECORD VAR parameter */
 
@@ -1918,7 +1918,7 @@ static void pas_WithStatement(void)
 
        else if ((g_token == sPOINTER) &&
                 (!g_withRecord.parent) &&
-                (g_tknPtr->sParm.v.parent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.v.vParent->sParm.t.type == sRECORD))
          {
            /* Save the RECORD pointer as the new with record */
 
@@ -1926,7 +1926,7 @@ static void pas_WithStatement(void)
            g_withRecord.pointer = true;
            g_withRecord.pointer = false;
            g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.parent  = g_tknPtr->sParm.v.parent;
+           g_withRecord.parent  = g_tknPtr->sParm.v.vParent;
 
            /* Skip over the RECORD pointer */
 
@@ -1943,8 +1943,8 @@ static void pas_WithStatement(void)
         */
 
        else if ((g_token == sRECORD_OBJECT) &&
-                (g_tknPtr->sParm.r.record == g_withRecord.parent) &&
-                (g_tknPtr->sParm.r.parent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.r.rRecord == g_withRecord.parent) &&
+                (g_tknPtr->sParm.r.rParent->sParm.t.type == sRECORD))
          {
            /* Okay, update the with record to use this record field */
 
@@ -1957,7 +1957,7 @@ static void pas_WithStatement(void)
                g_withRecord.wOffset += g_tknPtr->sParm.r.rOffset;
              }
 
-           g_withRecord.parent  = g_tknPtr->sParm.r.parent;
+           g_withRecord.parent  = g_tknPtr->sParm.r.rParent;
 
            /* Skip over the sRECORD_OBJECT */
 

@@ -65,6 +65,18 @@
  * Private Type Declarations
  ****************************************************************************/
 
+/* This structure holds a writable copy of a symbol table variable plus
+ * additional information to help with evaluation of expressions.
+ */
+
+struct varInfo_s
+{
+  symbol_t  variable;   /* Writable copy of symbol table variable entry */
+  int16_t   fOffset;    /* Record field offset into variable */
+};
+
+typedef struct varInfo_s varInfo_t;
+
 /* This structure is used for managing SET variables */
 
 struct setType_s
@@ -85,15 +97,16 @@ typedef struct setType_s setType_t;
 static exprType_t pas_SimplifyExpression(exprType_t findExprType);
 static exprType_t pas_Term(exprType_t findExprType);
 static exprType_t pas_Factor(exprType_t findExprType);
-static exprType_t pas_CcmplexFactor(void);
-static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags);
+static exprType_t pas_ComplexFactor(void);
+static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
+                    uint8_t factorFlags);
 static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags);
 static exprType_t pas_PointerFactor(void);
 static exprType_t pas_ComplexPointerFactor(void);
-static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
-                                            uint8_t factorFlags);
+static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
+                    uint8_t factorFlags);
 static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
-                                        uint8_t factorFlags);
+                    uint8_t factorFlags);
 static exprType_t pas_FunctionDesignator(void);
 static void       pas_SetAbstractType(symbol_t *sType);
 static void       pas_GetSetFactor(void);
@@ -1238,11 +1251,11 @@ static exprType_t pas_Factor(exprType_t findExprType)
     case sSCALAR :
       if (g_abstractType)
         {
-          if (g_tknPtr->sParm.v.parent != g_abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.v.vParent != g_abstractType) error(eSCALARTYPE);
         }
       else
         {
-          g_abstractType = g_tknPtr->sParm.v.parent;
+          g_abstractType = g_tknPtr->sParm.v.vParent;
         }
 
       pas_GenerateStackReference(opLDS, g_tknPtr);
@@ -1256,13 +1269,13 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
       if (g_abstractType)
         {
-          if ((g_tknPtr->sParm.v.parent != g_abstractType) &&
-              (g_tknPtr->sParm.v.parent->sParm.t.parent != g_abstractType))
+          if ((g_tknPtr->sParm.v.vParent != g_abstractType) &&
+              (g_tknPtr->sParm.v.vParent->sParm.t.parent != g_abstractType))
             error(eSET);
         }
       else
         {
-          g_abstractType = g_tknPtr->sParm.v.parent;
+          g_abstractType = g_tknPtr->sParm.v.vParent;
         }
 
       pas_GenerateStackReference(opLDS, g_tknPtr);
@@ -1288,7 +1301,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
     case sVAR_PARM :
     case sPOINTER :
     case sARRAY :
-      factorType = pas_CcmplexFactor();
+      factorType = pas_ComplexFactor();
       break;
 
       /* Functions */
@@ -1364,31 +1377,33 @@ static exprType_t pas_Factor(exprType_t findExprType)
 /****************************************************************************/
 /* Process a complex factor */
 
-static exprType_t pas_CcmplexFactor(void)
+static exprType_t pas_ComplexFactor(void)
 {
-  symbol_t symbolSave;
+  varInfo_t varInfo;
 
-  TRACE(g_lstFile,"[pas_CcmplexFactor]");
+  TRACE(g_lstFile,"[pas_ComplexFactor]");
 
   /* First, make a copy of the symbol table entry because the call to
    * pas_SimplifyFactor() will modify it.
    */
 
-  symbolSave = *g_tknPtr;
+  varInfo.variable = *g_tknPtr;
+  varInfo.fOffset  = 0;
   getToken();
 
   /* Then process the complex factor until it is reduced to a simple factor
    * (like int, char, etc.)
    */
 
-  return pas_SimplifyFactor(&symbolSave, 0);
+  return pas_SimplifyFactor(&varInfo, 0);
 }
 
 /****************************************************************************/
 /* Process a complex factor (recursively) until it becomes a simple factor */
 
-static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
+static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
 {
+  symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
   symbol_t  *baseTypePtr;
   symbol_t  *nextPtr;
@@ -1410,13 +1425,13 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
    * Process the complex factor according to the current variable sKind.
    */
 
-  typePtr = varPtr->sParm.v.parent;
+  typePtr = varPtr->sParm.v.vParent;
   switch (varPtr->sKind)
     {
     case sSUBRANGE :
       if (!g_abstractType) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.subType;
-      factorType    = pas_SimplifyFactor(varPtr, factorFlags);
+      factorType    = pas_SimplifyFactor(varInfo, factorFlags);
       break;
 
     case sRECORD :
@@ -1466,7 +1481,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
             }
 
           if ((g_token != sRECORD_OBJECT) ||
-              (g_tknPtr->sParm.r.record != baseTypePtr))
+              (g_tknPtr->sParm.r.rRecord != baseTypePtr))
             {
               error(eRECORDOBJECT);
               factorType = exprInteger;
@@ -1478,9 +1493,9 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
                * record.
                */
 
-              typePtr                 = g_tknPtr->sParm.r.parent;
+              typePtr                 = g_tknPtr->sParm.r.rParent;
               varPtr->sKind           = typePtr->sParm.t.type;
-              varPtr->sParm.v.parent  = typePtr;
+              varPtr->sParm.v.vParent = typePtr;
 
               /* Adjust the variable size and offset.  Add the RECORD offset
                * to the RECORD data stack offset to get the data stack
@@ -1488,7 +1503,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
                * size of RECORD object.
                */
 
-              varPtr->sParm.v.size    = g_tknPtr->sParm.r.rSize;
+              varPtr->sParm.v.vSize   = g_tknPtr->sParm.r.rSize;
 
               if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
                                   VAR_PARM_FACTOR))
@@ -1506,7 +1521,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
                    * offset so that we can apply it later.
                    */
 
-                  varPtr->sParm.v.fOffset = g_tknPtr->sParm.r.rOffset;
+                  varInfo->fOffset = g_tknPtr->sParm.r.rOffset;
                 }
               else
                 {
@@ -1518,7 +1533,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
                 }
 
               getToken();
-              factorType = pas_SimplifyFactor(varPtr, factorFlags);
+              factorType = pas_SimplifyFactor(varInfo, factorFlags);
             }
         }
 
@@ -1534,12 +1549,12 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opADD);
-              pas_GenerateDataSize(varPtr->sParm.v.size);
+              pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateSimple(opLDIM);
             }
           else
             {
-              pas_GenerateDataSize(varPtr->sParm.v.size);
+              pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateStackReference(opLDSM, varPtr);
             }
 
@@ -1570,7 +1585,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.record != g_withRecord.parent)
+      else if (varPtr->sParm.r.rRecord != g_withRecord.parent)
         {
           error(eRECORDOBJECT);
         }
@@ -1611,16 +1626,16 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
           /* associated with sRECORD_OBJECT is not the same as for */
           /* variables! */
 
-          typePtr                 = varPtr->sParm.r.parent;
+          typePtr                 = varPtr->sParm.r.rParent;
           tempOffset              = varPtr->sParm.r.rOffset;
 
           varPtr->sKind           = typePtr->sParm.t.type;
           varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.size    = typePtr->sParm.t.asize;
+          varPtr->sParm.v.vSize   = typePtr->sParm.t.asize;
           varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
-          varPtr->sParm.v.parent  = typePtr;
+          varPtr->sParm.v.vParent = typePtr;
 
-          factorType = pas_SimplifyFactor(varPtr, factorFlags);
+          factorType = pas_SimplifyFactor(varInfo, factorFlags);
         }
       break;
 
@@ -1657,7 +1672,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
           varPtr->sKind = typePtr->sParm.t.type;
         }
 
-      factorType = pas_SimplifyFactor(varPtr, factorFlags);
+      factorType = pas_SimplifyFactor(varInfo, factorFlags);
       break;
 
     case sVAR_PARM :
@@ -1668,7 +1683,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
       factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
       varPtr->sKind = typePtr->sParm.t.type;
-      factorType    = pas_SimplifyFactor(varPtr, factorFlags);
+      factorType    = pas_SimplifyFactor(varInfo, factorFlags);
       break;
 
     case sARRAY :
@@ -1724,7 +1739,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
                */
 
               varPtr->sKind  = arrayKind;
-              factorType     = pas_SimplifyFactor(varPtr, factorFlags);
+              factorType     = pas_SimplifyFactor(varInfo, factorFlags);
 
               if (factorType == exprUnknown)
                 {
@@ -1733,8 +1748,8 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               /* Return the parent type of the array */
 
-              varPtr->sKind        = typePtr->sParm.t.type;
-              varPtr->sParm.v.size = typePtr->sParm.t.asize;
+              varPtr->sKind         = typePtr->sParm.t.type;
+              varPtr->sParm.v.vSize = typePtr->sParm.t.asize;
             }
         }
 
@@ -1751,7 +1766,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
            *    TOS+1 = Size of array (bytes)
            */
 
-          pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.size);
+          pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.vSize);
 
           /* This could be either a simple packed array of char, or it
            * could a packed array of char field of a RECORD.
@@ -1763,7 +1778,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
               pas_GenerateStackReference(opLDS, varPtr);
 
-              fieldOffset = varPtr->sParm.v.fOffset;
+              fieldOffset = varInfo->fOffset;
               if (fieldOffset != 0)
                 {
                   pas_GenerateDataOperation(opPUSH, fieldOffset);
@@ -1772,7 +1787,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
             }
           else
             {
-              varPtr->sParm.v.vOffset += varPtr->sParm.v.fOffset;
+              varPtr->sParm.v.vOffset += varInfo->fOffset;
               pas_GenerateStackReference(opLAS, varPtr);
             }
 
@@ -1786,7 +1801,7 @@ static exprType_t pas_SimplifyFactor(symbol_t *varPtr, uint8_t factorFlags)
 
       else if (g_abstractType == varPtr)
         {
-          pas_GenerateDataSize(varPtr->sParm.v.size);
+          pas_GenerateDataSize(varPtr->sParm.v.vSize);
           pas_GenerateStackReference(opLDSM, varPtr);
           factorType = pas_MapVariable2ExprType(varPtr->sParm.t.type, false);
         }
@@ -1816,7 +1831,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
 
   /* Process according to the current variable sKind */
 
-  typePtr = varPtr->sParm.v.parent;
+  typePtr = varPtr->sParm.v.vParent;
   switch (varPtr->sKind)
     {
       /* Check if we have reduced the complex factor to a simple factor */
@@ -1995,7 +2010,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              pas_GenerateDataSize(varPtr->sParm.v.size);
+              pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateSimple(opLDIM);
               factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
@@ -2006,7 +2021,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
             }
           else
             {
-              pas_GenerateDataSize(varPtr->sParm.v.size);
+              pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateStackReference(opLDSM, varPtr);
               factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
@@ -2069,7 +2084,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
           g_abstractType = typePtr;
         }
       else if ((typePtr != g_abstractType) &&
-               (typePtr->sParm.v.parent != g_abstractType))
+               (typePtr->sParm.v.vParent != g_abstractType))
         {
           error(eSCALARTYPE);
         }
@@ -2212,11 +2227,11 @@ static exprType_t pas_PointerFactor(void)
       case sSCALAR :
         if (g_abstractType)
           {
-            if (g_tknPtr->sParm.v.parent != g_abstractType) error(eSCALARTYPE);
+            if (g_tknPtr->sParm.v.vParent != g_abstractType) error(eSCALARTYPE);
           }
         else
           {
-           g_abstractType = g_tknPtr->sParm.v.parent;
+           g_abstractType = g_tknPtr->sParm.v.vParent;
           }
 
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -2231,15 +2246,15 @@ static exprType_t pas_PointerFactor(void)
 
         if (g_abstractType)
           {
-            if ((g_tknPtr->sParm.v.parent != g_abstractType)
-            &&   (g_tknPtr->sParm.v.parent->sParm.t.parent != g_abstractType))
+            if ((g_tknPtr->sParm.v.vParent != g_abstractType)
+            &&   (g_tknPtr->sParm.v.vParent->sParm.t.parent != g_abstractType))
               {
                  error(eSET);
               }
           }
         else
           {
-             g_abstractType = g_tknPtr->sParm.v.parent;
+             g_abstractType = g_tknPtr->sParm.v.vParent;
           }
 
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -2300,7 +2315,7 @@ static exprType_t pas_PointerFactor(void)
 
 static exprType_t pas_ComplexPointerFactor(void)
 {
-  symbol_t symbolSave;
+  varInfo_t varInfo;
 
   TRACE(g_lstFile,"[pas_ComplexPointerFactor]");
 
@@ -2308,14 +2323,15 @@ static exprType_t pas_ComplexPointerFactor(void)
    * pas_SimplifyPointerFactor() will modify it.
    */
 
-  symbolSave = *g_tknPtr;
+  varInfo.variable = *g_tknPtr;
+  varInfo.fOffset  = 0;
   getToken();
 
   /* Then process the complex factor until it is reduced to a simple
    * factor (like int, char, etc.)
    */
 
-  return pas_SimplifyPointerFactor(&symbolSave, 0);
+  return pas_SimplifyPointerFactor(&varInfo, 0);
 }
 
 /****************************************************************************/
@@ -2323,9 +2339,10 @@ static exprType_t pas_ComplexPointerFactor(void)
  * factor.
  */
 
-static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
+static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
                                             uint8_t factorFlags)
 {
+  symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
   exprType_t factorType;
 
@@ -2344,7 +2361,7 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
    * Process the complex factor according to the current variable sKind.
    */
 
-  typePtr = varPtr->sParm.v.parent;
+  typePtr = varPtr->sParm.v.vParent;
   switch (varPtr->sKind)
     {
       /* Check if we have reduced the complex factor to a simple factor */
@@ -2352,7 +2369,7 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
     case sSUBRANGE :
       if (!g_abstractType) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.subType;
-      factorType = pas_SimplifyPointerFactor(varPtr, factorFlags);
+      factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
 
     case sRECORD :
@@ -2390,7 +2407,7 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
            */
 
           if ((g_token != sRECORD_OBJECT) ||
-              (g_tknPtr->sParm.r.record != typePtr))
+              (g_tknPtr->sParm.r.rRecord != typePtr))
             {
               error(eRECORDOBJECT);
               factorType = exprInteger;
@@ -2402,13 +2419,14 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
                * the record
                */
 
-              typePtr                 = g_tknPtr->sParm.r.parent;
+              typePtr                 = g_tknPtr->sParm.r.rParent;
               varPtr->sKind           = typePtr->sParm.t.type;
-              varPtr->sParm.v.fOffset = g_tknPtr->sParm.r.rOffset;
-              varPtr->sParm.v.parent  = typePtr;
+              varPtr->sParm.v.vParent = typePtr;
+
+              varInfo->fOffset        = g_tknPtr->sParm.r.rOffset;
 
               getToken();
-              factorType = pas_SimplifyPointerFactor(varPtr, factorFlags);
+              factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
             }
         }
       break;
@@ -2435,7 +2453,7 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.record != g_withRecord.parent)
+      else if (varPtr->sParm.r.rRecord != g_withRecord.parent)
         {
           error(eRECORDOBJECT);
         }
@@ -2469,16 +2487,16 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
            * REVISIT:  What is going on with tempOffset here?
            */
 
-          typePtr                 = varPtr->sParm.r.parent;
+          typePtr                 = varPtr->sParm.r.rParent;
           tempOffset              = varPtr->sParm.r.rOffset;
 
           varPtr->sKind           = typePtr->sParm.t.type;
           varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.size    = typePtr->sParm.t.asize;
+          varPtr->sParm.v.vSize   = typePtr->sParm.t.asize;
           varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
-          varPtr->sParm.v.parent  = typePtr;
+          varPtr->sParm.v.vParent = typePtr;
 
-          factorType = pas_SimplifyPointerFactor(varPtr, factorFlags);
+          factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
         }
       break;
 
@@ -2488,7 +2506,7 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
 
       factorFlags   |= ADDRESS_DEREFERENCE;
       varPtr->sKind  = typePtr->sParm.t.type;
-      factorType     = pas_SimplifyPointerFactor(varPtr, factorFlags);
+      factorType     = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
 
     case sVAR_PARM :
@@ -2496,7 +2514,7 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
 
       factorFlags  |= ADDRESS_DEREFERENCE;
       varPtr->sKind = typePtr->sParm.t.type;
-      factorType    = pas_SimplifyPointerFactor(varPtr, factorFlags);
+      factorType    = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
 
     case sARRAY :
@@ -2556,7 +2574,8 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
               varPtr->sKind = arrayKind;
               if (arrayKind == sRECORD)
                 {
-                  factorType = pas_SimplifyPointerFactor(varPtr, factorFlags);
+                  factorType =
+                    pas_SimplifyPointerFactor(varInfo, factorFlags);
                 }
 
               /* Load the indexed base type */
@@ -2573,8 +2592,8 @@ static exprType_t pas_SimplifyPointerFactor(symbol_t *varPtr,
 
               /* Return the parent type of the array */
 
-              varPtr->sKind        = baseTypePtr->sParm.t.type;
-              varPtr->sParm.v.size = baseTypePtr->sParm.t.asize;
+              varPtr->sKind         = baseTypePtr->sParm.t.type;
+              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.asize;
             }
         }
       break;
@@ -2602,7 +2621,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr, uint8_t factorFlags)
    * Process the complex factor according to the current variable sKind.
    */
 
-  typePtr = varPtr->sParm.v.parent;
+  typePtr = varPtr->sParm.v.vParent;
   switch (varPtr->sKind)
     {
       /* Check if we have reduced the complex factor to a simple factor */
@@ -2772,7 +2791,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr, uint8_t factorFlags)
           g_abstractType = typePtr;
         }
       else if ((typePtr != g_abstractType) &&
-               (typePtr->sParm.v.parent != g_abstractType))
+               (typePtr->sParm.v.vParent != g_abstractType))
         {
           error(eSCALARTYPE);
         }
@@ -3203,14 +3222,14 @@ static void pas_GetSetElement(setType_t *s)
 
                  case sSCALAR :
                     if (!s->typePtr ||
-                        s->typePtr != g_tknPtr->sParm.v.parent)
+                        s->typePtr != g_tknPtr->sParm.v.vParent)
                       {
                         error(eSET);
 
                         if (!s->typePtr)
                           {
                             s->typeFound = true;
-                            s->typePtr   = g_tknPtr->sParm.v.parent;
+                            s->typePtr   = g_tknPtr->sParm.v.vParent;
                             s->setType   = sSCALAR;
                             s->minValue  = s->typePtr->sParm.t.minValue;
                             s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -3225,10 +3244,10 @@ static void pas_GetSetElement(setType_t *s)
                     goto addVarToBits;
 
                   case sSUBRANGE :
-                    if (!s->typePtr || s->typePtr != g_tknPtr->sParm.v.parent)
+                    if (!s->typePtr || s->typePtr != g_tknPtr->sParm.v.vParent)
                       {
-                        if (g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR ||
-                            g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType)
+                        if (g_tknPtr->sParm.v.vParent->sParm.t.subType == sSCALAR ||
+                            g_tknPtr->sParm.v.vParent->sParm.t.subType != s->setType)
                           {
                             error(eSET);
                           }
@@ -3236,7 +3255,7 @@ static void pas_GetSetElement(setType_t *s)
                         if (!s->typePtr)
                           {
                             s->typeFound = true;
-                            s->typePtr   = g_tknPtr->sParm.v.parent;
+                            s->typePtr   = g_tknPtr->sParm.v.vParent;
                             s->setType   = s->typePtr->sParm.t.subType;
                             s->minValue  = s->typePtr->sParm.t.minValue;
                             s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -3297,7 +3316,7 @@ static void pas_GetSetElement(setType_t *s)
       case sSCALAR :
         if (s->typeFound)
           {
-            if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
+            if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.vParent))
               {
                error(eSET);
               }
@@ -3305,7 +3324,7 @@ static void pas_GetSetElement(setType_t *s)
         else
           {
             s->typeFound = true;
-            s->typePtr   = g_tknPtr->sParm.v.parent;
+            s->typePtr   = g_tknPtr->sParm.v.vParent;
             s->setType   = sSCALAR;
             s->minValue  = s->typePtr->sParm.t.minValue;
             s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -3330,7 +3349,7 @@ static void pas_GetSetElement(setType_t *s)
       case sSUBRANGE :
         if (s->typeFound)
           {
-             if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.parent))
+             if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.vParent))
                {
                  error(eSET);
                }
@@ -3338,7 +3357,7 @@ static void pas_GetSetElement(setType_t *s)
         else
           {
             s->typeFound = true;
-            s->typePtr   = g_tknPtr->sParm.v.parent;
+            s->typePtr   = g_tknPtr->sParm.v.vParent;
             s->setType   = s->typePtr->sParm.t.subType;
             s->minValue  = s->typePtr->sParm.t.minValue;
             s->maxValue  = s->typePtr->sParm.t.maxValue;
@@ -3441,13 +3460,13 @@ static void pas_GetSetElement(setType_t *s)
                   goto addVarToVar;
 
                 case sSCALAR :
-                  if (s->typePtr != g_tknPtr->sParm.v.parent) error(eSET);
+                  if (s->typePtr != g_tknPtr->sParm.v.vParent) error(eSET);
                   goto addVarToVar;
 
                 case sSUBRANGE :
-                  if (s->typePtr != g_tknPtr->sParm.v.parent &&
-                     (g_tknPtr->sParm.v.parent->sParm.t.subType == sSCALAR ||
-                      g_tknPtr->sParm.v.parent->sParm.t.subType != s->setType))
+                  if (s->typePtr != g_tknPtr->sParm.v.vParent &&
+                     (g_tknPtr->sParm.v.vParent->sParm.t.subType == sSCALAR ||
+                      g_tknPtr->sParm.v.vParent->sParm.t.subType != s->setType))
                     {
                       error(eSET);
                     }

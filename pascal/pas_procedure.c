@@ -266,7 +266,7 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
    * pas_ActualParameterListg() below.
    */
 
-  symbol_t *typePtr = procPtr[parmNo].sParm.v.parent;
+  symbol_t *typePtr = procPtr[parmNo].sParm.v.vParent;
   switch (typePtr->sKind)
     {
     case sINT :
@@ -358,7 +358,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
            parmIndex <= procPtr->sParm.p.nParms;
            parmIndex++)
         {
-          typePtr = procPtr[parmIndex].sParm.v.parent;
+          typePtr = procPtr[parmIndex].sParm.v.vParent;
           switch (procPtr[parmIndex].sKind)
             {
             case sINT :
@@ -406,7 +406,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                 arrayKind = typePtr->sKind;
                 arrayType = typePtr;
-                nextType  = typePtr->sParm.v.parent;
+                nextType  = typePtr->sParm.v.vParent;
 
                 while (nextType != NULL && nextType->sKind == sTYPE)
                   {
@@ -474,7 +474,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                         arrayKind = typePtr->sKind;
                         arrayType = typePtr;
-                        nextType  = typePtr->sParm.v.parent;
+                        nextType  = typePtr->sParm.v.vParent;
 
                         while (nextType != NULL && nextType->sKind == sTYPE)
                           {
@@ -602,7 +602,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
                * file type.
                */
 
-              nextPtr         = fieldPtr->sParm.r.parent;
+              nextPtr         = fieldPtr->sParm.r.rParent;
               baseTypePtr     = nextPtr;
               while (nextPtr != NULL && nextPtr->sKind == sTYPE)
                 {
@@ -661,7 +661,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
            * until we parse the field selector.
            */
 
-          typePtr = varPtr->sParm.v.parent;
+          typePtr = varPtr->sParm.v.vParent;
           if (typePtr == NULL)
             {
               error(eHUH);
@@ -707,8 +707,8 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 
               /* Return the parent type of the array */
 
-              varPtr->sKind        = baseTypePtr->sParm.t.type;
-              varPtr->sParm.v.size = baseTypePtr->sParm.t.asize;
+              varPtr->sKind         = baseTypePtr->sParm.t.type;
+              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.asize;
 
               return simplifyFileNumber(varPtr, fileFlags, pFileSize,
                                         defaultFilePtr);
@@ -727,7 +727,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
             }
           else
             {
-              fileSize = varPtr->sParm.v.xfrUnit;
+              fileSize = varPtr->sParm.v.vXfrUnit;
             }
 
           pas_GenerateStackReference(opLDS, varPtr);
@@ -773,7 +773,7 @@ static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
 
   if (pFileSize != NULL)
     {
-      *pFileSize = defaultFilePtr->sParm.v.xfrUnit;
+      *pFileSize = defaultFilePtr->sParm.v.vXfrUnit;
     }
 
   return defaultFilePtr->sKind;
@@ -1097,7 +1097,7 @@ static void readBinary(uint16_t fileSize)
       case sSTRING :
       case sARRAY :
       case sRECORD :
-        size   = g_tknPtr->sParm.v.size;
+        size   = g_tknPtr->sParm.v.vSize;
         break;
 
       /* VAR parameter */
@@ -1107,7 +1107,7 @@ static void readBinary(uint16_t fileSize)
          * that the parent is an sTYPE
          */
 
-        parent = g_tknPtr->sParm.v.parent;
+        parent = g_tknPtr->sParm.v.vParent;
         size   = parent->sParm.t.asize;
         break;
 
@@ -1559,7 +1559,7 @@ static void writeText(void)
       /* Array of type CHAR without indexing */
 
     case sARRAY :
-      wPtr = g_tknPtr->sParm.v.parent;
+      wPtr = g_tknPtr->sParm.v.vParent;
       if (wPtr != NULL && wPtr->sKind == sTYPE &&
           wPtr->sParm.t.type == sCHAR &&
           getNextCharacter(true) != '[')
@@ -1570,7 +1570,7 @@ static void writeText(void)
            */
 
           pas_GenerateSimple(opDUP);
-          pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.size);
+          pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.vSize);
           pas_GenerateStackReference(opLAS, wPtr);
           pas_GenerateIoOperation(xWRITE_STRING);
           getToken();
@@ -1664,7 +1664,7 @@ static void writeBinary(uint16_t fileSize)
       case sSTRING :
       case sARRAY :
       case sRECORD :
-        size   = g_tknPtr->sParm.v.size;
+        size   = g_tknPtr->sParm.v.vSize;
         break;
 
       /* VAR parameter */
@@ -1674,7 +1674,7 @@ static void writeBinary(uint16_t fileSize)
          * that the parent is an sTYPE
          */
 
-        parent = g_tknPtr->sParm.v.parent;
+        parent = g_tknPtr->sParm.v.vParent;
         size   = parent->sParm.t.asize;
         break;
 
@@ -1723,7 +1723,7 @@ static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
 
   /* Use the parent type.  The parent of a a VAR parameter is a type */
 
-  typePtr = varPtr->sParm.v.parent;
+  typePtr  = varPtr->sParm.v.vParent;
   symType  = 0;  /* Invalid type */
   fileType = 0;  /* Invalid type */
   fileSize = 0;  /* Invalid transfer unit size */

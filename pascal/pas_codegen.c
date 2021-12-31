@@ -110,10 +110,10 @@ pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *varPtr)
        * record.
        */
 
-      if ((varPtr->sParm.v.flags & SVAR_EXTERNAL) != 0)
+      if ((varPtr->sParm.v.vFlags & SVAR_EXTERNAL) != 0)
         {
           (void)poffAddRelocation(poffHandle, RLT_LDST,
-                                  varPtr->sParm.v.symIndex, 0);
+                                  varPtr->sParm.v.vSymIndex, 0);
         }
     }
 }
@@ -449,7 +449,7 @@ void pas_GenerateStackExport(symbol_t *varPtr)
 #if CONFIG_DEBUG
   /* Get the parent type of the variable */
 
-  symbol_t *typePtr = varPtr->sParm.v.parent;
+  symbol_t *typePtr = varPtr->sParm.v.vParent;
 
   /* Perform some sanity checking:
    * - Must have a parent type
@@ -458,7 +458,7 @@ void pas_GenerateStackExport(symbol_t *varPtr)
    */
 
   if (typePtr == NULL ||
-      (varPtr->sParm.v.flags & SVAR_EXTERNAL) != 0 ||
+      (varPtr->sParm.v.vFlags & SVAR_EXTERNAL) != 0 ||
       varPtr->sLevel != 0)
     {
       error(eSYMTABINTERNAL);
@@ -472,7 +472,7 @@ void pas_GenerateStackExport(symbol_t *varPtr)
   symbol.flags = STF_NONE;
   symbol.name  = varPtr->sName;
   symbol.value = varPtr->sParm.v.vOffset;
-  symbol.size  = varPtr->sParm.v.size;
+  symbol.size  = varPtr->sParm.v.vSize;
 
   /* Add the symbol to the symbol table */
 
@@ -491,7 +491,7 @@ void pas_GenerateStackImport(symbol_t *varPtr)
 #if CONFIG_DEBUG
   /* Get the parent type of the variable */
 
-  symbol_t *typePtr = varPtr->sParm.v.parent;
+  symbol_t *typePtr = varPtr->sParm.v.vParent;
 
   /* Perform some sanity checking
    * - Must have a parent type
@@ -500,7 +500,7 @@ void pas_GenerateStackImport(symbol_t *varPtr)
    */
 
   if (typePtr == NULL ||
-      (varPtr->sParm.v.flags & SVAR_EXTERNAL) == 0 ||
+      (varPtr->sParm.v.vFlags & SVAR_EXTERNAL) == 0 ||
       varPtr->sLevel != 0)
     {
       error(eSYMTABINTERNAL);
@@ -514,11 +514,11 @@ void pas_GenerateStackImport(symbol_t *varPtr)
   symbol.flags = STF_UNDEFINED;
   symbol.name  = varPtr->sName;
   symbol.value = varPtr->sParm.v.vOffset; /* for now */
-  symbol.size  = varPtr->sParm.v.size;
+  symbol.size  = varPtr->sParm.v.vSize;
 
   /* Add the symbol to the symbol table */
 
-  varPtr->sParm.v.symIndex = poffAddSymbol(poffHandle, &symbol);
+  varPtr->sParm.v.vSymIndex= poffAddSymbol(poffHandle, &symbol);
 }
 
 /***********************************************************************/
