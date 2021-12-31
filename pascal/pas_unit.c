@@ -465,7 +465,7 @@ static void exportedProcedureHeading(void)
 
    /* Mark the procedure as external */
 
-   procPtr->sParm.p.flags |= SPROC_EXTERNAL;
+   procPtr->sParm.p.pFlags |= SPROC_EXTERNAL;
 
    /* Save the string stack pointer so that we can release all
     * formal parameter strings later.  Then get the next token.
@@ -501,7 +501,7 @@ static void exportedProcedureHeading(void)
 
    /* Destroy formal parameter names */
 
-   for (i = 1; i <= procPtr->sParm.p.nParms; i++)
+   for (i = 1; i <= procPtr->sParm.p.pNParms; i++)
      {
        procPtr[i].sName = NULL;
      }
@@ -548,7 +548,7 @@ static void exportedFunctionHeading(void)
 
    /* Mark the procedure as external */
 
-   funcPtr->sParm.p.flags |= SPROC_EXTERNAL;
+   funcPtr->sParm.p.pFlags |= SPROC_EXTERNAL;
 
    /* NOTE:  The level associated with the FUNCTION symbol is the level
     * At which the procedure was declared.  Everything declare within the
@@ -587,7 +587,7 @@ static void exportedFunctionHeading(void)
 
        /* Save the TYPE for the function */
 
-       funcPtr->sParm.p.parent = g_tknPtr;
+       funcPtr->sParm.p.pParent = g_tknPtr;
 
        /* Skip over the result-type token */
 
@@ -616,7 +616,7 @@ static void exportedFunctionHeading(void)
 
    /* Destroy formal parameter names and the function return value name */
 
-   for (i = 1; i <= funcPtr->sParm.p.nParms; i++)
+   for (i = 1; i <= funcPtr->sParm.p.pNParms; i++)
      {
        funcPtr[i].sName = ((char *) NULL);
      }

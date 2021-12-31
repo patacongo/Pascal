@@ -72,52 +72,10 @@ This is a consequence of the fact that sets are implemented as bitsets and
 the bitset is currently limited to 32-bits:
 
 ########src/106-bubblesort.pas########
-Line 0:0033 Error 20 Token 29
-
-Line:
- 33         ReadArr(size, arr);
-Where:
-  5     CONST
-  7         MaxElts = 50;
-  9     TYPE
- 11         IntArrType = ARRAY [1..MaxElts] OF Integer;
- 13     VAR
- 15         i, j, tmp, size: integer;
- 18         arr: IntArrType;
-
-Error:
-213 #define eINVVARPARM      ((uint16_t) 0x20)
-
-Token: ')'
-
-Analysis:
-Currently fails because the second VAR parameter passed to ReadArr is an
-array with no index.  It shoul be more agree-able and pass either the whole
-array (by value) or a pointer to the array (VAR parameter).
+Comples error free but hangs at run-time.  Perhaps it is waiting on input.
 
 ########src/107-quicksort.pas########
-Line 0:0099 Error 20 Token 29
-
-Line:
- 99         ReadArr(size, arr);
-Where:
-  5     CONST
-  7         MaxElts = 50;
-  8     TYPE
- 10         IntArrType = ARRAY [1..MaxElts] OF Integer;
- 11
- 12     VAR
- 14         i, j, tmp, size: integer;
- 15
- 17         arr: IntArrType;
-
-Error:
-213 #define eINVVARPARM      ((uint16_t) 0x20)
-
-Token: ')'
-
-Analysis:
-Same as src/106-bubblesort.pas
+Comples error free but hangs at run-time.  Perhaps it is waiting on input.
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)

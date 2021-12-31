@@ -61,14 +61,20 @@
 
 /* REVIST: duplicated in pas_statement.c and pas_constexpr.c */
 
-#define ADDRESS_DEREFERENCE 0x01
-#define ADDRESS_FACTOR      0x02
-#define INDEXED_FACTOR      0x04
-#define VAR_PARM_FACTOR     0x08
+#define ADDRESS_DEREFERENCE (1 << 0)
+#define ADDRESS_FACTOR      (1 << 1)
+#define INDEXED_FACTOR      (1 << 2)
+#define VAR_PARM_FACTOR     (1 << 3)
 
 /***********************************************************************
  * Type Definitions
  ***********************************************************************/
+
+/* An integer type big enough to hold all factor flags */
+
+typedef uint8_t exprFlag_t;
+
+/* Enumerates the types of expressions that may be encountered */
 
 enum exprType_e
 {
@@ -125,6 +131,7 @@ void       pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize);
 exprType_t pas_GetExpressionType(symbol_t *sType);
 exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal);
 exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal);
+symbol_t  *pas_GetBaseTypePointer(symbol_t *typePtr);
 void       pas_ConstantExression(void);
 
 #endif /* __PAS_EXPRESSION_H */

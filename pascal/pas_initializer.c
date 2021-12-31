@@ -1,5 +1,5 @@
 /**********************************************************************
- * pas_level.c
+ * pas_initializer.c
  * Handle initialization of level variables
  *
  *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
@@ -54,6 +54,7 @@
 
 #include "pas_error.h"
 #include "pas_codegen.h"
+#include "pas_expression.h"
 #include "pas_initializer.h"
 
 /**********************************************************************
@@ -229,20 +230,13 @@ void pas_Initialization(void)
               symbol_t *objectPtr     = initializer->r.recordObjectPtr;
               symbol_t *objectTypePtr = objectPtr->sParm.r.rParent;
               symbol_t *baseTypePtr;
-              symbol_t *nextTypeptr;
               int fOffset             = objectPtr->sParm.r.rOffset;
 
               /* Deals with cases where the type of the field is a series
                * of type definitions.
                */
 
-              nextTypeptr     = objectTypePtr;
-              baseTypePtr     = objectTypePtr;
-              while (nextTypeptr != NULL && nextTypeptr->sKind == sTYPE)
-                {
-                  baseTypePtr = nextTypeptr;
-                  nextTypeptr = baseTypePtr->sParm.t.tParent;
-                }
+              baseTypePtr = pas_GetBaseTypePointer(objectTypePtr);
 
               /* Check if the base type of the field is a string */
 

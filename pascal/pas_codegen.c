@@ -373,19 +373,19 @@ void pas_GenerateProcedureCall(symbol_t *pProc)
    * architectures that do not support the SLP.
    */
 
-  insn_GenerateProcedureCall(pProc->sLevel, pProc->sParm.p.label);
+  insn_GenerateProcedureCall(pProc->sLevel, pProc->sParm.p.pLabel);
 
   /* If the variable is undefined, also generate a relocation
    * record.
    */
 
 #if 0 /* Not yet */
-  if ((varPtr->sParm.p.flags & SVAR_EXTERNAL) != 0)
+  if ((varPtr->sParm.p.pFlags & SVAR_EXTERNAL) != 0)
     {
       /* For now */
 # error "Don't know what last parameter should be"
       (void)poffAddRelocation(poffHandle, RLT_PCAL,
-                              varPtr->sParm.p.symIndex,
+                              varPtr->sParm.p.pSymIndex,
                               0);
     }
 #endif
@@ -412,12 +412,12 @@ void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
 
   /* Allocate a container to pass the proc information to the library */
 
-  uint32_t nparms                      = pProc->sParm.p.nParms;
+  uint32_t nparms                      = pProc->sParm.p.pNParms;
   poffLibDebugFuncInfo_t *pContainer = poffCreateDebugInfoContainer(nparms);
 
   /* Put the proc information into the container */
 
-  pContainer->value   = pProc->sParm.p.label;
+  pContainer->value   = pProc->sParm.p.pLabel;
   pContainer->retsize = dwReturnSize;
   pContainer->nparms  = nparms;
 
@@ -533,7 +533,7 @@ void pas_GenerateProcExport(symbol_t *pProc)
 #if CONFIG_DEBUG
   /* Get the parent type of the function (assuming it is a function) */
 
-  symbol_t *typePtr = pProc->sParm.p.parent;
+  symbol_t *typePtr = pProc->sParm.p.pParent;
 
   /* Perform some sanity checking */
 
@@ -557,7 +557,7 @@ void pas_GenerateProcExport(symbol_t *pProc)
    * be exported.
    */
 
-  if ((pProc->sParm.p.flags & SPROC_EXTERNAL) != 0 ||
+  if ((pProc->sParm.p.pFlags & SPROC_EXTERNAL) != 0 ||
       pProc->sLevel != 0)
     {
       error(eSYMTABINTERNAL);
@@ -578,7 +578,7 @@ void pas_GenerateProcExport(symbol_t *pProc)
   symbol.align = STA_NONE;
   symbol.flags = STF_NONE;
   symbol.name  = pProc->sName;
-  symbol.value = pProc->sParm.p.label;
+  symbol.value = pProc->sParm.p.pLabel;
   symbol.size  = 0;
 
   /* Add the symbol to the symbol table */
@@ -598,7 +598,7 @@ void pas_GenerateProcImport(symbol_t *pProc)
 #if CONFIG_DEBUG
   /* Get the parent type of the function (assuming it is a function) */
 
-  symbol_t *typePtr = pProc->sParm.p.parent;
+  symbol_t *typePtr = pProc->sParm.p.pParent;
 
   /* Perform some sanity checking */
 
@@ -620,7 +620,7 @@ void pas_GenerateProcImport(symbol_t *pProc)
    * be exported.
    */
 
-  if ((pProc->sParm.p.flags & SPROC_EXTERNAL) == 0 ||
+  if ((pProc->sParm.p.pFlags & SPROC_EXTERNAL) == 0 ||
       pProc->sLevel != 0)
     {
       error(eSYMTABINTERNAL);
@@ -641,10 +641,10 @@ void pas_GenerateProcImport(symbol_t *pProc)
   symbol.align = STA_NONE;
   symbol.flags = STF_UNDEFINED;
   symbol.name  = pProc->sName;
-  symbol.value = pProc->sParm.p.label;
+  symbol.value = pProc->sParm.p.pLabel;
   symbol.size  = 0;
 
   /* Add the symbol to the symbol table */
 
-  pProc->sParm.p.symIndex = poffAddSymbol(poffHandle, &symbol);
+  pProc->sParm.p.pSymIndex = poffAddSymbol(poffHandle, &symbol);
 }

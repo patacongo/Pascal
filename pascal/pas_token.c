@@ -519,11 +519,11 @@ static void identifier(void)
 
           if (g_token == tREAL_CONST)
             {
-              g_tknReal = g_tknPtr->sParm.c.val.f;
+              g_tknReal = g_tknPtr->sParm.c.cValue.f;
             }
           else
             {
-              g_tknInt  = g_tknPtr->sParm.c.val.i;
+              g_tknInt  = g_tknPtr->sParm.c.cValue.i;
             }
         }
 

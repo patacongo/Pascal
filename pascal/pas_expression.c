@@ -99,14 +99,16 @@ static exprType_t pas_Term(exprType_t findExprType);
 static exprType_t pas_Factor(exprType_t findExprType);
 static exprType_t pas_ComplexFactor(void);
 static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
-                    uint8_t factorFlags);
-static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags);
+                    exprFlag_t factorFlags);
+static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags);
 static exprType_t pas_PointerFactor(void);
 static exprType_t pas_ComplexPointerFactor(void);
 static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
-                    uint8_t factorFlags);
+                    exprFlag_t factorFlags);
+static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
+                    exprFlag_t factorFlags);
 static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
-                    uint8_t factorFlags);
+                    exprFlag_t factorFlags);
 static exprType_t pas_FunctionDesignator(void);
 static void       pas_SetAbstractType(symbol_t *sType);
 static void       pas_GetSetFactor(void);
@@ -644,6 +646,28 @@ exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal)
 }
 
 /****************************************************************************/
+/* The base type of complex, defined type */
+
+symbol_t *pas_GetBaseTypePointer(symbol_t *typePtr)
+{
+  symbol_t  *baseTypePtr;
+  symbol_t  *nextTypePtr;
+
+  /* Get a pointer to the underlying base type symbol */
+
+  baseTypePtr     = typePtr;
+  nextTypePtr     = typePtr->sParm.t.tParent;
+
+  while (nextTypePtr != NULL && nextTypePtr->sKind == sTYPE)
+    {
+      baseTypePtr = nextTypePtr;
+      nextTypePtr = baseTypePtr->sParm.t.tParent;
+    }
+
+  return baseTypePtr;
+}
+
+/****************************************************************************/
 /* Process Simple Expression */
 
 static exprType_t pas_SimplifyExpression(exprType_t findExprType)
@@ -1155,14 +1179,14 @@ static exprType_t pas_Factor(exprType_t findExprType)
     case sSCALAR_OBJECT :
       if (g_abstractType)
         {
-          if (g_tknPtr->sParm.c.parent != g_abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.c.cParent != g_abstractType) error(eSCALARTYPE);
         }
       else
         {
-         g_abstractType = g_tknPtr->sParm.c.parent;
+         g_abstractType = g_tknPtr->sParm.c.cParent;
         }
 
-      pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.c.val.i);
+      pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.c.cValue.i);
       getToken();
       factorType = exprScalar;
       break;
@@ -1402,12 +1426,12 @@ static exprType_t pas_ComplexFactor(void)
 /****************************************************************************/
 /* Process a complex factor (recursively) until it becomes a simple factor */
 
-static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
+static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
+                                     exprFlag_t factorFlags)
 {
   symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
   symbol_t  *baseTypePtr;
-  symbol_t  *nextPtr;
   exprType_t factorType;
   uint16_t   arrayKind;
 
@@ -1473,13 +1497,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
            * follows the period.
            */
 
-          nextPtr         = typePtr->sParm.t.tParent;
-          baseTypePtr     = typePtr;
-          while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-            {
-              baseTypePtr = nextPtr;
-              nextPtr     = baseTypePtr->sParm.t.tParent;
-            }
+          baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
           if ((g_token != sRECORD_OBJECT) ||
               (g_tknPtr->sParm.r.rRecord != baseTypePtr))
@@ -1569,7 +1587,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
        * defining the RECORD type
        */
 
-      if (!g_withRecord.parent)
+      if (!g_withRecord.wParent)
         {
           error(eINVTYPE);
         }
@@ -1586,7 +1604,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.rRecord != g_withRecord.parent)
+      else if (varPtr->sParm.r.rRecord != g_withRecord.wParent)
         {
           error(eRECORDOBJECT);
         }
@@ -1597,12 +1615,12 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
           /* Now there are two cases to consider:  (1) the g_withRecord is a */
           /* pointer to a RECORD, or (2) the g_withRecord is the RECOR itself */
 
-          if (g_withRecord.pointer)
+          if (g_withRecord.wPointer)
             {
               /* If the pointer is really a VAR parameter, then other syntax */
               /* rules will apply */
 
-              if (g_withRecord.varParm)
+              if (g_withRecord.wVarParm)
                 {
                   factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
                                   VAR_PARM_FACTOR);
@@ -1613,7 +1631,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
                 }
 
               pas_GenerateDataOperation(opPUSH,
-                                        varPtr->sParm.r.rOffset + g_withRecord.index);
+                                        varPtr->sParm.r.rOffset + g_withRecord.wIndex);
               tempOffset   = g_withRecord.wOffset;
             }
           else
@@ -1631,7 +1649,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
           tempOffset              = varPtr->sParm.r.rOffset;
 
           varPtr->sKind           = typePtr->sParm.t.tType;
-          varPtr->sLevel          = g_withRecord.level;
+          varPtr->sLevel          = g_withRecord.wLevel;
           varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
           varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
           varPtr->sParm.v.vParent = typePtr;
@@ -1695,13 +1713,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
 
       /* Get a pointer to the underlying base type of the array */
 
-      nextPtr         = typePtr;
-      baseTypePtr     = typePtr;
-      while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-        {
-          baseTypePtr = nextPtr;
-          nextPtr     = baseTypePtr->sParm.t.tParent;
-        }
+      baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
       /* Extract the base type */
 
@@ -1821,9 +1833,9 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
   return factorType;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
-static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
+static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
 {
   symbol_t  *typePtr;
   exprType_t factorType;
@@ -1969,21 +1981,13 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
       if ((factorFlags & INDEXED_FACTOR) != 0)
         {
           symbol_t *baseTypePtr;
-          symbol_t *nextType;
 
           /* In the case of an array, the size of the variable refers to the size of
            * array.  We need to traverse back to the base type of the array to get the
            * size of and element.
            */
 
-          baseTypePtr = typePtr;
-          nextType    = typePtr->sParm.t.tParent;
-
-          while (nextType != NULL && baseTypePtr->sKind == sTYPE)
-            {
-              baseTypePtr = nextType;
-              nextType    = baseTypePtr->sParm.t.tParent;
-            }
+          baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
           /* Now we can handle all of the ornaments */
 
@@ -2184,7 +2188,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
   return factorType;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 /* Process a factor of the for ^variable OR a VAR parameter (where the
  * ^ is implicit.
  */
@@ -2341,7 +2345,7 @@ static exprType_t pas_ComplexPointerFactor(void)
  */
 
 static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
-                                            uint8_t factorFlags)
+                                            exprFlag_t factorFlags)
 {
   symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
@@ -2437,7 +2441,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
        * defining the RECORD type
        */
 
-      if (!g_withRecord.parent)
+      if (!g_withRecord.wParent)
         {
           error(eINVTYPE);
         }
@@ -2454,7 +2458,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.rRecord != g_withRecord.parent)
+      else if (varPtr->sParm.r.rRecord != g_withRecord.wParent)
         {
           error(eRECORDOBJECT);
         }
@@ -2466,11 +2470,11 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
            * pointer to a RECORD, or (2) the g_withRecord is the RECOR itself
            */
 
-          if (g_withRecord.pointer)
+          if (g_withRecord.wPointer)
             {
               pas_GenerateDataOperation(opPUSH,
                                         varPtr->sParm.r.rOffset +
-                                        g_withRecord.index);
+                                        g_withRecord.wIndex);
               factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
               tempOffset   = g_withRecord.wOffset;
             }
@@ -2492,7 +2496,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
           tempOffset              = varPtr->sParm.r.rOffset;
 
           varPtr->sKind           = typePtr->sParm.t.tType;
-          varPtr->sLevel          = g_withRecord.level;
+          varPtr->sLevel          = g_withRecord.wLevel;
           varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
           varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
           varPtr->sParm.v.vParent = typePtr;
@@ -2519,84 +2523,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
       break;
 
     case sARRAY :
-      if ((factorFlags & ~ADDRESS_DEREFERENCE) != 0)
-        {
-          error(eARRAYTYPE);
-        }
-
-      if (g_token == '[')
-        {
-          /* Get the type of the index.  We will need minimum value of
-           * if the index type in order to offset the array index
-           * calculation
-           */
-
-          symbol_t *indexTypePtr = typePtr->sParm.t.tIndex;
-          if (indexTypePtr == NULL) error(eHUH);
-          else
-            {
-              symbol_t *nextPtr;
-              symbol_t *baseTypePtr;
-              uint16_t arrayKind;
-
-              factorFlags     |= INDEXED_FACTOR;
-
-              /* Get a pointer to the underlying base type symbol */
-
-              nextPtr          = typePtr;
-              baseTypePtr      = typePtr;
-              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-                {
-                   baseTypePtr = nextPtr;
-                   nextPtr     = baseTypePtr->sParm.t.tParent;
-                }
-
-              /* Generate the array offset calculation */
-
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
-
-              /* We have reduced this to a base type.  So we can generate
-               * the indexed load from that base type.
-               */
-
-              arrayKind = baseTypePtr->sParm.t.tType;
-
-             /* REVISIT:  For subranges, we use the base type of the
-              * subrange.
-              */
-
-              if (arrayKind == sSUBRANGE)
-                {
-                  arrayKind = baseTypePtr->sParm.t.tSubType;
-                }
-
-              /* If this is an array of records, then are not finished. */
-
-              varPtr->sKind = arrayKind;
-              if (arrayKind == sRECORD)
-                {
-                  factorType =
-                    pas_SimplifyPointerFactor(varInfo, factorFlags);
-                }
-
-              /* Load the indexed base type */
-
-              else
-                {
-                  factorType = pas_BasePointerFactor(varPtr, factorFlags);
-                }
-
-              if (factorType == exprUnknown)
-                {
-                  error(eHUH);  /* Should never happen */
-                }
-
-              /* Return the parent type of the array */
-
-              varPtr->sKind         = baseTypePtr->sParm.t.tType;
-              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
-            }
-        }
+      factorType    = pas_ArrayPointerFactor(varInfo, factorFlags);
       break;
 
     default :
@@ -2610,7 +2537,100 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
 
 /****************************************************************************/
 
-static exprType_t pas_BasePointerFactor(symbol_t *varPtr, uint8_t factorFlags)
+static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
+                                         exprFlag_t factorFlags)
+{
+  symbol_t  *varPtr      = &varInfo->variable;
+  symbol_t  *typePtr     = varPtr->sParm.v.vParent;
+  symbol_t  *baseTypePtr;
+  exprType_t factorType  = exprUnknown;
+  uint16_t   arrayKind;
+
+  if ((factorFlags & ~ADDRESS_DEREFERENCE) != 0)
+    {
+      error(eARRAYTYPE);
+    }
+
+  /* Reduce the array to its base type. */
+
+  baseTypePtr = pas_GetBaseTypePointer(typePtr);
+  arrayKind   = baseTypePtr->sParm.t.tType;
+
+  /* REVISIT:  For subranges, we use the base type of the subrange. */
+
+  if (arrayKind == sSUBRANGE)
+    {
+      arrayKind = baseTypePtr->sParm.t.tSubType;
+    }
+
+  /* The array may be followed by braces to dereference a particular element. */
+
+  if (g_token == '[')
+    {
+      factorFlags |= INDEXED_FACTOR;
+
+      /* Generate an indexed load.
+       *
+       * Get the type of the index.  We will need minimum value of the index
+       * type in order to offset the array index calculation.
+       */
+
+      symbol_t *indexTypePtr = typePtr->sParm.t.tIndex;
+      if (indexTypePtr == NULL) error(eHUH);
+      else
+        {
+          /* Generate the array offset calculation */
+
+          pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
+
+          /* If this is an array of records, then are not finished. */
+
+          varPtr->sKind = arrayKind;
+          if (arrayKind == sRECORD)
+            {
+              factorType =
+                pas_SimplifyPointerFactor(varInfo, factorFlags);
+            }
+
+          /* Load the indexed base type */
+
+          else
+            {
+              factorType = pas_BasePointerFactor(varPtr, factorFlags);
+            }
+
+          if (factorType == exprUnknown)
+            {
+              error(eHUH);  /* Should never happen */
+            }
+
+          /* Return the parent type of the array */
+
+          varPtr->sKind         = baseTypePtr->sParm.t.tType;
+          varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
+        }
+    }
+
+  /* But a more typical case in the context of this function is to have no
+   * index on the array.  This would be the case if the array is passed by
+   * reference as a VAR.
+   */
+
+  else
+   {
+     /* Just load the address of the array */
+
+     pas_GenerateStackReference(opLAS, varPtr);
+     factorType = pas_MapVariable2ExprPtrType(baseTypePtr->sParm.t.tType, false);
+   }
+
+  return factorType;
+}
+
+/****************************************************************************/
+
+static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
+                                        exprFlag_t factorFlags)
 {
   symbol_t  *typePtr;
   exprType_t factorType;
@@ -2868,7 +2888,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr, uint8_t factorFlags)
 static exprType_t pas_FunctionDesignator(void)
 {
   symbol_t  *funcPtr      = g_tknPtr;
-  symbol_t  *typePtr      = funcPtr->sParm.p.parent;
+  symbol_t  *typePtr      = funcPtr->sParm.p.pParent;
   exprType_t factorType;
   int        size         = 0;
 
@@ -3083,17 +3103,17 @@ static void pas_GetSetElement(setType_t *s)
   switch (g_token)
     {
       case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-        firstValue = g_tknPtr->sParm.c.val.i;
+        firstValue = g_tknPtr->sParm.c.cValue.i;
         if (!s->typeFound)
           {
             s->typeFound = true;
-            s->typePtr   = g_tknPtr->sParm.c.parent;
+            s->typePtr   = g_tknPtr->sParm.c.cParent;
             s->setType   = sSCALAR;
             s->minValue  = s->typePtr->sParm.t.tMinValue;
             s->maxValue  = s->typePtr->sParm.t.tMaxValue;
           }
         else if (s->setType != sSCALAR ||
-                 s->typePtr != g_tknPtr->sParm.c.parent)
+                 s->typePtr != g_tknPtr->sParm.c.cParent)
           {
             error(eSET);
           }
@@ -3163,9 +3183,9 @@ static void pas_GetSetElement(setType_t *s)
             switch (g_token)
               {
                 case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-                  lastValue = g_tknPtr->sParm.c.val.i;
+                  lastValue = g_tknPtr->sParm.c.cValue.i;
                   if (s->setType != sSCALAR ||
-                      s->typePtr != g_tknPtr->sParm.c.parent)
+                      s->typePtr != g_tknPtr->sParm.c.cParent)
                     {
                       error(eSET);
                     }
@@ -3394,9 +3414,9 @@ static void pas_GetSetElement(setType_t *s)
             switch (g_token)
               {
                 case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-                  lastValue = g_tknPtr->sParm.c.val.i;
+                  lastValue = g_tknPtr->sParm.c.cValue.i;
                   if (s->setType != sSCALAR ||
-                      s->typePtr != g_tknPtr->sParm.c.parent)
+                      s->typePtr != g_tknPtr->sParm.c.cParent)
                     {
                       error(eSET);
                     }

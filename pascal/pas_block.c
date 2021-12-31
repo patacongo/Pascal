@@ -546,7 +546,7 @@ static void pas_ProcedureDeclaration(void)
 
   /* Destroy formal parameter names */
 
-  for (i = 1; i <= procPtr->sParm.p.nParms; i++)
+  for (i = 1; i <= procPtr->sParm.p.pNParms; i++)
     {
       procPtr[i].sName = NULL;
     }
@@ -669,7 +669,7 @@ static void pas_FunctionDeclaration(void)
 
       /* Save the TYPE for the function */
 
-      funcPtr->sParm.p.parent = typePtr;
+      funcPtr->sParm.p.pParent = typePtr;
 
       /* If we are here then we know that we are either in a program file
        * or the 'implementation' part of a unit file (see pas_unit.c -- At
@@ -704,7 +704,7 @@ static void pas_FunctionDeclaration(void)
 
   /* Destroy formal parameter names and the function return value name */
 
-  for (i = 1; i <= funcPtr->sParm.p.nParms; i++)
+  for (i = 1; i <= funcPtr->sParm.p.pNParms; i++)
     {
       funcPtr[i].sName = ((char *) NULL);
     }
@@ -1072,13 +1072,13 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
 
       if ((g_token != sSCALAR_OBJECT) ||
           (g_tknPtr != typePtr->sParm.t.tParent) ||
-          (g_tknPtr->sParm.c.val.i < typePtr->sParm.t.tMinValue))
+          (g_tknPtr->sParm.c.cValue.i < typePtr->sParm.t.tMinValue))
         {
           error(eSUBRANGETYPE);
         }
       else
         {
-          typePtr->sParm.t.tMaxValue = g_tknPtr->sParm.c.val.i;
+          typePtr->sParm.t.tMaxValue = g_tknPtr->sParm.c.cValue.i;
           getToken();
         }
     }
@@ -1157,7 +1157,6 @@ static symbol_t *pas_FileTypeDenoter(void)
   if (g_tknPtr != NULL)
     {
       symbol_t *baseTypePtr;
-      symbol_t *nextType;
 
       /* Get a pointer to the base type symbol (in case it is a defined
        * type).  Loop until we hit the last type in the chain OR until we
@@ -1165,17 +1164,7 @@ static symbol_t *pas_FileTypeDenoter(void)
        * binary file, not the type of the file type).
        */
 
-      baseTypePtr = g_tknPtr;
-      nextType    = g_tknPtr->sParm.t.tParent;
-
-      while (nextType != NULL &&
-             baseTypePtr->sKind == sTYPE &&
-             baseTypePtr->sParm.t.tType != sFILE &&
-             baseTypePtr->sParm.t.tType != sTEXTFILE)
-        {
-          baseTypePtr = nextType;
-          nextType    = baseTypePtr->sParm.t.tParent;
-        }
+      baseTypePtr = pas_GetBaseTypePointer(g_tknPtr);
 
       /* Did we find a typed file? */
 
@@ -2981,7 +2970,7 @@ int16_t pas_FormalParameterList(symbol_t *procPtr)
 
   /* Save the number of parameters found in sPROC/sFUNC symbol table entry */
 
-  procPtr->sParm.p.nParms = g_nParms;
+  procPtr->sParm.p.pNParms = g_nParms;
 
   /* Now, calculate the parameter offsets from the size of each parameter */
 

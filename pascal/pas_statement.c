@@ -680,7 +680,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        * defining the RECORD type
        */
 
-      if (!g_withRecord.parent)
+      if (!g_withRecord.wParent)
         {
           error(eINVTYPE);
         }
@@ -697,7 +697,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        * specified by the WITH statement.
        */
 
-      else if (varPtr->sParm.r.rRecord != g_withRecord.parent)
+      else if (varPtr->sParm.r.rRecord != g_withRecord.wParent)
         {
           error(eRECORDOBJECT);
         }
@@ -709,13 +709,13 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
            * pointer to a RECORD, or (2) the g_withRecord is the RECORD itself
            */
 
-          if (g_withRecord.pointer)
+          if (g_withRecord.wPointer)
             {
               /* If the pointer is really a VAR parameter, then other syntax
                * rules will apply
                */
 
-              if (g_withRecord.varParm)
+              if (g_withRecord.wVarParm)
                 {
                   assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE |
                                   ASSIGN_VAR_PARM);
@@ -725,7 +725,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                   assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE);
                 }
 
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.rOffset + g_withRecord.index));
+              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.rOffset + g_withRecord.wIndex));
               tempOffset = g_withRecord.wOffset;
             }
           else
@@ -743,7 +743,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
           typePtr                 = varPtr->sParm.r.rParent;
 
           varPtr->sKind           = typePtr->sParm.t.tType;
-          varPtr->sLevel          = g_withRecord.level;
+          varPtr->sLevel          = g_withRecord.wLevel;
           varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
           varPtr->sParm.v.vOffset = tempOffset;
           varPtr->sParm.v.vParent = typePtr;
@@ -802,7 +802,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
     case sARRAY :
       {
         symbol_t *baseTypePtr;
-        symbol_t *nextType;
         uint16_t arrayKind;
         uint16_t size;
 
@@ -830,19 +829,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
         /* Get a pointer to the base type symbol of the array */
 
-        baseTypePtr = typePtr;
-        nextType    = typePtr->sParm.t.tParent;
-
-        while (nextType != NULL && baseTypePtr->sKind == sTYPE)
-          {
-            baseTypePtr = nextType;
-            nextType    = baseTypePtr->sParm.t.tParent;
-          }
+        baseTypePtr  = pas_GetBaseTypePointer(typePtr);
 
         /* Get the size and base type of the array */
 
-        size      = baseTypePtr->sParm.t.tAllocSize;
-        arrayKind = baseTypePtr->sParm.t.tType;
+        size         = baseTypePtr->sParm.t.tAllocSize;
+        arrayKind    = baseTypePtr->sParm.t.tType;
 
         /* REVISIT:  For subranges, we use the base type of the subrange. */
 
@@ -1098,7 +1090,7 @@ static void pas_GotoStatement(void)
              {
                /* Generate the branch to the label */
 
-               pas_GenerateDataOperation(opJMP, label_ptr->sParm.l.label);
+               pas_GenerateDataOperation(opJMP, label_ptr->sParm.l.lLabel);
              }
          }
 
@@ -1135,7 +1127,7 @@ static void pas_LabelStatement(void)
     * defined.
     */
 
-   else if(!(labelPtr->sParm.l.unDefined))
+   else if(!(labelPtr->sParm.l.lUnDefined))
      {
        error(eMULTLABEL);
      }
@@ -1143,8 +1135,8 @@ static void pas_LabelStatement(void)
      {
        /* Generate the label and indicate that it has been defined */
 
-       pas_GenerateDataOperation(opLABEL, labelPtr->sParm.l.label);
-       labelPtr->sParm.l.unDefined = false;
+       pas_GenerateDataOperation(opLABEL, labelPtr->sParm.l.lLabel);
+       labelPtr->sParm.l.lUnDefined = false;
 
        /* We have to assume that we got here via a goto statement.
         * We don't have logic in place to track changes to the level
@@ -1876,15 +1868,15 @@ static void pas_WithStatement(void)
         * there is no other WITH active
         */
 
-       if ((g_token == sRECORD) && (!g_withRecord.parent))
+       if ((g_token == sRECORD) && (!g_withRecord.wParent))
          {
            /* Save the RECORD variable as the new with record */
 
-           g_withRecord.level   = g_tknPtr->sLevel;
-           g_withRecord.pointer = false;
-           g_withRecord.varParm = false;
-           g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.parent  = g_tknPtr->sParm.v.vParent;
+           g_withRecord.wLevel   = g_tknPtr->sLevel;
+           g_withRecord.wPointer = false;
+           g_withRecord.wVarParm = false;
+           g_withRecord.wOffset  = g_tknPtr->sParm.v.vOffset;
+           g_withRecord.wParent  = g_tknPtr->sParm.v.vParent;
 
            /* Skip over the RECORD variable */
 
@@ -1896,16 +1888,16 @@ static void pas_WithStatement(void)
         */
 
        else if ((g_token == sVAR_PARM) &&
-                (!g_withRecord.parent) &&
+                (!g_withRecord.wParent) &&
                 (g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD))
          {
            /* Save the RECORD VAR parameter as the new with record */
 
-           g_withRecord.level   = g_tknPtr->sLevel;
-           g_withRecord.pointer = true;
-           g_withRecord.varParm = true;
-           g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.parent  = g_tknPtr->sParm.v.vParent;
+           g_withRecord.wLevel   = g_tknPtr->sLevel;
+           g_withRecord.wPointer = true;
+           g_withRecord.wVarParm = true;
+           g_withRecord.wOffset  = g_tknPtr->sParm.v.vOffset;
+           g_withRecord.wParent  = g_tknPtr->sParm.v.vParent;
 
            /* Skip over the RECORD VAR parameter */
 
@@ -1917,16 +1909,16 @@ static void pas_WithStatement(void)
         */
 
        else if ((g_token == sPOINTER) &&
-                (!g_withRecord.parent) &&
+                (!g_withRecord.wParent) &&
                 (g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD))
          {
            /* Save the RECORD pointer as the new with record */
 
-           g_withRecord.level   = g_tknPtr->sLevel;
-           g_withRecord.pointer = true;
-           g_withRecord.pointer = false;
-           g_withRecord.wOffset = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.parent  = g_tknPtr->sParm.v.vParent;
+           g_withRecord.wLevel   = g_tknPtr->sLevel;
+           g_withRecord.wPointer = true;
+           g_withRecord.wPointer = false;
+           g_withRecord.wOffset  = g_tknPtr->sParm.v.vOffset;
+           g_withRecord.wParent  = g_tknPtr->sParm.v.vParent;
 
            /* Skip over the RECORD pointer */
 
@@ -1942,22 +1934,22 @@ static void pas_WithStatement(void)
         * is from the same sRECORD type and is itself of type RECORD.
         */
 
-       else if ((g_token == sRECORD_OBJECT) &&
-                (g_tknPtr->sParm.r.rRecord == g_withRecord.parent) &&
-                (g_tknPtr->sParm.r.rParent->sParm.t.tType == sRECORD))
+       else if (g_token == sRECORD_OBJECT &&
+                g_tknPtr->sParm.r.rRecord == g_withRecord.wParent &&
+                g_tknPtr->sParm.r.rParent->sParm.t.tType == sRECORD)
          {
            /* Okay, update the with record to use this record field */
 
-           if (g_withRecord.pointer)
+           if (g_withRecord.wPointer)
              {
-               g_withRecord.index += g_tknPtr->sParm.r.rOffset;
+               g_withRecord.wIndex += g_tknPtr->sParm.r.rOffset;
              }
            else
              {
                g_withRecord.wOffset += g_tknPtr->sParm.r.rOffset;
              }
 
-           g_withRecord.parent  = g_tknPtr->sParm.r.rParent;
+           g_withRecord.wParent = g_tknPtr->sParm.r.rParent;
 
            /* Skip over the sRECORD_OBJECT */
 

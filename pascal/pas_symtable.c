@@ -354,26 +354,32 @@ symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
 symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
                           symbol_t *parent)
 {
-   symbol_t *constPtr;
+  symbol_t *constPtr;
 
-   TRACE(g_lstFile,"[pas_AddConstant]");
+  TRACE(g_lstFile,"[pas_AddConstant]");
 
-   /* Get a slot in the symbol table */
-   constPtr = addSymbol(name, type);
-   if (constPtr) {
+  /* Get a slot in the symbol table */
 
-     /* Add the value of the constant to the symbol table */
-     if (type == tREAL_CONST)
-       constPtr->sParm.c.val.f = *((double*) value);
-     else
-       constPtr->sParm.c.val.i = *value;
+  constPtr = addSymbol(name, type);
+  if (constPtr)
+    {
+      /* Add the value of the constant to the symbol table */
 
-     constPtr->sParm.c.parent = parent;
-   }
+      if (type == tREAL_CONST)
+        {
+          constPtr->sParm.c.cValue.f = *((double *)value);
+        }
+      else
+        {
+          constPtr->sParm.c.cValue.i = *value;
+        }
 
-   /* Return a pointer to the new constant symbol */
+      constPtr->sParm.c.cParent = parent;
+    }
 
-   return constPtr;
+  /* Return a pointer to the new constant symbol */
+
+  return constPtr;
 }
 
 /****************************************************************************/
@@ -442,11 +448,11 @@ symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
      {
        /* Add the procedure/function definition to the symbol table */
 
-       procPtr->sParm.p.label    = label;
-       procPtr->sParm.p.nParms   = nParms;
-       procPtr->sParm.p.flags    = 0;
-       procPtr->sParm.p.symIndex = 0;
-       procPtr->sParm.p.parent   = parent;
+       procPtr->sParm.p.pLabel    = label;
+       procPtr->sParm.p.pNParms   = nParms;
+       procPtr->sParm.p.pFlags    = 0;
+       procPtr->sParm.p.pSymIndex = 0;
+       procPtr->sParm.p.pParent   = parent;
      }
 
    /* Return a pointer to the new procedure/function symbol */
@@ -495,8 +501,8 @@ symbol_t *pas_AddLabel(char *name, uint16_t label)
     {
       /* Add the label to the symbol table */
 
-      labelPtr->sParm.l.label = label;
-      labelPtr->sParm.l.unDefined = true;
+      labelPtr->sParm.l.lLabel     = label;
+      labelPtr->sParm.l.lUnDefined = true;
     }
 
   /* Return a pointer to the new label symbol */
@@ -630,7 +636,7 @@ void pas_VerifyLabels(int32_t symIndex)
 
    for (i=symIndex; i < g_nSym; i++)
      if ((g_symbolTable[i].sKind == sLABEL)
-     &&  (g_symbolTable[i].sParm.l.unDefined))
+     &&  (g_symbolTable[i].sParm.l.lUnDefined))
      {
        error (eUNDEFLABEL);
      }
@@ -674,13 +680,13 @@ void pas_DumpTables(void)
         case tNIL :
         case sSCALAR :
           fprintf(g_lstFile, "val=%" PRId32 " parent=[%p]\n",
-                  g_symbolTable[i].sParm.c.val.i,
-                  g_symbolTable[i].sParm.c.parent);
+                  g_symbolTable[i].sParm.c.cValue.i,
+                  g_symbolTable[i].sParm.c.cParent);
           break;
         case tREAL_CONST :
           fprintf(g_lstFile, "val=%f parent=[%p]\n",
-                  g_symbolTable[i].sParm.c.val.f,
-                  g_symbolTable[i].sParm.c.parent);
+                  g_symbolTable[i].sParm.c.cValue.f,
+                  g_symbolTable[i].sParm.c.cParent);
           break;
 
           /* Types */
@@ -706,18 +712,18 @@ void pas_DumpTables(void)
         case sFUNC :
           fprintf(g_lstFile,
                   "label=L%04x nParms=%d flags=%02x parent=[%p]\n",
-                  g_symbolTable[i].sParm.p.label,
-                  g_symbolTable[i].sParm.p.nParms,
-                  g_symbolTable[i].sParm.p.flags,
-                  g_symbolTable[i].sParm.p.parent);
+                  g_symbolTable[i].sParm.p.pLabel,
+                  g_symbolTable[i].sParm.p.pNParms,
+                  g_symbolTable[i].sParm.p.pFlags,
+                  g_symbolTable[i].sParm.p.pParent);
           break;
 
           /* Labels */
 
         case sLABEL :
           fprintf(g_lstFile, "label=L%04x unDefined=%d\n",
-                  g_symbolTable[i].sParm.l.label,
-                  g_symbolTable[i].sParm.l.unDefined);
+                  g_symbolTable[i].sParm.l.lLabel,
+                  g_symbolTable[i].sParm.l.lUnDefined);
           break;
 
           /* Variables */

@@ -134,13 +134,13 @@ void pas_PrimeStandardProcedures(void)
 {
   /* procedure val(const S : string; var V; var Code : word);  */
 
-  valSymbol[0].sParm.p.nParms = 3;
-  valSymbol[1].sKind          = sSTRING;
-  valSymbol[1].sParm.p.parent = g_parentString;
-  valSymbol[2].sKind          = sVAR_PARM;
-  valSymbol[2].sParm.p.parent = g_parentInteger;
-  valSymbol[3].sKind          = sVAR_PARM;
-  valSymbol[3].sParm.p.parent = g_parentInteger;
+  valSymbol[0].sParm.p.pNParms = 3;
+  valSymbol[1].sKind           = sSTRING;
+  valSymbol[1].sParm.p.pParent = g_parentString;
+  valSymbol[2].sKind           = sVAR_PARM;
+  valSymbol[2].sParm.p.pParent = g_parentInteger;
+  valSymbol[3].sKind           = sVAR_PARM;
+  valSymbol[3].sParm.p.pParent = g_parentInteger;
 }
 
 /***********************************************************************/
@@ -340,7 +340,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
    * they match in type and number
    */
 
-  if (procPtr->sParm.p.nParms)
+  if (procPtr->sParm.p.pNParms)
     {
       /* If it requires parameters, then the actual-parameter-list must
        * be present and must begin with '('
@@ -355,7 +355,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
        */
 
       for (parmIndex = 1;
-           parmIndex <= procPtr->sParm.p.nParms;
+           parmIndex <= procPtr->sParm.p.pNParms;
            parmIndex++)
         {
           typePtr = procPtr[parmIndex].sParm.v.vParent;
@@ -399,21 +399,12 @@ int pas_ActualParameterList(symbol_t *procPtr)
             case sARRAY :
               {
                 symbol_t *arrayType;
-                symbol_t *nextType;
                 uint16_t arrayKind;
 
                 /* Get the base type of the array */
 
-                arrayKind = typePtr->sKind;
-                arrayType = typePtr;
-                nextType  = typePtr->sParm.v.vParent;
-
-                while (nextType != NULL && nextType->sKind == sTYPE)
-                  {
-                    arrayType = nextType;
-                    arrayKind = arrayType->sParm.t.tType;
-                    nextType  = arrayType->sParm.t.tParent;
-                  }
+                arrayType = pas_GetBaseTypePointer(typePtr);
+                arrayKind = arrayType->sKind;
 
                 /* REVISIT:  For subranges, we use the base type of
                  * the subrange.
@@ -467,21 +458,12 @@ int pas_ActualParameterList(symbol_t *procPtr)
                     case sARRAY :
                       {
                         symbol_t *arrayType;
-                        symbol_t *nextType;
                         uint16_t arrayKind;
 
                         /* Get the base type of the array */
 
-                        arrayKind = typePtr->sKind;
-                        arrayType = typePtr;
-                        nextType  = typePtr->sParm.v.vParent;
-
-                        while (nextType != NULL && nextType->sKind == sTYPE)
-                          {
-                            arrayType = nextType;
-                            arrayKind = arrayType->sParm.t.tType;
-                            nextType  = arrayType->sParm.t.tParent;
-                          }
+                        arrayType = pas_GetBaseTypePointer(typePtr);
+                        arrayKind = arrayType->sKind;
 
                         /* REVISIT:  For subranges, we use the base type of
                          * the subrange.
@@ -496,7 +478,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
                          * base type
                          */
 
-                        exprType = pas_MapVariable2ExprType(arrayKind, false);
+                        exprType = pas_MapVariable2ExprPtrType(arrayKind, false);
                         pas_VarParameter(exprType, typePtr);
                         size += sPTR_SIZE;
                       }
@@ -528,7 +510,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
               error (eVARPARMTYPE);
             }
 
-          if (parmIndex < procPtr->sParm.p.nParms)
+          if (parmIndex < procPtr->sParm.p.pNParms)
             {
               if (g_token != ',') error (eCOMMA);
               else getToken();
