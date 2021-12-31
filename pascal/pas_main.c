@@ -2,7 +2,7 @@
  * pas_main.c
  * Main process
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -118,7 +118,7 @@ typedef struct outFileDesc_s outFileDesc_t;
  * Private Variables
  **********************************************************************/
 
-static const outFileDesc_t outFiles[] =
+static const outFileDesc_t g_outFiles[] =
 {
   { "o1",  "wb", &g_poffFile },    /* Pass 1 POFF object file */
 #if LSTTOFILE
@@ -128,22 +128,22 @@ static const outFileDesc_t outFiles[] =
   { NULL,  NULL }                  /* (terminates list */
 };
 
-static const char *programName;
+static const char *g_programName;
 
 /***********************************************************************
  * Private Function Prototypes
  ***********************************************************************/
 
-static void closeFiles(void);
-static void openOutputFiles(void);
-static void showUsage(void);
-static void parseArguments(int argc, char **argv);
+static void pas_CloseFiles(void);
+static void pas_OpenOutputFiles(void);
+static void pas_ShowUsage(void);
+static void pas_ParseArguments(int argc, char **argv);
 
 /***********************************************************************
  * Private Functions
  ***********************************************************************/
 
-static void closeFiles(void)
+static void pas_CloseFiles(void)
 {
   const outFileDesc_t *outFile;
 
@@ -160,7 +160,7 @@ static void closeFiles(void)
 
   /* Close output files */
 
-  for (outFile = outFiles; outFile->extension; outFile++)
+  for (outFile = g_outFiles; outFile->extension; outFile++)
     {
       if (*outFile->stream)
         {
@@ -172,14 +172,14 @@ static void closeFiles(void)
 
 /***********************************************************************/
 
-static void openOutputFiles(void)
+static void pas_OpenOutputFiles(void)
 {
   const outFileDesc_t *outFile;
   char tmpname[FNAME_SIZE+1];
 
   /* Open output files */
 
-  for (outFile = outFiles; outFile->extension; outFile++)
+  for (outFile = g_outFiles; outFile->extension; outFile++)
     {
       /* Generate an output file name from the source file
        * name and an extension associated with the output file.
@@ -191,7 +191,7 @@ static void openOutputFiles(void)
         {
           fprintf(stderr, "Could not open output file '%s': %s\n",
                   tmpname, strerror(errno));
-          showUsage();
+          pas_ShowUsage();
         }
     }
 }
@@ -207,7 +207,7 @@ static void signalHandler(int signo)
   fprintf(g_errFile, "Received signal %d\n", signo);
   fprintf(g_lstFile, "Received signal %d\n", signo);
 #endif
-  closeFiles();
+  pas_CloseFiles();
   error(eRCVDSIGNAL);
   exit(1);
 }
@@ -227,34 +227,34 @@ static void primeSignalHandlers(void)
 
 /***********************************************************************/
 
-static void showUsage(void)
+static void pas_ShowUsage(void)
 {
   fprintf(stderr, "USAGE:\n");
-  fprintf(stderr, "  %s [options] <filename>\n", programName);
+  fprintf(stderr, "  %s [options] <filename>\n", g_programName);
   fprintf(stderr, "[options]\n");
   fprintf(stderr, "  -I<include-path>\n");
   fprintf(stderr, "    Search in <include-path> for additional file\n");
   fprintf(stderr, "    A maximum of %d pathes may be specified\n",
           MAX_INCPATHES);
   fprintf(stderr, "    (default is current directory)\n");
-  closeFiles();
+  pas_CloseFiles();
   exit(1);
 }
 
 /***********************************************************************/
 
-static void parseArguments(int argc, char **argv)
+static void pas_ParseArguments(int argc, char **argv)
 {
   int i;
 
-  programName = argv[0];
+  g_programName = argv[0];
 
   /* Check for existence of at least the filename argument */
 
   if (argc < 2)
     {
       fprintf(stderr, "Invalid number of arguments\n");
-      showUsage();
+      pas_ShowUsage();
     }
 
   /* Parse any optional command line arguments */
@@ -270,7 +270,7 @@ static void parseArguments(int argc, char **argv)
               if (g_nIncPathes >= MAX_INCPATHES)
                 {
                   fprintf(stderr, "Unrecognized [option]\n");
-                  showUsage();
+                  pas_ShowUsage();
                 }
               else
                 {
@@ -280,13 +280,13 @@ static void parseArguments(int argc, char **argv)
               break;
             default:
               fprintf(stderr, "Unrecognized [option]\n");
-              showUsage();
+              pas_ShowUsage();
             }
         }
       else
         {
           fprintf(stderr, "Unrecognized [option]\n");
-          showUsage();
+          pas_ShowUsage();
         }
     }
 
@@ -305,11 +305,11 @@ int main(int argc, char *argv[])
 
   /* Parse command line arguments */
 
-  parseArguments(argc, argv);
+  pas_ParseArguments(argc, argv);
 
   /* Open all output files */
 
-  openOutputFiles();
+  pas_OpenOutputFiles();
 
 #if !LSTTOFILE
   g_lstFile = stdout;
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
     {
       errmsg("Could not open source file '%s': %s\n",
              filename, strerror(errno));
-      showUsage();
+      pas_ShowUsage();
     }
 
   /* Initialization */
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
 
   /* Close all output files */
 
-  closeFiles();
+  pas_CloseFiles();
 
   /* Write Closing Message */
 

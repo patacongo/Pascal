@@ -24,7 +24,7 @@ writing, the following errors are reported when testall.sh is ran:
     a start larger than the 1024 default.  All of the test files here work
     OK with a string stack of 1024.
  5. Some modern Pacal compilers support and string buffer size argument like:
- 
+
       VAR
         foobar : STRING[18];
 
@@ -53,10 +53,6 @@ following the constant identifier.
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
-########src/013-stringrecordarray.pas########
-Compiles without error, but then crashes writing the POFF file.  Apparently
-some information in the debug section is corrupted.
-
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b
 
@@ -76,10 +72,52 @@ This is a consequence of the fact that sets are implemented as bitsets and
 the bitset is currently limited to 32-bits:
 
 ########src/106-bubblesort.pas########
-########src/107-quicksort.pas########
+Line 0:0033 Error 20 Token 29
 
-These two examples compile fine but no output appears on stdout.  Perhaps
-they crash silently?  Perhaps they hang reading input? (I think the latter)
+Line:
+ 33         ReadArr(size, arr);
+Where:
+  5     CONST
+  7         MaxElts = 50;
+  9     TYPE
+ 11         IntArrType = ARRAY [1..MaxElts] OF Integer;
+ 13     VAR
+ 15         i, j, tmp, size: integer;
+ 18         arr: IntArrType;
+
+Error:
+213 #define eINVVARPARM      ((uint16_t) 0x20)
+
+Token: ')'
+
+Analysis:
+Currently fails because the second VAR parameter passed to ReadArr is an
+array with no index.  It shoul be more agree-able and pass either the whole
+array (by value) or a pointer to the array (VAR parameter).
+
+########src/107-quicksort.pas########
+Line 0:0099 Error 20 Token 29
+
+Line:
+ 99         ReadArr(size, arr);
+Where:
+  5     CONST
+  7         MaxElts = 50;
+  8     TYPE
+ 10         IntArrType = ARRAY [1..MaxElts] OF Integer;
+ 11
+ 12     VAR
+ 14         i, j, tmp, size: integer;
+ 15
+ 17         arr: IntArrType;
+
+Error:
+213 #define eINVVARPARM      ((uint16_t) 0x20)
+
+Token: ')'
+
+Analysis:
+Same as src/106-bubblesort.pas
 
 ########src/108-pointerrecode.pas########
 Line 0:0004 Error 1e Token 01 (RECDATA)
@@ -110,6 +148,17 @@ Same issue as src/108-pointerrecode.pas
 ########src/601-writefile.pas########
 Compiles okay, runs without error, creates the students.dat file.  However
 the content of the file is garbage.
+
+This occurs because this is a fixed-length file of records, each record
+containing type STRING which is variable length.  The code is writing the 4 byte
+binary STRING container to the file, but not the string data itself.
+
+Using the default string size is not a really good solution:  It can be quite
+large and may not be the same from run-to-run.  A better solution would be to
+use the string allocation setting to insure a consistent, known maximum string length.  For example:
+
+  VAR
+    text_message : string[22];
 
 ########src/604-addfiledata.pas########
 ########src/605-subprogram.pas########
@@ -150,11 +199,12 @@ The error occurs in the main block in the statement:
 
    19    writeln('sin(', x, ')**2 + cos(', x, ')**2=', myone)
 
-I can see that something in the logic of the function myone corrupts that stack:
+It fails because the OUPUT file number has been clobbered.  It was correctly
+initialzed to 1 when the program started but was clobbered and overwritten
+with zero by the procedure checkvars called at line 18 before this.
 
-The value of OUTPUT on the stack is 1 prior to calling 'myone' but has changed
-to 0 on return, casing the error (0 is INPUT which is not open for writing).
-The 'myone' is in unit-data.pas
+However, I suspect a linking problem and checkvars may not in fact be the
+problem.
 
 BEFORE:
 ------

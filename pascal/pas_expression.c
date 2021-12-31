@@ -198,14 +198,15 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
 
     case tIN :
       if (!g_abstractType ||
-          (g_abstractType->sParm.t.type != sSCALAR &&
-           g_abstractType->sParm.t.type != sSUBRANGE))
+          (g_abstractType->sParm.t.tType != sSCALAR &&
+           g_abstractType->sParm.t.tType != sSUBRANGE))
         {
           error(eEXPRTYPE);
         }
-      else if (g_abstractType->sParm.t.minValue)
+      else if (g_abstractType->sParm.t.tMinValue)
         {
-          pas_GenerateDataOperation(opPUSH, g_abstractType->sParm.t.minValue);
+          pas_GenerateDataOperation(opPUSH,
+                                    g_abstractType->sParm.t.tMinValue);
           pas_GenerateSimple(opSUB);
         }
 
@@ -414,13 +415,13 @@ void pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize)
         }
       else
         {
-          indexType = indexTypePtr->sParm.t.type;
+          indexType = indexTypePtr->sParm.t.tType;
 
           /* REVISIT:  For subranges, we use the base type of the subrange. */
 
           if (indexType == sSUBRANGE)
             {
-              indexType = indexTypePtr->sParm.t.subType;
+              indexType = indexTypePtr->sParm.t.tSubType;
             }
 
           /* Get the expression type from the index type */
@@ -438,7 +439,7 @@ void pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize)
        * is.
        */
 
-      offset = indexTypePtr->sParm.t.minValue;
+      offset = indexTypePtr->sParm.t.tMinValue;
       if (offset != 0)
         {
           pas_GenerateDataOperation(opPUSH, offset);
@@ -476,7 +477,7 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
 
   if (sType != NULL && sType->sKind == sTYPE)
     {
-      switch (sType->sParm.t.type)
+      switch (sType->sParm.t.tType)
         {
         case sINT :
           factorType = exprInteger;
@@ -503,7 +504,7 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
           break;
 
         case sSUBRANGE :
-          switch (sType->sParm.t.subType)
+          switch (sType->sParm.t.tSubType)
             {
             case sINT :
               factorType = exprInteger;
@@ -524,7 +525,7 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
           break;
 
         case sPOINTER :
-          sType = sType->sParm.t.parent;
+          sType = sType->sParm.t.tParent;
           if (sType)
             {
               switch (sType->sKind)
@@ -1270,7 +1271,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
       if (g_abstractType)
         {
           if ((g_tknPtr->sParm.v.vParent != g_abstractType) &&
-              (g_tknPtr->sParm.v.vParent->sParm.t.parent != g_abstractType))
+              (g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractType))
             error(eSET);
         }
       else
@@ -1430,7 +1431,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
     {
     case sSUBRANGE :
       if (!g_abstractType) g_abstractType = typePtr;
-      varPtr->sKind = typePtr->sParm.t.subType;
+      varPtr->sKind = typePtr->sParm.t.tSubType;
       factorType    = pas_SimplifyFactor(varInfo, factorFlags);
       break;
 
@@ -1472,12 +1473,12 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
            * follows the period.
            */
 
-          nextPtr         = typePtr->sParm.t.parent;
+          nextPtr         = typePtr->sParm.t.tParent;
           baseTypePtr     = typePtr;
           while (nextPtr != NULL && nextPtr->sKind == sTYPE)
             {
               baseTypePtr = nextPtr;
-              nextPtr     = baseTypePtr->sParm.t.parent;
+              nextPtr     = baseTypePtr->sParm.t.tParent;
             }
 
           if ((g_token != sRECORD_OBJECT) ||
@@ -1494,7 +1495,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
                */
 
               typePtr                 = g_tknPtr->sParm.r.rParent;
-              varPtr->sKind           = typePtr->sParm.t.type;
+              varPtr->sKind           = typePtr->sParm.t.tType;
               varPtr->sParm.v.vParent = typePtr;
 
               /* Adjust the variable size and offset.  Add the RECORD offset
@@ -1629,9 +1630,9 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
           typePtr                 = varPtr->sParm.r.rParent;
           tempOffset              = varPtr->sParm.r.rOffset;
 
-          varPtr->sKind           = typePtr->sParm.t.type;
+          varPtr->sKind           = typePtr->sParm.t.tType;
           varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.vSize   = typePtr->sParm.t.asize;
+          varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
           varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
           varPtr->sParm.v.vParent = typePtr;
 
@@ -1656,10 +1657,10 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
        * pointed-at type.
        */
 
-      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.type == sPOINTER)
+      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.tType == sPOINTER)
         {
-          baseTypePtr   = typePtr->sParm.t.parent;
-          varPtr->sKind = baseTypePtr->sParm.t.type;
+          baseTypePtr   = typePtr->sParm.t.tParent;
+          varPtr->sKind = baseTypePtr->sParm.t.tType;
 
           /* REVISIT:  What if the type is a pointer to a pointer? */
 
@@ -1669,7 +1670,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
         {
           /* Get the kind of parent type */
 
-          varPtr->sKind = typePtr->sParm.t.type;
+          varPtr->sKind = typePtr->sParm.t.tType;
         }
 
       factorType = pas_SimplifyFactor(varInfo, factorFlags);
@@ -1682,7 +1683,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
         }
 
       factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
-      varPtr->sKind = typePtr->sParm.t.type;
+      varPtr->sKind = typePtr->sParm.t.tType;
       factorType    = pas_SimplifyFactor(varInfo, factorFlags);
       break;
 
@@ -1699,18 +1700,18 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
       while (nextPtr != NULL && nextPtr->sKind == sTYPE)
         {
           baseTypePtr = nextPtr;
-          nextPtr     = baseTypePtr->sParm.t.parent;
+          nextPtr     = baseTypePtr->sParm.t.tParent;
         }
 
       /* Extract the base type */
 
-      arrayKind = baseTypePtr->sParm.t.type;
+      arrayKind = baseTypePtr->sParm.t.tType;
 
       /* REVISIT:  For subranges, we use the base type of the subrange. */
 
       if (arrayKind == sSUBRANGE)
         {
-          arrayKind = baseTypePtr->sParm.t.subType;
+          arrayKind = baseTypePtr->sParm.t.tSubType;
         }
 
       /* The "normal" case, an array will be followed by an index within
@@ -1724,7 +1725,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
            * calculation
            */
 
-          symbol_t *indexTypePtr = typePtr->sParm.t.index;
+          symbol_t *indexTypePtr = typePtr->sParm.t.tIndex;
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
@@ -1732,7 +1733,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
 
               /* Generate the array offset calculation and indexed load */
 
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
 
               /* We have reduced this to a base type.  So we can generate
                * the indexed load from that base type.
@@ -1748,8 +1749,8 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
 
               /* Return the parent type of the array */
 
-              varPtr->sKind         = typePtr->sParm.t.type;
-              varPtr->sParm.v.vSize = typePtr->sParm.t.asize;
+              varPtr->sKind         = typePtr->sParm.t.tType;
+              varPtr->sParm.v.vSize = typePtr->sParm.t.tAllocSize;
             }
         }
 
@@ -1803,7 +1804,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo, uint8_t factorFlags)
         {
           pas_GenerateDataSize(varPtr->sParm.v.vSize);
           pas_GenerateStackReference(opLDSM, varPtr);
-          factorType = pas_MapVariable2ExprType(varPtr->sParm.t.type, false);
+          factorType = pas_MapVariable2ExprType(varPtr->sParm.t.tType, false);
         }
       else
         {
@@ -1976,12 +1977,12 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
            */
 
           baseTypePtr = typePtr;
-          nextType    = typePtr->sParm.t.parent;
+          nextType    = typePtr->sParm.t.tParent;
 
           while (nextType != NULL && baseTypePtr->sKind == sTYPE)
             {
               baseTypePtr = nextType;
-              nextType    = baseTypePtr->sParm.t.parent;
+              nextType    = baseTypePtr->sParm.t.tParent;
             }
 
           /* Now we can handle all of the ornaments */
@@ -1989,7 +1990,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
           if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              pas_GenerateDataSize(baseTypePtr->sParm.t.asize);
+              pas_GenerateDataSize(baseTypePtr->sParm.t.tAllocSize);
               pas_GenerateSimple(opLDIM);
               factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
@@ -2000,7 +2001,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, uint8_t factorFlags)
             }
           else
             {
-              pas_GenerateDataSize(baseTypePtr->sParm.t.asize);
+              pas_GenerateDataSize(baseTypePtr->sParm.t.tAllocSize);
               pas_GenerateStackReference(opLDSXM, varPtr);
               factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
@@ -2247,7 +2248,7 @@ static exprType_t pas_PointerFactor(void)
         if (g_abstractType)
           {
             if ((g_tknPtr->sParm.v.vParent != g_abstractType)
-            &&   (g_tknPtr->sParm.v.vParent->sParm.t.parent != g_abstractType))
+            &&   (g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractType))
               {
                  error(eSET);
               }
@@ -2368,7 +2369,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
 
     case sSUBRANGE :
       if (!g_abstractType) g_abstractType = typePtr;
-      varPtr->sKind = typePtr->sParm.t.subType;
+      varPtr->sKind = typePtr->sParm.t.tSubType;
       factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
 
@@ -2420,7 +2421,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
                */
 
               typePtr                 = g_tknPtr->sParm.r.rParent;
-              varPtr->sKind           = typePtr->sParm.t.type;
+              varPtr->sKind           = typePtr->sParm.t.tType;
               varPtr->sParm.v.vParent = typePtr;
 
               varInfo->fOffset        = g_tknPtr->sParm.r.rOffset;
@@ -2490,9 +2491,9 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
           typePtr                 = varPtr->sParm.r.rParent;
           tempOffset              = varPtr->sParm.r.rOffset;
 
-          varPtr->sKind           = typePtr->sParm.t.type;
+          varPtr->sKind           = typePtr->sParm.t.tType;
           varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.vSize   = typePtr->sParm.t.asize;
+          varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
           varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
           varPtr->sParm.v.vParent = typePtr;
 
@@ -2505,7 +2506,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
       else getToken();
 
       factorFlags   |= ADDRESS_DEREFERENCE;
-      varPtr->sKind  = typePtr->sParm.t.type;
+      varPtr->sKind  = typePtr->sParm.t.tType;
       factorType     = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
 
@@ -2513,7 +2514,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
       if (factorFlags != 0) error(eVARPARMTYPE);
 
       factorFlags  |= ADDRESS_DEREFERENCE;
-      varPtr->sKind = typePtr->sParm.t.type;
+      varPtr->sKind = typePtr->sParm.t.tType;
       factorType    = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
 
@@ -2530,7 +2531,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
            * calculation
            */
 
-          symbol_t *indexTypePtr = typePtr->sParm.t.index;
+          symbol_t *indexTypePtr = typePtr->sParm.t.tIndex;
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
@@ -2547,18 +2548,18 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
               while (nextPtr != NULL && nextPtr->sKind == sTYPE)
                 {
                    baseTypePtr = nextPtr;
-                   nextPtr     = baseTypePtr->sParm.t.parent;
+                   nextPtr     = baseTypePtr->sParm.t.tParent;
                 }
 
               /* Generate the array offset calculation */
 
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
 
               /* We have reduced this to a base type.  So we can generate
                * the indexed load from that base type.
                */
 
-              arrayKind = baseTypePtr->sParm.t.type;
+              arrayKind = baseTypePtr->sParm.t.tType;
 
              /* REVISIT:  For subranges, we use the base type of the
               * subrange.
@@ -2566,7 +2567,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
 
               if (arrayKind == sSUBRANGE)
                 {
-                  arrayKind = baseTypePtr->sParm.t.subType;
+                  arrayKind = baseTypePtr->sParm.t.tSubType;
                 }
 
               /* If this is an array of records, then are not finished. */
@@ -2592,8 +2593,8 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
 
               /* Return the parent type of the array */
 
-              varPtr->sKind         = baseTypePtr->sParm.t.type;
-              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.asize;
+              varPtr->sKind         = baseTypePtr->sParm.t.tType;
+              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
             }
         }
       break;
@@ -2884,7 +2885,7 @@ static exprType_t pas_FunctionDesignator(void)
    * STRING return value containers need some special initialization.
    */
 
-  if (typePtr->sKind == sTYPE && typePtr->sParm.t.type == sSTRING)
+  if (typePtr->sKind == sTYPE && typePtr->sParm.t.tType == sSTRING)
     {
       /* REVISIT:  This string container really needs to be enclosed in PUSHS
        * and POPS.  Need to assure that in order to release string stack as
@@ -2895,7 +2896,7 @@ static exprType_t pas_FunctionDesignator(void)
     }
   else
     {
-      pas_GenerateDataOperation(opINDS, typePtr->sParm.t.rsize);
+      pas_GenerateDataOperation(opINDS, typePtr->sParm.t.tAllocSize);
     }
 
   /* Get the type of the function */
@@ -2939,14 +2940,14 @@ static void pas_SetAbstractType(symbol_t *sType)
 
   if (sType != NULL &&
       sType->sKind == sTYPE &&
-      sType->sParm.t.type == sPOINTER)
+      sType->sParm.t.tType == sPOINTER)
     {
-      sType = sType->sParm.t.parent;
+      sType = sType->sParm.t.tParent;
     }
 
   if (sType != NULL && sType->sKind == sTYPE)
   {
-    switch (sType->sParm.t.type)
+    switch (sType->sParm.t.tType)
       {
         case sSCALAR :
           if (g_abstractType)
@@ -2964,13 +2965,13 @@ static void pas_SetAbstractType(symbol_t *sType)
             {
               g_abstractType = sType;
             }
-          else if ((g_abstractType->sParm.t.type != sSUBRANGE)
-          ||        (g_abstractType->sParm.t.subType != sType->sParm.t.subType))
+          else if ((g_abstractType->sParm.t.tType != sSUBRANGE)
+          ||        (g_abstractType->sParm.t.tSubType != sType->sParm.t.tSubType))
             {
               error(eSUBRANGETYPE);
             }
 
-          switch (sType->sParm.t.subType)
+          switch (sType->sParm.t.tSubType)
             {
               case sINT :
               case sCHAR :
@@ -3009,9 +3010,9 @@ static void pas_GetSetFactor(void)
 
   if (g_abstractType)
     {
-      if (g_abstractType->sParm.t.type == sSET_OF)
+      if (g_abstractType->sParm.t.tType == sSET_OF)
         {
-          s.typePtr = g_abstractType->sParm.t.parent;
+          s.typePtr = g_abstractType->sParm.t.tParent;
         }
       else
         {
@@ -3025,19 +3026,19 @@ static void pas_GetSetFactor(void)
 
   /* Now, get the associated type and MIN/MAX values */
 
-  if (s.typePtr && s.typePtr->sParm.t.type == sSCALAR)
+  if (s.typePtr && s.typePtr->sParm.t.tType == sSCALAR)
     {
       s.typeFound = true;
       s.setType   = sSCALAR;
-      s.minValue  = s.typePtr->sParm.t.minValue;
-      s.maxValue  = s.typePtr->sParm.t.maxValue;
+      s.minValue  = s.typePtr->sParm.t.tMinValue;
+      s.maxValue  = s.typePtr->sParm.t.tMaxValue;
     }
-  else if (s.typePtr && s.typePtr->sParm.t.type == sSUBRANGE)
+  else if (s.typePtr && s.typePtr->sParm.t.tType == sSUBRANGE)
     {
       s.typeFound = true;
-      s.setType   = s.typePtr->sParm.t.subType;
-      s.minValue  = s.typePtr->sParm.t.minValue;
-      s.maxValue  = s.typePtr->sParm.t.maxValue;
+      s.setType   = s.typePtr->sParm.t.tSubType;
+      s.minValue  = s.typePtr->sParm.t.tMinValue;
+      s.maxValue  = s.typePtr->sParm.t.tMaxValue;
     }
   else
     {
@@ -3088,8 +3089,8 @@ static void pas_GetSetElement(setType_t *s)
             s->typeFound = true;
             s->typePtr   = g_tknPtr->sParm.c.parent;
             s->setType   = sSCALAR;
-            s->minValue  = s->typePtr->sParm.t.minValue;
-            s->maxValue  = s->typePtr->sParm.t.maxValue;
+            s->minValue  = s->typePtr->sParm.t.tMinValue;
+            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
           }
         else if (s->setType != sSCALAR ||
                  s->typePtr != g_tknPtr->sParm.c.parent)
@@ -3231,8 +3232,8 @@ static void pas_GetSetElement(setType_t *s)
                             s->typeFound = true;
                             s->typePtr   = g_tknPtr->sParm.v.vParent;
                             s->setType   = sSCALAR;
-                            s->minValue  = s->typePtr->sParm.t.minValue;
-                            s->maxValue  = s->typePtr->sParm.t.maxValue;
+                            s->minValue  = s->typePtr->sParm.t.tMinValue;
+                            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
                           }
                       }
 
@@ -3246,8 +3247,8 @@ static void pas_GetSetElement(setType_t *s)
                   case sSUBRANGE :
                     if (!s->typePtr || s->typePtr != g_tknPtr->sParm.v.vParent)
                       {
-                        if (g_tknPtr->sParm.v.vParent->sParm.t.subType == sSCALAR ||
-                            g_tknPtr->sParm.v.vParent->sParm.t.subType != s->setType)
+                        if (g_tknPtr->sParm.v.vParent->sParm.t.tSubType == sSCALAR ||
+                            g_tknPtr->sParm.v.vParent->sParm.t.tSubType != s->setType)
                           {
                             error(eSET);
                           }
@@ -3256,9 +3257,9 @@ static void pas_GetSetElement(setType_t *s)
                           {
                             s->typeFound = true;
                             s->typePtr   = g_tknPtr->sParm.v.vParent;
-                            s->setType   = s->typePtr->sParm.t.subType;
-                            s->minValue  = s->typePtr->sParm.t.minValue;
-                            s->maxValue  = s->typePtr->sParm.t.maxValue;
+                            s->setType   = s->typePtr->sParm.t.tSubType;
+                            s->minValue  = s->typePtr->sParm.t.tMinValue;
+                            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
                           }
                       }
 
@@ -3326,8 +3327,8 @@ static void pas_GetSetElement(setType_t *s)
             s->typeFound = true;
             s->typePtr   = g_tknPtr->sParm.v.vParent;
             s->setType   = sSCALAR;
-            s->minValue  = s->typePtr->sParm.t.minValue;
-            s->maxValue  = s->typePtr->sParm.t.maxValue;
+            s->minValue  = s->typePtr->sParm.t.tMinValue;
+            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
           }
 
         goto addVar;
@@ -3358,9 +3359,9 @@ static void pas_GetSetElement(setType_t *s)
           {
             s->typeFound = true;
             s->typePtr   = g_tknPtr->sParm.v.vParent;
-            s->setType   = s->typePtr->sParm.t.subType;
-            s->minValue  = s->typePtr->sParm.t.minValue;
-            s->maxValue  = s->typePtr->sParm.t.maxValue;
+            s->setType   = s->typePtr->sParm.t.tSubType;
+            s->minValue  = s->typePtr->sParm.t.tMinValue;
+            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
           }
 
       addVar:
@@ -3465,8 +3466,8 @@ static void pas_GetSetElement(setType_t *s)
 
                 case sSUBRANGE :
                   if (s->typePtr != g_tknPtr->sParm.v.vParent &&
-                     (g_tknPtr->sParm.v.vParent->sParm.t.subType == sSCALAR ||
-                      g_tknPtr->sParm.v.vParent->sParm.t.subType != s->setType))
+                     (g_tknPtr->sParm.v.vParent->sParm.t.tSubType == sSCALAR ||
+                      g_tknPtr->sParm.v.vParent->sParm.t.tSubType != s->setType))
                     {
                       error(eSET);
                     }

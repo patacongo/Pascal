@@ -496,7 +496,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       /* NOPE... recurse until it becomes a simple assignment */
 
     case sSUBRANGE :
-      varPtr->sKind = typePtr->sParm.t.subType;
+      varPtr->sKind = typePtr->sParm.t.tSubType;
       pas_SimpleAssignment(varPtr, assignFlags);
       break;
 
@@ -585,7 +585,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
           while (nextPtr != NULL && nextPtr->sKind == sTYPE)
             {
               baseTypePtr = nextPtr;
-              nextPtr     = baseTypePtr->sParm.t.parent;
+              nextPtr     = baseTypePtr->sParm.t.tParent;
             }
 
           /* Skip over the period */
@@ -608,7 +608,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                */
 
               typePtr                 = g_tknPtr->sParm.r.rParent;
-              varPtr->sKind           = typePtr->sParm.t.type;
+              varPtr->sKind           = typePtr->sParm.t.tType;
               varPtr->sParm.v.vParent = typePtr;
 
               /* Adjust the variable size and offset.  Add the RECORD offset
@@ -742,9 +742,9 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
           typePtr                 = varPtr->sParm.r.rParent;
 
-          varPtr->sKind           = typePtr->sParm.t.type;
+          varPtr->sKind           = typePtr->sParm.t.tType;
           varPtr->sLevel          = g_withRecord.level;
-          varPtr->sParm.v.vSize   = typePtr->sParm.t.asize;
+          varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
           varPtr->sParm.v.vOffset = tempOffset;
           varPtr->sParm.v.vParent = typePtr;
 
@@ -771,11 +771,11 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        * pointed-at type.
        */
 
-      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.type == sPOINTER)
+      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.tType == sPOINTER)
         {
-          symbol_t *baseTypePtr = typePtr->sParm.t.parent;
+          symbol_t *baseTypePtr = typePtr->sParm.t.tParent;
 
-          varPtr->sKind = baseTypePtr->sParm.t.type;
+          varPtr->sKind = baseTypePtr->sParm.t.tType;
 
           /* REVISIT:  What if the type is a pointer to a pointer? */
 
@@ -785,7 +785,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         {
           /* Get the kind of parent type */
 
-          varPtr->sKind = typePtr->sParm.t.type;
+          varPtr->sKind = typePtr->sParm.t.tType;
         }
 
       pas_SimpleAssignment(varPtr, assignFlags);
@@ -795,7 +795,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       if (assignFlags != 0) error(eVARPARMTYPE);
       assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM);
 
-      varPtr->sKind = typePtr->sParm.t.type;
+      varPtr->sKind = typePtr->sParm.t.tType;
       pas_SimpleAssignment(varPtr, assignFlags);
       break;
 
@@ -825,30 +825,30 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
             error(eARRAYTYPE);
           }
 
-        indexTypePtr = typePtr->sParm.t.index;
+        indexTypePtr = typePtr->sParm.t.tIndex;
         if (indexTypePtr == NULL) error(eHUH);
 
         /* Get a pointer to the base type symbol of the array */
 
         baseTypePtr = typePtr;
-        nextType    = typePtr->sParm.t.parent;
+        nextType    = typePtr->sParm.t.tParent;
 
         while (nextType != NULL && baseTypePtr->sKind == sTYPE)
           {
             baseTypePtr = nextType;
-            nextType    = baseTypePtr->sParm.t.parent;
+            nextType    = baseTypePtr->sParm.t.tParent;
           }
 
         /* Get the size and base type of the array */
 
-        size      = baseTypePtr->sParm.t.asize;
-        arrayKind = baseTypePtr->sParm.t.type;
+        size      = baseTypePtr->sParm.t.tAllocSize;
+        arrayKind = baseTypePtr->sParm.t.tType;
 
         /* REVISIT:  For subranges, we use the base type of the subrange. */
 
         if (arrayKind == sSUBRANGE)
           {
-            arrayKind = baseTypePtr->sParm.t.subType;
+            arrayKind = baseTypePtr->sParm.t.tSubType;
           }
 
         /* Handle the array index if present */
@@ -1897,7 +1897,7 @@ static void pas_WithStatement(void)
 
        else if ((g_token == sVAR_PARM) &&
                 (!g_withRecord.parent) &&
-                (g_tknPtr->sParm.v.vParent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD))
          {
            /* Save the RECORD VAR parameter as the new with record */
 
@@ -1918,7 +1918,7 @@ static void pas_WithStatement(void)
 
        else if ((g_token == sPOINTER) &&
                 (!g_withRecord.parent) &&
-                (g_tknPtr->sParm.v.vParent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD))
          {
            /* Save the RECORD pointer as the new with record */
 
@@ -1944,7 +1944,7 @@ static void pas_WithStatement(void)
 
        else if ((g_token == sRECORD_OBJECT) &&
                 (g_tknPtr->sParm.r.rRecord == g_withRecord.parent) &&
-                (g_tknPtr->sParm.r.rParent->sParm.t.type == sRECORD))
+                (g_tknPtr->sParm.r.rParent->sParm.t.tType == sRECORD))
          {
            /* Okay, update the with record to use this record field */
 

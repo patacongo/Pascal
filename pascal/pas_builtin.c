@@ -101,7 +101,7 @@ static exprType_t pas_BuiltInSizeOf(void)
       /* Types */
 
       case sTYPE :
-        size = g_tknPtr->sParm.t.asize;
+        size = g_tknPtr->sParm.t.tAllocSize;
         break;
 
       default:

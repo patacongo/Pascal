@@ -291,7 +291,7 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
 
     case sARRAY :
     case sRECORD :
-      return typePtr->sParm.t.asize;
+      return typePtr->sParm.t.tAllocSize;
       break;
 
     case sVAR_PARM :
@@ -411,8 +411,8 @@ int pas_ActualParameterList(symbol_t *procPtr)
                 while (nextType != NULL && nextType->sKind == sTYPE)
                   {
                     arrayType = nextType;
-                    arrayKind = arrayType->sParm.t.type;
-                    nextType  = arrayType->sParm.t.parent;
+                    arrayKind = arrayType->sParm.t.tType;
+                    nextType  = arrayType->sParm.t.tParent;
                   }
 
                 /* REVISIT:  For subranges, we use the base type of
@@ -421,7 +421,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                 if (arrayKind == sSUBRANGE)
                   {
-                    arrayKind = arrayType->sParm.t.subType;
+                    arrayKind = arrayType->sParm.t.tSubType;
                   }
 
                 /* Then get the expression type associated with the
@@ -430,19 +430,19 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                 exprType = pas_MapVariable2ExprType(arrayKind, false);
                 pas_Expression(exprType, typePtr);
-                size += typePtr->sParm.t.asize;
+                size += typePtr->sParm.t.tAllocSize;
               }
               break;
 
             case sRECORD :
               pas_Expression(exprRecord, typePtr);
-              size += typePtr->sParm.t.asize;
+              size += typePtr->sParm.t.tAllocSize;
               break;
 
             case sVAR_PARM :
               if (typePtr)
                 {
-                  switch (typePtr->sParm.t.type)
+                  switch (typePtr->sParm.t.tType)
                     {
                     case sINT :
                       pas_VarParameter(exprIntegerPtr, typePtr);
@@ -479,8 +479,8 @@ int pas_ActualParameterList(symbol_t *procPtr)
                         while (nextType != NULL && nextType->sKind == sTYPE)
                           {
                             arrayType = nextType;
-                            arrayKind = arrayType->sParm.t.type;
-                            nextType  = arrayType->sParm.t.parent;
+                            arrayKind = arrayType->sParm.t.tType;
+                            nextType  = arrayType->sParm.t.tParent;
                           }
 
                         /* REVISIT:  For subranges, we use the base type of
@@ -489,7 +489,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                         if (arrayKind == sSUBRANGE)
                           {
-                            arrayKind = arrayType->sParm.t.subType;
+                            arrayKind = arrayType->sParm.t.tSubType;
                           }
 
                         /* Then get the expression type associated with the
@@ -607,10 +607,10 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
               while (nextPtr != NULL && nextPtr->sKind == sTYPE)
                 {
                   baseTypePtr = nextPtr;
-                  nextPtr     = baseTypePtr->sParm.t.parent;
+                  nextPtr     = baseTypePtr->sParm.t.tParent;
                 }
 
-              fileType        = baseTypePtr->sParm.t.type;
+              fileType        = baseTypePtr->sParm.t.tType;
 
               if (fileType != sFILE && fileType != sTEXTFILE)
                 {
@@ -675,18 +675,18 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           while (nextPtr != NULL && nextPtr->sKind == sTYPE)
             {
               baseTypePtr = nextPtr;
-              nextPtr     = baseTypePtr->sParm.t.parent;
+              nextPtr     = baseTypePtr->sParm.t.tParent;
             }
 
 #ifdef CONFIG_PAS_FILERECORD
-          if (baseTypePtr->sParm.t.type == sRECORD)
+          if (baseTypePtr->sParm.t.tType == sRECORD)
             {
               /* REVISIT:  This is the problem case */
             }
           else
 #endif
-          if (baseTypePtr->sParm.t.type != sFILE &&
-              baseTypePtr->sParm.t.type != sTEXTFILE)
+          if (baseTypePtr->sParm.t.tType != sFILE &&
+              baseTypePtr->sParm.t.tType != sTEXTFILE)
             {
               return defaultFileNumber(defaultFilePtr, pFileSize);
             }
@@ -697,18 +697,18 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 
           /* Then handle the bracketed array index */
 
-          indexTypePtr = typePtr->sParm.t.index;
+          indexTypePtr = typePtr->sParm.t.tIndex;
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
               /* Generate the array offset calculation */
 
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.asize);
+              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
 
               /* Return the parent type of the array */
 
-              varPtr->sKind         = baseTypePtr->sParm.t.type;
-              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.asize;
+              varPtr->sKind         = baseTypePtr->sParm.t.tType;
+              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
 
               return simplifyFileNumber(varPtr, fileFlags, pFileSize,
                                         defaultFilePtr);
@@ -1108,14 +1108,14 @@ static void readBinary(uint16_t fileSize)
          */
 
         parent = g_tknPtr->sParm.v.vParent;
-        size   = parent->sParm.t.asize;
+        size   = parent->sParm.t.tAllocSize;
         break;
 
 #if 0 /* Not yet */
       /* Defined types */
 
       case sTYPE :
-        size   = g_tknPtr->sParm.t.asize;
+        size   = g_tknPtr->sParm.t.tAllocSize;
         break;
 #endif
 
@@ -1561,7 +1561,7 @@ static void writeText(void)
     case sARRAY :
       wPtr = g_tknPtr->sParm.v.vParent;
       if (wPtr != NULL && wPtr->sKind == sTYPE &&
-          wPtr->sParm.t.type == sCHAR &&
+          wPtr->sParm.t.tType == sCHAR &&
           getNextCharacter(true) != '[')
         {
           /* WRITE_STRING: TOS   = Write size
@@ -1675,14 +1675,14 @@ static void writeBinary(uint16_t fileSize)
          */
 
         parent = g_tknPtr->sParm.v.vParent;
-        size   = parent->sParm.t.asize;
+        size   = parent->sParm.t.tAllocSize;
         break;
 
 #if 0 /* Not yet */
       /* Defined types */
 
       case sTYPE :
-        size   = g_tknPtr->sParm.t.asize;
+        size   = g_tknPtr->sParm.t.tAllocSize;
         break;
 #endif
 
@@ -1738,7 +1738,7 @@ static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
     {
       /* Get the type of the parent */
 
-      symType = typePtr->sParm.t.type;
+      symType = typePtr->sParm.t.tType;
 
       /* Check if this is a file in the sequence of types. */
 
@@ -1748,7 +1748,7 @@ static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
            * field.
            */
 
-          fileSize = typePtr->sParm.t.asize;
+          fileSize = typePtr->sParm.t.tAllocSize;
           fileType = sFILE;
           break;
         }
@@ -1762,7 +1762,7 @@ static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
         }
       else
         {
-          symbol_t *tmpPtr  = typePtr->sParm.t.parent;
+          symbol_t *tmpPtr  = typePtr->sParm.t.tParent;
 
           /* This is the final type if it has no parent. */
 

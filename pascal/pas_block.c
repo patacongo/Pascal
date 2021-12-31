@@ -268,7 +268,7 @@ static symbol_t *pas_DeclareOrdinalType(char *typeName)
        typeIdPtr = pas_TypeIdentifier(1);
        if (typeIdPtr)
          {
-           typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.type,
+           typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.tType,
                                        g_dwVarSize, typeIdPtr, NULL);
          }
      }
@@ -338,7 +338,7 @@ static symbol_t *pas_DeclareVar(void)
 
   if (typePtr != NULL)
     {
-      uint16_t varType = typePtr->sParm.t.type;
+      uint16_t varType = typePtr->sParm.t.tType;
 
       if (varType == sFILE || varType == sTEXTFILE)
         {
@@ -350,9 +350,9 @@ static symbol_t *pas_DeclareVar(void)
            * nesting level.
            */
 
-          filePtr = pas_AddFile(varName, typePtr->sParm.t.type, g_dStack,
-                                typePtr->sParm.t.asize,
-                                typePtr->sParm.t.parent);
+          filePtr = pas_AddFile(varName, typePtr->sParm.t.tType, g_dStack,
+                                typePtr->sParm.t.tAllocSize,
+                                typePtr->sParm.t.tParent);
 
           pas_AddFileInitializer(filePtr, false, 0);
           g_dStack += sINT_SIZE;
@@ -662,7 +662,7 @@ static void pas_FunctionDeclaration(void)
 
       /* Save the TYPE for the function return value local variable */
 
-      valPtr->sKind           = typePtr->sParm.t.rtype;
+      valPtr->sKind           = typePtr->sParm.t.tType;
       valPtr->sParm.v.vOffset = parameterOffset;
       valPtr->sParm.v.vSize   = g_dwVarSize;
       valPtr->sParm.v.vParent = typePtr;
@@ -755,7 +755,7 @@ static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
            */
 
           if ((g_token == '[' || g_token == '(') &&
-              (typePtr->sParm.t.flags & STYPE_VARSIZE) != 0)
+              (typePtr->sParm.t.tFlags & STYPE_VARSIZE) != 0)
             {
               uint16_t term_token;
               uint16_t errcode;
@@ -809,7 +809,7 @@ static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
               /* Return the fixed size of the allocated instance of
                * this type */
 
-              g_dwVarSize = typePtr->sParm.t.asize;
+              g_dwVarSize = typePtr->sParm.t.tAllocSize;
             }
         }
 
@@ -823,9 +823,9 @@ static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
 
       else
         {
-          /* Return the size to a clone, reference to an instance */
+          /* Return the size of an instance of this type. */
 
-          g_dwVarSize = typePtr->sParm.t.rsize;
+          g_dwVarSize = typePtr->sParm.t.tAllocSize;
         }
     }
 }
@@ -939,7 +939,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
        * maximum ORD is nObjects - 1).
        */
 
-      typePtr->sParm.t.maxValue = nObjects - 1;
+      typePtr->sParm.t.tMaxValue = nObjects - 1;
 
       if (g_token != ')') error(eRPAREN);
       else getToken();
@@ -975,9 +975,9 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
       /* Create the new INTEGER subrange type */
 
       typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL, NULL);
-      typePtr->sParm.t.subType  = sINT;
-      typePtr->sParm.t.minValue = value;
-      typePtr->sParm.t.maxValue = MAXINT;
+      typePtr->sParm.t.tSubType  = sINT;
+      typePtr->sParm.t.tMinValue = value;
+      typePtr->sParm.t.tMaxValue = MAXINT;
 
       /* Verify that ".." separates the two constants */
 
@@ -1007,13 +1007,13 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
           error(eINTCONST);
         }
 
-      if (value < typePtr->sParm.t.minValue)
+      if (value < typePtr->sParm.t.tMinValue)
         {
           error(eSUBRANGETYPE);
         }
       else
         {
-          typePtr->sParm.t.maxValue = value;
+          typePtr->sParm.t.tMaxValue = value;
         }
 
       getToken();
@@ -1026,9 +1026,9 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
       /* Create the new CHAR subrange type */
 
       typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL, NULL);
-      typePtr->sParm.t.subType  = sCHAR;
-      typePtr->sParm.t.minValue = g_tknInt;
-      typePtr->sParm.t.maxValue = MAXCHAR;
+      typePtr->sParm.t.tSubType  = sCHAR;
+      typePtr->sParm.t.tMinValue = g_tknInt;
+      typePtr->sParm.t.tMaxValue = MAXCHAR;
 
       /* Verify that ".." separates the two constants */
 
@@ -1038,13 +1038,13 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
 
       /* Verify that the ".." is following by a CHAR constant */
 
-      if ((g_token != tCHAR_CONST) || (g_tknInt < typePtr->sParm.t.minValue))
+      if (g_token != tCHAR_CONST || g_tknInt < typePtr->sParm.t.tMinValue)
         {
           error(eSUBRANGETYPE);
         }
       else
         {
-          typePtr->sParm.t.maxValue = g_tknInt;
+          typePtr->sParm.t.tMaxValue = g_tknInt;
           getToken();
         }
     }
@@ -1056,9 +1056,9 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
       /* Create the new SCALAR subrange type */
 
       typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr, NULL);
-      typePtr->sParm.t.subType  = g_token;
-      typePtr->sParm.t.minValue = g_tknInt;
-      typePtr->sParm.t.maxValue = MAXINT;
+      typePtr->sParm.t.tSubType  = g_token;
+      typePtr->sParm.t.tMinValue = g_tknInt;
+      typePtr->sParm.t.tMaxValue = MAXINT;
 
       /* Verify that ".." separates the two constants */
 
@@ -1071,14 +1071,14 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
        */
 
       if ((g_token != sSCALAR_OBJECT) ||
-          (g_tknPtr != typePtr->sParm.t.parent) ||
-          (g_tknPtr->sParm.c.val.i < typePtr->sParm.t.minValue))
+          (g_tknPtr != typePtr->sParm.t.tParent) ||
+          (g_tknPtr->sParm.c.val.i < typePtr->sParm.t.tMinValue))
         {
           error(eSUBRANGETYPE);
         }
       else
         {
-          typePtr->sParm.t.maxValue = g_tknPtr->sParm.c.val.i;
+          typePtr->sParm.t.tMaxValue = g_tknPtr->sParm.c.val.i;
           getToken();
         }
     }
@@ -1134,13 +1134,17 @@ static symbol_t *pas_FileTypeDenoter(void)
               /* Create an un-named type for the file */
 
               fileTypePtr =
-                pas_AddTypeDefine("", sFILE, parentTypePtr->sParm.t.asize,
+                pas_AddTypeDefine("", sFILE,
+                                  parentTypePtr->sParm.t.tAllocSize,
                                   parentTypePtr, NULL);
               if (fileTypePtr != NULL)
                 {
-                  fileTypePtr->sParm.t.subType  = parentTypePtr->sParm.t.type;
-                  fileTypePtr->sParm.t.minValue = parentTypePtr->sParm.t.minValue;
-                  fileTypePtr->sParm.t.maxValue = parentTypePtr->sParm.t.maxValue;
+                  fileTypePtr->sParm.t.tSubType  =
+                    parentTypePtr->sParm.t.tType;
+                  fileTypePtr->sParm.t.tMinValue =
+                    parentTypePtr->sParm.t.tMinValue;
+                  fileTypePtr->sParm.t.tMaxValue =
+                    parentTypePtr->sParm.t.tMaxValue;
                 }
 
               getToken();
@@ -1162,43 +1166,47 @@ static symbol_t *pas_FileTypeDenoter(void)
        */
 
       baseTypePtr = g_tknPtr;
-      nextType    = g_tknPtr->sParm.t.parent;
+      nextType    = g_tknPtr->sParm.t.tParent;
 
       while (nextType != NULL &&
              baseTypePtr->sKind == sTYPE &&
-             baseTypePtr->sParm.t.type != sFILE &&
-             baseTypePtr->sParm.t.type != sTEXTFILE)
+             baseTypePtr->sParm.t.tType != sFILE &&
+             baseTypePtr->sParm.t.tType != sTEXTFILE)
         {
           baseTypePtr = nextType;
-          nextType    = baseTypePtr->sParm.t.parent;
+          nextType    = baseTypePtr->sParm.t.tParent;
         }
 
       /* Did we find a typed file? */
 
-      if (baseTypePtr->sParm.t.type == sFILE ||
-          baseTypePtr->sParm.t.type == sTEXTFILE)
+      if (baseTypePtr->sParm.t.tType == sFILE ||
+          baseTypePtr->sParm.t.tType == sTEXTFILE)
         {
           /* TEXTFILE is a pre-defined type and has no parent */
 
-          if (baseTypePtr->sParm.t.type == sTEXTFILE)
+          if (baseTypePtr->sParm.t.tType == sTEXTFILE)
             {
               fileTypePtr = baseTypePtr;
               getToken();
             }
-          else /* if (baseTypePtr->sParm.t.type == sFILE) */
+          else /* if (baseTypePtr->sParm.t.tType == sFILE) */
             {
-              symbol_t *parentTypePtr = baseTypePtr->sParm.t.parent;
+              symbol_t *parentTypePtr = baseTypePtr->sParm.t.tParent;
 
               /* Create an un-named type for the file */
 
               fileTypePtr =
-                pas_AddTypeDefine("", sFILE, parentTypePtr->sParm.t.asize,
+                pas_AddTypeDefine("", sFILE,
+                                  parentTypePtr->sParm.t.tAllocSize,
                                   parentTypePtr, NULL);
               if (fileTypePtr != NULL)
                 {
-                  fileTypePtr->sParm.t.subType  = parentTypePtr->sParm.t.type;
-                  fileTypePtr->sParm.t.minValue = parentTypePtr->sParm.t.minValue;
-                  fileTypePtr->sParm.t.maxValue = parentTypePtr->sParm.t.maxValue;
+                  fileTypePtr->sParm.t.tSubType =
+                    parentTypePtr->sParm.t.tType;
+                  fileTypePtr->sParm.t.tMinValue =
+                    parentTypePtr->sParm.t.tMinValue;
+                  fileTypePtr->sParm.t.tMaxValue =
+                    parentTypePtr->sParm.t.tMaxValue;
                 }
 
               getToken();
@@ -1322,13 +1330,13 @@ static symbol_t *pas_NewComplexType(char *typeName)
        */
 
       if ((typeIdPtr) &&
-          ((typeIdPtr->sParm.t.type == sSCALAR) ||
-           (typeIdPtr->sParm.t.type == sSUBRANGE)))
+          ((typeIdPtr->sParm.t.tType == sSCALAR) ||
+           (typeIdPtr->sParm.t.tType == sSUBRANGE)))
         {
           /* Declare the SET type */
 
           typePtr = pas_AddTypeDefine(typeName, sSET_OF,
-                                  typeIdPtr->sParm.t.asize, typeIdPtr,
+                                  typeIdPtr->sParm.t.tAllocSize, typeIdPtr,
                                   NULL);
 
           if (typePtr)
@@ -1337,21 +1345,21 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
               /* Copy the scalar/subrange characteristics for convenience */
 
-              typePtr->sParm.t.subType  = typeIdPtr->sParm.t.type;
-              typePtr->sParm.t.minValue = typeIdPtr->sParm.t.minValue;
-              typePtr->sParm.t.maxValue = typeIdPtr->sParm.t.minValue;
+              typePtr->sParm.t.tSubType  = typeIdPtr->sParm.t.tType;
+              typePtr->sParm.t.tMinValue = typeIdPtr->sParm.t.tMinValue;
+              typePtr->sParm.t.tMaxValue = typeIdPtr->sParm.t.tMaxValue;
 
               /* Verify that the number of objects associated with the
                * scalar or subrange type will fit into an integer
                * representation of a set as a bit-string.
                */
 
-              nObjects = typeIdPtr->sParm.t.maxValue
-                - typeIdPtr->sParm.t.minValue + 1;
+              nObjects = typeIdPtr->sParm.t.tMaxValue
+                - typeIdPtr->sParm.t.tMinValue + 1;
               if (nObjects > BITS_IN_INTEGER)
                 {
                   error(eSETRANGE);
-                  typePtr->sParm.t.maxValue = typePtr->sParm.t.minValue
+                  typePtr->sParm.t.tMaxValue = typePtr->sParm.t.tMinValue
                     + BITS_IN_INTEGER - 1;
                 }
             }
@@ -1386,7 +1394,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
                                   typeIdPtr, NULL);
           if (typePtr)
             {
-              typePtr->sParm.t.subType = typeIdPtr->sParm.t.type;
+              typePtr->sParm.t.tSubType = typeIdPtr->sParm.t.tType;
             }
         }
       else
@@ -1405,7 +1413,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
                                 g_tknPtr, NULL);
       if (typePtr)
         {
-          typePtr->sParm.t.subType = typeIdPtr->sParm.t.type;
+          typePtr->sParm.t.tSubType = typeIdPtr->sParm.t.tType;
         }
       break;
 
@@ -1448,7 +1456,7 @@ static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
 
   if (typePtr != NULL)
     {
-      switch (typePtr->sParm.t.type)
+      switch (typePtr->sParm.t.tType)
         {
           /* Check for an ordinal type (verify this list!) */
 
@@ -1506,7 +1514,7 @@ static symbol_t *pas_GetArrayIndexType(void)
 
       getToken();
       if (g_token == tINT_CONST ||
-         (g_token == sTYPE && g_tknPtr->sParm.t.type == tINT_CONST))
+         (g_token == sTYPE && g_tknPtr->sParm.t.tType == tINT_CONST))
         {
           int32_t saveTknInt = g_tknInt;
 
@@ -1526,7 +1534,7 @@ static symbol_t *pas_GetArrayIndexType(void)
 
               getToken();
               if (g_token != tINT_CONST &&
-                  (g_token != sTYPE || g_tknPtr->sParm.t.type != tINT_CONST))
+                  (g_token != sTYPE || g_tknPtr->sParm.t.tType != tINT_CONST))
                 {
                   error(eINTCONST);
                 }
@@ -1606,7 +1614,7 @@ static symbol_t *pas_GetArrayIndexType(void)
 
           /* Get the base type of the type identifier */
 
-          ordinalType = g_tknPtr->sParm.t.type;
+          ordinalType = g_tknPtr->sParm.t.tType;
 
           /* Check for an ordinal type. */
 
@@ -1614,13 +1622,13 @@ static symbol_t *pas_GetArrayIndexType(void)
               ordinalType == sSCALAR ||
               ordinalType == sSUBRANGE)
             {
-              minValue  = g_tknPtr->sParm.t.minValue;
-              maxValue  = g_tknPtr->sParm.t.maxValue;
+              minValue  = g_tknPtr->sParm.t.tMinValue;
+              maxValue  = g_tknPtr->sParm.t.tMaxValue;
               indexSize = (ordinalType == sBOOLEAN ?
                            sBOOLEAN_SIZE :
                            sINT_SIZE);
               indexType = ordinalType;
-              subType   = g_tknPtr->sParm.t.type;
+              subType   = g_tknPtr->sParm.t.tType;
               haveIndex = true;
 
               getToken();
@@ -1665,9 +1673,9 @@ static symbol_t *pas_GetArrayIndexType(void)
          indexTypePtr = pas_AddTypeDefine(NULL, indexType, indexSize, NULL, NULL);
           if (indexTypePtr)
             {
-              indexTypePtr->sParm.t.minValue = minValue;
-              indexTypePtr->sParm.t.maxValue = maxValue;
-              indexTypePtr->sParm.t.subType  = subType;
+              indexTypePtr->sParm.t.tSubType  = subType;
+              indexTypePtr->sParm.t.tMinValue = minValue;
+              indexTypePtr->sParm.t.tMaxValue = maxValue;
             }
         }
     }
@@ -1702,9 +1710,9 @@ static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
 
   /* Get the size of the entire array */
 
-  g_dwVarSize = (indexTypePtr->sParm.t.maxValue -
-                 indexTypePtr->sParm.t.minValue + 1) *
-                 typeDenoter->sParm.t.asize;
+  g_dwVarSize = (indexTypePtr->sParm.t.tMaxValue -
+                 indexTypePtr->sParm.t.tMinValue + 1) *
+                 typeDenoter->sParm.t.tAllocSize;
 
   return typeDenoter;
 }
@@ -1797,7 +1805,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
   fieldPtr = &recordPtr[1];
   for (recordOffset = 0, recordCount = 0;
-       recordCount < recordPtr->sParm.t.maxValue && fieldPtr != NULL;
+       recordCount < recordPtr->sParm.t.tMaxValue && fieldPtr != NULL;
        recordCount++, fieldPtr = fieldPtr->sParm.r.rNext)
     {
       /* We know that 'maxValue' sRECORD_OBJECT symbols follow the sRECORD
@@ -1826,7 +1834,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
   /* Update the RECORD entry for the total size of all fields */
 
-  recordPtr->sParm.t.asize = recordOffset;
+  recordPtr->sParm.t.tAllocSize = recordOffset;
 
   /* Now we are ready to process the variant-part.
    * FORM: variant-part = 'case' variant-selector 'of' variant-body
@@ -1876,14 +1884,14 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
               /* Increment the number of fields in the record */
 
-              recordPtr->sParm.t.maxValue++;
+              recordPtr->sParm.t.tMaxValue++;
 
               /* Copy the size of field from the sTYPE entry into the
                * <field> type entry.  NOTE:  This element is not essential
                * since it  can be obtained from the parent type pointer
                */
 
-              fieldPtr->sParm.r.rSize = typePtr->sParm.t.asize;
+              fieldPtr->sParm.r.rSize = typePtr->sParm.t.tAllocSize;
 
               /* Save a pointer back to the parent field type */
 
@@ -2026,8 +2034,10 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
                */
 
               fieldPtr = &recordPtr[1];
-              for (fieldPtr = firstFieldPtr, recordOffset = variantOffset;
-                   fieldPtr != NULL && recordCount < recordPtr->sParm.t.maxValue;
+              for (fieldPtr = firstFieldPtr,
+                     recordOffset = variantOffset;
+                   fieldPtr != NULL &&
+                     recordCount < recordPtr->sParm.t.tMaxValue;
                    fieldPtr = fieldPtr->sParm.r.rNext)
                 {
                   /* We know that 'maxValue' sRECORD_OBJECT symbols follow
@@ -2099,7 +2109,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
       /* Update the RECORD entry for the maximum size of all variants */
 
-      recordPtr->sParm.t.asize = maxRecordSize;
+      recordPtr->sParm.t.tAllocSize = maxRecordSize;
     }
 
   /* Verify that the RECORD declaration terminates with END */
@@ -2153,7 +2163,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
           typePtr = pas_TypeDenoter(NULL, true);
         }
 
-      recordPtr->sParm.t.maxValue++;
+      recordPtr->sParm.t.tMaxValue++;
       if (typePtr != NULL)
         {
           /* Copy the size of field from the sTYPE entry into the <field>
@@ -2161,7 +2171,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
            * can be obtained from the parent type pointer.
            */
 
-          fieldPtr->sParm.r.rSize    = typePtr->sParm.t.asize;
+          fieldPtr->sParm.r.rSize    = typePtr->sParm.t.tAllocSize;
 
           /* Save a pointer back to the parent field type */
 
@@ -2234,7 +2244,7 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
          }
        else
          {
-           varType = typePtr->sParm.t.rtype;
+           varType = typePtr->sParm.t.tType;
          }
 
        g_nParms++;
@@ -2254,7 +2264,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
   if (recordTypePtr == NULL ||
       recordTypePtr->sKind != sTYPE ||
-      recordTypePtr->sParm.t.type != sRECORD)
+      recordTypePtr->sParm.t.tType != sRECORD)
     {
       error(eRECORDTYPE);
     }
@@ -2264,7 +2274,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
   else
     {
       symbol_t *recordObjectPtr;
-      int nObjects = recordTypePtr->sParm.t.maxValue;
+      int nObjects = recordTypePtr->sParm.t.tMaxValue;
       int objectIndex;
 
       /* The parent is the RECORD type.  That is followed by the
@@ -2298,29 +2308,29 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
           parentTypePtr = recordObjectPtr->sParm.r.rParent;
 
           if (parentTypePtr->sKind != sTYPE) error(eHUH);
-          else if (parentTypePtr->sParm.t.type == sSTRING)
+          else if (parentTypePtr->sParm.t.tType == sSTRING)
             {
                pas_AddRecordObjectInitializer(varPtr, recordObjectPtr);
             }
-          else if (parentTypePtr->sParm.t.type == sFILE ||
-                   parentTypePtr->sParm.t.type == sTEXTFILE)
+          else if (parentTypePtr->sParm.t.tType == sFILE ||
+                   parentTypePtr->sParm.t.tType == sTEXTFILE)
             {
                pas_AddRecordObjectInitializer(varPtr, recordObjectPtr);
             }
-          else if (parentTypePtr->sParm.t.type == sARRAY)
+          else if (parentTypePtr->sParm.t.tType == sARRAY)
             {
               symbol_t varInfo;
 
               /* "Fake" a variable symbol at the offset of the array */
 
               varInfo.sName             = varPtr->sName;
-              varInfo.sKind             = parentTypePtr->sParm.t.type;
+              varInfo.sKind             = parentTypePtr->sParm.t.tType;
               varInfo.sLevel            = varPtr->sLevel;
 
               varInfo.sParm.v.vFlags    = varPtr->sParm.v.vFlags;
               varInfo.sParm.v.vXfrUnit  = varPtr->sParm.v.vXfrUnit;
               varInfo.sParm.v.vOffset   = varPtr->sParm.v.vOffset;
-              varInfo.sParm.v.vSize     = parentTypePtr->sParm.t.asize;
+              varInfo.sParm.v.vSize     = parentTypePtr->sParm.t.tAllocSize;
               varInfo.sParm.v.vSymIndex = 0;
               varInfo.sParm.v.vParent   = parentTypePtr;
 
@@ -2339,10 +2349,10 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
   /* Some sanity checks */
 
-  if (typePtr->sKind          != sTYPE  ||
-      typePtr->sParm.t.type   != sARRAY ||
-      typePtr->sParm.t.parent == NULL   ||
-      typePtr->sParm.t.index  == NULL)
+  if (typePtr->sKind           != sTYPE  ||
+      typePtr->sParm.t.tType   != sARRAY ||
+      typePtr->sParm.t.tParent == NULL   ||
+      typePtr->sParm.t.tIndex  == NULL)
     {
       error(eHUH);  /* Should never happen */
     }
@@ -2353,19 +2363,19 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
   /* Get a pointer to the underlying base type symbol */
 
-  nextPtr         = typePtr->sParm.t.parent;
+  nextPtr         = typePtr->sParm.t.tParent;
   baseTypePtr     = nextPtr;
 
   while (nextPtr != NULL && nextPtr->sKind == sTYPE)
     {
       baseTypePtr = nextPtr;
-      nextPtr     = baseTypePtr->sParm.t.parent;
+      nextPtr     = baseTypePtr->sParm.t.tParent;
     }
 
-  if (baseTypePtr->sParm.t.type == sFILE     ||
-      baseTypePtr->sParm.t.type == sTEXTFILE ||
-      baseTypePtr->sParm.t.type == sSTRING   ||
-      baseTypePtr->sParm.t.type == sRECORD)
+  if (baseTypePtr->sParm.t.tType == sFILE     ||
+      baseTypePtr->sParm.t.tType == sTEXTFILE ||
+      baseTypePtr->sParm.t.tType == sSTRING   ||
+      baseTypePtr->sParm.t.tType == sRECORD)
     {
       symbol_t  varInfo;
       symbol_t *indexPtr;
@@ -2375,33 +2385,33 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
       /* "Fake" a variable symbol at the offset of the array */
 
       varInfo.sName             = varPtr->sName;
-      varInfo.sKind             = baseTypePtr->sParm.t.type;
+      varInfo.sKind             = baseTypePtr->sParm.t.tType;
       varInfo.sLevel            = varPtr->sLevel;
 
       varInfo.sParm.v.vFlags    = varPtr->sParm.v.vFlags;
       varInfo.sParm.v.vXfrUnit  = varPtr->sParm.v.vXfrUnit;
       varInfo.sParm.v.vOffset   = varPtr->sParm.v.vOffset;
-      varInfo.sParm.v.vSize     = baseTypePtr->sParm.t.asize;
+      varInfo.sParm.v.vSize     = baseTypePtr->sParm.t.tAllocSize;
       varInfo.sParm.v.vSymIndex = 0;
       varInfo.sParm.v.vParent   = baseTypePtr;
 
       /* The index should be a SUBRANGE type */
 
-      indexPtr = typePtr->sParm.t.index;
+      indexPtr = typePtr->sParm.t.tIndex;
       if (indexPtr->sKind != sTYPE ||
-          indexPtr->sParm.t.type != sSUBRANGE)
+          indexPtr->sParm.t.tType != sSUBRANGE)
         {
           error(eHUH);  /* Should not happen */
         }
 
       /* Now loop for each element of the array */
 
-      nElements = (int)indexPtr->sParm.t.maxValue -
-                  (int)indexPtr->sParm.t.minValue + 1;
+      nElements = (int)indexPtr->sParm.t.tMaxValue -
+                  (int)indexPtr->sParm.t.tMinValue + 1;
 
       for (index = 0; index < nElements; index++)
         {
-          switch (baseTypePtr->sParm.t.type)
+          switch (baseTypePtr->sParm.t.tType)
             {
               case sFILE :
               case sTEXTFILE :
@@ -2426,7 +2436,7 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
            * size.
            */
 
-          varInfo.sParm.v.vOffset += baseTypePtr->sParm.t.asize;
+          varInfo.sParm.v.vOffset += baseTypePtr->sParm.t.tAllocSize;
         }
     }
 }
@@ -2450,8 +2460,8 @@ static bool pas_IntAlignRequired(symbol_t *typePtr)
         }
       else if (typePtr->sKind == sARRAY)
         {
-          typePtr = typePtr->sParm.t.parent;
-          if ((typePtr) && (typePtr->sKind == sCHAR))
+          typePtr = typePtr->sParm.t.tParent;
+          if (typePtr != NULL && typePtr->sKind == sCHAR)
             {
               returnValue = true;
             }

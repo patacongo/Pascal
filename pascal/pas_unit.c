@@ -582,7 +582,7 @@ static void exportedFunctionHeading(void)
         * multiples of size of INTEGER).
         */
 
-       parameterOffset        -= g_tknPtr->sParm.t.rsize;
+       parameterOffset        -= g_tknPtr->sParm.t.tAllocSize;
        parameterOffset         = INT_ALIGNUP(parameterOffset);
 
        /* Save the TYPE for the function */

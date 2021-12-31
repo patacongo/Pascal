@@ -1,24 +1,22 @@
-                          AS OF 1/18/04
+                          AS OF 12/31/21
 
 TYPES
 - Only types INT, BOOLEAN, CHAR, REAL, SCALAR, SUBRANGE, RECORD and SET
   implemented
   - No PACKED types (actually, types are always packed).  This is a bug
     and needs to be revisited in the future.
-  - FILE OF and TEXTFILE types partially supported
-    - Not supported in TYPE block
-    - TEXTFILE is defined as FILE OF CHAR vs PACKED FILE OF CHAR
-    - No function returning FILE OF; No FILE OF
-      procedure/function arguments
-    - Only PROGRAM arguments can be declared type FILE OF
-    - Only one file identifier per FILE OF declaration in type
-      block.
-    - Older name TEXT also supported
+  - FILE OF and TEXTFILE types are supported
+    - TEXTFILE is not the same as a PACKED FILE OF CHAR.  The latter is
+      is treated as a binary file but has some string-like behaviors for
+      limited backward compatibility.
+    - No function returning FILE OF; No FILE OF procedure/function arguments
+    - Only one file identifier per FILE OF declaration in type block.
+    - Older name TEXT also supported as an alias for TEXTFILE
   - SET is limit to 16/32 (# bits in int) adjacent elements
   - Expressions are not strongly typed across different SCALAR types
     (see exprEnum in expr.h)
   - In RECORD CASE, there is no verification that the type of the tag
-    is consistent with a case selector; the is check if the case selector
+    is consistent with a case selector; the check is only if the case selector
     constants are of the same type as the tag type identifier.
 
 - No range checks on array indices
@@ -50,14 +48,14 @@ STANDARD PROCEDURES and FUNCTIONS
 - The following statement procedures/functions not implemented:
     - GET, PUT, PACK, UNPACK, NEW
     - TBD
-- No fieldwidth colon operator on WRITE arguments
+- No fieldwidth colon operator on WRITE arguments or precision on REAL
+  arguments.
 
 FILE PROCEDURES and FUNCTIONS
-- No all standard
-- Most only operate in INPUT and OUTPUT for now
-- Many are just stubs; many are not implemented at all
+- Not all standard
 
-FreePascal
+For comparison:
+- FreePascal
     AssignFile - Assign a name to a file
     Append - Opens an existing file for appending data to end of file and editing it
     BlockRead - Read data from an untyped file into memory
@@ -80,7 +78,7 @@ FreePascal
     Write - Write variable to a file
     WriteLn - Write variable to a text file and go to a new line
 
-tutorialspoint.com
+- tutorialspoint.com
     procedure Append(var t: Text);  - Opens a file in append mode
     procedure Assign(out f: file; const Name:);  - Assigns a name to a file
     procedure Assign(out f: file; p: PChar);  - Assigns a name to a file
@@ -150,18 +148,15 @@ tutorialspoint.com
 Extended Pascal Features
 - Type STRING is implemented.
 - PACKED ARRAY[..] OF CHAR is not a string.
-- INPUT and OUTPUT are STRING files.  STRING files are text files.  All
-  others are binary files.
-- SIZEOF built-in is supported
+- INPUT and OUTPUT are text files.  Files of type TEXTFILE (TEXT) are text
+  files.  All others of type FILE OF <type> are binary files.
+- SIZEOF and LENGTH built-in is supported
 
 NON-standard Pascal extensions/differences
 
 TYPES
 - Hexadecimal constants.
-- INPUT and OUTPUT parameters in PROGRAM statement are
-  predeclared and optional.
-- Unsigned integer types (word and LongWord)
-- Long integer type (LongInteger and LongWord, LongInt is an alias).
+- INPUT and OUTPUT parameters in PROGRAM statement are predeclared and optional.
 
 OPERATORS
 - Binary shift operators -- << and >> like in C
@@ -185,22 +180,11 @@ o BUGS
 - Implement PUT and GET.
 - In FUNC/PROC calls, if simpleExpression fails to find a parameter (eg.,
   proc (,,), no error is detected.
-- Type FILE OF is totally busted -- fix it
 - There are lots of cases where the string stack is not being managed
   correctly (e.g., usesSection()).
-- Redirection of input and output is not supported (e.g. see setting of
-  input and output in CONST section of pageutils.pas).
-- Input procedures in writeln() take the file number as an optional first
-  parameter. If the optional file parameter is not supplied then the file
-  associated with the built-in variable INPUT is tested.  Similarly,
-  outout procedures would default to the built-in OUTPUT.  This has been
-  fixed for some functions (like eof and eoln) but not all cases have been
-  verified.
-- Unit files with data declarations, but no implementation generate an
-  error.
 
 o IMPROVEMENTS
-- In PTKN, verify that string stack does not overflow when
+- In tokenizer, verify that string stack does not overflow when
   character added.
 - Option to turn on listing
 - Option to interleave assembly language with listing
@@ -209,25 +193,17 @@ o IMPROVEMENTS
 - Provide instrumentation to use the line number data in the
   object files.  In debugger, display source line.  Allow stepping
   from source line to source line.
-- Optimizer needs to be incorporated into compiler.
-- arrayIndex needs to conform with Pascal standard.
 - Need to have 32-bit integers and address
 - Translation to register model
 - Native code translator
 - Linker and support multiple source files
 - Runtime package
-- Full extended pascal string support
 - Other things from extended pascal:  'list of'
 - Need to optimize out JMP .+1
-- Add 16-bit word type
+- Unsigned integer types (16-bit word and 32-bit LongWord)
+- Long integer type (LongInteger and LongWord, LongInt is an alias).
 
 o ISSUES
-- What happens in TYPE block if type is sTYPE or sFILE?  Need
-  to re-think all typing.  Maybe replace sTYPE and sFILE_OF with
-  sINT_TYPE, sINT_ARRAY_TYPE, ..., sFILE_OF_INT,
-  sFILE_OF_INT_ARRAY, etc.
-- Is it really necessary or meaningful to allocate dstack for
-  file buffers.
 - Revisit procedure call logic in pexec.c & pdbg.c.  First stack parameter
   is calculated but never used.
 - There is an issue with using file types as the first argument of most

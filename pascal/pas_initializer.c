@@ -241,12 +241,12 @@ void pas_Initialization(void)
               while (nextTypeptr != NULL && nextTypeptr->sKind == sTYPE)
                 {
                   baseTypePtr = nextTypeptr;
-                  nextTypeptr = baseTypePtr->sParm.t.parent;
+                  nextTypeptr = baseTypePtr->sParm.t.tParent;
                 }
 
               /* Check if the base type of the field is a string */
 
-              if (baseTypePtr->sParm.t.type == sSTRING)
+              if (baseTypePtr->sParm.t.tType == sSTRING)
                 {
                   /* Get TOS = Address of string variable to be initialized */
 
@@ -265,8 +265,8 @@ void pas_Initialization(void)
 
               /* Check if the base type of the field is a file */
 
-              else if (baseTypePtr->sParm.t.type == sFILE ||
-                       baseTypePtr->sParm.t.type == sTEXTFILE)
+              else if (baseTypePtr->sParm.t.tType == sFILE ||
+                       baseTypePtr->sParm.t.tType == sTEXTFILE)
                 {
                   /* Allocate a file number */
 

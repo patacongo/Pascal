@@ -333,20 +333,15 @@ symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
         * NOTES:
         * 1. The minValue and maxValue fields (for scalar and subrange)
         *    types must be set external to this function
-        * 2. For most variables, allocated size/type (rsize/rtype) and
-        *    the clone size/type are the same.  If this is not the case,
-        *    external logic will need to clarify this as well.
-        * 3. We assume that there are no special flags associated with
+        * 2. We assume that there are no special flags associated with
         *    the type.
         */
 
-       typePtr->sParm.t.type     = type;
-       typePtr->sParm.t.rtype    = type;
-       typePtr->sParm.t.flags    = 0;
-       typePtr->sParm.t.asize    = size;
-       typePtr->sParm.t.rsize    = size;
-       typePtr->sParm.t.parent   = parent;
-       typePtr->sParm.t.index    = index;
+       typePtr->sParm.t.tType      = type;
+       typePtr->sParm.t.tFlags     = 0;
+       typePtr->sParm.t.tAllocSize = size;
+       typePtr->sParm.t.tParent    = parent;
+       typePtr->sParm.t.tIndex     = index;
      }
 
    /* Return a pointer to the new constant symbol */
@@ -572,16 +567,16 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
   typePtr = pas_AddTypeDefine("INTEGER", sINT, sINT_SIZE, NULL, NULL);
   if (typePtr)
     {
-      g_parentInteger           = typePtr;
-      typePtr->sParm.t.minValue = MININT;
-      typePtr->sParm.t.maxValue = MAXINT;
+      g_parentInteger            = typePtr;
+      typePtr->sParm.t.tMinValue = MININT;
+      typePtr->sParm.t.tMaxValue = MAXINT;
     }
 
   typePtr = pas_AddTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL, NULL);
   if (typePtr)
     {
-      typePtr->sParm.t.minValue = trueValue;
-      typePtr->sParm.t.maxValue = falseValue;
+      typePtr->sParm.t.tMinValue = trueValue;
+      typePtr->sParm.t.tMaxValue = falseValue;
     }
 
   typePtr = pas_AddTypeDefine("REAL", sREAL, sREAL_SIZE, NULL, NULL);
@@ -589,16 +584,16 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
   typePtr = pas_AddTypeDefine("CHAR", sCHAR, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
-      typePtr->sParm.t.minValue = MINCHAR;
-      typePtr->sParm.t.maxValue = MAXCHAR;
+      typePtr->sParm.t.tMinValue = MINCHAR;
+      typePtr->sParm.t.tMaxValue = MAXCHAR;
     }
 
   typePtr = pas_AddTypeDefine("TEXTFILE", sTEXTFILE, sCHAR_SIZE, NULL, NULL);
   if (typePtr)
     {
-      typePtr->sParm.t.subType  = sCHAR;
-      typePtr->sParm.t.minValue = MINCHAR;
-      typePtr->sParm.t.maxValue = MAXCHAR;
+      typePtr->sParm.t.tSubType  = sCHAR;
+      typePtr->sParm.t.tMinValue = MINCHAR;
+      typePtr->sParm.t.tMaxValue = MAXCHAR;
     }
 
   /* Add some enhanced Pascal standard" types to the symbol table
@@ -609,13 +604,11 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
   typePtr = pas_AddTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL, NULL);
   if (typePtr)
     {
-      g_parentString            = typePtr;
-      typePtr->sParm.t.rtype    = sSTRING;
-      typePtr->sParm.t.subType  = sCHAR;
-      typePtr->sParm.t.rsize    = sSTRING_SIZE;
-      typePtr->sParm.t.flags    = STYPE_VARSIZE;
-      typePtr->sParm.t.minValue = MINCHAR;
-      typePtr->sParm.t.maxValue = MAXCHAR;
+      g_parentString             = typePtr;
+      typePtr->sParm.t.tSubType  = sCHAR;
+      typePtr->sParm.t.tFlags    = STYPE_VARSIZE;
+      typePtr->sParm.t.tMinValue = MINCHAR;
+      typePtr->sParm.t.tMaxValue = MAXCHAR;
     }
 
   /* Add the standard files to the symbol table */
@@ -694,18 +687,15 @@ void pas_DumpTables(void)
 
         case sTYPE  :
           fprintf(g_lstFile,
-                  "type=%02x rtype=%02x subType=%02x flags=%02x "
-                  "asize=%" PRId32 " rsize=%" PRId32 " minValue=%" PRId32
-                  " maxValue=%" PRId32 " parent=[%p]\n",
-                  g_symbolTable[i].sParm.t.type,
-                  g_symbolTable[i].sParm.t.rtype,
-                  g_symbolTable[i].sParm.t.subType,
-                  g_symbolTable[i].sParm.t.flags,
-                  g_symbolTable[i].sParm.t.asize,
-                  g_symbolTable[i].sParm.t.rsize,
-                  g_symbolTable[i].sParm.t.minValue,
-                  g_symbolTable[i].sParm.t.maxValue,
-                  g_symbolTable[i].sParm.t.parent);
+                  "type=%02x subType=%02x flags=%02x allocSize=%" PRId32
+                  " minValue=%" PRId32 " maxValue=%" PRId32 " parent=[%p]\n",
+                  g_symbolTable[i].sParm.t.tType,
+                  g_symbolTable[i].sParm.t.tSubType,
+                  g_symbolTable[i].sParm.t.tFlags,
+                  g_symbolTable[i].sParm.t.tAllocSize,
+                  g_symbolTable[i].sParm.t.tMinValue,
+                  g_symbolTable[i].sParm.t.tMaxValue,
+                  g_symbolTable[i].sParm.t.tParent);
           break;
 
           /* Procedures/Functions */

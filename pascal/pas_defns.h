@@ -138,17 +138,15 @@ typedef struct reservedWord_s reservedWord_t;
 
 struct symType_s            /* for sKind = sTYPE */
 {
-  uint8_t   type;           /* specific type */
-  uint8_t   rtype;          /* reference to type */
-  uint8_t   subType;        /* constant type for subrange types */
-  uint8_t   flags;          /* flags to customize a type (see above) */
-  uint32_t  asize;          /* size of allocated instances of this type */
-  uint32_t  rsize;          /* size of reference to an instances of this type */
-  int32_t   minValue;       /* minimum value taken subrange */
-  int32_t   maxValue;       /* maximum value taken by subrange or scalar */
+  uint8_t   tType;          /* specific type */
+  uint8_t   tSubType;       /* constant type for subrange types */
+  uint8_t   tFlags;         /* flags to customize a type (see above) */
+  uint32_t  tAllocSize;     /* size of allocated instances of this type */
+  int32_t   tMinValue;      /* minimum value taken by subrange */
+  int32_t   tMaxValue;      /* maximum value taken by subrange or scalar */
 
-  struct symbol_s *parent;  /* pointer to parent type */
-  struct symbol_s *index;   /* pointer to index subrange type (arrays)*/
+  struct symbol_s *tParent; /* pointer to parent type */
+  struct symbol_s *tIndex;  /* pointer to index subrange type (arrays)*/
 };
 typedef struct symType_s symType_t;
 
