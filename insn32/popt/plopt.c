@@ -53,7 +53,7 @@
 
 int LoadOptimize(void)
 {
-  uint32_t val;
+  uint16_t val;
   int nchanges = 0;
   register int i;
 
@@ -76,8 +76,11 @@ int LoadOptimize(void)
               PUTARG(pptr[i+1], 0);
               nchanges++;
               i += 2;
-            } /* end if */
-          else i++;
+            }
+          else
+            {
+              i++;
+            }
           break;
 
           /* Convert loads indexed by a constant to unindexed loads */
@@ -99,7 +102,7 @@ int LoadOptimize(void)
               PUTARG(pptr[i+1], val);
               deletePcode (i);
               nchanges++;
-            } /* end if */
+            }
           else if (GETOP(pptr[i+1]) == oLASX)
             {
               PUTOP(pptr[i+1], oLAS);
@@ -115,7 +118,7 @@ int LoadOptimize(void)
               PUTARG(pptr[i+1], val);
               deletePcode (i);
               nchanges++;
-            } /* end if */
+            }
           else if (GETOP(pptr[i+1]) == oLDSXM)
             {
               PUTOP(pptr[i+1], oLDSM);
@@ -123,17 +126,21 @@ int LoadOptimize(void)
               PUTARG(pptr[i+1], val);
               deletePcode (i);
               nchanges++;
-            } /* end if */
-          else i++;
+            }
+          else
+            {
+              i++;
+            }
           break;
 
-        default     :
+        default :
           i++;
           break;
-        } /* end switch */
-    } /* end while */
-  return (nchanges);
-} /* end LoadOptimize */
+        }
+    }
+
+  return nchanges;
+}
 
 /**********************************************************************/
 int StoreOptimize (void)
@@ -163,8 +170,11 @@ int StoreOptimize (void)
               PUTARG(pptr[i], 0);
               nchanges++;
               i += 2;
-            } /* end if */
-          else i++;
+            }
+          else
+            {
+              i++;
+            }
           break;
 
           /* Convert stores indexed by a constant to unindexed stores */
@@ -187,7 +197,7 @@ int StoreOptimize (void)
                   PUTARG(pptr[i+2], val);
                   deletePcode (i);
                   nchanges++;
-                } /* end if */
+                }
               else if (GETOP(pptr[i+2]) == oSTSXB)
                 {
                   PUTOP(pptr[i+2], oSTSB);
@@ -195,21 +205,23 @@ int StoreOptimize (void)
                   PUTARG(pptr[i+2], val);
                   deletePcode (i);
                   nchanges++;
-                } /* end if */
-              else i++;
-            } /* end if */
-          else i++;
+                }
+              else
+                {
+                  i++;
+                }
+            }
+          else
+            {
+              i++;
+            }
           break;
 
-        default     :
+        default :
           i++;
           break;
-        } /* end switch */
-    } /* end while */
+        }
+    }
 
-  return (nchanges);
-
-} /* end StoreOptimize */
-
-/**********************************************************************/
-
+  return nchanges;
+}

@@ -2,7 +2,7 @@
  * plopt.c
  * Load/Store Optimizations
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -78,7 +78,7 @@ int16_t LoadOptimize(void)
               pptr[i+1]->arg2 = 0;
               nchanges++;
               i += 2;
-            } /* end if */
+            }
           else i++;
           break;
 
@@ -108,47 +108,52 @@ int16_t LoadOptimize(void)
               pptr[i+1]->arg2 += val;
               deletePcode (i);
               nchanges++;
-            } /* end if */
+            }
           else if (pptr[i+1]->op == oLASX)
             {
               pptr[i+1]->op = oLAS;
               pptr[i+1]->arg2 += val;
               deletePcode (i);
               nchanges++;
-            } /* end else if */
+            }
           else if (pptr[i+1]->op == oLDSXB)
             {
               pptr[i+1]->op = oLDSB;
               pptr[i+1]->arg2 += val;
               deletePcode (i);
               nchanges++;
-            } /* end if */
+            }
           else if (pptr[i+1]->op == oLDSXM)
             {
               pptr[i+1]->op = oLDSM;
               pptr[i+1]->arg2 += val;
               deletePcode (i);
               nchanges++;
-            } /* end if */
+            }
           else if (val < 256)
             {
               pptr[i]->op   = oPUSHB;
               pptr[i]->arg1 = val;
               pptr[i]->arg2 = 0;
               i++;
-            } /* end else if */
-          else i++;
+            }
+          else
+            {
+              i++;
+            }
           break;
 
-       default     :
+       default :
          i++;
          break;
-     } /* end switch */
-   } /* end while */
-   return (nchanges);
-} /* end LoadOptimize */
+     }
+    }
+
+  return nchanges;
+}
 
 /**********************************************************************/
+
 int16_t StoreOptimize (void)
 {
   int16_t  nchanges = 0;
@@ -156,8 +161,9 @@ int16_t StoreOptimize (void)
 
   TRACE(stderr, "[StoreOptimize]");
 
-  /* At least two pcodes are need to perform the following Store */
-  /* optimizations */
+  /* At least two pcodes are need to perform the following Store
+   * optimizations.
+   */
 
   i = 0;
   while (i < nops-1)
@@ -177,7 +183,7 @@ int16_t StoreOptimize (void)
               pptr[i]->arg2 = 0;
               nchanges++;
               i += 2;
-            } /* end if */
+            }
           else
             {
               i++;
@@ -200,20 +206,23 @@ int16_t StoreOptimize (void)
                   pptr[i+2]->arg2 += pptr[i]->arg2;
                   deletePcode (i);
                   nchanges++;
-                } /* end if */
+                }
               else if (pptr[i+2]->op == oSTSXB)
                 {
                   pptr[i+2]->op = oSTSB;
                   pptr[i+2]->arg2 += pptr[i]->arg2;
                   deletePcode (i);
                   nchanges++;
-                } /* end if */
+                }
               else
                 {
                    i++;
                 }
-            } /* end if */
-          else i++;
+            }
+          else
+            {
+              i++;
+            }
           break;
 
         case oPUSHB :
@@ -225,21 +234,23 @@ int16_t StoreOptimize (void)
                   pptr[i+2]->arg2 += pptr[i]->arg2;
                   deletePcode (i);
                   nchanges++;
-                } /* end if */
-              else i++;
-            } /* end if */
-          else i++;
+                }
+              else
+                {
+                  i++;
+                }
+            }
+          else
+            {
+              i++;
+            }
           break;
 
-        default     :
+        default :
           i++;
           break;
-        } /* end switch */
-    } /* end while */
+        }
+    }
 
-  return (nchanges);
-
-} /* end StoreOptimize */
-
-/**********************************************************************/
-
+  return nchanges;
+}

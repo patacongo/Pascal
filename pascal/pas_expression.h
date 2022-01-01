@@ -56,9 +56,9 @@
 
 #define EXPRTYPE_POINTER       0x80
 #define IS_POINTER_EXPRTYPE(t) (((uint8_t)(t) & EXPRTYPE_POINTER) != 0)
+#define MK_POINTER_EXPRTYPE(t) (exprType_t)((uint8_t)(t) | EXPRTYPE_POINTER)
 
 /* Factor treatment flags */
-
 /* REVIST: duplicated in pas_statement.c and pas_constexpr.c */
 
 #define ADDRESS_DEREFERENCE (1 << 0)

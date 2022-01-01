@@ -64,7 +64,29 @@
  * Private Definitions
  ****************************************************************************/
 
-/* Assignment flags */
+/* Assignment flags.  These options apply primarily to complex assignments
+ * involving ARRAYs, POINTERs, and VAR parameters:
+ *
+ * ASSIGN_DEREFERENCE (only)
+ * - Means load address (LDS), then store to address(STI).  For example,
+ *   assignment of a value to the target address of a pointer.
+ * ASSIGN_DEREFERENCE + ASSIGN_INDEXED
+ * - Means load address first with index (LDSX), then store value (STI)
+ *   For example, assignment to an LVALUE that is an array of pointers
+ * ASSIGN_ADDRESS (only)
+ * - Store to address a stack address (STS).  Example:  Assign an address
+ *   to pointer (which is the same as assigning a value to a variable).
+ *   Same as none of these three options set.  So the only effect is to
+ *   modify the behavior of ASSIGN_INDEXED.
+ * ASSIGN_ADDRESS + ASSIGN_INDEXED
+ * - Means load pointer(LDS), then store with index (STSX).  Example, then
+ *   LVALUE is a pointer to an array of values.
+ * ASSIGN_INDEXED (only)
+ * - Save value to indexed stack address(STSX)
+ * ASSIGN_VAR_PARM
+ * - Does very little but distinguish if we are working with a pointer or
+ *   a VAR parameter.
+ */
 
 #define ASSIGN_DEREFERENCE   (1 << 0)
 #define ASSIGN_ADDRESS       (1 << 1)
@@ -725,7 +747,9 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                   assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE);
                 }
 
-              pas_GenerateDataOperation(opPUSH, (varPtr->sParm.r.rOffset + g_withRecord.wIndex));
+              pas_GenerateDataOperation(opPUSH,
+                                        varPtr->sParm.r.rOffset +
+                                        g_withRecord.wIndex);
               tempOffset = g_withRecord.wOffset;
             }
           else
@@ -759,11 +783,17 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
       if (g_token == '^') /* value assignment? */
         {
+          /* Dereferencing a pointer and assign a value to the target
+           * address of the pointer.
+           */
+
           getToken();
           assignFlags |= ASSIGN_DEREFERENCE;
         }
       else
         {
+          /* Pointer assignment.  Assign an address to a pointer. */
+
           assignFlags |= ASSIGN_ADDRESS;
         }
 
@@ -792,6 +822,11 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sVAR_PARM :
+      /* Dereference the VAR parameter and assign a value to the target
+       * address.  If the VAR parameter is an array, derefence first, then
+       * index to store value.
+       */
+
       if (assignFlags != 0) error(eVARPARMTYPE);
       assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM);
 
@@ -812,14 +847,19 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
          * OR:   etc., etc., etc.
          */
 
-        /* REVISIT: The ASSIGN_OUTER_INDEXED flag may be set on entry in
-         * certain, more complex situations.  For example, an "outer" ARRAY
-         * of RECORDS needs to be indexed to assign a value to an "inner"
-         * RECORD OBJECT.  However, that inner RECORD OBJECT may itself be
-         * an ARRAY that requires indexing.
+        /* assignFlags:
+         *
+         * - ASSIGN_DEREFERENCE and ASSIGN_VAR_PARM if the array identifier
+         *   is an array VAR parameter.
+         * - ASSIGN_INDEXED should not be set (we set that flag here).
+         * - The ASSIGN_OUTER_INDEXED flag may be set on entry in certain,
+         *   more complex situations.  For example, an "outer" ARRAY of
+         *   RECORDS needs to be indexed to assign a value to an "inner
+         *   RECORD OBJECT.  However, that inner RECORD OBJECT may itself be
+         *   an ARRAY that requires indexing.
          */
 
-        if ((assignFlags & ~ASSIGN_OUTER_INDEXED) != 0)
+        if ((assignFlags & ASSIGN_INDEXED) != 0)
           {
             error(eARRAYTYPE);
           }
