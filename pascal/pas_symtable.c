@@ -318,7 +318,7 @@ static symbol_t *addSymbol(char *name, int16_t kind)
 /****************************************************************************/
 
 symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
-                            symbol_t *parent, symbol_t *index)
+                            symbol_t *parent)
 {
    symbol_t *typePtr;
 
@@ -339,9 +339,10 @@ symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
 
        typePtr->sParm.t.tType      = type;
        typePtr->sParm.t.tFlags     = 0;
+       typePtr->sParm.t.tDimension = 0;
        typePtr->sParm.t.tAllocSize = size;
        typePtr->sParm.t.tParent    = parent;
-       typePtr->sParm.t.tIndex     = index;
+       typePtr->sParm.t.tIndex     = NULL;
      }
 
    /* Return a pointer to the new constant symbol */
@@ -570,7 +571,7 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 
   /* Add the standard types to the symbol table */
 
-  typePtr = pas_AddTypeDefine("INTEGER", sINT, sINT_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("INTEGER", sINT, sINT_SIZE, NULL);
   if (typePtr)
     {
       g_parentInteger            = typePtr;
@@ -578,23 +579,23 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.tMaxValue = MAXINT;
     }
 
-  typePtr = pas_AddTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.tMinValue = trueValue;
       typePtr->sParm.t.tMaxValue = falseValue;
     }
 
-  typePtr = pas_AddTypeDefine("REAL", sREAL, sREAL_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("REAL", sREAL, sREAL_SIZE, NULL);
 
-  typePtr = pas_AddTypeDefine("CHAR", sCHAR, sCHAR_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("CHAR", sCHAR, sCHAR_SIZE, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.tMinValue = MINCHAR;
       typePtr->sParm.t.tMaxValue = MAXCHAR;
     }
 
-  typePtr = pas_AddTypeDefine("TEXTFILE", sTEXTFILE, sCHAR_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("TEXTFILE", sTEXTFILE, sCHAR_SIZE, NULL);
   if (typePtr)
     {
       typePtr->sParm.t.tSubType  = sCHAR;
@@ -607,7 +608,7 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
    * string is represent by a large buffer in separater string memory.
    */
 
-  typePtr = pas_AddTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL, NULL);
+  typePtr = pas_AddTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL);
   if (typePtr)
     {
       g_parentString             = typePtr;
@@ -693,11 +694,13 @@ void pas_DumpTables(void)
 
         case sTYPE  :
           fprintf(g_lstFile,
-                  "type=%02x subType=%02x flags=%02x allocSize=%" PRId32
-                  " minValue=%" PRId32 " maxValue=%" PRId32 " parent=[%p]\n",
+                  "type=%02x subType=%02x flags=%02x dimension=%u "
+                  "allocSize=%" PRId32 " minValue=%" PRId32 " maxValue=%"
+                  PRId32 " parent=[%p]\n",
                   g_symbolTable[i].sParm.t.tType,
                   g_symbolTable[i].sParm.t.tSubType,
                   g_symbolTable[i].sParm.t.tFlags,
+                  g_symbolTable[i].sParm.t.tDimension,
                   g_symbolTable[i].sParm.t.tAllocSize,
                   g_symbolTable[i].sParm.t.tMinValue,
                   g_symbolTable[i].sParm.t.tMaxValue,

@@ -97,7 +97,7 @@ static symbol_t *pas_NewComplexType        (char *typeName);
 static symbol_t *pas_NewOrdinalType        (char *typeName);
 static symbol_t *pas_OrdinalTypeIdentifier (bool allocate);
 static symbol_t *pas_GetArrayIndexType     (void);
-static symbol_t *pas_GetArrayBaseType      (symbol_t *indexTypePtr);
+static void      pas_GetArrayBaseType      (symbol_t *arrayTypePtr);
 static symbol_t *pas_DeclareRecordType     (char *recordName);
 static symbol_t *pas_DeclareField          (symbol_t *recordPtr,
                                             symbol_t *lastField);
@@ -269,7 +269,7 @@ static symbol_t *pas_DeclareOrdinalType(char *typeName)
        if (typeIdPtr)
          {
            typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.tType,
-                                       g_dwVarSize, typeIdPtr, NULL);
+                                       g_dwVarSize, typeIdPtr);
          }
      }
 
@@ -918,7 +918,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
     {
       int32_t nObjects;
       nObjects = 0;
-      typePtr = pas_AddTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSCALAR, sINT_SIZE, NULL);
 
       /* Now declare each instance of the scalar */
 
@@ -974,7 +974,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
 
       /* Create the new INTEGER subrange type */
 
-      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, NULL);
       typePtr->sParm.t.tSubType  = sINT;
       typePtr->sParm.t.tMinValue = value;
       typePtr->sParm.t.tMaxValue = MAXINT;
@@ -1025,7 +1025,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
     {
       /* Create the new CHAR subrange type */
 
-      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL);
       typePtr->sParm.t.tSubType  = sCHAR;
       typePtr->sParm.t.tMinValue = g_tknInt;
       typePtr->sParm.t.tMaxValue = MAXCHAR;
@@ -1055,7 +1055,7 @@ static symbol_t *pas_NewOrdinalType(char *typeName)
      {
       /* Create the new SCALAR subrange type */
 
-      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr, NULL);
+      typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr);
       typePtr->sParm.t.tSubType  = g_token;
       typePtr->sParm.t.tMinValue = g_tknInt;
       typePtr->sParm.t.tMaxValue = MAXINT;
@@ -1136,7 +1136,7 @@ static symbol_t *pas_FileTypeDenoter(void)
               fileTypePtr =
                 pas_AddTypeDefine("", sFILE,
                                   parentTypePtr->sParm.t.tAllocSize,
-                                  parentTypePtr, NULL);
+                                  parentTypePtr);
               if (fileTypePtr != NULL)
                 {
                   fileTypePtr->sParm.t.tSubType  =
@@ -1187,7 +1187,7 @@ static symbol_t *pas_FileTypeDenoter(void)
               fileTypePtr =
                 pas_AddTypeDefine("", sFILE,
                                   parentTypePtr->sParm.t.tAllocSize,
-                                  parentTypePtr, NULL);
+                                  parentTypePtr);
               if (fileTypePtr != NULL)
                 {
                   fileTypePtr->sParm.t.tSubType =
@@ -1228,7 +1228,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
       if (typeIdPtr)
         {
           typePtr = pas_AddTypeDefine(typeName, sPOINTER, g_dwVarSize,
-                                  typeIdPtr, NULL);
+                                      typeIdPtr);
         }
       else
         {
@@ -1259,59 +1259,98 @@ static symbol_t *pas_NewComplexType(char *typeName)
        */
 
     case tARRAY :
-      /* On entry, 'g_token' refers to the 'array' reserved word */
+      {
+        symbol_t *lastIndexTypePtr = NULL;
 
-      getToken();
-      g_dwVarSize = 0;
+        /* On entry, 'g_token' refers to the 'array' reserved word.
+         *
+         * FORM: array-type = 'array' '[' index-type-list ']' 'of'
+         *                    type-denoter
+         *
+         * Skip over the 'array' keyword and verify that the index-type-list
+         * is preceded by '['.
+         */
 
-      /* REVISIT:  Need to loop for each index-type in the index-type-list */
+        getToken();
+        if (g_token != '[') error(eLBRACKET);
 
-      /* Get the next index-type from the index-type-list.  This should be
-       * some kind of subrange type.
-       */
+        /* Create a dummy ARRAY type to which we will eventually add the
+         * indexing and sizing information.
+         *
+         * Initially:  size = 0, dimension = 0, parent = NULL, and no
+         * indices.
+         */
 
-      indexTypePtr = pas_GetArrayIndexType();
-      if (indexTypePtr)
-        {
-          /* Check for a proper terminating character for the the index-type.
-           * There are two possibilities:
-           *
-           * FORM: array-type = 'array' '[' index-type-list ']' 'of'
-           *                    type-denoter
-           *
-           *   ']' which terminates the index-type-list.
-           *
-           * FORM: index-type-list = index-type { ',' index-type }
-           *
-           *   Or ',' which indicates that there is another dimenion (and
-           *   another index-type in the index-type-list).
-           */
+        typePtr = pas_AddTypeDefine(typeName, sARRAY, 0, NULL);
 
-          /* REVISIT:  Multi-dimensional ARRAY support is not yet in place. */
+        /* Loop for each index-type in the index-type-list
+         *
+         * FORM: index-type-list = index-type { ',' index-type }
+         */
 
-          if (g_token == ',')
-            {
-              error(eNOTYET);
-              getToken();
-            }
+        do
+          {
+            /* 'g_token' should refer to '[' on entry but to ',' on subsequent
+             * passes through this loop.  Skip over whichever we have here.
+             */
 
-          /* Verify that the index-type-list is terminated by the closing ']' */
+            getToken();
 
-          if (g_token != ']') error(eRBRACKET);
-          else getToken();
+            /* Get the next index-type from the index-type-list.  This should be
+             * some kind of subrange type.
+             */
 
-          /* Get the base type of the ARRAY.  At this point, 'g_token' should
-           * refer to the OF keyword that precedies the type-denoter.
-           */
+            indexTypePtr = pas_GetArrayIndexType();
+            if (indexTypePtr != NULL)
+              {
+                /* Check for a proper terminating character for the the index-type.
+                 * There are two possibilities:
+                 *
+                 * FORM: array-type = 'array' '[' index-type-list ']' 'of'
+                 *                    type-denoter
+                 *
+                 *   ']' which terminates the index-type-list.
+                 *
+                 * FORM: index-type-list = index-type { ',' index-type }
+                 *
+                 *   Or ',' which indicates that there is another dimenion (and
+                 *   another index-type in the index-type-list).
+                 */
 
-          typeIdPtr = pas_GetArrayBaseType(indexTypePtr);
-          if (typeIdPtr)
-            {
-              typePtr = pas_AddTypeDefine(typeName, sARRAY, g_dwVarSize,
-                                          typeIdPtr, indexTypePtr);
-            }
-        }
+                /* Increase the array dimension */
 
+                typePtr->sParm.t.tDimension++;
+
+                /* Append the new index type to the end of the chain of index
+                 * type.
+                 */
+
+                if (lastIndexTypePtr == NULL)
+                  {
+                    typePtr->sParm.t.tIndex = indexTypePtr;
+                  }
+                else
+                  {
+                    lastIndexTypePtr->sParm.t.tIndex = indexTypePtr;
+                  }
+
+                lastIndexTypePtr = indexTypePtr;
+              }
+          }
+        while (g_token == ',');
+
+        /* Verify that the index-type-list is terminated by the closing ']' */
+
+        if (g_token != ']') error(eRBRACKET);
+        else getToken();
+
+        /* Get the base type of the ARRAY and finish off the array type
+         * symbol.  At this point, 'g_token' should refer to the OF keyword
+         * that precedes the type-denoter.
+         */
+
+        pas_GetArrayBaseType(typePtr);
+      }
       break;
 
       /* RECORD Types
@@ -1361,9 +1400,8 @@ static symbol_t *pas_NewComplexType(char *typeName)
           /* Declare the SET type */
 
           typePtr = pas_AddTypeDefine(typeName, sSET_OF,
-                                  typeIdPtr->sParm.t.tAllocSize, typeIdPtr,
-                                  NULL);
-
+                                      typeIdPtr->sParm.t.tAllocSize,
+                                      typeIdPtr);
           if (typePtr)
             {
               int16_t nObjects;
@@ -1416,7 +1454,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
       if (typeIdPtr)
         {
           typePtr = pas_AddTypeDefine(typeName, sFILE, g_dwVarSize,
-                                  typeIdPtr, NULL);
+                                      typeIdPtr);
           if (typePtr)
             {
               typePtr->sParm.t.tSubType = typeIdPtr->sParm.t.tType;
@@ -1435,7 +1473,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
       /* Get the type-denoter */
 
       typeIdPtr = pas_AddTypeDefine(typeName, sTEXTFILE, g_dwVarSize,
-                                g_tknPtr, NULL);
+                                    g_tknPtr);
       if (typePtr)
         {
           typePtr->sParm.t.tSubType = typeIdPtr->sParm.t.tType;
@@ -1524,189 +1562,185 @@ static symbol_t *pas_GetArrayIndexType(void)
   /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
    * FORM: [PACKED] ARRAY [<integer>] OF type-denoter
    *
-   * 'g_token' should refer to '[' on entry.
+   * 'g_token' should refer to the next index-type in the index-type-list on
+   * entry.
    */
 
-  /* Verify that the index-type-list is preceded by '[' */
-
   haveIndex = false;
-  if (g_token != '[') error(eLBRACKET);
-  else
+
+  /* FORM: index-type-list = index-type { ',' index-type }
+   * FORM: index-type = ordinal-type
+   */
+
+  if (g_token == tINT_CONST ||
+     (g_token == sTYPE && g_tknPtr->sParm.t.tType == tINT_CONST))
     {
-      /* FORM: index-type-list = index-type { ',' index-type }
-       * FORM: index-type = ordinal-type
+      int32_t saveTknInt = g_tknInt;
+
+      /* Check for a subrange-type of integer constants.
+       *
+       * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
+       * FORM: new-ordinal-type = enumerated-type | subrange-type
+       * FORM: subrange-type = constant '..' constant
+       *
+       * REVISIT:  Probably should be any valid subrange type.
        */
 
       getToken();
-      if (g_token == tINT_CONST ||
-         (g_token == sTYPE && g_tknPtr->sParm.t.tType == tINT_CONST))
+      if (g_token == tSUBRANGE)
         {
-          int32_t saveTknInt = g_tknInt;
-
-          /* Check for a subrange-type of integer constants.
-           *
-           * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
-           * FORM: new-ordinal-type = enumerated-type | subrange-type
-           * FORM: subrange-type = constant '..' constant
-           *
-           * REVISIT:  Probably should be any valid subrange type.
-           */
+          /* Get the upper value of the sub-range */
 
           getToken();
-          if (g_token == tSUBRANGE)
+          if (g_token != tINT_CONST &&
+              (g_token != sTYPE || g_tknPtr->sParm.t.tType != tINT_CONST))
             {
-              /* Get the upper value of the sub-range */
-
-              getToken();
-              if (g_token != tINT_CONST &&
-                  (g_token != sTYPE || g_tknPtr->sParm.t.tType != tINT_CONST))
-                {
-                  error(eINTCONST);
-                }
-              else
-                {
-                   if (g_tknInt <= saveTknInt) error(eSUBRANGETYPE);
-                   else
-                     {
-                       minValue  = saveTknInt;
-                       maxValue  = g_tknInt;
-                       indexSize = sINT_SIZE;
-                       indexType = sSUBRANGE;
-                       subType   = sINT;
-                       haveIndex = true;
-
-                       getToken();
-                     }
-                }
+              error(eINTCONST);
             }
-
-#if 0
-          /* Some versions of small pascal allow a NON-STANDARD single
-           * integer constant as a 'dimension' of the array.
-           */
-
           else
             {
-              if (g_tknInt < 0) error(eINVCONST);
+              if (g_tknInt <= saveTknInt) error(eSUBRANGETYPE);
               else
                 {
-                  minValue  = 0;
-                  maxValue  = saveTknInt - 1;
+                  minValue  = saveTknInt;
+                  maxValue  = g_tknInt;
+                  indexSize = sINT_SIZE;
                   indexType = sSUBRANGE;
                   subType   = sINT;
-                  indexSize = sINT_SIZE;
                   haveIndex = true;
 
                   getToken();
                 }
             }
-#else
-          else
-            {
-              error(eINDEXTYPE);
-            }
-#endif
         }
 
-      /* Check for enumerated-type
-       *
-       * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
-       * FORM: new-ordinal-type = enumerated-type | subrange-type
-       * FORM: enumerated-type = '(' enumerated-constant-list ')'
-       * FORM: enumerated-constant-list = enumerated-constant { ',' enumerated-constant }
-       * FORM: enumerated-constant = identifier
+#if 0
+      /* Some versions of small pascal allow a NON-STANDARD single
+       * integer constant as a 'dimension' of the array.
        */
 
-      else if (g_token == '(')
+      else
+        {
+          if (g_tknInt < 0) error(eINVCONST);
+          else
+            {
+              minValue  = 0;
+              maxValue  = saveTknInt - 1;
+              indexType = sSUBRANGE;
+              subType   = sINT;
+              indexSize = sINT_SIZE;
+              haveIndex = true;
+
+              getToken();
+            }
+        }
+#else
+      else
+        {
+          error(eINDEXTYPE);
+        }
+#endif
+    }
+
+  /* Check for enumerated-type
+   *
+   * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
+   * FORM: new-ordinal-type = enumerated-type | subrange-type
+   * FORM: enumerated-type = '(' enumerated-constant-list ')'
+   * FORM: enumerated-constant-list = enumerated-constant { ',' enumerated-constant }
+   * FORM: enumerated-constant = identifier
+   */
+
+  else if (g_token == '(')
+    {
+      error(eNOTYET);
+      getToken();
+    }
+
+  /* Check for ordinal-type-identifier
+   *
+   * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
+   * FORM: ordinal-type-identifier = identifier
+   */
+
+  else
+    {
+      uint16_t ordinalType;
+
+      /* g_token should refer to a type identifier */
+
+      if (g_token != sTYPE) error(eINDEXTYPE);
+
+      /* Get the base type of the type identifier */
+
+      ordinalType = g_tknPtr->sParm.t.tType;
+
+      /* Check for an ordinal type. */
+
+      if (ordinalType == sBOOLEAN ||
+          ordinalType == sSCALAR ||
+          ordinalType == sSUBRANGE)
+        {
+          minValue  = g_tknPtr->sParm.t.tMinValue;
+          maxValue  = g_tknPtr->sParm.t.tMaxValue;
+          indexSize = (ordinalType == sBOOLEAN ?
+                       sBOOLEAN_SIZE :
+                       sINT_SIZE);
+          indexType = ordinalType;
+          subType   = g_tknPtr->sParm.t.tType;
+          haveIndex = true;
+
+          getToken();
+        }
+
+      /* REVISIT: What about other ordinal types like sINT and sCHAR? */
+
+      else if (ordinalType == sINT || ordinalType == sCHAR)
         {
           error(eNOTYET);
           getToken();
         }
 
-      /* Check for ordinal-type-identifier
-       *
-       * FORM: ordinal-type = new-ordinal-type | ordinal-type-identifier
-       * FORM: ordinal-type-identifier = identifier
-       */
+      /* Not a recognized index-type */
 
       else
         {
-          uint16_t ordinalType;
-
-          /* g_token should refer to a type identifier */
-
-          if (g_token != sTYPE) error(eINDEXTYPE);
-
-          /* Get the base type of the type identifier */
-
-          ordinalType = g_tknPtr->sParm.t.tType;
-
-          /* Check for an ordinal type. */
-
-          if (ordinalType == sBOOLEAN ||
-              ordinalType == sSCALAR ||
-              ordinalType == sSUBRANGE)
-            {
-              minValue  = g_tknPtr->sParm.t.tMinValue;
-              maxValue  = g_tknPtr->sParm.t.tMaxValue;
-              indexSize = (ordinalType == sBOOLEAN ?
-                           sBOOLEAN_SIZE :
-                           sINT_SIZE);
-              indexType = ordinalType;
-              subType   = g_tknPtr->sParm.t.tType;
-              haveIndex = true;
-
-              getToken();
-            }
-
-          /* REVISIT: What about other ordinal types like sINT and sCHAR? */
-
-          else if (ordinalType == sINT || ordinalType == sCHAR)
-            {
-              error(eNOTYET);
-              getToken();
-            }
-
-          /* Not a recognized index-type */
-
-          else
-            {
-              error(eINDEXTYPE);
-              getToken();
-              if (g_token == ']') getToken();
-              return NULL;
-            }
+          error(eINDEXTYPE);
+          getToken();
+          if (g_token == ']') getToken();
+          return NULL;
         }
+    }
 
-      /* Check for success */
+  /* Check for success */
 
-      if (haveIndex)
+  if (haveIndex)
+    {
+      /* We have the array size in elements and the base type, now
+       * create the unnamed index-type and convert the size for the
+       * type found
+       *
+       * REVISIT:  This needs to be extended when additional logic is
+       * added to deal with ordinal type names as index-type.
+       */
+
+     indexTypePtr = pas_AddTypeDefine(NULL, indexType, indexSize, NULL);
+      if (indexTypePtr)
         {
-          /* We have the array size in elements and the base type, now
-           * create the unnamed index-type and convert the size for the
-           * type found
-           *
-           * REVISIT:  This needs to be extended when additional logic is
-           * added to deal with ordinal type names as index-type.
-           */
-
-         indexTypePtr = pas_AddTypeDefine(NULL, indexType, indexSize, NULL,
-                                          NULL);
-          if (indexTypePtr)
-            {
-              indexTypePtr->sParm.t.tSubType  = subType;
-              indexTypePtr->sParm.t.tMinValue = minValue;
-              indexTypePtr->sParm.t.tMaxValue = maxValue;
-            }
+          indexTypePtr->sParm.t.tSubType  = subType;
+          indexTypePtr->sParm.t.tMinValue = minValue;
+          indexTypePtr->sParm.t.tMaxValue = maxValue;
         }
     }
 
   return indexTypePtr;
 }
 
-static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
+static void pas_GetArrayBaseType(symbol_t *arrayTypePtr)
 {
-  symbol_t *typeDenoter = NULL;
+  symbol_t *typeDenoter  = NULL;
+  symbol_t *indexTypePtr = NULL;
+  uint32_t arraySize;
 
   TRACE(g_lstFile,"[pas_GetArrayBaseType]");
 
@@ -1729,13 +1763,26 @@ static symbol_t *pas_GetArrayBaseType(symbol_t *indexTypePtr)
   typeDenoter = pas_TypeDenoter(NULL, false);
   if (typeDenoter == NULL) error(eINVTYPE);
 
-  /* Get the size of the entire array */
+  /* Get the size of each dimension of the entire array and of the whole array
+   * by traversing the chain of index types.
+   */
 
-  g_dwVarSize = (indexTypePtr->sParm.t.tMaxValue -
-                 indexTypePtr->sParm.t.tMinValue + 1) *
-                 typeDenoter->sParm.t.tAllocSize;
+  arraySize = 1;
+  for (indexTypePtr = arrayTypePtr->sParm.t.tIndex;
+       indexTypePtr != NULL;
+       indexTypePtr = indexTypePtr->sParm.t.tIndex)
+    {
+      indexTypePtr->sParm.t.tAllocSize =
+                   (indexTypePtr->sParm.t.tMaxValue -
+                    indexTypePtr->sParm.t.tMinValue + 1) *
+                    typeDenoter->sParm.t.tAllocSize;
+      arraySize *= indexTypePtr->sParm.t.tAllocSize;
+    }
 
-  return typeDenoter;
+  /* Final, update the array type info */
+
+  arrayTypePtr->sParm.t.tAllocSize = arraySize;
+  arrayTypePtr->sParm.t.tParent    = typeDenoter;
 }
 
 /****************************************************************************/
@@ -1753,7 +1800,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
   /* Declare the new RECORD type */
 
-  recordPtr = pas_AddTypeDefine(recordName, sRECORD, 0, NULL, NULL);
+  recordPtr = pas_AddTypeDefine(recordName, sRECORD, 0, NULL);
 
   /* Then declare the field-list associated with the RECORD
    * FORM: field-list =

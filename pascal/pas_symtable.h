@@ -64,7 +64,7 @@ const reservedWord_t *
           pas_FindReservedWord(const char *name);
 symbol_t *pas_FindSymbol(const char *inName, int tableOffset);
 symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
-                            symbol_t *parent, symbol_t *index);
+                            symbol_t *parent);
 symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
                           symbol_t *parent);
 symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size);

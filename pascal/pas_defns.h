@@ -134,6 +134,7 @@ struct symType_s            /* for sKind = sTYPE */
   uint8_t   tType;          /* specific type */
   uint8_t   tSubType;       /* constant type for subrange types */
   uint8_t   tFlags;         /* flags to customize a type (see above) */
+  uint8_t   tDimension;     /* dimension of array types */
   uint32_t  tAllocSize;     /* size of allocated instances of this type */
   int32_t   tMinValue;      /* minimum value taken by subrange */
   int32_t   tMaxValue;      /* maximum value taken by subrange or scalar */
