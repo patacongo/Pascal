@@ -58,13 +58,33 @@
 #define IS_POINTER_EXPRTYPE(t) (((uint8_t)(t) & EXPRTYPE_POINTER) != 0)
 #define MK_POINTER_EXPRTYPE(t) (exprType_t)((uint8_t)(t) | EXPRTYPE_POINTER)
 
-/* Factor treatment flags */
-/* REVIST: duplicated in pas_statement.c and pas_constexpr.c */
+/* Factor treatment flags.=  These options apply primarily for complex factors
+ * involving ARRAYs, POINTERs, and VAR parameters:
+ *
+ * FACTOR_DEREFERENCE (only)
+ * - Means load the value with a typical load instruction (LDS).  For example,
+ *   loading the value of an integer variable.
+ * FACTOR_DEREFERENCE + FACTOR_INDEXED
+ * - Means load the value with an indexed load (LDSX). For example, loading the
+ *   RVALUE from an array.
+ * FACTOR_LOAD_ADDRESS + FACTOR_INDEXED
+ * - Means load a pointer address value(LDS), then index the loaded address
+ *  (ADD).  For example, RVALUE is a pointer to an array of values.
+ * FACTOR_PTREXPR
+ * - Use a pointer address, rather than a value of a pointer.  The only effect
+ *   is to assume a pointer expression rather than a value expression.
+ * FACTOR_INDEXED (only)
+ * - Load value from an indexed stack address(STSX)
+ * FACTOR_VAR_PARM
+ * - Does very little but distinguish if we are working with a pointer or
+ *   a VAR parameter.
+ */
 
-#define ADDRESS_DEREFERENCE (1 << 0)
-#define ADDRESS_FACTOR      (1 << 1)
-#define INDEXED_FACTOR      (1 << 2)
-#define VAR_PARM_FACTOR     (1 << 3)
+#define FACTOR_DEREFERENCE   (1 << 0)
+#define FACTOR_PTREXPR       (1 << 1)
+#define FACTOR_INDEXED       (1 << 2)
+#define FACTOR_LOAD_ADDRESS  (1 << 3)
+#define FACTOR_VAR_PARM      (1 << 4)
 
 /***********************************************************************
  * Type Definitions

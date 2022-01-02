@@ -64,7 +64,7 @@
  * Private Definitions
  ****************************************************************************/
 
-/* Assignment flags.  These options apply primarily to complex assignments
+/* Assignment flags.  These options apply primarily for complex assignments
  * involving ARRAYs, POINTERs, and VAR parameters:
  *
  * ASSIGN_DEREFERENCE (only)
@@ -74,7 +74,7 @@
  * - Means load address first with index (LDSX), then store value (STI)
  *   For example, assignment to an LVALUE that is an array of pointers
  * ASSIGN_DEREFERENCE + ASSIGN_INDEXED + ASSIGN_STORE_INDEXED
- * - Meansload pointer(LDS), then store with index (STSX).
+ * - Means load pointer(LDS), then store with index (STSX).
  *   For example, LVALUE is a pointer to an array of values.
  * ASSIGN_ADDRESS
  * - Assign a pointer address, rather than a value.  The only effect is to

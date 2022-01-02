@@ -62,7 +62,7 @@
 #include "pas_error.h"
 
 /****************************************************************************
- * Private Type Declarations
+ * Private Type Definitions
  ****************************************************************************/
 
 /* This structure holds a writable copy of a symbol table variable plus
@@ -110,6 +110,8 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
 static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
                     exprFlag_t factorFlags);
 static exprType_t pas_FunctionDesignator(void);
+static exprType_t pas_FactorExprType(exprType_t baseExprType,
+                                     uint8_t assignFlags);
 static void       pas_SetAbstractType(symbol_t *sType);
 static void       pas_GetSetFactor(void);
 static void       pas_GetSetElement(setType_t *s);
@@ -1462,11 +1464,11 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
     case sRECORD :
       /* Check if this is a pointer to a record */
 
-      if ((factorFlags & ADDRESS_FACTOR) != 0)
+      if ((factorFlags & FACTOR_PTREXPR) != 0)
         {
           if (g_token == '.') error(ePOINTERTYPE);
 
-          if ((factorFlags & INDEXED_FACTOR) != 0)
+          if ((factorFlags & FACTOR_INDEXED) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
             }
@@ -1483,8 +1485,8 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
 
       else if (g_token == '.')
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0 &&
-              (factorFlags & VAR_PARM_FACTOR) == 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0 &&
+              (factorFlags & FACTOR_VAR_PARM) == 0)
             {
               error(ePOINTERTYPE);
             }
@@ -1499,8 +1501,8 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
 
           baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
-          if ((g_token != sRECORD_OBJECT) ||
-              (g_tknPtr->sParm.r.rRecord != baseTypePtr))
+          if (g_token != sRECORD_OBJECT ||
+              g_tknPtr->sParm.r.rRecord != baseTypePtr)
             {
               error(eRECORDOBJECT);
               factorType = exprInteger;
@@ -1524,8 +1526,8 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
 
               varPtr->sParm.v.vSize   = g_tknPtr->sParm.r.rSize;
 
-              if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
-                                  VAR_PARM_FACTOR))
+              if (factorFlags == (FACTOR_INDEXED | FACTOR_DEREFERENCE |
+                                  FACTOR_VAR_PARM))
                 {
                   /* Add the offset to the record field to the RECORD address
                    * that should already be on the stack.
@@ -1534,7 +1536,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
                   pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.r.rOffset);
                   pas_GenerateSimple(opADD);
                 }
-              else if ((factorFlags & (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR)) != 0)
+              else if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
                 {
                   /* Remember the offset to RECORD object to RECORD data stack
                    * offset so that we can apply it later.
@@ -1563,8 +1565,8 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
         {
           /* Special case:  The record is a VAR parameter. */
 
-          if (factorFlags == (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
-                              VAR_PARM_FACTOR))
+          if (factorFlags == (FACTOR_INDEXED | FACTOR_DEREFERENCE |
+                              FACTOR_VAR_PARM))
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opADD);
@@ -1591,11 +1593,11 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
         {
           error(eINVTYPE);
         }
-      else if ((factorFlags && (ADDRESS_DEREFERENCE | ADDRESS_FACTOR)) != 0)
+      else if ((factorFlags && (FACTOR_DEREFERENCE | FACTOR_PTREXPR)) != 0)
         {
           error(ePOINTERTYPE);
         }
-      else if ((factorFlags && INDEXED_FACTOR) != 0)
+      else if ((factorFlags && FACTOR_INDEXED) != 0)
         {
           error(eARRAYTYPE);
         }
@@ -1622,12 +1624,12 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
 
               if (g_withRecord.wVarParm)
                 {
-                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE |
-                                  VAR_PARM_FACTOR);
+                  factorFlags |= (FACTOR_INDEXED | FACTOR_DEREFERENCE |
+                                  FACTOR_LOAD_ADDRESS | FACTOR_VAR_PARM);
                 }
               else
                 {
-                  factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
+                  factorFlags |= (FACTOR_INDEXED | FACTOR_DEREFERENCE);
                 }
 
               pas_GenerateDataOperation(opPUSH,
@@ -1664,11 +1666,11 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
       if (g_token == '^')
         {
           getToken();
-          factorFlags |= ADDRESS_DEREFERENCE;
+          factorFlags |= FACTOR_DEREFERENCE;
         }
       else
         {
-          factorFlags |= ADDRESS_FACTOR;
+          factorFlags |= FACTOR_PTREXPR;
         }
 
       /* If the parent type is itself a typed pointer, then get the
@@ -1695,18 +1697,20 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
       break;
 
     case sVAR_PARM :
-      if ((factorFlags & (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR)) != 0)
+      if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
+                          FACTOR_VAR_PARM)) != 0)
         {
           error(eVARPARMTYPE);
         }
 
-      factorFlags  |= (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR);
+      factorFlags  |= (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
+                       FACTOR_VAR_PARM);
       varPtr->sKind = typePtr->sParm.t.tType;
       factorType    = pas_SimplifyFactor(varInfo, factorFlags);
       break;
 
     case sARRAY :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           error(eARRAYTYPE);
         }
@@ -1741,7 +1745,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
           if (indexTypePtr == NULL) error(eHUH);
           else
             {
-              factorFlags     |= INDEXED_FACTOR;
+              factorFlags     |= FACTOR_INDEXED;
 
               /* Generate the array offset calculation and indexed load */
 
@@ -1785,7 +1789,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
            * could a packed array of char field of a RECORD.
            */
 
-          if ((factorFlags & (ADDRESS_DEREFERENCE | VAR_PARM_FACTOR)) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               uint16_t fieldOffset;
 
@@ -1850,100 +1854,108 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
       /* Check if we have reduced the complex factor to a simple factor */
 
     case sINT :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      factorType = pas_FactorExprType(exprInteger, factorFlags);
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               pas_GenerateSimple(opLDI);
-              factorType = exprInteger;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprIntegerPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprInteger;
             }
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opLDI);
-              factorType = exprInteger;
             }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+          else if ((factorFlags & FACTOR_PTREXPR) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprIntegerPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprInteger;
             }
         }
       break;
 
     case sCHAR :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      factorType = pas_FactorExprType(exprChar, factorFlags);
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               pas_GenerateSimple(opLDIB);
-              factorType = exprChar;
             }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+          else if ((factorFlags & FACTOR_PTREXPR) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprCharPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDSXB, varPtr);
-              factorType = exprChar;
             }
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opLDIB);
-              factorType = exprChar;
             }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+          else if ((factorFlags & FACTOR_PTREXPR) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprCharPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDSB, varPtr);
-              factorType = exprChar;
             }
         }
       break;
 
     case sBOOLEAN :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      factorType = pas_FactorExprType(exprBoolean, factorFlags);
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               pas_GenerateSimple(opLDI);
-              factorType = exprBoolean;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprBooleanPtr;
             }
           else
             {
@@ -1953,21 +1965,14 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opLDI);
-              factorType = exprBoolean;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprBooleanPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprBoolean;
             }
         }
       break;
@@ -1978,9 +1983,10 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
 
     case sREAL         :
     case sSTRING       :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          symbol_t *baseTypePtr;
+          symbol_t   *baseTypePtr;
+          exprType_t  baseFactorType;
 
           /* In the case of an array, the size of the variable refers to the size of
            * array.  We need to traverse back to the base type of the array to get the
@@ -1991,44 +1997,55 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
 
           /* Now we can handle all of the ornaments */
 
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          baseFactorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
+          factorType     = pas_FactorExprType(baseFactorType, factorFlags);
+
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               pas_GenerateDataSize(baseTypePtr->sParm.t.tAllocSize);
               pas_GenerateSimple(opLDIM);
-              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+          else if ((factorFlags & FACTOR_PTREXPR) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
             }
           else
             {
               pas_GenerateDataSize(baseTypePtr->sParm.t.tAllocSize);
               pas_GenerateStackReference(opLDSXM, varPtr);
-              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          exprType_t  baseFactorType;
+
+          baseFactorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
+          factorType     = pas_FactorExprType(baseFactorType, factorFlags);
+
+           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateSimple(opLDIM);
-              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+          else if ((factorFlags & FACTOR_PTREXPR) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
             }
           else
             {
               pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateStackReference(opLDSM, varPtr);
-              factorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
             }
         }
       break;
@@ -2043,42 +2060,38 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
           error(eSCALARTYPE);
         }
 
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      factorType = pas_FactorExprType(exprScalar, factorFlags);
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               pas_GenerateSimple(opLDI);
-              factorType = exprScalar;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprScalarPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprScalar;
             }
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opLDI);
-              factorType = exprScalar;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprScalarPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprScalar;
             }
         }
       break;
@@ -2094,85 +2107,77 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
           error(eSCALARTYPE);
         }
 
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      factorType = pas_FactorExprType(exprSet, factorFlags);
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               pas_GenerateSimple(opLDI);
-              factorType = exprSet;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprSetPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprSet;
             }
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opLDI);
-              factorType = exprSet;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprSetPtr;
             }
           else
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprSet;
             }
         }
       break;
 
     case sFILE :
     case sTEXTFILE :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      factorType = pas_FactorExprType(exprFile, factorFlags);
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               pas_GenerateSimple(opLDI);
-              factorType = exprFile;
-            }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprFilePtr;
             }
           else
             {
               pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprFile;
             }
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateSimple(opLDI);
-              factorType = exprFile;
             }
-          else if ((factorFlags & ADDRESS_FACTOR) != 0)
+          else
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprFilePtr;
             }
-           else
-             {
-              pas_GenerateStackReference(opLDS, varPtr);
-               factorType = exprFile;
-             }
         }
       break;
 
@@ -2382,12 +2387,12 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
 
       if (g_token != '.')
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               error(ePOINTERTYPE);
             }
 
-          if ((factorFlags & INDEXED_FACTOR) != 0)
+          if ((factorFlags & FACTOR_INDEXED) != 0)
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
@@ -2445,11 +2450,11 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
         {
           error(eINVTYPE);
         }
-      else if ((factorFlags && ADDRESS_DEREFERENCE) != 0)
+      else if ((factorFlags && FACTOR_DEREFERENCE) != 0)
         {
           error(ePOINTERTYPE);
         }
-      else if ((factorFlags && INDEXED_FACTOR) != 0)
+      else if ((factorFlags && FACTOR_INDEXED) != 0)
         {
           error(eARRAYTYPE);
         }
@@ -2475,7 +2480,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
               pas_GenerateDataOperation(opPUSH,
                                         varPtr->sParm.r.rOffset +
                                         g_withRecord.wIndex);
-              factorFlags |= (INDEXED_FACTOR | ADDRESS_DEREFERENCE);
+              factorFlags |= (FACTOR_INDEXED | FACTOR_DEREFERENCE);
               tempOffset   = g_withRecord.wOffset;
             }
           else
@@ -2509,15 +2514,29 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
       if (g_token == '^') error(ePTRADR);
       else getToken();
 
-      factorFlags   |= ADDRESS_DEREFERENCE;
+      factorFlags   |= FACTOR_DEREFERENCE;
       varPtr->sKind  = typePtr->sParm.t.tType;
       factorType     = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
 
     case sVAR_PARM :
+      /* Factor Flags:
+       *
+       *   FACTOR_VAR_PARM     - This is a VAR parameter.
+       *   FACTOR_DEREFERENCE  - VAR parameter is a address and must be de-
+       *                         referenced.
+       *   FACTOR_LOAD_ADDRESS - Does nothing unless we discover later that
+       *                         this is an ARRAY VAR parameter then this
+       *                         will issue the correct order of indexing.
+       */
+
       if (factorFlags != 0) error(eVARPARMTYPE);
 
-      factorFlags  |= ADDRESS_DEREFERENCE;
+      factorFlags  |= (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
+                       FACTOR_VAR_PARM);
+
+      /* Then recurse to simplify the VAR paramter */
+
       varPtr->sKind = typePtr->sParm.t.tType;
       factorType    = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
@@ -2546,11 +2565,6 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
   exprType_t factorType  = exprUnknown;
   uint16_t   arrayKind;
 
-  if ((factorFlags & ~ADDRESS_DEREFERENCE) != 0)
-    {
-      error(eARRAYTYPE);
-    }
-
   /* Reduce the array to its base type. */
 
   baseTypePtr = pas_GetBaseTypePointer(typePtr);
@@ -2567,7 +2581,18 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
 
   if (g_token == '[')
     {
-      factorFlags |= INDEXED_FACTOR;
+      /* Is FACTOR_INDEXED already selected? */
+
+      if ((factorFlags & FACTOR_INDEXED) != 0)
+        {
+          error(eARRAYTYPE);
+        }
+
+      /* Indicate that this is an array (or an array VAR parameter) and
+       * indexing is required.
+       */
+
+      factorFlags |= FACTOR_INDEXED;
 
       /* Generate an indexed load.
        *
@@ -2648,11 +2673,19 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
       /* Check if we have reduced the complex factor to a simple factor */
 
     case sINT :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
             }
           else
             {
@@ -2663,7 +2696,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2677,11 +2710,19 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
       break;
 
     case sCHAR :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
             }
           else
             {
@@ -2692,7 +2733,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2706,11 +2747,19 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
       break;
 
     case sBOOLEAN :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
             }
           else
             {
@@ -2721,7 +2770,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2740,11 +2789,19 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
 
     case sREAL         :
     case sSTRING       :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
             }
           else
             {
@@ -2755,7 +2812,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2778,11 +2835,19 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
           error(eSCALARTYPE);
         }
 
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
             }
           else
             {
@@ -2793,7 +2858,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2817,11 +2882,19 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
           error(eSCALARTYPE);
         }
 
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
             }
           else
             {
@@ -2832,7 +2905,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2847,11 +2920,20 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
 
     case sFILE :
     case sTEXTFILE :
-      if ((factorFlags & INDEXED_FACTOR) != 0)
+      if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDSX, varPtr);
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
               factorType = exprFile;
             }
           else
@@ -2862,7 +2944,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & ADDRESS_DEREFERENCE) != 0)
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               factorType = exprFile;
@@ -2947,6 +3029,15 @@ static exprType_t pas_FunctionDesignator(void)
     }
 
   return factorType;
+}
+
+/*************************************************************************/
+
+static exprType_t pas_FactorExprType(exprType_t baseExprType,
+                                     uint8_t assignFlags)
+{
+  return ((assignFlags & FACTOR_PTREXPR) == 0) ? baseExprType :
+          MK_POINTER_EXPRTYPE(baseExprType);
 }
 
 /*************************************************************************/

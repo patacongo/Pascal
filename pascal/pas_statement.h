@@ -41,7 +41,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void pas_Statement(void);          /* Process Statement */
-extern void pas_CompoundStatement(void);  /* Compound statement */
+void pas_Statement(void);          /* Process Statement */
+void pas_CompoundStatement(void);  /* Compound statement */
 
 #endif /* __PAS_STATEMENT_H */

@@ -632,7 +632,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           symbol_t *baseTypePtr;
           symbol_t *indexTypePtr;
 
-          fileFlags |= INDEXED_FACTOR;
+          fileFlags |= FACTOR_INDEXED;
 
           /* REVISIT:  Before we consume the input, we must be certain that
            * this is going to resolve into a file type.  All we know now is
@@ -1832,5 +1832,3 @@ static void valProc(void)         /* VAL procedure */
 
   pas_StandardFunctionCall(lbVAL);
 }
-
-/***********************************************************************/

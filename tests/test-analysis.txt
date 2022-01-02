@@ -71,9 +71,6 @@ Analysis:
 This is a consequence of the fact that sets are implemented as bitsets and
 the bitset is currently limited to 32-bits:
 
-########src/106-bubblesort.pas########
-Comples error free but hangs at run-time.  Perhaps it is waiting on input.
-
 ########src/107-quicksort.pas########
 Comples error free but hangs at run-time.  Perhaps it is waiting on input.
 

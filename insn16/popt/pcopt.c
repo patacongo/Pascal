@@ -295,7 +295,10 @@ int16_t unaryOptimize(void)
                    pptr[i + 1]->op = oEQUZ;
                    nchanges++;
                  }
-               else i++;
+               else
+                 {
+                   i++;
+                 }
                break;
 
              case oNEQ   :
@@ -319,7 +322,10 @@ int16_t unaryOptimize(void)
                    pptr[i + 1]->op = oNEQZ;
                    nchanges++;
                  }
-               else i++;
+               else
+                 {
+                   i++;
+                 }
                break;
 
              case oLT    :
@@ -343,7 +349,10 @@ int16_t unaryOptimize(void)
                    pptr[i + 1]->op = oLTZ;
                    nchanges++;
                  }
-               else i++;
+               else
+                 {
+                   i++;
+                 }
                break;
 
              case oGTE   :
@@ -367,7 +376,10 @@ int16_t unaryOptimize(void)
                    pptr[i + 1]->op = oGTEZ;
                    nchanges++;
                  }
-               else i++;
+               else
+                 {
+                   i++;
+                 }
                break;
 
              case oGT    :
@@ -391,7 +403,10 @@ int16_t unaryOptimize(void)
                    pptr[i + 1]->op = oGTZ;
                    nchanges++;
                  }
-               else i++;
+               else
+                 {
+                   i++;
+                 }
                break;
 
              case oLTE   :
@@ -415,7 +430,10 @@ int16_t unaryOptimize(void)
                    pptr[i + 1]->op = oLTEZ;
                    nchanges++;
                  }
-               else i++;
+               else
+                 {
+                   i++;
+                 }
                break;
 
          /* Simplify or delete condition branches on constants */
@@ -427,7 +445,10 @@ int16_t unaryOptimize(void)
                    deletePcode(i);
                  }
                else
-                 deletePcodePair(i, i + 1);
+                 {
+                   deletePcodePair(i, i + 1);
+                 }
+
                nchanges++;
                break;
 
@@ -438,7 +459,10 @@ int16_t unaryOptimize(void)
                    deletePcode(i);
                  }
                else
-                 deletePcodePair(i, i + 1);
+                 {
+                   deletePcodePair(i, i + 1);
+                 }
+
                nchanges++;
                break;
 
@@ -449,7 +473,10 @@ int16_t unaryOptimize(void)
                    deletePcode(i);
                  }
                else
-                 deletePcodePair(i, i + 1);
+                 {
+                   deletePcodePair(i, i + 1);
+                 }
+
                nchanges++;
                break;
 
@@ -460,7 +487,10 @@ int16_t unaryOptimize(void)
                    deletePcode(i);
                  }
                else
-                 deletePcodePair(i, i + 1);
+                 {
+                   deletePcodePair(i, i + 1);
+                 }
+
                nchanges++;
                break;
 
@@ -474,6 +504,7 @@ int16_t unaryOptimize(void)
                  {
                    deletePcodePair(i, i + 1);
                  }
+
                nchanges++;
                break;
 
@@ -484,7 +515,10 @@ int16_t unaryOptimize(void)
                    deletePcode(i);
                  }
                else
-                 deletePcodePair(i, i + 1);
+                 {
+                   deletePcodePair(i, i + 1);
+                 }
+
                nchanges++;
                break;
 
@@ -502,6 +536,7 @@ int16_t unaryOptimize(void)
                pptr[i]->op   = oPUSHB;
                pptr[i]->arg1 = pptr[i]->arg2;
                pptr[i]->arg2 = 0;
+               nchanges++;
              }
          }
 
@@ -513,10 +548,46 @@ int16_t unaryOptimize(void)
              {
                pptr[i]->arg2 += pptr[i + 1]->arg2;
                deletePcode(i + 1);
+               nchanges++;
              }
-           else i++;
+           else
+             {
+               i++;
+             }
          }
-       else i++;
+
+       /* Check for the effect of an INC reversed by a following DEC, and
+        * vice versa.
+        */
+
+       else if (pptr[i]->op == oINC)
+         {
+           if (pptr[i + 1]->op == oDEC)
+             {
+               deletePcodePair(i, i + 1);
+               nchanges++;
+             }
+           else
+             {
+               i++;
+             }
+         }
+       else if (pptr[i]->op == oDEC)
+         {
+           if (pptr[i + 1]->op == oINC)
+             {
+               deletePcodePair(i, i + 1);
+               nchanges++;
+             }
+           else
+             {
+               i++;
+             }
+         }
+       else
+         {
+           i++;
+         }
      }
 
    return nchanges;
@@ -532,8 +603,9 @@ int16_t binaryOptimize(void)
 
   TRACE(stderr, "[binaryOptimize]");
 
-  /* At least two pcodes are needed to perform the following binary */
-  /* operator optimizations */
+  /* At least two pcodes are needed to perform the following binary
+   * operator optimizations.
+   */
 
   i = 0;
   while (i < nops-2)
@@ -702,8 +774,10 @@ int16_t binaryOptimize(void)
           /* A single (constant) pcode is sufficient to perform the */
           /* following binary operator optimizations */
 
-          else if ((pptr[i + 1]->op == oLDSH) || (pptr[i + 1]->op == oLDSB) ||
-                   (pptr[i + 1]->op == oLAS)  || (pptr[i + 1]->op == oLAC))
+          else if (pptr[i + 1]->op == oLDSH ||
+                   pptr[i + 1]->op == oLDSB ||
+                   pptr[i + 1]->op == oLAS  ||
+                   pptr[i + 1]->op == oLAC)
             {
               /* Turn the oPUSHB into a oPUSH op (temporarily) */
 
@@ -870,10 +944,11 @@ int16_t binaryOptimize(void)
 
                 }
 
-              /* If the oPUSH instruction is still there, see if we can now */
-              /* represent it with an oPUSHB instruction */
+              /* If the oPUSH instruction is still there, see if we can now
+               * represent it with an oPUSHB instruction,
+               */
 
-              if ((pptr[i]->op == oPUSH) && (pptr[i]->arg2 < 256))
+              if (pptr[i]->op == oPUSH && pptr[i]->arg2 < 256)
                 {
                   pptr[i]->op   = oPUSHB;
                   pptr[i]->arg1 = pptr[i]->arg2;
@@ -904,9 +979,15 @@ int16_t binaryOptimize(void)
                deletePcode(i);
                nchanges++;
             }
-          else i++;
+          else
+            {
+              i++;
+            }
         }
-      else i++;
+      else
+        {
+          i++;
+        }
     }
 
   return nchanges;
