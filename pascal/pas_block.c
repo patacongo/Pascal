@@ -1264,18 +1264,54 @@ static symbol_t *pas_NewComplexType(char *typeName)
       getToken();
       g_dwVarSize = 0;
 
-      /* On successful return, 'g_token' will refer to the 'of' keyword. */
+      /* REVISIT:  Need to loop for each index-type in the index-type-list */
+
+      /* Get the next index-type from the index-type-list.  This should be
+       * some kind of subrange type.
+       */
 
       indexTypePtr = pas_GetArrayIndexType();
       if (indexTypePtr)
         {
+          /* Check for a proper terminating character for the the index-type.
+           * There are two possibilities:
+           *
+           * FORM: array-type = 'array' '[' index-type-list ']' 'of'
+           *                    type-denoter
+           *
+           *   ']' which terminates the index-type-list.
+           *
+           * FORM: index-type-list = index-type { ',' index-type }
+           *
+           *   Or ',' which indicates that there is another dimenion (and
+           *   another index-type in the index-type-list).
+           */
+
+          /* REVISIT:  Multi-dimensional ARRAY support is not yet in place. */
+
+          if (g_token == ',')
+            {
+              error(eNOTYET);
+              getToken();
+            }
+
+          /* Verify that the index-type-list is terminated by the closing ']' */
+
+          if (g_token != ']') error(eRBRACKET);
+          else getToken();
+
+          /* Get the base type of the ARRAY.  At this point, 'g_token' should
+           * refer to the OF keyword that precedies the type-denoter.
+           */
+
           typeIdPtr = pas_GetArrayBaseType(indexTypePtr);
           if (typeIdPtr)
             {
               typePtr = pas_AddTypeDefine(typeName, sARRAY, g_dwVarSize,
-                                      typeIdPtr, indexTypePtr);
+                                          typeIdPtr, indexTypePtr);
             }
         }
+
       break;
 
       /* RECORD Types
@@ -1471,7 +1507,7 @@ static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
 }
 
 /****************************************************************************/
-/* get index and array type for TYPE block or variable declaration */
+/* Get index and array type for TYPE block or variable declaration */
 
 static symbol_t *pas_GetArrayIndexType(void)
 {
@@ -1642,11 +1678,6 @@ static symbol_t *pas_GetArrayIndexType(void)
             }
         }
 
-      /* Verify that the index-type-list is followed by ']' */
-
-      if (g_token != ']') error(eRBRACKET);
-      else getToken();
-
       /* Check for success */
 
       if (haveIndex)
@@ -1659,7 +1690,8 @@ static symbol_t *pas_GetArrayIndexType(void)
            * added to deal with ordinal type names as index-type.
            */
 
-         indexTypePtr = pas_AddTypeDefine(NULL, indexType, indexSize, NULL, NULL);
+         indexTypePtr = pas_AddTypeDefine(NULL, indexType, indexSize, NULL,
+                                          NULL);
           if (indexTypePtr)
             {
               indexTypePtr->sParm.t.tSubType  = subType;

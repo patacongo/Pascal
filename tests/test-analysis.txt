@@ -53,6 +53,22 @@ following the constant identifier.
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
+########src/015-dim2array.pas########
+Line 0:0003 Error 26 Token 2c
+
+Line:
+
+ 3   a: ARRAY [0..3, 0..3] OF INTEGER;
+
+Error:
+219 #define eNOTYET          ((uint16_t) 0x26)
+
+Token: ','
+
+Analysis:
+Support for multi-dimensional arrays is a work in progress.  See also
+worksched.pas
+
 ########src/104-primes.pas########
 Line 0:0012 Error 4d Token 3b
 
@@ -172,10 +188,10 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0055 Error 30 Token 2c
+Line 0:0055 Error 26 Token 2c
 
 Error:
-#define eRBRACKET        ((uint16_t) 0x30)
+219 #define eNOTYET          ((uint16_t) 0x26)
 
 Line:
  55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
@@ -185,7 +201,7 @@ where
 Token: ','
 
 Analysis:
-The compiler did not recognize the second index.  Apparently multi-dimensioned arrays have problems.
+Multi-dimensional arrays are a work in progress.
 
 ########DayIO.pas########
 Line 0:0060 Error 0d Token 3b
