@@ -215,6 +215,21 @@
 
 #define lbSTRINIT       (0x000a)
 
+/* Initialize a new short string variable. Create a string buffer.  This is
+ * called only at entrance into a new Pascal block.
+ *
+ *   TYPE
+ *     shortstring : string[size]
+ *   procedure sstrinit(VAR str : shortstring);
+ *
+ * ON INPUT
+ *   TOS(0) = address of the newly string variable to be initialized
+ *   TOS(1) = size of the short string memory allocation
+ * ON RETURN
+ */
+
+#define lbSSTRINIT      (0x000b)
+
 /* Initialize a temporary string variable on the stack. It is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
  * is currently used only when calling a function that returns a string in
@@ -228,7 +243,7 @@
  *   TOS(1) = String size (zero)
  */
 
-#define lbSTRTMP        (0x000b)
+#define lbSTRTMP        (0x000c)
 
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
@@ -243,7 +258,7 @@
  *   TOS(1) = length of new string
  */
 
-#define lbSTRDUP        (0x000c)
+#define lbSTRDUP        (0x000d)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -254,7 +269,7 @@
  *   TOS(1) = length of new string
  */
 
-#define lbMKSTKC        (0x000d)
+#define lbMKSTKC        (0x000e)
 
 /* Concatenate a string to the end of a string.
  *
@@ -270,7 +285,7 @@
  *   TOS(st, 1) = new length of dest string2
  */
 
-#define lbSTRCAT        (0x000e)
+#define lbSTRCAT        (0x000f)
 
 /* Concatenate a character to the end of a string.
  *
@@ -285,7 +300,7 @@
  *   TOS(1) = new length of string
  */
 
-#define lbSTRCATC       (0x000f)
+#define lbSTRCATC       (0x0010)
 
 /* Compare two pascal strings
  *
@@ -300,8 +315,8 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x0010)
+#define lbSTRCMP        (0x0011)
 
-#define MAX_LBOP        (0x0011)
+#define MAX_LBOP        (0x0012)
 
 #endif /* __PAS_LIBRARY_H */

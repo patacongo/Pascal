@@ -376,7 +376,7 @@ static symbol_t *pas_DeclareVar(void)
            * must be set up at run time.
            */
 
-          if (varType == sSTRING)
+          if (varType == sSTRING || varType == sSHORTSTRING)
             {
               pas_AddStringInitializer(varPtr);
             }
@@ -772,8 +772,8 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr)
     {
       /* Parse the size specification:
        *
-       * FORM:  VAR variable-name : STRING[string-size]
-       * FORM:  TYPE type-name : STRING[string-size]
+       *   FORM: string-type = pascal-string-type | c-string-type
+       *   FORM: pascal-string-type = 'string' [ max-string-length ]
        *
        * The left bracket should be followed by a constant expression.
        * For now, we accept only an integer constant.
@@ -784,8 +784,6 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr)
       else if (g_tknInt <= 0) error(eINVCONST);
       else
         {
-          uint16_t stringAllocSize;
-
           /* Create a new, unique, un-named SHORTSTRING type. */
 
           typePtr = pas_AddTypeDefine("", sSHORTSTRING, sSHORTSTRING_SIZE,
@@ -797,7 +795,7 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr)
 
           if (typePtr != NULL)
             {
-              typePtr->sParm.t.tMaxValue = stringAllocSize;
+              typePtr->sParm.t.tMaxValue = g_tknInt;
             }
 
           /* Verify that the correct token terminated the size
@@ -1443,22 +1441,12 @@ static symbol_t *pas_NewComplexType(char *typeName)
         }
       break;
 
-      /* FORM: string-type = pascal-string-type | c-string-type
-       * FORM: pascal-string-type = 'string' [ max-string-length ]
-       */
-
-    case sSTRING :
-      error(eNOTYET);
-      getToken();
-      break;
-
       /* FORM: list-type = 'list' 'of' type-denoter
        * FORM: object-type = 'object' | 'class'
        */
 
     default :
       break;
-
    }
 
   return typePtr;
@@ -2351,7 +2339,8 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
           parentTypePtr = recordObjectPtr->sParm.r.rParent;
 
           if (parentTypePtr->sKind != sTYPE) error(eHUH);
-          else if (parentTypePtr->sParm.t.tType == sSTRING)
+          else if (parentTypePtr->sParm.t.tType == sSTRING ||
+                   parentTypePtr->sParm.t.tType == sSHORTSTRING)
             {
                pas_AddRecordObjectInitializer(varPtr, recordObjectPtr);
             }
@@ -2415,9 +2404,10 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
       nextPtr     = baseTypePtr->sParm.t.tParent;
     }
 
-  if (baseTypePtr->sParm.t.tType == sFILE     ||
-      baseTypePtr->sParm.t.tType == sTEXTFILE ||
-      baseTypePtr->sParm.t.tType == sSTRING   ||
+  if (baseTypePtr->sParm.t.tType == sFILE        ||
+      baseTypePtr->sParm.t.tType == sTEXTFILE    ||
+      baseTypePtr->sParm.t.tType == sSTRING      ||
+      baseTypePtr->sParm.t.tType == sSHORTSTRING ||
       baseTypePtr->sParm.t.tType == sRECORD)
     {
       symbol_t  varInfo;
@@ -2462,6 +2452,7 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
                 break;
 
               case sSTRING :
+              case sSHORTSTRING :
                 pas_AddStringInitializer(&varInfo);
                 break;
 

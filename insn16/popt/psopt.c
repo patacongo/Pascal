@@ -294,6 +294,7 @@ static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
            */
 
           if (arg16 == lbSTRINIT  ||
+              arg16 == lbSSTRINIT ||
               arg16 == lbSTRTMP   ||
               arg16 == lbSTRDUP   ||
               arg16 == lbMKSTKC   ||

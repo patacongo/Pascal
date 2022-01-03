@@ -237,6 +237,11 @@
 #define lbSTRINIT_INIT \
     { "_lbstrinit",  0, 1, { sPTR_SIZE }}
 
+/* procedure _lbsstrinit(VAR str : shortstring); */
+
+#define lbSSTRINIT_INIT \
+    { "_lbsstrinit",  0, 1, { sPTR_SIZE }}
+
 /* function _lbstrtmp : string; */
 
 #define lbSTRTMP_INIT \

@@ -384,10 +384,10 @@ static const struct regm_builtin_s g_rgLibCallBuiltIns[MAX_LBOP] =
   /* 0x04 */ lbCSTR2STR_INIT,           lbCSTR2STRX_INIT,
   /* 0x06 */ lbBSTR2STR_INIT,           lbSTR2BSTR_INIT,
   /* 0x08 */ lbSTR2BSTRX_INIT,          lbVAL_INIT,
-  /* 0x0a */ lbSTRINIT_INIT,            lbSTRTMP_INIT,
-  /* 0x0c */ lbSTRDUP_INIT,             lbMKSTKC_INIT,
-  /* 0x0e */ lbSTRCAT_INIT,             lbSTRCATC_INIT,
-  /* 0x10 */ lbSTRCMP_INIT
+  /* 0x0a */ lbSTRINIT_INIT,            lbSSTRINIT_INIT,
+  /* 0x0c */ lbSTRTMP_INIT,             lbSTRDUP_INIT,
+  /* 0x0e */ lbMKSTKC_INIT,             lbSTRCAT_INIT,
+  /* 0x10 */ lbSTRCATC_INIT,            lbSTRCMP_INIT
 };
 
 static const struct regm_builtin_s g_rgRrFopBuiltIns[MAX_FOP] =

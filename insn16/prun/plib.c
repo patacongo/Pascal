@@ -57,6 +57,8 @@
  ****************************************************************************/
 
 static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen);
+static int      pas_strinit(struct pexec_s *st, uint16_t strVarAddr,
+                            uint16_t strAllocSize);
 static void     pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
                            uint16_t srcStringSize, uint16_t destVarAddr,
                            uint16_t varOffset);
@@ -88,6 +90,40 @@ static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen)
     }
 
   return string;
+}
+
+static int pas_strinit(struct pexec_s *st, uint16_t strVarAddr,
+                       uint16_t strAllocSize)
+{
+  uint16_t strAllocAddr = INT_ALIGNUP(st->csp);
+  int errorCode = eNOERROR;
+
+  /* Check if there is space on the string stack for the new string buffer. */
+
+  if (st->csp + strAllocSize >= st->spb)
+    {
+      errorCode = eSTRSTKOVERFLOW;
+    }
+  else
+    {
+      /* Allocate a string buffer on the string stack for the new string. */
+
+      st->csp = strAllocAddr + strAllocSize;
+
+      /* Initialize the new string.  Order:
+       *
+       *   TOS(n)     = 16-bit pointer to the string data.
+       *   TOS(n + 1) = String size
+       *
+       * NOTE:  This depends on the fact that these two fields appear at the
+       * same offset for both sSTRING and sSHORTSTRING.
+       */
+
+      PUTSTACK(st, strAllocAddr, strVarAddr + sSTRING_DATA_OFFSET);
+      PUTSTACK(st, 0,            strVarAddr + sSTRING_SIZE_OFFSET);
+    }
+
+  return errorCode;
 }
 
 static void pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
@@ -614,32 +650,40 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
     case lbSTRINIT :
       /* Get input parameters */
 
-      POP(st, addr1);                  /* Address of dest string variable */
+      POP(st, addr1);  /* Address of dest string variable */
 
-      /* Check if there is space on the string stack for the new string
-       * buffer.
+      /* And perform the variable initialization */
+
+      errorCode = pas_strinit(st, addr1, INT_ALIGNUP(st->stralloc));
+      break;
+
+      /* Initialize a new short string variable. Create a string buffer.  This
+       * is called only at entrance into a new Pascal block.
+       *
+       *   TYPE
+       *     shortstring : string[size]
+       *   procedure sstrinit(VAR str : shortstring);
+       *
+       * ON INPUT
+       *   TOS(0) = address of the newly string variable to be initialized
+       *   TOS(1) = size of the short string memory allocation
+       * ON RETURN
        */
 
-      if (st->csp + st->stralloc >= st->spb)
-        {
-          errorCode = eSTRSTKOVERFLOW;
-        }
-      else
-        {
-          /* Allocate a string buffer on the string stack for the new string. */
+    case lbSSTRINIT :
+      /* Get input parameters */
 
-          addr2   = INT_ALIGNUP(st->csp);
-          st->csp = addr2 + st->stralloc;
+      POP(st, addr1);  /* Address of dest string variable */
+      POP(st, size);   /* Size of string memory allocation */
 
-          /* Initialize the new string.  Order:
-           *
-           *   TOS(n)     = 16-bit pointer to the string data.
-           *   TOS(n + 1) = String size
-           */
+      /* And perform the variable initialization */
 
-          PUTSTACK(st, addr2, addr1 + sSTRING_DATA_OFFSET);
-          PUTSTACK(st, 0,     addr1 + sSTRING_SIZE_OFFSET);
-        }
+      size      = INT_ALIGNUP(size);
+      errorCode = pas_strinit(st, addr1, size);
+
+      /* And save the allocated size in the variable's memory */
+
+      PUTSTACK(st, size, addr1 + sSHORTSTRING_ALLOC_OFFSET);
       break;
 
       /* Initialize a temporary string variable on the stack. It is similar

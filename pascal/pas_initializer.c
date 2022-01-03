@@ -207,22 +207,55 @@ void pas_Initialization(void)
             break;
 
           case sSTRING:
-            /* Generate a PUSHS (push string stack pointer) if we have not
-             * already done so.
-             */
+            {
+              /* Generate a PUSHS (push string stack pointer) if we have not
+               * already done so.
+               */
 
-            if (!pushs)
-              {
-                /* Generate a PUSHS (push string stack pointer) */
+              if (!pushs)
+                {
+                  /* Generate a PUSHS (push string stack pointer) */
 
-                pas_GenerateSimple(opPUSHS);
-              }
+                  pas_GenerateSimple(opPUSHS);
+                }
 
-            /* Get TOS = Address of string variable to be initialized */
+              /* Get TOS = Address of string variable to be initialized */
 
-            pas_GenerateStackReference(opLAS, varPtr);
-            pas_StandardFunctionCall(lbSTRINIT);
-            pushs = true;
+              pas_GenerateStackReference(opLAS, varPtr);
+              pas_StandardFunctionCall(lbSTRINIT);
+              pushs = true;
+            }
+            break;
+
+          case sSHORTSTRING:
+            {
+              symbol_t *baseTypePtr;
+
+              /* Generate a PUSHS (push string stack pointer) if we have not
+               * already done so.
+               */
+
+              if (!pushs)
+                {
+                  /* Generate a PUSHS (push string stack pointer) */
+
+                  pas_GenerateSimple(opPUSHS);
+                }
+
+              /* Get TOS = Size of the short string's string memory
+               * allocation.
+               */
+
+              baseTypePtr = pas_GetBaseTypePointer(varPtr->sParm.v.vParent);
+              pas_GenerateDataOperation(opPUSH,
+                                        baseTypePtr->sParm.t.tMaxValue);
+
+              /* Get the ddress of string variable to be initialized */
+
+              pas_GenerateStackReference(opLAS, varPtr);
+              pas_StandardFunctionCall(lbSSTRINIT);
+              pushs = true;
+            }
             break;
 
           case sRECORD:
@@ -254,6 +287,32 @@ void pas_Initialization(void)
                   /* Then initialize the string */
 
                   pas_StandardFunctionCall(lbSTRINIT);
+                  pushs = true;
+                }
+
+              /* Check if the base type of the field is a short string */
+
+              else if (baseTypePtr->sParm.t.tType == sSHORTSTRING)
+                {
+                  /* Get TOS = Size of the short string's string memory
+                   * allocation.
+                   */
+
+                  pas_GenerateDataOperation(opPUSH,
+                                            baseTypePtr->sParm.t.tMaxValue);
+
+                  /* Add the address of string variable to be initialized */
+
+                  pas_GenerateStackReference(opLAS, varPtr);
+
+                  /* Add the offset to the string field to be initialized */
+
+                  pas_GenerateDataOperation(opPUSH, fOffset);
+                  pas_GenerateSimple(opADD);
+
+                  /* Then initialize the short string */
+
+                  pas_StandardFunctionCall(lbSSTRINIT);
                   pushs = true;
                 }
 
@@ -317,6 +376,7 @@ void pas_Finalization(void)
                   break;
 
               case sSTRING :
+              case sSHORTSTRING :
                   pops = true;
                   break;
 

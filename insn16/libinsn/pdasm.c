@@ -461,9 +461,9 @@ static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
 /* 0x00 */ "HALT",      "GETENV",     "STRCPY",     "STRCPYX",
 /* 0x04 */ "CSTR2STR",  "CSTR2STRX",  "BSTR2STR",   "STR2BSTR",
-/* 0x08 */ "STR2BSTRX", "VAL",        "STRINIT",    "STRTMP",
-/* 0x0c */ "STRDUP",    "MKSTKC",     "STRCAT",     "STRCATC",
-/* 0x10 */ "STRCMP"
+/* 0x08 */ "STR2BSTRX", "VAL",        "STRINIT",    "SSTRINIT",
+/* 0x0c */ "STRTMP",    "STRDUP",     "MKSTKC",     "STRCAT",
+/* 0x10 */ "STRCATC",   "STRCMP"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";
