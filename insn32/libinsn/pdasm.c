@@ -330,10 +330,12 @@ static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
 /* 0x00 */ "HALT",      "GETENV",     "STRCPY",     "STRCPYX",
-/* 0x04 */ "CSTR2STR",  "CSTR2STRX",  "BSTR2STR",   "STR2BSTR",
-/* 0x08 */ "STR2BSTRX", "VAL",        "STRINIT",    "SSTRINIT",
-/* 0x0c */ "STRTMP",    "STRDUP",     "MKSTKC",     "STRCAT",
-/* 0x10 */ "STRCATC",   "STRCMP"
+/* 0x04 */ "SSTRCPY",   "SSTRCPYX",   "SSTR2STR",   "SSTR2STRX",
+/* 0x08 */ "STR2SSTR",  "STR2SSTRX",  "CSTR2STR",   "CSTR2STRX",
+/* 0x0c */ "CSTR2SSTR", "CSTR2SSTRX", "BSTR2STR",   "STR2BSTR",
+/* 0x10 */ "STR2BSTRX", "VAL",        "STRINIT",    "SSTRINIT",
+/* 0x14 */ "STRTMP",    "STRDUP",     "MKSTKC",     "STRCAT",
+/* 0x18 */ "STRCATC",   "STRCMP"
 };
 
 #define MAX_FOP 16

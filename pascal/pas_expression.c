@@ -3691,7 +3691,8 @@ static bool pas_IsOrdinalType(exprType_t testExprType)
 
 static bool pas_IsAnyStringType(exprType_t testExprType)
 {
-  if (testExprType == exprString ||
+  if (testExprType == exprString      ||
+      testExprType == exprShortString ||
       testExprType == exprCString)
     {
       return true;

@@ -381,7 +381,11 @@ static const struct regm_builtin_s g_rgLibCallBuiltIns[MAX_LBOP] =
 {
   /* 0x00 */ libHALT_INIT,              lbGETENV_INIT,
   /* 0x02 */ lbSTRCPY_INIT,             lbSTRCPYX_INIT,
+  /* 0x04 */ lbSSTRCPY_INIT,            lbSSTRCPYX_INIT,
+  /* 0x06 */ lbSSTR2STR_INIT,           lbSSTR2STRX_INIT,
+  /* 0x08 */ lbSTR2SSTR_INIT,           lbSTR2SSTRX_INIT,
   /* 0x04 */ lbCSTR2STR_INIT,           lbCSTR2STRX_INIT,
+  /* 0x04 */ lbCSTR2SSTR_INIT,          lbCSTR2SSTRX_INIT,
   /* 0x06 */ lbBSTR2STR_INIT,           lbSTR2BSTR_INIT,
   /* 0x08 */ lbSTR2BSTRX_INIT,          lbVAL_INIT,
   /* 0x0a */ lbSTRINIT_INIT,            lbSSTRINIT_INIT,

@@ -198,6 +198,36 @@
 #define lbSTRCPYX_INIT \
     { "_lbstrcpyx", 0, 3, { sSTRING_SIZE, sPTR_SIZE, sINT_SIZE }}
 
+/* void _lbsstrcpy(shortstring src, shortstring *dest); */
+
+#define lbSSTRCPY_INIT \
+    { "_lbsstrcpy", 0, 2, { sSHORTSTRING_SIZE, sPTR_SIZE }}
+
+/* void _lbsstrcpyx(shortstring src, shortstring *dest); */
+
+#define lbSSTRCPYX_INIT \
+    { "_lbsstrcpyx", 0, 3, { sSHORTSTRING_SIZE, sPTR_SIZE, sINT_SIZE }}
+
+/* void _lbsstr2str(shortstring src, string *dest); */
+
+#define lbSSTR2STR_INIT \
+    { "_lbsstr2str", 0, 2, { sSHORTSTRING_SIZE, sPTR_SIZE }}
+
+/* void _lbsstr2strx(shortstring src, string *dest); */
+
+#define lbSSTR2STRX_INIT \
+    { "_lbsstr2strx", 0, 3, { sSHORTSTRING_SIZE, sPTR_SIZE, sINT_SIZE }}
+
+/* void _lbstr2sstr(string src, shortstring *dest); */
+
+#define lbSTR2SSTR_INIT \
+    { "_lbstr2sstr", 0, 2, { sSTRING_SIZE, sPTR_SIZE }}
+
+/* void _lbstr2sstrs(string src, shortstring *dest); */
+
+#define lbSTR2SSTRX_INIT \
+    { "_lbstr2sstrx", 0, 3, { sSTRING_SIZE, sPTR_SIZE, sINT_SIZE }}
+
 /* void _lbcstr2str(string src, string dest); */
 
 #define lbCSTR2STR_INIT \
@@ -207,6 +237,16 @@
 
 #define lbCSTR2STRX_INIT \
     { "_lbcstr2strx", 0, 3, { sSTRING_SIZE, sSTRING_SIZE, sINT_SIZE }}
+
+/* void _lbcstr2sstr(string src, string dest); */
+
+#define lbCSTR2SSTR_INIT \
+    { "_lbcstr2sstr", 0, 2, { sSTRING_SIZE, sSHORTSTRING_SIZE }}
+
+/* void _lbcstr2sstrx(string src, string dest, int offset); */
+
+#define lbCSTR2SSTRX_INIT \
+    { "_lbcstr2sstrx", 0, 3, { sSTRING_SIZE, sSHORTSTRING_SIZE, sINT_SIZE }}
 
 /* function _lbbstr2str(arraySize : Integer, arrayAddress : Integer) : String; */
 
