@@ -74,9 +74,8 @@
  * symVar_t (see below)
  */
 
-#define STYPE_VARSIZE      (1 << 0) /* Type has variable size */
-#define SPROC_EXTERNAL     (1 << 1) /* Proc/func. is defined externally */
-#define SVAR_EXTERNAL      (1 << 2) /* Variable is defined externally */
+#define SPROC_EXTERNAL     (1 << 0) /* Proc/func. is defined externally */
+#define SVAR_EXTERNAL      (1 << 1) /* Variable is defined externally */
 
 /* BOOLEAN constant values */
 
@@ -138,7 +137,7 @@ struct symType_s            /* for sKind = sTYPE */
   uint32_t  tAllocSize;     /* size of allocated instances of this type */
   int32_t   tMinValue;      /* minimum value taken by subrange */
   int32_t   tMaxValue;      /* maximum value taken by subrange or scalar */
-
+                            /* Also allocation size for ShortStrings */
   struct symbol_s *tParent; /* pointer to parent type */
   struct symbol_s *tIndex;  /* pointer to index subrange type (arrays)*/
 };

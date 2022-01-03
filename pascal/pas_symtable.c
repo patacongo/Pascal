@@ -335,14 +335,13 @@ symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
         *    types must be set external to this function
         * 2. We assume that there are no special flags associated with
         *    the type.
+        * 3. Additional external settings are necessary for ARRAY types
+        *    as well (tDimension, tIndex).
         */
 
        typePtr->sParm.t.tType      = type;
-       typePtr->sParm.t.tFlags     = 0;
-       typePtr->sParm.t.tDimension = 0;
        typePtr->sParm.t.tAllocSize = size;
        typePtr->sParm.t.tParent    = parent;
-       typePtr->sParm.t.tIndex     = NULL;
      }
 
    /* Return a pointer to the new constant symbol */
@@ -605,17 +604,14 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 
   /* Add some enhanced Pascal standard" types to the symbol table
    *
-   * string is represent by a large buffer in separater string memory.
+   * string is represent by a large buffer in separate string memory.
    */
 
   typePtr = pas_AddTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL);
   if (typePtr)
     {
-      g_parentString             = typePtr;
-      typePtr->sParm.t.tSubType  = sCHAR;
-      typePtr->sParm.t.tFlags    = STYPE_VARSIZE;
-      typePtr->sParm.t.tMinValue = MINCHAR;
-      typePtr->sParm.t.tMaxValue = MAXCHAR;
+      g_parentString            = typePtr;
+      typePtr->sParm.t.tSubType = sCHAR;
     }
 
   /* Add the standard files to the symbol table */

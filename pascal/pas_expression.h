@@ -152,6 +152,6 @@ exprType_t pas_GetExpressionType(symbol_t *sType);
 exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal);
 exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal);
 symbol_t  *pas_GetBaseTypePointer(symbol_t *typePtr);
-void       pas_ConstantExression(void);
+void       pas_ConstantExpression(void);
 
 #endif /* __PAS_EXPRESSION_H */

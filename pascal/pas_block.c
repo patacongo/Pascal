@@ -89,13 +89,13 @@ static symbol_t *pas_DeclareVar            (void);
 static void      pas_ProcedureDeclaration  (void);
 static void      pas_FunctionDeclaration   (void);
 
-static void      pas_SetTypeSize           (symbol_t *typePtr, bool allocate);
-static symbol_t *pas_TypeIdentifier        (bool allocate);
-static symbol_t *pas_TypeDenoter           (char *typeName, bool allocate);
+static symbol_t *pas_TypeIdentifier        (void);
+static symbol_t *pas_CheckShortString      (symbol_t *typePtr);
+static symbol_t *pas_TypeDenoter           (char *typeName);
 static symbol_t *pas_FileTypeDenoter       (void);
 static symbol_t *pas_NewComplexType        (char *typeName);
 static symbol_t *pas_NewOrdinalType        (char *typeName);
-static symbol_t *pas_OrdinalTypeIdentifier (bool allocate);
+static symbol_t *pas_OrdinalTypeIdentifier (void);
 static symbol_t *pas_GetArrayIndexType     (void);
 static void      pas_GetArrayBaseType      (symbol_t *arrayTypePtr);
 static symbol_t *pas_DeclareRecordType     (char *recordName);
@@ -182,7 +182,7 @@ static void pas_DeclareConst(void)
 
   /* Handle constant expressions */
 
-  pas_ConstantExression();
+  pas_ConstantExpression();
 
   /* Add the constant to the symbol table based on the type of
    * the constant found following the '= [ sign ]'
@@ -265,7 +265,7 @@ static symbol_t *pas_DeclareOrdinalType(char *typeName)
 
   if (typePtr == NULL)
      {
-       typeIdPtr = pas_TypeIdentifier(1);
+       typeIdPtr = pas_TypeIdentifier();
        if (typeIdPtr)
          {
            typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.tType,
@@ -328,7 +328,7 @@ static symbol_t *pas_DeclareVar(void)
         {
           /* Process the normal type-denoter */
 
-          typePtr = pas_TypeDenoter(varName, 1);
+          typePtr = pas_TypeDenoter(varName);
           if (typePtr == NULL)
             {
               error(eINVTYPE);
@@ -649,7 +649,7 @@ static void pas_FunctionDeclaration(void)
 
   /* Get function type, return value type/size and offset to return value */
 
-  typePtr = pas_TypeIdentifier(0);
+  typePtr = pas_TypeIdentifier();
   if (typePtr)
    {
       /* The offset to the return value is the offset to the last
@@ -729,114 +729,12 @@ static void pas_FunctionDeclaration(void)
 }
 
 /****************************************************************************/
-/* Determine the size value to use with this type */
-
-static void pas_SetTypeSize(symbol_t *typePtr, bool allocate)
-{
-  TRACE(g_lstFile,"[pas_SetTypeSize]");
-
-  /* Check for type-identifier */
-
-  g_dwVarSize = 0;
-
-  if (typePtr != NULL)
-    {
-      /* If allocate is true, then we want to return the size of
-       * the type that we would use if we are going to allocate
-       * an instance on the stack.
-       */
-
-      if (allocate)
-        {
-          /* Could it be a storage size value (such as is used for
-           * the enhanced pascal string type?).  In an weak attempt to
-           * be compatible with everyone in the world, we will allow
-           * either '[]' or '()' to delimit the size specification.
-           */
-
-          if ((g_token == '[' || g_token == '(') &&
-              (typePtr->sParm.t.tFlags & STYPE_VARSIZE) != 0)
-            {
-              uint16_t term_token;
-              uint16_t errcode;
-
-              /* Yes... we need to parse the size from the input stream.
-               * First, determine which token will terminate the size
-               * specification.
-               */
-
-              if (g_token == '(')
-                {
-                  term_token = ')';    /* Should end with ')' */
-                  errcode = eRPAREN;   /* If not, this is the error */
-                }
-              else
-                {
-                  term_token = ']';    /* Should end with ']' */
-                  errcode = eRBRACKET; /* If not, this is the error */
-                }
-
-              /* Now, parse the size specification */
-
-              /* We expect the size to consist of a single integer constant.
-               * We should support any constant integer expression, but this
-               * has not yet been implemented.
-               */
-
-              getToken();
-              if (g_token != tINT_CONST) error(eINTCONST);
-              /* else if (g_tknInt <= 0) error(eINVCONST); see below */
-              else if (g_tknInt <= 2) error(eINVCONST);
-              else
-                {
-                  /* Use the value of the integer constant for the size
-                   * the allocation.
-                   */
-
-                  g_dwVarSize = g_tknInt;
-                }
-
-              /* Verify that the correct token terminated the size
-               * specification.  This could be either ')' or ']'
-               */
-
-              getToken();
-              if (g_token != term_token) error(errcode);
-              else getToken();
-            }
-          else
-            {
-              /* Return the fixed size of the allocated instance of
-               * this type */
-
-              g_dwVarSize = typePtr->sParm.t.tAllocSize;
-            }
-        }
-
-      /* If allocate is false, then we want to return the size of
-       * the type that we would use if we are going to refer to
-       * a reference on the stack.  This is really non-standard
-       * and is handle certain optimatizations where we cheat and
-       * pass some types by reference rather than by value.  The
-       * enhanced pascal string type is the only example at present.
-       */
-
-      else
-        {
-          /* Return the size of an instance of this type. */
-
-          g_dwVarSize = typePtr->sParm.t.tAllocSize;
-        }
-    }
-}
-
-/****************************************************************************/
 /* Verify that the next token is a type identifer
  * NOTE:  This function modifies the global variable g_dwVarSize
  * as a side-effect
  */
 
-static symbol_t *pas_TypeIdentifier(bool allocate)
+static symbol_t *pas_TypeIdentifier(void)
 {
   symbol_t *typePtr = NULL;
 
@@ -851,9 +749,65 @@ static symbol_t *pas_TypeIdentifier(bool allocate)
       typePtr = g_tknPtr;
       getToken();
 
-      /* Return the size value associated with this type */
+      /* Return the size of an allocated instance of this type. */
 
-      pas_SetTypeSize(typePtr, allocate);
+      g_dwVarSize = typePtr->sParm.t.tAllocSize;
+    }
+
+  return typePtr;
+}
+
+/****************************************************************************/
+/* A STRING type has been found.  If there is a size associated with the
+ * STRING, then create a new SHORTSTRING type.
+ */
+
+static symbol_t *pas_CheckShortString(symbol_t *typePtr)
+{
+  TRACE(g_lstFile,"[pas_CheckShortString]");
+
+  /* Is the type name followed by a storage size value. */
+
+  if (g_token == '[')
+    {
+      /* Parse the size specification:
+       *
+       * FORM:  VAR variable-name : STRING[string-size]
+       * FORM:  TYPE type-name : STRING[string-size]
+       *
+       * The left bracket should be followed by a constant expression.
+       * For now, we accept only an integer constant.
+       */
+
+      getToken();
+      if (g_token != tINT_CONST) error(eINTCONST);
+      else if (g_tknInt <= 0) error(eINVCONST);
+      else
+        {
+          uint16_t stringAllocSize;
+
+          /* Create a new, unique, un-named SHORTSTRING type. */
+
+          typePtr = pas_AddTypeDefine("", sSHORTSTRING, sSHORTSTRING_SIZE,
+                                      NULL);
+
+          /* Save the size of the short string buffer allocation in the
+           * tMaxValue field.
+           */
+
+          if (typePtr != NULL)
+            {
+              typePtr->sParm.t.tMaxValue = stringAllocSize;
+            }
+
+          /* Verify that the correct token terminated the size
+           * specification.  This could be either ')' or ']'
+           */
+
+          getToken();
+          if (g_token != ']') error(eRBRACKET);
+          else getToken();
+        }
     }
 
   return typePtr;
@@ -861,7 +815,7 @@ static symbol_t *pas_TypeIdentifier(bool allocate)
 
 /****************************************************************************/
 
-static symbol_t *pas_TypeDenoter(char *typeName, bool allocate)
+static symbol_t *pas_TypeDenoter(char *typeName)
 {
   symbol_t *typePtr;
 
@@ -872,9 +826,16 @@ static symbol_t *pas_TypeDenoter(char *typeName, bool allocate)
    * Check for type-identifier
    */
 
-  typePtr = pas_TypeIdentifier(allocate);
+  typePtr = pas_TypeIdentifier();
   if (typePtr != NULL)
     {
+      /* Check for a SHORTSTRING type */
+
+      if (typePtr->sParm.t.tType == sSTRING)
+        {
+          typePtr = pas_CheckShortString(typePtr);
+        }
+
       /* Return the type identifier */
 
       return typePtr;
@@ -894,10 +855,9 @@ static symbol_t *pas_TypeDenoter(char *typeName, bool allocate)
       typePtr = pas_NewOrdinalType(typeName);
     }
 
-  /* Return the size value associated with this type */
+  /* Return the size of an allocated instance of this type. */
 
-  pas_SetTypeSize(typePtr, allocate);
-
+  g_dwVarSize = typePtr->sParm.t.tAllocSize;
   return typePtr;
 }
 
@@ -1224,7 +1184,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
     case '^'      :
       getToken();
-      typeIdPtr = pas_TypeIdentifier(1);
+      typeIdPtr = pas_TypeIdentifier();
       if (typeIdPtr)
         {
           typePtr = pas_AddTypeDefine(typeName, sPOINTER, g_dwVarSize,
@@ -1382,7 +1342,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
        * If not, then declare a new one with no name
        */
 
-      typeIdPtr = pas_OrdinalTypeIdentifier(1);
+      typeIdPtr = pas_OrdinalTypeIdentifier();
       if (typeIdPtr)
         {
           getToken();
@@ -1453,7 +1413,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
       /* Get the type-denoter */
 
-      typeIdPtr = pas_TypeDenoter(NULL, true);
+      typeIdPtr = pas_TypeDenoter(NULL);
       if (typeIdPtr)
         {
           typePtr = pas_AddTypeDefine(typeName, sFILE, g_dwVarSize,
@@ -1508,7 +1468,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 /* Verify that the next token is a type identifer
  */
 
-static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
+static symbol_t *pas_OrdinalTypeIdentifier(void)
 {
   symbol_t *typePtr;
 
@@ -1516,7 +1476,7 @@ static symbol_t *pas_OrdinalTypeIdentifier(bool allocate)
 
   /* Get the next type from the input stream */
 
-  typePtr = pas_TypeIdentifier(allocate);
+  typePtr = pas_TypeIdentifier();
 
   /* Was a type encountered? */
 
@@ -1764,7 +1724,7 @@ static void pas_GetArrayBaseType(symbol_t *arrayTypePtr)
    * new, unnamed type definition.
    */
 
-  typeDenoter = pas_TypeDenoter(NULL, false);
+  typeDenoter = pas_TypeDenoter(NULL);
   if (typeDenoter == NULL) error(eINVTYPE);
 
   /* Get a pointer to the underlying base type of the array */
@@ -1957,7 +1917,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 
           /* Get the ordinal-type-identifier */
 
-          typePtr  = pas_OrdinalTypeIdentifier(1);
+          typePtr  = pas_OrdinalTypeIdentifier();
           if (!typePtr) error(eINVTYPE);
           else
             {
@@ -2243,7 +2203,7 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
 
           /* Use the existing type or declare a new type with no name */
 
-          typePtr = pas_TypeDenoter(NULL, true);
+          typePtr = pas_TypeDenoter(NULL);
         }
 
       recordPtr->sParm.t.tMaxValue++;
@@ -2316,7 +2276,7 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
             * the formal parameter list.
             */
 
-           typePtr = pas_TypeIdentifier(0);
+           typePtr = pas_TypeIdentifier();
            if (typePtr == NULL) error(eINVTYPE);
          }
 

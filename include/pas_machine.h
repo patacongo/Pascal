@@ -106,10 +106,30 @@
  * memory, but the offset relative to TOS is confusing.
  */
 
-#define sSTRING_SIZE        (sPTR_SIZE + sINT_SIZE)
+#define sSTRING_SIZE        (sINT_SIZE + sPTR_SIZE)
 #define sSTRING_SIZE_OFFSET (0)         /* Byte offset to string size */
 #define sSTRING_DATA_OFFSET (sINT_SIZE) /* Byte offset to buffer pointer */
 #define STRING_BUFFER_SIZE  (256)       /* Default size of string buffer */
+
+/* ShortStrings are also supported.  ShortStrings differ in that they are
+ * declared with a (usually smaller) maximum string size.  ShortStrings can 
+ * make much better use of string memory because you can use a priori
+ * knowledge of the optimal, maximum string size.
+ *
+ * The ShortString representation differs some what.  A ShortString must
+ * always appear on the stack in this order.
+ *
+ *      TOS(n)     = 16-bit pointer to the string data.
+ *      TOS(n + 1) = Current string size
+ *      TOS(n + 2) = Maximum string size.  Allocated size of string data.
+ *
+ * With the additional value that provides the maximum size of the ShortString:
+ */
+
+#define sSHORTSTRING_SIZE         (sINT_SIZE + sPTR_SIZE + sINT_SIZE)
+#define sSHORTSTRING_SIZE_OFFSET  (0)         /* Byte offset to string size */
+#define sSHORTSTRING_DATA_OFFSET  (sINT_SIZE) /* Byte offset to buffer pointer */
+#define sSHORTSTRING_ALLOC_OFFSET (sINT_SIZE + sPTR_SIZE)
 
 /* Range of unsigned character type */
 
