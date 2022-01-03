@@ -1317,9 +1317,12 @@ static symbol_t *pas_NewComplexType(char *typeName)
                  *   another index-type in the index-type-list).
                  */
 
-                /* Increase the array dimension */
+                /* Increase the array dimension and note the dimension
+                 * assocated with this index.
+                 */
 
                 typePtr->sParm.t.tDimension++;
+                indexTypePtr->sParm.t.tDimension = typePtr->sParm.t.tDimension;
 
                 /* Append the new index type to the end of the chain of index
                  * type.
@@ -1740,7 +1743,8 @@ static void pas_GetArrayBaseType(symbol_t *arrayTypePtr)
 {
   symbol_t *typeDenoter  = NULL;
   symbol_t *indexTypePtr = NULL;
-  uint32_t arraySize;
+  symbol_t *baseTypePtr;
+  uint32_t indexUnit;
 
   TRACE(g_lstFile,"[pas_GetArrayBaseType]");
 
@@ -1763,25 +1767,36 @@ static void pas_GetArrayBaseType(symbol_t *arrayTypePtr)
   typeDenoter = pas_TypeDenoter(NULL, false);
   if (typeDenoter == NULL) error(eINVTYPE);
 
-  /* Get the size of each dimension of the entire array and of the whole array
+  /* Get a pointer to the underlying base type of the array */
+
+  baseTypePtr = pas_GetBaseTypePointer(typeDenoter);
+
+  /* Get the size of each dimension of the array and size of the whole array
    * by traversing the chain of index types.
    */
 
-  arraySize = 1;
+  indexUnit = baseTypePtr->sParm.t.tAllocSize;
+
   for (indexTypePtr = arrayTypePtr->sParm.t.tIndex;
        indexTypePtr != NULL;
        indexTypePtr = indexTypePtr->sParm.t.tIndex)
     {
-      indexTypePtr->sParm.t.tAllocSize =
-                   (indexTypePtr->sParm.t.tMaxValue -
-                    indexTypePtr->sParm.t.tMinValue + 1) *
-                    typeDenoter->sParm.t.tAllocSize;
-      arraySize *= indexTypePtr->sParm.t.tAllocSize;
+      uint16_t indexRange;
+
+      /* Save the unit address increment for this index */
+
+      indexTypePtr->sParm.t.tAllocSize = indexUnit;
+
+      /* Next indexUnit[n+1] = indexUnit[n] * indexRange */
+
+      indexRange = indexTypePtr->sParm.t.tMaxValue -
+                   indexTypePtr->sParm.t.tMinValue + 1;
+      indexUnit *= indexRange;
     }
 
   /* Final, update the array type info */
 
-  arrayTypePtr->sParm.t.tAllocSize = arraySize;
+  arrayTypePtr->sParm.t.tAllocSize = indexUnit;
   arrayTypePtr->sParm.t.tParent    = typeDenoter;
 }
 

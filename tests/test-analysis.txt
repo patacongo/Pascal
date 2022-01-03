@@ -53,24 +53,8 @@ following the constant identifier.
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
-########src/015-dim2array.pas########
-Line 0:0003 Error 26 Token 2c
-
-Line:
-
- 3   a: ARRAY [0..3, 0..3] OF INTEGER;
-
-Error:
-219 #define eNOTYET          ((uint16_t) 0x26)
-
-Token: ','
-
-Analysis:
-Support for multi-dimensional arrays is a work in progress.  See also
-worksched.pas
-
 ########src/104-primes.pas########
-Line 0:0012 Error 4d Token 3b
+Line 0:0012 Error 4e Token 3b
 
 Line (in var section):
  12   sieve, primes : array[0..w] of set of 0..maxbit;
@@ -79,7 +63,7 @@ Where (in const section)
   8   maxbit = 58;
 
 Error:
-241 #define eEXPRTYPE        ((uint16_t) 0x3d)
+262 #define eSETRANGE        ((uint16_t) 0x4e)
 
 Token: '='
 
@@ -188,20 +172,22 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0055 Error 26 Token 2c
+Line 0:0073 Error 26 Token 09
 
 Error:
 219 #define eNOTYET          ((uint16_t) 0x26)
 
 Line:
- 55        ScheduleType = ARRAY [HourType, DayType] OF EmployeeType;
+ 73                Str := ''
 where
- 50        EmployeeType = string[EmployeeMaxLen];
+ 63=    PROCEDURE ReadString(VAR Str: string);
 
-Token: ','
+Token:
+ 53 #define tASSIGN          0x09
 
 Analysis:
-Multi-dimensional arrays are a work in progress.
+I have not looked at this yet.  Perhaps there is a problem parsing the empty
+string?  Or in assigning to the VAR string?
 
 ########DayIO.pas########
 Line 0:0060 Error 0d Token 3b

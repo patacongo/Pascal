@@ -147,7 +147,7 @@ extern char   *constantStart;
 
 exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr);
 exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr);
-void       pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize);
+void       pas_ArrayIndex(symbol_t *arrayTypePtr);
 exprType_t pas_GetExpressionType(symbol_t *sType);
 exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal);
 exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal);

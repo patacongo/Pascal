@@ -287,7 +287,6 @@ static void pas_ComplexAssignment(void)
 static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 {
   symbol_t   *typePtr;
-  symbol_t   *indexTypePtr;
   exprType_t  exprType;
 
   TRACE(g_lstFile,"[pas_SimpleAssignment]");
@@ -893,9 +892,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
             error(eARRAYTYPE);
           }
 
-        indexTypePtr = typePtr->sParm.t.tIndex;
-        if (indexTypePtr == NULL) error(eHUH);
-
         /* Get a pointer to the base type symbol of the array */
 
         baseTypePtr  = pas_GetBaseTypePointer(typePtr);
@@ -916,7 +912,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
         if (g_token == '[')
           {
-            pas_ArrayIndex(indexTypePtr, size);
+            pas_ArrayIndex(typePtr);
 
             varPtr->sKind         = arrayKind;
             varPtr->sParm.v.vSize = size;

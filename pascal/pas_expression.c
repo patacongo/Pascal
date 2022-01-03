@@ -394,74 +394,125 @@ exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
 /****************************************************************************/
 /* Process Array Index */
 
-void pas_ArrayIndex(symbol_t *indexTypePtr, uint16_t elemSize)
+void pas_ArrayIndex(symbol_t *arrayTypePtr)
 {
-  uint16_t offset;
-
   TRACE(g_lstFile,"[pas_ArrayIndex]");
 
-  /* FORM:  [<integer expression>].
-   * On entry 'g_token' should refer to the ']' token.
+  /* Parse the index-type-list.
+   *
+   *   FORM:  array-type = 'array' '[' index-type-list ']' 'of' type-denoter
+   *   FORM:  index-type-list = index-type { ',' index-type }
+   *
+   * On entry 'g_token' should refer to the '[' token.
    */
 
   if (g_token != '[') error(eLBRACKET);
   else
     {
-      uint16_t indexType;
-      exprType_t exprType;
+      symbol_t *indexTypePtr = arrayTypePtr->sParm.t.tIndex;
+      uint16_t  dimension    = 1;
+      uint16_t  elemSize;
 
-      /* Get the type of the index */
-
-      if (indexTypePtr->sKind != sTYPE)
+      do
         {
-          error(eINDEXTYPE);
-          exprType = exprUnknown;
-        }
-      else
-        {
-          indexType = indexTypePtr->sParm.t.tType;
+          exprType_t exprType;
+          uint16_t   indexType;
+          uint16_t   offset;
 
-          /* REVISIT:  For subranges, we use the base type of the subrange. */
+          /* Sanity checks */
 
-          if (indexType == sSUBRANGE)
+          if (dimension > arrayTypePtr->sParm.t.tDimension)
             {
-              indexType = indexTypePtr->sParm.t.tSubType;
+              /* Program apparently has more indices that dimensions. */
+
+              error(eTOOMANYINDICES);
+            }
+          else if (indexTypePtr == NULL)
+            {
+              /* Not enough index types for dimensionality of the array.
+               * This should never happen.
+               */
+
+              error(eHUH);
             }
 
-          /* Get the expression type from the index type */
+          /* Get the type of the index */
 
-          exprType = pas_MapVariable2ExprType(indexType, true);
+          if (indexTypePtr->sKind != sTYPE)
+            {
+              error(eINDEXTYPE);
+              exprType = exprUnknown;
+            }
+          else
+            {
+              indexType = indexTypePtr->sParm.t.tType;
+
+              /* REVISIT:  For subranges, we use the base type of the
+               * subrange.
+               */
+
+              if (indexType == sSUBRANGE)
+                {
+                  indexType = indexTypePtr->sParm.t.tSubType;
+                }
+
+              /* Get the expression type from the index type */
+
+              exprType = pas_MapVariable2ExprType(indexType, true);
+            }
+
+          /* Skip over the initial '[' or subsequent ',' and evaluate the
+           * index expression.
+           */
+
+          getToken();
+          pas_Expression(exprType, NULL);
+
+          /* We now have the array element at the top of the stack.  If the
+           * index is not zero-based, the we need to offset the index value
+           * so that it is.
+           */
+
+          offset = indexTypePtr->sParm.t.tMinValue;
+          if (offset != 0)
+            {
+              pas_GenerateDataOperation(opPUSH, offset);
+              pas_GenerateSimple(opSUB);
+            }
+
+          /* The first index is in units of the base type of the elements of
+           * array.  But the next index is in units of the index range of the
+           * first element times the size of the base type.
+           *
+           * We need to multiply the zero-based index by the element size
+           * (unless, of course, the element size is one).
+           */
+
+          elemSize = indexTypePtr->sParm.t.tAllocSize;
+          if (elemSize != 1)
+            {
+              pas_GenerateDataOperation(opPUSH, elemSize);
+              pas_GenerateSimple(opMUL);
+            }
+
+          /* If this is not the first dimension, then we need to add the
+           * offset that we just calculated to the offset calculated from
+           * the previous dimension.
+           */
+
+          if (dimension > 1)
+            {
+              pas_GenerateSimple(opADD);
+            }
+
+          /* Set up for the next time through the loop.  */
+
+          indexTypePtr = indexTypePtr->sParm.t.tIndex;
+          dimension++;
         }
+      while (g_token == ',');
 
-      /* Evaluate index expression */
-
-      getToken();
-      pas_Expression(exprType, NULL);
-
-      /* We now have the array element at the top of the step.  If the index
-       * is not zero-based, the we need to offset the index value so that it
-       * is.
-       */
-
-      offset = indexTypePtr->sParm.t.tMinValue;
-      if (offset != 0)
-        {
-          pas_GenerateDataOperation(opPUSH, offset);
-          pas_GenerateSimple(opSUB);
-        }
-
-      /* The index is in units of the base type of the elements of array.  If
-       * that element size if not one, then we need to multiply the zero-
-       * based index by the element size.
-       */
-
-      if (elemSize != 1)
-        {
-          pas_GenerateDataOperation(opPUSH, elemSize);
-          pas_GenerateSimple(opMUL);
-        }
-
-      /* Verify right bracket */
+      /* Verify that a right bracket terminates the index-type-list. */
 
       if (g_token !=  ']') error(eRBRACKET);
       else getToken();
@@ -1736,38 +1787,28 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
 
       if (g_token == '[')
         {
-          /* Get the type of the index.  We will need minimum value of
-           * if the index type in order to offset the array index
-           * calculation
+          factorFlags   |= FACTOR_INDEXED;
+
+          /* Generate the array offset calculation and indexed load */
+
+          pas_ArrayIndex(typePtr);
+
+          /* We have reduced this to a base type.  So we can generate the
+           * indexed load from that base type.
            */
 
-          symbol_t *indexTypePtr = typePtr->sParm.t.tIndex;
-          if (indexTypePtr == NULL) error(eHUH);
-          else
+          varPtr->sKind  = arrayKind;
+          factorType     = pas_SimplifyFactor(varInfo, factorFlags);
+
+          if (factorType == exprUnknown)
             {
-              factorFlags     |= FACTOR_INDEXED;
-
-              /* Generate the array offset calculation and indexed load */
-
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
-
-              /* We have reduced this to a base type.  So we can generate
-               * the indexed load from that base type.
-               */
-
-              varPtr->sKind  = arrayKind;
-              factorType     = pas_SimplifyFactor(varInfo, factorFlags);
-
-              if (factorType == exprUnknown)
-                {
-                  error(eHUH);  /* Should never happen */
-                }
-
-              /* Return the parent type of the array */
-
-              varPtr->sKind         = typePtr->sParm.t.tType;
-              varPtr->sParm.v.vSize = typePtr->sParm.t.tAllocSize;
+              error(eHUH);  /* Should never happen */
             }
+
+          /* Return the parent type of the array */
+
+          varPtr->sKind         = typePtr->sParm.t.tType;
+          varPtr->sParm.v.vSize = typePtr->sParm.t.tAllocSize;
         }
 
       /* A very special case is 'PACKED ARRAY[] OF CHAR' which legacy pascal
@@ -2592,48 +2633,37 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
        * indexing is required.
        */
 
-      factorFlags |= FACTOR_INDEXED;
+      factorFlags  |= FACTOR_INDEXED;
 
-      /* Generate an indexed load.
-       *
-       * Get the type of the index.  We will need minimum value of the index
-       * type in order to offset the array index calculation.
-       */
+      /* Generate the array offset calculation and indexed load */
 
-      symbol_t *indexTypePtr = typePtr->sParm.t.tIndex;
-      if (indexTypePtr == NULL) error(eHUH);
+      pas_ArrayIndex(typePtr);
+
+      /* If this is an array of records, then are not finished. */
+
+      varPtr->sKind = arrayKind;
+      if (arrayKind == sRECORD)
+        {
+          factorType =
+            pas_SimplifyPointerFactor(varInfo, factorFlags);
+        }
+
+      /* Load the indexed base type */
+
       else
         {
-          /* Generate the array offset calculation */
-
-          pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
-
-          /* If this is an array of records, then are not finished. */
-
-          varPtr->sKind = arrayKind;
-          if (arrayKind == sRECORD)
-            {
-              factorType =
-                pas_SimplifyPointerFactor(varInfo, factorFlags);
-            }
-
-          /* Load the indexed base type */
-
-          else
-            {
-              factorType = pas_BasePointerFactor(varPtr, factorFlags);
-            }
-
-          if (factorType == exprUnknown)
-            {
-              error(eHUH);  /* Should never happen */
-            }
-
-          /* Return the parent type of the array */
-
-          varPtr->sKind         = baseTypePtr->sParm.t.tType;
-          varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
+          factorType = pas_BasePointerFactor(varPtr, factorFlags);
         }
+
+      if (factorType == exprUnknown)
+        {
+          error(eHUH);  /* Should never happen */
+        }
+
+      /* Return the parent type of the array */
+
+      varPtr->sKind         = baseTypePtr->sParm.t.tType;
+      varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
     }
 
   /* But a more typical case in the context of this function is to have no

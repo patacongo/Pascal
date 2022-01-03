@@ -121,6 +121,7 @@
  * eNOWRITEPARM         Missing parameter in WRITE statement
  * eINDEXTYPE           Illegal array index type
  * eARRAYTYPE           Illegal type for ARRAY OF
+ * eTOOMANYINDICES      Two many indices for dimensionality of array
  * ePOINTERTYPE         Illegal pointer type
  * eVARPARMTYPE         Illegal VAR parameter type
  * eSUBRANGE            Expected ".."
@@ -253,18 +254,19 @@
 #define eINDEXTYPE       ((uint16_t) 0x46)
 #define eARRAYTYPE       ((uint16_t) 0x47)
 #define ePOINTERTYPE     ((uint16_t) 0x48)
-#define eVARPARMTYPE     ((uint16_t) 0x49)
-#define eSUBRANGE        ((uint16_t) 0x4a)
-#define eSUBRANGETYPE    ((uint16_t) 0x4b)
-#define eSET             ((uint16_t) 0x4c)
-#define eSETRANGE        ((uint16_t) 0x4d)
-#define eSCALARTYPE      ((uint16_t) 0x4e)
-#define eBADSHORTINT     ((uint16_t) 0x4f)
+#define eTOOMANYINDICES  ((uint16_t) 0x49)
+#define eVARPARMTYPE     ((uint16_t) 0x4a)
+#define eSUBRANGE        ((uint16_t) 0x4b)
+#define eSUBRANGETYPE    ((uint16_t) 0x4c)
+#define eSET             ((uint16_t) 0x4d)
+#define eSETRANGE        ((uint16_t) 0x4e)
+#define eSCALARTYPE      ((uint16_t) 0x4f)
 
-#define eSYMTABINTERNAL  ((uint16_t) 0x50)
-#define eRECORDDECLARE   ((uint16_t) 0x51)
-#define eRECORDOBJECT    ((uint16_t) 0x52)
-#define eRECORDVAR       ((uint16_t) 0x53)
+#define eBADSHORTINT     ((uint16_t) 0x50)
+#define eSYMTABINTERNAL  ((uint16_t) 0x51)
+#define eRECORDDECLARE   ((uint16_t) 0x52)
+#define eRECORDOBJECT    ((uint16_t) 0x53)
+#define eRECORDVAR       ((uint16_t) 0x54)
 #define eRECORDTYPE      ((uint16_t) 0x55)
 #define eUNIT            ((uint16_t) 0x56)
 #define eUNITNAME        ((uint16_t) 0x57)

@@ -630,7 +630,6 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           symbol_t *typePtr;
           symbol_t *nextPtr;
           symbol_t *baseTypePtr;
-          symbol_t *indexTypePtr;
 
           fileFlags |= FACTOR_INDEXED;
 
@@ -677,24 +676,19 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 
           getToken();
 
-          /* Then handle the bracketed array index */
+          /* Then handle the bracketed array index.  Generate the array
+           * offset calculation.
+           */
 
-          indexTypePtr = typePtr->sParm.t.tIndex;
-          if (indexTypePtr == NULL) error(eHUH);
-          else
-            {
-              /* Generate the array offset calculation */
+          pas_ArrayIndex(typePtr);
 
-              pas_ArrayIndex(indexTypePtr, baseTypePtr->sParm.t.tAllocSize);
+          /* Return the parent type of the array */
 
-              /* Return the parent type of the array */
+          varPtr->sKind         = baseTypePtr->sParm.t.tType;
+          varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
 
-              varPtr->sKind         = baseTypePtr->sParm.t.tType;
-              varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
-
-              return simplifyFileNumber(varPtr, fileFlags, pFileSize,
-                                        defaultFilePtr);
-            }
+          return simplifyFileNumber(varPtr, fileFlags, pFileSize,
+                                    defaultFilePtr);
         }
 
       /* Is this a variable representing a type binary or text FILE? */
