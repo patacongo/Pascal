@@ -335,7 +335,7 @@ static const char *lbName[MAX_LBOP] =
 /* 0x0c */ "CSTR2SSTR",  "CSTR2SSTRX", "BSTR2STR",   "STR2BSTR",
 /* 0x10 */ "STR2BSTRX",  "VAL",        "STRINIT",    "SSTRINIT",
 /* 0x14 */ "STRTMP",     "STRDUP",     "SSTRDUP",    "MKSTKC",
-/* 0x18 */ "STRCAT",     "SSTRCAT",    "SSTRCATSTR", "SSTRCATSTR"
+/* 0x18 */ "STRCAT",     "SSTRCAT",    "SSTRCATSTR", "STRCATSSTR",
 /* 0x1c */ "STRCATC",    "lbSSTRCATC", "STRCMP",     "SSTRCMP",
 /* 0x20 */ "SSTRCMPSTR", "STRCMPSSTR"
 };

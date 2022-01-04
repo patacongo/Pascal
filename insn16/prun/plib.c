@@ -69,6 +69,12 @@ static int      pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
 static int      pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
                              uint16_t arraySize, uint16_t stringBufferAddress,
                              uint16_t stringSize, uint16_t offset);
+static int      pas_strcat(struct pexec_s *st, uint16_t srcStringAddr,
+                           uint16_t srcStringSize, uint16_t destStringAddr,
+                           uint16_t *pDestStringSize, uint16_t destStrAlloc);
+static int      pas_strcatc(struct pexec_s *st, char srcChar,
+                            uint16_t destStringAddr, uint16_t *pDestStringSize,
+                            uint16_t destStrAlloc);
 
 /****************************************************************************
  * Private Functions
@@ -306,6 +312,66 @@ static int pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
   return errorCode;
 }
 
+static int pas_strcat(struct pexec_s *st, uint16_t srcStringAddr,
+                      uint16_t srcStringSize, uint16_t destStringAddr,
+                      uint16_t *pDestStringSize, uint16_t destStrAlloc)
+{
+  uint16_t destStringSize = *pDestStringSize;
+  const char *src;
+  char *dest;
+  int errorCode = eNOERROR;
+
+  /* Check for string overflow. */
+
+  if (srcStringSize + destStringSize > destStrAlloc)
+    {
+      errorCode = eSTRSTKOVERFLOW;
+    }
+  else
+    {
+      /* Append the data from the source string buffer to dest string buffer. */
+
+      src  = (const char *)&GETSTACK(st, srcStringAddr);
+      dest = (char *)&GETSTACK(st, destStringAddr);
+      memcpy(&dest[destStringSize], src, srcStringSize);
+
+      /* Set the new dest string size. */
+
+      *pDestStringSize = srcStringSize + destStringSize;
+    }
+
+  return errorCode;
+}
+
+static int pas_strcatc(struct pexec_s *st, char srcChar,
+                       uint16_t destStringAddr, uint16_t *pDestStringSize,
+                       uint16_t destStrAlloc)
+{
+  uint16_t destStringSize = *pDestStringSize;
+  char *dest;
+  int errorCode = eNOERROR;
+
+  /* Check for string overflow. */
+
+  if (destStringSize + sCHAR_SIZE > destStrAlloc)
+    {
+      errorCode = eSTRSTKOVERFLOW;
+    }
+  else
+    {
+      /* Append the character to the dest string buffer. */
+
+      dest                = (char *)&GETSTACK(st, destStringAddr);
+      dest[destStringSize] = srcChar;
+
+      /* Set the new dest string size. */
+
+      *pDestStringSize = destStringSize + sCHAR_SIZE;
+    }
+
+  return errorCode;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -428,9 +494,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *
        * ON INPUT:
        *   TOS(0) = Address of dest short short string variable
-       *   TOS(1) = Pointer to source short string buffer
-       *   TOS(2) = Length of source short string
-       *   TOS(3) = Short string buffer size
+       *   TOS(1) = Short string buffer size
+       *   TOS(2) = Pointer to source short string buffer
+       *   TOS(3) = Length of source short string
        * ON RETURN (input consumed):
        */
 
@@ -442,9 +508,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
         /* "Pop" in the input parameters from the stack */
 
         POP(st, addr1);  /* Address of dest short string variable  */
+        DISCARD(st, 1);  /* Source short string buffer allocation */
         POP(st, addr2);  /* Address of source short string buffer */
         POP(st, size);   /* Length of valid source data */
-        DISCARD(st, 1);  /* Source short string buffer allocation */
 
         /* Get the allocation size of the short string destination */
 
@@ -462,9 +528,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *
        * ON INPUT:
        *   TOS(0) = Address of dest short short string variable
-       *   TOS(1) = Pointer to source short string buffer
-       *   TOS(2) = Length of source short string
-       *   TOS(3) = Short string buffer size
+       *   TOS(1) = Short string buffer size
+       *   TOS(2) = Pointer to source short string buffer
+       *   TOS(3) = Length of source short string
        *   TOS(4) = Dest short string variable address offset
        * ON RETURN (input consumed):
        */
@@ -477,9 +543,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
         /* "Pop" in the input parameters from the stack */
 
         POP(st, addr1);  /* Address of dest short string variable  */
+        DISCARD(st, 1);  /* Source short string buffer allocation */
         POP(st, addr2);  /* Address of source short string buffer */
         POP(st, size);   /* Length of valid source data */
-        DISCARD(st, 1);  /* Source short string buffer allocation */
         POP(st, offset); /* Offset from dest string address */
 
         /* Get the allocation size of the short string destination.
@@ -500,9 +566,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *
        * ON INPUT:
        *   TOS(0) = Address of dest standard standard string variable
-       *   TOS(1) = Pointer to source short string buffer
-       *   TOS(2) = Length of source short string
-       *   TOS(3) = Short string buffer size
+       *   TOS(1) = Short string buffer size
+       *   TOS(2) = Pointer to source short string buffer
+       *   TOS(3) = Length of source short string
        * ON RETURN (input consumed):
        */
 
@@ -510,9 +576,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest standard string variable  */
+      DISCARD(st, 1);  /* Short string buffer size */
       POP(st, addr2);  /* Address of source short string buffer */
       POP(st, size);   /* Length of valid short string source data */
-      DISCARD(st, 1);  /* Short string buffer size */
 
       /* And perform the string copy */
 
@@ -524,9 +590,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *
        * ON INPUT:
        *   TOS(0) = Address of dest standard standard string variable
-       *   TOS(1) = Pointer to source short string buffer
-       *   TOS(2) = Length of source short string
-       *   TOS(3) = Short string buffer size
+       *   TOS(1) = Short string buffer size
+       *   TOS(2) = Pointer to source short string buffer
+       *   TOS(3) = Length of source short string
        *   TOS(4) = Dest standard string variable address offset
        * ON RETURN (input consumed):
        */
@@ -535,9 +601,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest standard string variable  */
+      DISCARD(st, 1);  /* Short string buffer size */
       POP(st, addr2);  /* Address of source short string buffer */
       POP(st, size);   /* Length of valid short string source data */
-      DISCARD(st, 1);  /* Short string buffer size */
       POP(st, offset); /* Offset from dest string address */
 
       /* And perform the string copy */
@@ -567,7 +633,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
         /* Get the allocation size of the short string destination */
 
-        strPtr = (uint16_t *)&st->dstack.b[addr1];
+        strPtr   = (uint16_t *)&st->dstack.b[addr1];
         strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
 
         /* And perform the string copy */
@@ -690,7 +756,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(0) = address of dest short string
        *   TOS(1) = MS 16-bits of 32-bit C string pointer
        *   TOS(2) = LS 16-bits of 32-bit C string pointer
-       *   TOS(3)   = Dest short string variable address offset
+       *   TOS(3) = Dest short string variable address offset
        * ON RETURN (input consumed):
        */
 
@@ -990,13 +1056,13 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   function strdup(name : shortstring) : shortstring;
        *
        * ON INPUT
-       *   TOS(0) = pointer to original short string
-       *   TOS(1) = length of original short string
-       *   TOS(2) = allocation of original short string
+       *   TOS(0) = allocation of original short string
+       *   TOS(1) = pointer to original short string
+       *   TOS(2) = length of original short string
        * ON RETURN
-       *   TOS(0) = pointer to new short string
-       *   TOS(1) = length of new short string
-       *   TOS(2) = allocation of new short string (unchanged)
+       *   TOS(0) = allocation of new short string (unchanged)
+       *   TOS(1) = pointer to new short string
+       *   TOS(2) = length of new short string
        */
 
     case lbSSTRDUP :
@@ -1046,44 +1112,27 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   function strcat(string1 : string, string2 : string) : string;
        *
        * ON INPUT
-       *   TOS(0) = pointer to source standard string1 data
-       *   TOS(1) = length of source standard string1
-       *   TOS(2) = pointer to dest standard string2 data
-       *   TOS(3) = length of dest standard string2
+       *   TOS(0) = pointer to source standard string2 data
+       *   TOS(1) = length of source standard string2
+       *   TOS(2) = pointer to dest standard string1 data
+       *   TOS(3) = length of dest standard string1
        * ON OUTPUT
-       *   TOS(0) = pointer to dest standard string2 (unchanged)
-       *   TOS(1) = new length of dest standard string2
+       *   TOS(0) = pointer to dest standard string1 (unchanged)
+       *   TOS(1) = new length of dest standard string1
        */
 
     case lbSTRCAT :
-      /* Get the parameters from the stack (leaving the string reference
-       * in place).
+      /* Get the parameters from the stack (leaving the dest string info in
+       * place).
        */
 
-      POP(st, addr1);       /* string1 data stack addr */
-      POP(st, uparm1);      /* string1 size */
-      uparm2 = TOS(st, 1);  /* string2 size */
+      POP(st, addr1);      /* source string1 string stack address */
+      POP(st, uparm1);     /* source string1 size */
 
-      /* Check for string overflow. */
+      /* Concatenate the strings */
 
-      if (uparm1 + uparm2 > st->stralloc)
-        {
-          errorCode = eSTRSTKOVERFLOW;
-        }
-      else
-        {
-          /* Get a pointer to string1 data */
-
-          src  = ATSTACK(st, addr1);
-
-          /* Get a pointer to string2 buffer, set new size then, get
-           * a pointer to string2 data.
-           */
-
-          dest = (uint8_t *)&GETSTACK(st, TOS(st, 0));
-          memcpy(&dest[uparm2], src, uparm1);  /* cat strings */
-          TOS(st, 1) = uparm1 + uparm2;        /* Save new size */
-        }
+      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
+                             st->stralloc);
       break;
 
       /* Concatenate a short string to the end of a short string.
@@ -1091,20 +1140,31 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   function sstrcat(string1 : shortstring, string2 : shortstring) : shortstring;
        *
        * ON INPUT
-       *   TOS(0) = pointer to source short string1 data
-       *   TOS(1) = length of source short string1
-       *   TOS(2) = string1 allocation size
-       *   TOS(3) = pointer to dest short string2 data
-       *   TOS(4) = length of dest short string2
-       *   TOS(5) = string2 allocation size
+       *   TOS(0) = string1 allocation size
+       *   TOS(1) = pointer to source short string1 data
+       *   TOS(2) = length of source short string1
+       *   TOS(3) = string2 allocation size
+       *   TOS(4) = pointer to dest short string2 data
+       *   TOS(5) = length of dest short string2
        * ON OUTPUT
-       *   TOS(0) = pointer to dest short string2 (unchanged)
-       *   TOS(1) = new length of dest short string2
-       *   TOS(2) = string2 allocation size (unchanged)
+       *   TOS(0) = string2 allocation size (unchanged)
+       *   TOS(1) = pointer to dest short string2 (unchanged)
+       *   TOS(2) = new length of dest short string2
        */
 
     case lbSSTRCAT :
-      errorCode = eNOTYET;
+      /* Get the parameters from the stack (leaving the dest string info in
+       * place).
+       */
+
+      DISCARD(st, 1);      /* discard the source string allocation size */
+      POP(st, addr1);      /* source short string stack address */
+      POP(st, uparm1);     /* source short string size */
+
+      /* Concatenate the strings */
+
+      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
+                             TOS(st, 0));
       break;
 
       /* Concatenate a standard string to the end of a short string.
@@ -1114,17 +1174,27 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        * ON INPUT
        *   TOS(0) = pointer to source standard string1 data
        *   TOS(1) = length of source standard string1
-       *   TOS(2) = pointer to dest short string2 data
-       *   TOS(3) = length of dest short string2
-       *   TOS(4) = string2 allocation size
+       *   TOS(2) = string2 allocation size
+       *   TOS(3) = pointer to dest short string2 data
+       *   TOS(4) = length of dest short string2
        * ON OUTPUT
-       *   TOS(0) = pointer to dest short string2 (unchanged)
-       *   TOS(1) = new length of dest short string2
-       *   TOS(2) = string2 allocation size (unchanged)
+       *   TOS(0) = string2 allocation size (unchanged)
+       *   TOS(1) = pointer to dest short string2 (unchanged)
+       *   TOS(2) = new length of dest short string2
        */
 
     case lbSSTRCATSTR :
-      errorCode = eNOTYET;
+      /* Get the parameters from the stack (leaving the dest string info in
+       * place).
+       */
+
+      POP(st, addr1);      /* source short string stack address */
+      POP(st, uparm1);     /* source short string size */
+
+      /* Concatenate the strings */
+
+      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
+                             TOS(st, 0));
       break;
 
       /* Concatenate a short string to the end of a standard string.
@@ -1132,9 +1202,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   function sstrcat(string1 : shortstring, string2 : standard) : shortstring;
        *
        * ON INPUT
-       *   TOS(0) = pointer to source short string1 data
-       *   TOS(1) = length of source short string1
-       *   TOS(2) = string1 allocation size
+       *   TOS(0) = string1 allocation size
+       *   TOS(1) = pointer to source short string1 data
+       *   TOS(2) = length of source short string1
        *   TOS(3) = pointer to dest standard string2 data
        *   TOS(4) = length of dest standard string2
        * ON OUTPUT
@@ -1143,7 +1213,18 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCATSSTR :
-      errorCode = eNOTYET;
+      /* Get the parameters from the stack (leaving the dest string info in
+       * place).
+       */
+
+      DISCARD(st, 1);      /* discard the source string allocation size */
+      POP(st, addr1);      /* source short string stack address */
+      POP(st, uparm1);     /* source short string size */
+
+      /* Concatenate the strings */
+
+      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
+                             st->stralloc);
       break;
 
       /* Concatenate a character  to the end of a string.
@@ -1164,27 +1245,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
       POP(st, uparm1);    /* Character to concatenate */
-      size = TOS(st, 1);  /* Current length of string */
 
-      /* Check for string overflow.  FIXME:  This logic does not handle
-       * strings with other than the default size!
-       */
-
-      if (size + 1 >= st->stralloc)
-        {
-          errorCode = eSTRSTKOVERFLOW;
-        }
-      else
-        {
-          /* Add the new charcter */
-
-          dest       = ((uint8_t *)&GETSTACK(st, TOS(st, 0)));
-          dest[size] = (uint8_t)uparm1;
-
-          /* Save the new string size */
-
-          TOS(st, 1) = size + 1;
-        }
+      errorCode = pas_strcatc(st, uparm1, TOS(st, 0), &TOS(st, 1),
+                              st->stralloc);
       break;
 
       /* Concatenate a character to the end of a short string.
@@ -1193,17 +1256,24 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *
        * ON INPUT
        *   TOS(0) = character to concatenate
-       *   TOS(1) = pointer to short string allocation
-       *   TOS(2) = length of short string
-       *   TOS(3) = short string allocation
+       *   TOS(1) = short string allocation
+       *   TOS(2) = pointer to short string allocation
+       *   TOS(3) = length of short string
        * ON OUTPUT
-       *   TOS(0) = pointer to short string allocation (unchanged)
-       *   TOS(1) = new length of short string
-       *   TOS(2) = short string allocation (unchanged)
+       *   TOS(0) = short string allocation (unchanged)
+       *   TOS(1) = pointer to short string allocation (unchanged)
+       *   TOS(2) = new length of short string
        */
 
     case lbSSTRCATC :
-      errorCode = eNOTYET;
+      /* Get the parameters from the stack (leaving the string reference
+       * in place.
+       */
+
+      POP(st, uparm1);    /* Character to concatenate */
+
+      errorCode = pas_strcatc(st, uparm1, TOS(st, 2), &TOS(st, 1),
+                              TOS(st, 0));
       break;
 
       /* Compare two pascal standard strings
@@ -1277,12 +1347,12 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   function sstrcmp(name1 : shortstring, name2 : shortstring) : integer;
        *
        * ON INPUT
-       *   TOS(0) = address of short string2 data
-       *   TOS(1) = length of short string2
-       *   TOS(2) = size of short string2 allocation
-       *   TOS(3) = address of short string1 data
-       *   TOS(4) = length of short string1
+       *   TOS(0) = size of short string2 allocation
+       *   TOS(1) = address of short string2 data
+       *   TOS(2) = length of short string2
        *   TOS(3) = size of short string1 allocation
+       *   TOS(4) = address of short string1 data
+       *   TOS(5) = length of short string1
        * ON OUTPUT
        *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
        */
@@ -1298,9 +1368,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        * ON INPUT
        *   TOS(0) = address of standard string2 data
        *   TOS(1) = length of standard string2
-       *   TOS(2) = address of short string1 data
-       *   TOS(3) = length of short string1
-       *   TOS(4) = size of short string1 allocation
+       *   TOS(2) = size of short string1 allocation
+       *   TOS(3) = address of short string1 data
+       *   TOS(4) = length of short string1
        * ON OUTPUT
        *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
        */
@@ -1317,9 +1387,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        * ON INPUT
        *   TOS(0) = address of standard string2 data
        *   TOS(1) = length of standard string2
-       *   TOS(2) = address of short string1 data
-       *   TOS(3) = length of short string1
-       *   TOS(4) = size of short string1 allocation
+       *   TOS(2) = size of short string1 allocation
+       *   TOS(3) = address of short string1 data
+       *   TOS(4) = length of short string1
        * ON OUTPUT
        *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
        */

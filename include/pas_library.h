@@ -86,9 +86,9 @@
  * on entry must be:
  *
  *   TOS(0)=Address of dest short short string variable
- *   TOS(1)=Pointer to source short string buffer
- *   TOS(2)=Length of source short string
- *   TOS(3)=Short string buffer size
+ *   TOS(1)=Short string buffer size
+ *   TOS(2)=Pointer to source short string buffer
+ *   TOS(3)=Length of source short string
  *
  * And in the indexed case:
  *
@@ -101,9 +101,9 @@
 /* Copy a pascal short string to a standard string.  Stack on entry must be:
  *
  *   TOS(0)=Address of dest standard standard string variable
- *   TOS(1)=Pointer to source short string buffer
- *   TOS(2)=Length of source short string
- *   TOS(3)=Short string buffer size
+ *   TOS(1)=Short string buffer size
+ *   TOS(2)=Pointer to source short string buffer
+ *   TOS(3)=Length of source short string
  *
  * And in the indexed case:
  *
@@ -127,7 +127,7 @@
 #define lbSTR2SSTR      (0x0008)
 #define lbSTR2SSTRX     (0x0009)
 
-/* Copy C string to a pascal standard string.    Stack on entry must be:
+/* Copy C string to a pascal standard string.  Stack on entry must be:
  *
  *   procedure cstr2str(src : cstring; var dest : string)
  *
@@ -306,13 +306,13 @@
  *   function strdup(name : shortstring) : shortstring;
  *
  * ON INPUT
- *   TOS(0) = pointer to original short string
- *   TOS(1) = length of original short string
- *   TOS(2) = allocation of original short string
+ *   TOS(0) = allocation of original short string
+ *   TOS(1) = pointer to original short string
+ *   TOS(2) = length of original short string
  * ON RETURN
- *   TOS(0) = pointer to new short string
- *   TOS(1) = length of new short string
- *   TOS(2) = allocation of new short string (unchanged)
+ *   TOS(0) = allocation of new short string (unchanged)
+ *   TOS(1) = pointer to new short string
+ *   TOS(2) = length of new short string
  */
 
 #define lbSSTRDUP       (0x0016)
@@ -349,16 +349,16 @@
  *   function sstrcat(string1 : shortstring, string2 : shortstring) : shortstring;
  *
  * ON INPUT
- *   TOS(0) = pointer to source short string1 data
- *   TOS(1) = length of source short string1
- *   TOS(2) = string1 allocation size
- *   TOS(3) = pointer to dest short string2 data
- *   TOS(4) = length of dest short string2
- *   TOS(5) = string2 allocation size
+ *   TOS(0) = string1 allocation size
+ *   TOS(1) = pointer to source short string1 data
+ *   TOS(2) = length of source short string1
+ *   TOS(3) = string2 allocation size
+ *   TOS(4) = pointer to dest short string2 data
+ *   TOS(5) = length of dest short string2
  * ON OUTPUT
- *   TOS(0) = pointer to dest short string2 (unchanged)
- *   TOS(1) = new length of dest short string2
- *   TOS(2) = string2 allocation size (unchanged)
+ *   TOS(0) = string2 allocation size (unchanged)
+ *   TOS(1) = pointer to dest short string2 (unchanged)
+ *   TOS(2) = new length of dest short string2
  */
 
 #define lbSSTRCAT       (0x0019)
@@ -368,15 +368,15 @@
  *   function sstrcat(string1 : shortstring, string2 : standard) : shortstring;
  *
  * ON INPUT
- *   TOS(0) = pointer to source standard string1 data
- *   TOS(1) = length of source standard string1
- *   TOS(2) = pointer to dest short string2 data
- *   TOS(3) = length of dest short string2
- *   TOS(4) = string2 allocation size
+ *   TOS(0) = pointer to source standard string2 data
+ *   TOS(1) = length of source standard string2
+ *   TOS(2) = string2 allocation size
+ *   TOS(3) = pointer to dest short string1 data
+ *   TOS(4) = length of dest short string1
  * ON OUTPUT
- *   TOS(0) = pointer to dest short string2 (unchanged)
- *   TOS(1) = new length of dest short string2
- *   TOS(2) = string2 allocation size (unchanged)
+ *   TOS(0) = string2 allocation size (unchanged)
+ *   TOS(1) = pointer to dest short string1 (unchanged)
+ *   TOS(2) = new length of dest short string1
  */
 
 #define lbSSTRCATSTR    (0x001a)
@@ -386,14 +386,14 @@
  *   function sstrcat(string1 : shortstring, string2 : standard) : shortstring;
  *
  * ON INPUT
- *   TOS(0) = pointer to source short string1 data
- *   TOS(1) = length of source short string1
- *   TOS(2) = string1 allocation size
- *   TOS(3) = pointer to dest standard string2 data
- *   TOS(4) = length of dest standard string2
+ *   TOS(0) = string1 allocation size
+ *   TOS(1) = pointer to source short string1 data
+ *   TOS(2) = length of source short string1
+ *   TOS(3) = pointer to dest standard string1 data
+ *   TOS(4) = length of dest standard string1
  * ON OUTPUT
- *   TOS(0) = pointer to dest standard string2 (unchanged)
- *   TOS(1) = new length of dest standard string2
+ *   TOS(0) = pointer to dest standard string1 (unchanged)
+ *   TOS(1) = new length of dest standard string1
  */
 
 #define lbSTRCATSSTR    (0x001b)
@@ -419,13 +419,13 @@
  *
  * ON INPUT
  *   TOS(0) = character to concatenate
- *   TOS(1) = pointer to short string allocation
- *   TOS(2) = length of short string
- *   TOS(2) = short string allocation (unchanged)
+ *   TOS(1) = short string allocation (unchanged)
+ *   TOS(2) = pointer to short string allocation
+ *   TOS(3) = length of short string
  * ON OUTPUT
- *   TOS(0) = pointer to short string allocation (unchanged)
- *   TOS(1) = new length of short string
- *   TOS(2) = short string allocation (unchanged)
+ *   TOS(0) = short string allocation (unchanged)
+ *   TOS(1) = pointer to short string allocation (unchanged)
+ *   TOS(2) = new length of short string
  */
 
 #define lbSSTRCATC      (0x001d)
@@ -450,12 +450,12 @@
  *   function sstrcmp(name1 : shortstring, name2 : shortstring) : integer;
  *
  * ON INPUT
- *   TOS(0) = address of short string2 data
- *   TOS(1) = length of short string2
- *   TOS(2) = size of short string2 allocation
- *   TOS(3) = address of short string1 data
- *   TOS(4) = length of short string1
- *   TOS(5) = size of short string1 allocation
+ *   TOS(0) = size of short string2 allocation
+ *   TOS(1) = address of short string2 data
+ *   TOS(2) = length of short string2
+ *   TOS(3) = size of short string1 allocation
+ *   TOS(4) = address of short string1 data
+ *   TOS(5) = length of short string1
  * ON OUTPUT
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
@@ -469,9 +469,9 @@
  * ON INPUT
  *   TOS(0) = address of standard string2 data
  *   TOS(1) = length of standard string2
- *   TOS(2) = address of short string1 data
- *   TOS(3) = length of short string1
- *   TOS(4) = size of short string1 allocation
+ *   TOS(2) = size of short string1 allocation
+ *   TOS(3) = address of short string1 data
+ *   TOS(4) = length of short string1
  * ON OUTPUT
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
@@ -483,9 +483,9 @@
  *   function sstrcmpstr(name1 : string, name2 : shortstring) : integer;
  *
  * ON INPUT
- *   TOS(0) = address of short string2 data
- *   TOS(1) = length of short string2
- *   TOS(2) = size of short string2 allocation
+ *   TOS(0) = size of short string2 allocation
+ *   TOS(1) = address of short string2 data
+ *   TOS(2) = length of short string2
  *   TOS(3) = address of standard string1 data
  *   TOS(4) = length of standard string1
  * ON OUTPUT

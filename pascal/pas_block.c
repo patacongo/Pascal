@@ -798,6 +798,10 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr)
               typePtr->sParm.t.tMaxValue = g_tknInt;
             }
 
+          /* Return the size of an allocated instance of this type. */
+
+          g_dwVarSize = typePtr->sParm.t.tAllocSize;
+
           /* Verify that the correct token terminated the size
            * specification.  This could be either ')' or ']'
            */
