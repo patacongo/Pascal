@@ -141,12 +141,12 @@ static const struct
 
 /* Data stack operations */
 
-/* 0x29 */ { "DUP  ", NOARG16 },
+/* 0x28 */ { "DUP  ", NOARG16 },
 /* 0x29 */ { "DUPH ", NOARG16 },
-/* 0x2a */ { "PUSHS", NOARG16 },
-/* 0x2b */ { "POPS",  NOARG16 },
-/* 0x2c */ { invOp,   NOARG16 },
-/* 0x2d */ { invOp,   NOARG16 },
+/* 0x2a */ { "XCHG ", NOARG16 },
+/* 0x2b */ { "XCHGH", NOARG16 },
+/* 0x2c */ { "PUSHS", NOARG16 },
+/* 0x2d */ { "POPS",  NOARG16 },
 /* 0x2e */ { invOp,   NOARG16 },
 /* 0x2f */ { "RET  ", NOARG16 },
 
@@ -459,13 +459,15 @@ static const char *xName[MAX_XOP] =
 static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "HALT",      "GETENV",     "STRCPY",     "STRCPYX",
-/* 0x04 */ "SSTRCPY",   "SSTRCPYX",   "SSTR2STR",   "SSTR2STRX",
-/* 0x08 */ "STR2SSTR",  "STR2SSTRX",  "CSTR2STR",   "CSTR2STRX",
-/* 0x0c */ "CSTR2SSTR", "CSTR2SSTRX", "BSTR2STR",   "STR2BSTR",
-/* 0x10 */ "STR2BSTRX", "VAL",        "STRINIT",    "SSTRINIT",
-/* 0x14 */ "STRTMP",    "STRDUP",     "MKSTKC",     "STRCAT",
-/* 0x18 */ "STRCATC",   "STRCMP"
+/* 0x00 */ "HALT",       "GETENV",     "STRCPY",     "STRCPYX",
+/* 0x04 */ "SSTRCPY",    "SSTRCPYX",   "SSTR2STR",   "SSTR2STRX",
+/* 0x08 */ "STR2SSTR",   "STR2SSTRX",  "CSTR2STR",   "CSTR2STRX",
+/* 0x0c */ "CSTR2SSTR",  "CSTR2SSTRX", "BSTR2STR",   "STR2BSTR",
+/* 0x10 */ "STR2BSTRX",  "VAL",        "STRINIT",    "SSTRINIT",
+/* 0x14 */ "STRTMP",     "STRDUP",     "SSTRDUP",    "MKSTKC",
+/* 0x18 */ "STRCAT",     "SSTRCAT",    "SSTRCATSTR", "SSTRCATSTR"
+/* 0x1c */ "STRCATC",    "lbSSTRCATC", "STRCMP",     "SSTRCMP",
+/* 0x20 */ "SSTRCMPSTR", "STRCMPSSTR"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";

@@ -262,41 +262,43 @@ uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
 
 int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
 {
+  symbol_t *baseTypePtr;
+
   /* These sizes must agree with the sizes used in
-   * pas_ActualParameterListg() below.
+   * pas_ActualParameterList() below.
    */
 
-  symbol_t *typePtr = procPtr[parmNo].sParm.v.vParent;
-  switch (typePtr->sKind)
+  baseTypePtr = pas_GetBaseTypePointer(procPtr[parmNo].sParm.v.vParent);
+  switch (baseTypePtr->sParm.t.tType)
     {
     case sINT :
     case sSUBRANGE :
     case sSCALAR :
     case sSET_OF :
-    default:
       return sINT_SIZE;
-      break;
 
     case sCHAR :
       return sCHAR_SIZE;
-      break;
 
     case sREAL :
       return sREAL_SIZE;
-      break;
 
     case sSTRING :
       return sSTRING_SIZE;
-      break;
+
+    case sSHORTSTRING :
+      return sSHORTSTRING_SIZE;
 
     case sARRAY :
     case sRECORD :
-      return typePtr->sParm.t.tAllocSize;
-      break;
+      return baseTypePtr->sParm.t.tAllocSize;
 
     case sVAR_PARM :
       return sPTR_SIZE;
-      break;
+
+    default:
+      error(eINVPARMTYPE);
+      return sINT_SIZE;
     }
 }
 
@@ -379,6 +381,11 @@ int pas_ActualParameterList(symbol_t *procPtr)
             case sSTRING :
               pas_Expression(exprString, typePtr);
               size += sSTRING_SIZE;
+              break;
+
+            case sSHORTSTRING :
+              pas_Expression(exprShortString, typePtr);
+              size += sSHORTSTRING_SIZE;
               break;
 
             case sSUBRANGE :
@@ -1025,6 +1032,10 @@ static void readText(void)
         pas_GenerateIoOperation(xREAD_STRING);
         break;
 
+      case exprShortStringPtr :
+        pas_GenerateIoOperation(xREAD_SHORTSTRING);
+        break;
+
       default :
         error(eINVARG);
         break;
@@ -1071,6 +1082,7 @@ static void readBinary(uint16_t fileSize)
       /* Complex types */
 
       case sSTRING :
+      case sSHORTSTRING :
       case sARRAY :
       case sRECORD :
         size   = g_tknPtr->sParm.v.vSize;
@@ -1600,6 +1612,16 @@ static void writeText(void)
           pas_GenerateIoOperation(xWRITE_STRING);
           break;
 
+        case exprShortString :
+          /* WRITE_SHORTSTRING: TOS   = Write address
+           *                    TOS+1 = Write size
+           *                    TOS+2 = String allocation size (not used)
+           *                    TOS+2 = File number
+           */
+
+          pas_GenerateIoOperation(xWRITE_SHORTSTRING);
+          break;
+
         default :
           error(eWRITEPARM);
           break;
@@ -1638,6 +1660,7 @@ static void writeBinary(uint16_t fileSize)
       /* Complex types */
 
       case sSTRING :
+      case sSHORTSTRING :
       case sARRAY :
       case sRECORD :
         size   = g_tknPtr->sParm.v.vSize;

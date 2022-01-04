@@ -292,25 +292,65 @@
 #define lbSTRDUP_INIT \
     { "_lbstrdup",  sSTRING_SIZE, 1, { sSTRING_SIZE }}
 
+/* function sstrdup(name : string) : string; */
+
+#define lbSSTRDUP_INIT \
+    { "_lbsstrdup",  sSHORTSTRING_SIZE, 1, { sSHORTSTRING_SIZE }}
+
 /* string _lbmkstkc(int c); */
 
 #define lbMKSTKC_INIT \
     { "_lbmkstkc",  sSTRING_SIZE, 1, { sINT_SIZE }}
 
-/* string _lbstgrcat(string name, int c); */
+/* string _lbstrcat(string string1, string string2); */
 
 #define lbSTRCAT_INIT \
-    { "_lbstrcat",  sSTRING_SIZE, 2, { sSTRING_SIZE, sINT_SIZE }}
+    { "_lbstrcat",  sSTRING_SIZE, 2, { sSTRING_SIZE, sSTRING_SIZE }}
+
+/* shortstring _lbsstrcat(shortstring string1, shortstring string2); */
+
+#define lbSSTRCAT_INIT \
+    { "_lbsstrcat",  sSHORTSTRING_SIZE, 2, { sSHORTSTRING_SIZE, sSHORTSTRING_SIZE }}
+
+/* shortstring _lbsstrcatstr(shortstring string1, string string2); */
+
+#define lbSSTRCATSTR_INIT \
+    { "_lbsstrcatstr",  sSHORTSTRING_SIZE, 2, { sSHORTSTRING_SIZE, sSTRING_SIZE }}
+
+/* string _lbsstrcatstr(string string1, shortstring string2); */
+
+#define lbSSTRCATSTR_INIT \
+    { "_lbsstrcatstr",  sSTRING_SIZE, 2, { sSTRING_SIZE, sSHORTSTRING_SIZE }}
 
 /* string _lbstrcatc(string name, int c); */
 
 #define lbSTRCATC_INIT \
     { "_lbstrcatc",  sSTRING_SIZE, 2, { sSTRING_SIZE, sINT_SIZE }}
 
+/* string _lbsstrcatc(string name, int c); */
+
+#define lbSSTRCATC_INIT \
+    { "_lbsstrcatc",  sSHORTSTRING_SIZE, 2, { sSHORTSTRING_SIZE, sINT_SIZE }}
+
 /* int _lbstrcmp(string name1, string name2); */
 
 #define lbSTRCMP_INIT \
     { "_lbstrcmp", sINT_SIZE, 2, { sSTRING_SIZE, sSTRING_SIZE }}
+
+/* int _lbsstrcmp(string name1, string name2); */
+
+#define lbSSTRCMP_INIT \
+    { "_lbsstrcmp", sINT_SIZE, 2, { sSHORTSTRING_SIZE, sSHORTSTRING_SIZE }}
+
+/* int _lbsstrcmpstr(shortstring name1, string name2); */
+
+#define lbSSTRCMPSTR_INIT \
+    { "_lbsstrcmpstr", sINT_SIZE, 2, { sSHORTSTRING_SIZE, sSTRING_SIZE }}
+
+/* int _lbstrcmpsstr(shortstring name1, string name2); */
+
+#define lbSTRCMPSSTR_INIT \
+    { "_lbstrcmpsstr", sINT_SIZE, 2, { sSTRING_SIZE, sSHORTSTRING_SIZE }}
 
 /* Floating point library built-ins ************************************/
 

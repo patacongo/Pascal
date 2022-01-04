@@ -98,10 +98,10 @@
  * xx10 0111  STIM       ---            STM uoffs      STSM lvl,offs
  * xx10 1000  DUP        ---            LDX uoffs      LDSX lvl,offs
  * xx10 1001  DUPH       ---            LDXH uoffs     LDSXH lvl,offs
- * xx10 1010  PUSHS      ---            LDXB uoffs     LDSXB lvl,offs
- * xx10 1011  POPS       ---            LDXM uoffs     LDSXM lvl,offs
- * xx10 1100  ---        ---            STX uoffs      STSX lvl,offs
- * xx10 1101  ---        ---            STXH uoffs     STSXH lvl,offs
+ * xx10 1010  XCHG       ---            LDXB uoffs     LDSXB lvl,offs
+ * xx10 1011  XCHGH      ---            LDXM uoffs     LDSXM lvl,offs
+ * xx10 1100  PUSHS      ---            STX uoffs      STSX lvl,offs
+ * xx10 1101  POPS       ---            STXH uoffs     STSXH lvl,offs
  * xx10 1110  ---        ---            STXB uoffs     STSXB lvl,offs
  * xx10 1111  RET        ---            STXM uoffs     STSXM lvl,offs
  *
@@ -209,13 +209,12 @@
 
 #define oDUP   (0x28)   /* (One 32-bit stack argument */
 #define oDUPH  (0x29)   /* (One 16-bit stack argument) */
+#define oXCHG  (0x2a)   /* No arguments */
+#define oXCHGH (0x2b)   /* No arguments */
+#define oPUSHS (0x2c)   /* No arguments */
+#define oPOPS  (0x2d)   /* (One 16-bit stack argument) */
 
-/* 0x2a - 0x2b -- unassigned */
-
-#define oPUSHS (0x2a)   /* No arguments */
-#define oPOPS  (0x2b)   /* (One 16-bit stack argument) */
-
-/* 0x2c - 0x2e -- unassigned */
+/* 0x2e -- unassigned */
 
 /* Program control (No stack arguments)
  * Behavior:

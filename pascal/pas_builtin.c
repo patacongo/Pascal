@@ -83,6 +83,7 @@ static exprType_t pas_BuiltInSizeOf(void)
       case sCHAR :
       case sREAL :
       case sSTRING :
+      case sSHORTSTRING :
       case sSCALAR :
       case sSUBRANGE :
       case sSET_OF :
@@ -132,22 +133,38 @@ static exprType_t pas_BuiltInLength(void)
   /* Process the string-expression */
 
   exprType = pas_Expression(exprString, g_tknPtr);
-  if (exprType != exprString)
-    {
-      error(eSTRING);
-    }
-  else
+  if (exprType == exprString)
     {
       /* The top of the stack now holds:
        *
-       *   TOS(0) - String buffer address
-       *   TOS(1) - String length
+       *   TOS(0) - Standard string buffer address
+       *   TOS(1) - Standard tring length
        *
        * Just pop off the string address, leaving the length at the top of
        * the stack.
        */
 
       pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+    }
+  else if (exprType == exprShortString)
+    {
+      /* The top of the stack now holds:
+       *
+       *   TOS(0) - Short string buffer address
+       *   TOS(1) - Short string length
+       *   TOS(2) - Short string buffer allocation
+       *
+       * Discard the buffer address, exchange the string length and buffer allocation,
+       * then discard the buffer allocation.
+       */
+
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+      pas_GenerateSimple(opXCHG);
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+    }
+  else
+    {
+      error(eSTRING);
     }
 
   pas_CheckRParen();

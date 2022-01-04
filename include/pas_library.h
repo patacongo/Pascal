@@ -85,7 +85,7 @@
 /* Copy a pascal short string to a pascal short string.  Stack
  * on entry must be:
  *
- *   TOS(0)=Address of dest short standard string variable
+ *   TOS(0)=Address of dest short short string variable
  *   TOS(1)=Pointer to source short string buffer
  *   TOS(2)=Length of source short string
  *   TOS(3)=Short string buffer size
@@ -118,11 +118,10 @@
  *   TOS(0)=Address of dest short short string variable
  *   TOS(1)=Pointer to source standard string buffer
  *   TOS(2)=Length of source standard string
- *   TOS(3)=standard string buffer size
  *
  * And in the indexed case:
  *
- *   TOS(4)=Dest short string variable address offset
+ *   TOS(3)=Dest short string variable address offset
  */
 
 #define lbSTR2SSTR      (0x0008)
@@ -286,20 +285,37 @@
 
 #define lbSTRTMP        (0x0014)
 
-/* Replace a string with a duplicate string residing in allocated
+/* Replace a standard string with a duplicate string residing in allocated
  * string stack.
  *
  *   function strdup(name : string) : string;
  *
  * ON INPUT
- *   TOS(0) = pointer to original string
- *   TOS(1) = length of original string
+ *   TOS(0) = pointer to original standard string
+ *   TOS(1) = length of original standard string
  * ON RETURN
- *   TOS(9) = pointer to new string
- *   TOS(1) = length of new string
+ *   TOS(0) = pointer to new standard string
+ *   TOS(1) = length of new standard string
  */
 
 #define lbSTRDUP        (0x0015)
+
+/* Replace a short string with a duplicate string residing in allocated
+ * string stack.
+ *
+ *   function strdup(name : shortstring) : shortstring;
+ *
+ * ON INPUT
+ *   TOS(0) = pointer to original short string
+ *   TOS(1) = length of original short string
+ *   TOS(2) = allocation of original short string
+ * ON RETURN
+ *   TOS(0) = pointer to new short string
+ *   TOS(1) = length of new short string
+ *   TOS(2) = allocation of new short string (unchanged)
+ */
+
+#define lbSSTRDUP       (0x0016)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -310,54 +326,174 @@
  *   TOS(1) = length of new string
  */
 
-#define lbMKSTKC        (0x0016)
+#define lbMKSTKC        (0x0017)
 
-/* Concatenate a string to the end of a string.
+/* Concatenate a standard string to the end of a standard string.
  *
- *   function strcat(name : string1, c : char) : string;
+ *   function strcat(string1 : string, string2 : string) : string;
  *
  * ON INPUT
- *   TOS(st, 0) = pointer to source string1 data
- *   TOS(st, 1) = length of source string1
- *   TOS(st, 2) = pointer to dest string2 data
- *   TOS(st, 3) = length of dest string2
+ *   TOS(0) = pointer to source standard string1 data
+ *   TOS(1) = length of source standard string1
+ *   TOS(2) = pointer to dest standard string2 data
+ *   TOS(3) = length of dest standard string2
  * ON OUTPUT
- *   TOS(st, 0) = pointer to dest string2 (unchanged)
- *   TOS(st, 1) = new length of dest string2
+ *   TOS(0) = pointer to dest standard string2 (unchanged)
+ *   TOS(1) = new length of dest standard string2
  */
 
-#define lbSTRCAT        (0x0017)
+#define lbSTRCAT        (0x0018)
 
-/* Concatenate a character to the end of a string.
+/* Concatenate a short string to the end of a short string.
+ *
+ *   function sstrcat(string1 : shortstring, string2 : shortstring) : shortstring;
+ *
+ * ON INPUT
+ *   TOS(0) = pointer to source short string1 data
+ *   TOS(1) = length of source short string1
+ *   TOS(2) = string1 allocation size
+ *   TOS(3) = pointer to dest short string2 data
+ *   TOS(4) = length of dest short string2
+ *   TOS(5) = string2 allocation size
+ * ON OUTPUT
+ *   TOS(0) = pointer to dest short string2 (unchanged)
+ *   TOS(1) = new length of dest short string2
+ *   TOS(2) = string2 allocation size (unchanged)
+ */
+
+#define lbSSTRCAT       (0x0019)
+
+/* Concatenate a standard string to the end of a short string.
+ *
+ *   function sstrcat(string1 : shortstring, string2 : standard) : shortstring;
+ *
+ * ON INPUT
+ *   TOS(0) = pointer to source standard string1 data
+ *   TOS(1) = length of source standard string1
+ *   TOS(2) = pointer to dest short string2 data
+ *   TOS(3) = length of dest short string2
+ *   TOS(4) = string2 allocation size
+ * ON OUTPUT
+ *   TOS(0) = pointer to dest short string2 (unchanged)
+ *   TOS(1) = new length of dest short string2
+ *   TOS(2) = string2 allocation size (unchanged)
+ */
+
+#define lbSSTRCATSTR    (0x001a)
+
+/* Concatenate a short string to the end of a standard string.
+ *
+ *   function sstrcat(string1 : shortstring, string2 : standard) : shortstring;
+ *
+ * ON INPUT
+ *   TOS(0) = pointer to source short string1 data
+ *   TOS(1) = length of source short string1
+ *   TOS(2) = string1 allocation size
+ *   TOS(3) = pointer to dest standard string2 data
+ *   TOS(4) = length of dest standard string2
+ * ON OUTPUT
+ *   TOS(0) = pointer to dest standard string2 (unchanged)
+ *   TOS(1) = new length of dest standard string2
+ */
+
+#define lbSTRCATSSTR    (0x001b)
+
+/* Concatenate a character to the end of a standard string.
  *
  *   function strcatc(name : string, c : char) : string;
  *
  * ON INPUT
  *   TOS(0) = character to concatenate
- *   TOS(1) = pointer to string
- *   TOS(2) = length of string
+ *   TOS(1) = pointer to standard string allocation
+ *   TOS(2) = length of standard string
  * ON OUTPUT
- *   TOS(0) = pointer to string
- *   TOS(1) = new length of string
+ *   TOS(0) = pointer to standard string allocation (unchanged)
+ *   TOS(1) = new length of standard string
  */
 
-#define lbSTRCATC       (0x0018)
+#define lbSTRCATC       (0x001c)
 
-/* Compare two pascal strings
+/* Concatenate a character to the end of a short string.
+ *
+ *   function strcatc(name : shortstring, c : char) : shortstring;
+ *
+ * ON INPUT
+ *   TOS(0) = character to concatenate
+ *   TOS(1) = pointer to short string allocation
+ *   TOS(2) = length of short string
+ *   TOS(2) = short string allocation (unchanged)
+ * ON OUTPUT
+ *   TOS(0) = pointer to short string allocation (unchanged)
+ *   TOS(1) = new length of short string
+ *   TOS(2) = short string allocation (unchanged)
+ */
+
+#define lbSSTRCATC      (0x001d)
+
+/* Compare two pascal standard strings
  *
  *   function strcmp(name1 : string, name2 : string) : integer;
  *
  * ON INPUT
- *   TOS(2) = address of string2 data
- *   TOS(1) = length of string2
- *   TOS(4) = address of string1 data
- *   TOS(3) = length of string1
+ *   TOS(0) = address of standard string2 data
+ *   TOS(1) = length of standard string2
+ *   TOS(2) = address of standard string1 data
+ *   TOS(3) = length of standard string1
  * ON OUTPUT
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x0019)
+#define lbSTRCMP        (0x001e)
 
-#define MAX_LBOP        (0x001a)
+/* Compare two pascal short strings
+ *
+ *   function sstrcmp(name1 : shortstring, name2 : shortstring) : integer;
+ *
+ * ON INPUT
+ *   TOS(0) = address of short string2 data
+ *   TOS(1) = length of short string2
+ *   TOS(2) = size of short string2 allocation
+ *   TOS(3) = address of short string1 data
+ *   TOS(4) = length of short string1
+ *   TOS(5) = size of short string1 allocation
+ * ON OUTPUT
+ *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
+ */
+
+#define lbSSTRCMP       (0x001f)
+
+/* Compare a pascal short string to a pascal standard string
+ *
+ *   function sstrcmpstr(name1 : shortstring, name2 : string) : integer;
+ *
+ * ON INPUT
+ *   TOS(0) = address of standard string2 data
+ *   TOS(1) = length of standard string2
+ *   TOS(2) = address of short string1 data
+ *   TOS(3) = length of short string1
+ *   TOS(4) = size of short string1 allocation
+ * ON OUTPUT
+ *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
+ */
+
+#define lbSSTRCMPSTR    (0x0020)
+
+/* Compare a pascal standard string to a pascal short string
+ *
+ *   function sstrcmpstr(name1 : string, name2 : shortstring) : integer;
+ *
+ * ON INPUT
+ *   TOS(0) = address of short string2 data
+ *   TOS(1) = length of short string2
+ *   TOS(2) = size of short string2 allocation
+ *   TOS(3) = address of standard string1 data
+ *   TOS(4) = length of standard string1
+ * ON OUTPUT
+ *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
+ */
+
+#define lbSTRCMPSSTR    (0x0021)
+
+#define MAX_LBOP        (0x0022)
 
 #endif /* __PAS_LIBRARY_H */

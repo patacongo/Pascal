@@ -54,7 +54,7 @@ An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
 ########src/104-primes.pas########
-Line 0:0012 Error 4e Token 3b
+Line 0:0012 Error 50 Token 3b
 
 Line (in var section):
  12   sieve, primes : array[0..w] of set of 0..maxbit;
@@ -63,7 +63,7 @@ Where (in const section)
   8   maxbit = 58;
 
 Error:
-262 #define eSETRANGE        ((uint16_t) 0x4e)
+267 #define eSETRANGE        ((uint16_t) 50)
 
 Token: '='
 

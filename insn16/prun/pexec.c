@@ -118,6 +118,7 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
   ustack_t uparm1;
   ustack_t uparm2;
   ustack_t uparm3;
+  ustack_t uparm4;
 
   switch (opcode)
     {
@@ -393,6 +394,24 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
     case oDUPH :
       uparm1 = TOS(st, 0);
       PUSH(st, uparm1);
+      break;
+
+    case oXCHG :
+      uparm1 = TOS(st, 0);
+      uparm2 = TOS(st, 1);
+      uparm3 = TOS(st, 2);
+      uparm4 = TOS(st, 3);
+      TOS(st, 0) = uparm3; /* Swap 32-bit values, retaining endian-ness */
+      TOS(st, 1) = uparm4;
+      TOS(st, 2) = uparm1;
+      TOS(st, 3) = uparm2;
+      break;
+
+    case oXCHGH :
+      uparm1 = TOS(st, 0);
+      uparm2 = TOS(st, 1);
+      TOS(st, 0) = uparm2; /* Swap 16-bit values */
+      TOS(st, 1) = uparm1;
       break;
 
     case oPUSHS :

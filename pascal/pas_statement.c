@@ -1090,7 +1090,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
           pas_StandardFunctionCall(libOpcode);
         }
     }
-  else /* (lValueTpe == sSHORT_STRING) */
+  else /* (lValueTpe == sSHORTSTRING) */
     {
       if (rValueExprType == exprString)
         {

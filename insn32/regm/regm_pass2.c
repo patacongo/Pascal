@@ -384,14 +384,18 @@ static const struct regm_builtin_s g_rgLibCallBuiltIns[MAX_LBOP] =
   /* 0x04 */ lbSSTRCPY_INIT,            lbSSTRCPYX_INIT,
   /* 0x06 */ lbSSTR2STR_INIT,           lbSSTR2STRX_INIT,
   /* 0x08 */ lbSTR2SSTR_INIT,           lbSTR2SSTRX_INIT,
-  /* 0x04 */ lbCSTR2STR_INIT,           lbCSTR2STRX_INIT,
-  /* 0x04 */ lbCSTR2SSTR_INIT,          lbCSTR2SSTRX_INIT,
-  /* 0x06 */ lbBSTR2STR_INIT,           lbSTR2BSTR_INIT,
-  /* 0x08 */ lbSTR2BSTRX_INIT,          lbVAL_INIT,
-  /* 0x0a */ lbSTRINIT_INIT,            lbSSTRINIT_INIT,
-  /* 0x0c */ lbSTRTMP_INIT,             lbSTRDUP_INIT,
-  /* 0x0e */ lbMKSTKC_INIT,             lbSTRCAT_INIT,
-  /* 0x10 */ lbSTRCATC_INIT,            lbSTRCMP_INIT
+  /* 0x0a */ lbCSTR2STR_INIT,           lbCSTR2STRX_INIT,
+  /* 0x0c */ lbCSTR2SSTR_INIT,          lbCSTR2SSTRX_INIT,
+  /* 0x0e */ lbBSTR2STR_INIT,           lbSTR2BSTR_INIT,
+  /* 0x10 */ lbSTR2BSTRX_INIT,          lbVAL_INIT,
+  /* 0x12 */ lbSTRINIT_INIT,            lbSSTRINIT_INIT,
+  /* 0x14 */ lbSTRTMP_INIT,             lbSTRDUP_INIT,
+  /* 0x16 */ lbSSTRDUP_INIT,            lbMKSTKC_INIT,
+  /* 0x18 */ lbSTRCAT_INIT,             lbSSTRCAT_INIT,
+  /* 0x1a */ lbSSTRCATSTR_INIT,         lbSTRCATSSTR_INIT, 
+  /* 0x1c */ lbSTRCATC_INIT,            libSSTRCATC_INIT,
+  /* 0x1e */ lbSTRCMP_INIT,             lbSSTRCMP_INIT,
+  /* 0x20 */ lbSSTRCMPSTR_INIT,         lbSTRCMPSSTR_INIT
 };
 
 static const struct regm_builtin_s g_rgRrFopBuiltIns[MAX_FOP] =

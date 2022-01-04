@@ -1,14 +1,15 @@
-(* Verifies short string concatenation, character to short string concatenation *)
+(* Verifies short string concatenation, standard to short string conversion,
+   character to short string concatenation *)
 
 PROGRAM shortstrings;
 VAR
-  hello   : string[5];
-  world   : string[8];
-  message : string[16];
+  standard : string;
+  short1   : string[8];
+  short2   : string[16];
 
 BEGIN
-  hello   := 'Hello';
-  world   := 'World';
-  message := hello, ',', world, '!';
-  WRITELN(message);
+  standard := 'Hello';
+  short1   := 'World';
+  short2   := standard + ',' + short1 + '!';
+  WRITELN(short2);
 END.

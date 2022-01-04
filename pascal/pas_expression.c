@@ -265,8 +265,9 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               simple1Type = exprReal;
             }
 
-          /* Allow the case of <scalar type> IN <set type> */
-          /* Otherwise, the two terms must agree in type */
+          /* Allow the case of <scalar type> IN <set type>
+           * Otherwise, the two terms must agree in type
+           */
 
           else if (operation != tIN || simple2Type != exprSet)
             {
@@ -287,16 +288,46 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               pas_GenerateFpOperation(fpOpCode);
             }
         }
-      else if (simple1Type == exprString || simple1Type == exprString)
+      else if (simple1Type == exprString)
         {
-          if (strOpCode != opNOP)
+          if (strOpCode == opNOP)
+            {
+              error(eEXPRTYPE);
+            }
+          else if (simple2Type == exprString)
             {
               pas_StandardFunctionCall(lbSTRCMP);
               pas_GenerateSimple(strOpCode);
             }
+          else if (simple2Type == exprShortString)
+            {
+              pas_StandardFunctionCall(lbSTRCMPSSTR);
+              pas_GenerateSimple(strOpCode);
+            }
           else
             {
+              error(eCOMPARETYPE);
+            }
+        }
+      else if (simple1Type == exprShortString)
+        {
+          if (strOpCode == opNOP)
+            {
               error(eEXPRTYPE);
+            }
+          else if (simple2Type == exprString)
+            {
+              pas_StandardFunctionCall(lbSSTRCMPSTR);
+              pas_GenerateSimple(strOpCode);
+            }
+          else if (simple2Type == exprShortString)
+            {
+              pas_StandardFunctionCall(lbSSTRCMP);
+              pas_GenerateSimple(strOpCode);
+            }
+          else
+            {
+              error(eCOMPARETYPE);
             }
         }
       else
@@ -334,14 +365,14 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
    *    if the requested type is a real expression.
    */
 
-  if (findExprType != exprUnknown &&         /* 1)NOT Any expression */
-      findExprType != simple1Type &&         /* 2)NOT Matched expression */
-      (findExprType != exprAnyOrdinal ||     /* 3)NOT any ordinal type */
-       !pas_IsOrdinalType(simple1Type)) &&   /*   OR type is not ordinal */
-      (findExprType != exprAnyString ||      /* 4)NOT any string type */
-       !pas_IsAnyStringType(simple1Type)) && /*   OR type is not string */
-      (findExprType != exprString ||         /* 5)Not looking for string ref */
-       !pas_IsStringReference(simple1Type))) /*   OR type is not string ref */
+  if (findExprType != exprUnknown &&           /* 1) NOT Any expression */
+      findExprType != simple1Type &&           /* 2) NOT Matched expression */
+      (findExprType != exprAnyOrdinal ||       /* 3) NOT any ordinal type */
+       !pas_IsOrdinalType(simple1Type)) &&     /*    OR type is not ordinal */
+      (findExprType != exprAnyString ||        /* 4) NOT any string type */
+       !pas_IsAnyStringType(simple1Type)) &&   /*    OR type is not string */
+      (!pas_IsStringReference(findExprType) || /* 5) Not looking for string ref */
+       !pas_IsStringReference(simple1Type)))   /*    OR type is not string ref */
     {
       /* Automatic conversions from INTEGER to REAL will be performed */
 
@@ -558,6 +589,10 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
           factorType = exprString;
           break;
 
+        case sSHORTSTRING :
+          factorType = exprShortString;
+          break;
+
         case sSUBRANGE :
           switch (sType->sParm.t.tSubType)
             {
@@ -659,6 +694,9 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
                 case sSTRING :
                 case sSTRING_CONST :
                   return exprString;  /* variable length string reference */
+
+                case sSHORTSTRING :
+                  return exprShortString;  /* short string reference */
 
                 case sFILE :
                 case sTEXTFILE :
@@ -784,26 +822,35 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
        * now.
        */
 
-      if (term1Type == exprString && operation == '+')
+      if (operation == '+')
         {
-          /* Duplicate the string on the string stack. */
+          if (term1Type == exprString)
+            {
+              /* Duplicate the standard string on the string stack. */
 
-          pas_StandardFunctionCall(lbSTRDUP);
-        }
+              pas_StandardFunctionCall(lbSTRDUP);
+            }
+          else if (term1Type == exprShortString)
+            {
+              /* Duplicate the short string on the string stack. */
 
-      /* If we are going to add something to a char, then the result must be
-       * a string.  We will similarly have to convert the character to a
-       * string.
-       */
+              pas_StandardFunctionCall(lbSSTRDUP);
+            }
 
-      else if (term1Type == exprChar && operation == '+')
-        {
-          /* Expand the character to a string on the string stack.  And
-           * change the expression type to reflect this.
+          /* If we are going to add something to a char, then the result
+           * must be a string.  We will similarly have to convert the
+           * character to a string.
            */
 
-          pas_StandardFunctionCall(lbMKSTKC);
-          term1Type = exprString;
+          else if (term1Type == exprChar)
+            {
+              /* Expand the character to a string on the string stack.  And
+               * change the expression type to reflect this.
+               */
+
+              pas_StandardFunctionCall(lbMKSTKC);
+              term1Type = exprString;
+            }
         }
 
       /* Get the 2nd term */
@@ -827,7 +874,8 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
           if (term1Type != term2Type)
             {
               /* Handle the case where the 1st argument is REAL and the
-               * second is INTEGER. */
+               * second is INTEGER.
+               */
 
               if (term1Type == exprReal && term2Type == exprInteger)
                 {
@@ -836,7 +884,8 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
                 }
 
               /* Handle the case where the 1st argument is Integer and the
-               * second is REAL. */
+               * second is REAL.
+               */
 
               else if (term1Type == exprInteger && term2Type == exprReal)
                 {
@@ -901,11 +950,42 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
 
                   pas_StandardFunctionCall(lbSTRCAT);
                 }
+              else if (term2Type == exprShortString)
+                {
+                  /* We are concatenating one string with another.*/
+
+                  pas_StandardFunctionCall(lbSTRCATSSTR);
+                }
               else if (term2Type == exprChar)
                 {
                   /* We are concatenating a character to the end of a string */
 
                   pas_StandardFunctionCall(lbSTRCATC);
+                }
+              else
+                {
+                  error(eTERMTYPE);
+                }
+              break;
+
+            case exprShortString :
+              if (term2Type == exprString)
+                {
+                  /* We are concatenating one string with another.*/
+
+                  pas_StandardFunctionCall(lbSSTRCATSTR);
+                }
+              else if (term2Type == exprShortString)
+                {
+                  /* We are concatenating one string with another.*/
+
+                  pas_StandardFunctionCall(lbSSTRCAT);
+                }
+              else if (term2Type == exprChar)
+                {
+                  /* We are concatenating a character to the end of a string */
+
+                  pas_StandardFunctionCall(lbSSTRCATC);
                 }
               else
                 {
@@ -1313,17 +1393,22 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case sSTRING :
-      /* Stack representation is:
+    case sSHORTSTRING :
+      /* Stack representation for sSTRING is:
        *
        *   TOS(0) = pointer to string data
        *   TOS(1) = size in bytes
+       *
+       * For sSHORTSTRING there is also:
+       *
+       *   TOS(2) = size of string buffer
        */
 
-      pas_GenerateDataSize(sSTRING_SIZE);
+      pas_GenerateDataSize(g_tknPtr->sParm.v.vSize);
       pas_GenerateStackReference(opLDSM, g_tknPtr);
 
+      factorType = pas_MapVariable2ExprType(g_token, false);
       getToken();
-      factorType = exprString;
       break;
 
     case sSCALAR :
@@ -2018,28 +2103,27 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
         }
       break;
 
-    /* The only thing that REAL and STRING have in common is that they are
-     * both represented by a multi-word object.
+    /* The only thing that REAL and STRING type have in common is that they
+     * are all both represented by a multi-word objects.
      */
 
     case sREAL         :
     case sSTRING       :
+    case sSHORTSTRING  :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           symbol_t   *baseTypePtr;
-          exprType_t  baseFactorType;
 
-          /* In the case of an array, the size of the variable refers to the size of
-           * array.  We need to traverse back to the base type of the array to get the
-           * size of and element.
+          /* In the case of an array, the size of the variable refers to the
+           * size of the array.  We need to traverse back to the base type of
+           * the array to get the size of an element.
            */
 
           baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
           /* Now we can handle all of the ornaments */
 
-          baseFactorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
-          factorType     = pas_FactorExprType(baseFactorType, factorFlags);
+          factorType  = pas_MapVariable2ExprType(varPtr->sKind, false);
 
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
@@ -2068,10 +2152,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
         }
       else
         {
-          exprType_t  baseFactorType;
-
-          baseFactorType = (varPtr->sKind) == sREAL ? exprReal : exprString;
-          factorType     = pas_FactorExprType(baseFactorType, factorFlags);
+          factorType  = pas_MapVariable2ExprType(varPtr->sKind, false);
 
            if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
@@ -2251,28 +2332,12 @@ static exprType_t pas_PointerFactor(void)
     {
       /* Pointers to simple types */
 
-      case sINT              :
-        pas_GenerateStackReference(opLAS, g_tknPtr);
-        getToken();
-        factorType = exprIntegerPtr;
-        break;
-
+      case sINT :
       case sBOOLEAN :
+      case sCHAR :
         pas_GenerateStackReference(opLAS, g_tknPtr);
+        factorType = pas_MapVariable2ExprPtrType(g_token, true);
         getToken();
-        factorType = exprBooleanPtr;
-        break;
-
-      case sCHAR           :
-        pas_GenerateStackReference(opLAS, g_tknPtr);
-        getToken();
-        factorType = exprCharPtr;
-        break;
-
-      case sREAL              :
-        pas_GenerateStackReference(opLAS, g_tknPtr);
-        getToken();
-        factorType = exprRealPtr;
         break;
 
       case sSCALAR :
@@ -2313,17 +2378,14 @@ static exprType_t pas_PointerFactor(void)
         factorType = exprSetPtr;
         break;
 
-      case sSTRING           :
+      case sREAL :
+      case sSTRING :
+      case sSHORTSTRING :
+      case sFILE :
+      case sTEXTFILE :
         pas_GenerateStackReference(opLAS, g_tknPtr);
+        factorType = pas_MapVariable2ExprPtrType(g_token, false);
         getToken();
-        factorType = exprStringPtr;
-        break;
-
-      case sFILE             :
-      case sTEXTFILE         :
-        pas_GenerateStackReference(opLAS, g_tknPtr);
-        getToken();
-        factorType = exprFilePtr;
         break;
 
       /* Complex factors */
@@ -2676,7 +2738,8 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
      /* Just load the address of the array */
 
      pas_GenerateStackReference(opLAS, varPtr);
-     factorType = pas_MapVariable2ExprPtrType(baseTypePtr->sParm.t.tType, false);
+     factorType = pas_MapVariable2ExprPtrType(baseTypePtr->sParm.t.tType,
+                                              false);
    }
 
   return factorType;
@@ -2813,12 +2876,13 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       break;
 
-    /* The only thing that REAL and STRING have in common is that they are
-     * both represented by a multi-word object.
+    /* The only thing that REAL and STRING types have in common is that they
+     * are all represented by multi-word objects.
      */
 
     case sREAL         :
     case sSTRING       :
+    case sSHORTSTRING  :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
@@ -2837,8 +2901,6 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
-
-          factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
         }
       else
         {
@@ -2850,9 +2912,9 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
-
-          factorType = (varPtr->sKind) == sREAL ? exprRealPtr : exprStringPtr;
         }
+
+      factorType = pas_MapVariable2ExprPtrType(varPtr->sKind, false);
       break;
 
     case sSCALAR :
@@ -3017,7 +3079,9 @@ static exprType_t pas_FunctionDesignator(void)
    * STRING return value containers need some special initialization.
    */
 
-  if (typePtr->sKind == sTYPE && typePtr->sParm.t.tType == sSTRING)
+  if (typePtr->sKind == sTYPE &&
+      (typePtr->sParm.t.tType == sSTRING ||
+       typePtr->sParm.t.tType == sSHORTSTRING))
     {
       /* REVISIT:  This string container really needs to be enclosed in PUSHS
        * and POPS.  Need to assure that in order to release string stack as
@@ -3703,9 +3767,10 @@ static bool pas_IsAnyStringType(exprType_t testExprType)
     }
 }
 
-static bool  pas_IsStringReference (exprType_t testExprType)
+static bool pas_IsStringReference(exprType_t testExprType)
 {
-  if (testExprType == exprString)
+  if (testExprType == exprString ||
+      testExprType == exprShortString)
     {
       return true;
     }

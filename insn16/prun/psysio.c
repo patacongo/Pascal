@@ -96,7 +96,7 @@ static int      pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest,
 static int      pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
 static int      pexec_ReadChar(uint16_t fileNumber, uint8_t *dest);
 static int      pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
-                                 uint16_t *stringVarPtr);
+                                 uint16_t *stringVarPtr, uint16_t readSize);
 static int      pexec_ReadReal(uint16_t fileNumber, uint16_t *dest);
 static int      pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
                                  uint16_t size);
@@ -484,7 +484,7 @@ static int pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
 }
 
 static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
-                            uint16_t *stringVarPtr)
+                            uint16_t *stringVarPtr, uint16_t readSize)
 {
   int errorCode = eNOERROR;
 
@@ -505,7 +505,7 @@ static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
 
       stringBufferStack = stringVarPtr[sSTRING_DATA_OFFSET / sINT_SIZE];
       stringBufferPtr   = (char *)&st->dstack.b[stringBufferStack];
-      ptr               = fgets(stringBufferPtr, st->strsize,
+      ptr               = fgets(stringBufferPtr, readSize,
                                 g_fileTable[fileNumber].stream);
 
       if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
@@ -944,11 +944,29 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
      */
 
     case xREAD_STRING :
-      POP(st, address);     /* String variable address */
+      POP(st, address);     /* Standard string variable address */
       POP(st, fileNumber);  /* File number */
 
       errorCode = pexec_ReadString(st, fileNumber,
-                                   (uint16_t *)&st->dstack.b[address]);
+                                   (uint16_t *)&st->dstack.b[address],
+                                   st->strsize);
+      break;
+
+    case xREAD_SHORTSTRING :
+      {
+        uint16_t *strPtr;
+        uint16_t  strAlloc;
+
+        POP(st, address);     /* Short string variable address */
+        POP(st, fileNumber);  /* File number */
+
+        /* Get the allocation size of the short string */
+
+        strPtr = (uint16_t *)&st->dstack.b[address];
+        strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
+
+        errorCode = pexec_ReadString(st, fileNumber, strPtr,strAlloc);
+      }
       break;
 
     /* READ_REAL: TOS   = Read address
@@ -1014,14 +1032,31 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       errorCode = pexec_WriteChar(fileNumber, (uint8_t)value);
       break;
 
-    /* WRITE_STRING: TOS(0) = Write address
-     *               TOS(1) = Write size
+    /* WRITE_STRING: TOS(0) = Write standard string buffer address
+     *               TOS(1) = Write standard string size
      *               TOS(2) = File number
      */
 
     case xWRITE_STRING :
       POP(st, address);     /* String address */
       POP(st, size);        /* String size */
+      POP(st, fileNumber);  /* File number from stack */
+
+      errorCode = pexec_WriteString(fileNumber,
+                                    (const char *)&st->dstack.b[address],
+                                    size);
+      break;
+
+    /* WRITE_SHORTSTRING: TOS(0) = Write short string buffer address
+     *                    TOS(1) = Write short string size
+     *                    TOS(2) = Write short string allocation (not used)
+     *                    TOS(3) = File number
+     */
+
+    case xWRITE_SHORTSTRING :
+      POP(st, address);     /* String address */
+      POP(st, size);        /* String size */
+      DISCARD(st, 1);       /* Discard the unused stack allocation */
       POP(st, fileNumber);  /* File number from stack */
 
       errorCode = pexec_WriteString(fileNumber,

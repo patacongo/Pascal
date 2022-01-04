@@ -105,6 +105,7 @@ static const uint16_t opmap[NUM_OPCODES] =
   oSTIB,   /* opSTIB */
   oSTIM,   /* opSTIM */
   oDUPH,   /* opDUP -- integer duplicate maps to 16-bit duplicate */
+  oXCHGH,  /* opXCHG -- integer exchange maps to 16-bit exchange */
   oPUSHS,  /* opPUSHS */
   oPOPS,   /* opPOPS */
   oRET,    /* opRET */
