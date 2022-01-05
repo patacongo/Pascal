@@ -96,10 +96,10 @@ static void pas_ConstantFactor(void);
  * Public Data
  ***************************************************************/
 
-int     constantToken;
-int32_t constantInt;
-double  constantReal;
-char   *constantStart;
+int     g_constantToken;
+int32_t g_constantInt;
+double  g_constantReal;
+char   *g_constantStart;
 
 /***************************************************************
  * Private Variables
@@ -118,22 +118,22 @@ void pas_ConstantExpression(void)
 
   /* Is it followed by a relational operator? */
 
-  if (isRelationalOperator(g_token) && isRelationalType(constantToken))
+  if (isRelationalOperator(g_token) && isRelationalType(g_constantToken))
     {
-      int simple1        = constantToken;
-      int32_t simple1Int = constantInt;
-      double simple1Real = constantReal;
+      int simple1        = g_constantToken;
+      int32_t simple1Int = g_constantInt;
+      double simple1Real = g_constantReal;
       int operator       = g_token;
 
       /* Get the second simple expression */
 
       pas_ConstantSimpleExpression();
-      if (simple1 != constantToken)
+      if (simple1 != g_constantToken)
         {
           /* Handle the case where the 1st argument is REAL and the
            * second is INTEGER. */
 
-          if ((simple1 == tREAL_CONST) && (constantToken == tINT_CONST))
+          if ((simple1 == tREAL_CONST) && (g_constantToken == tINT_CONST))
             {
               simple1Real = (double)simple1Int;
               simple1     = tREAL_CONST;
@@ -142,9 +142,9 @@ void pas_ConstantExpression(void)
           /* Handle the case where the 1st argument is Integer and the
            * second is REAL. */
 
-          else if ((simple1 == tINT_CONST) && (constantToken == tREAL_CONST))
+          else if ((simple1 == tINT_CONST) && (g_constantToken == tREAL_CONST))
             {
-              constantReal = (double)constantInt;
+              g_constantReal = (double)g_constantInt;
             }
 
           /* Allow the case of <scalar type> IN <set type>
@@ -168,22 +168,22 @@ void pas_ConstantExpression(void)
           switch (operator)
             {
             case tEQ :
-              constantInt = (simple1Int == constantInt);
+              g_constantInt = (simple1Int == g_constantInt);
               break;
             case tNE :
-              constantInt = (simple1Int != constantInt);
+              g_constantInt = (simple1Int != g_constantInt);
               break;
             case tLT :
-              constantInt = (simple1Int < constantInt);
+              g_constantInt = (simple1Int < g_constantInt);
               break;
             case tLE :
-              constantInt = (simple1Int <= constantInt);
+              g_constantInt = (simple1Int <= g_constantInt);
               break;
             case tGT :
-              constantInt = (simple1Int > constantInt);
+              g_constantInt = (simple1Int > g_constantInt);
               break;
             case tGE :
-              constantInt = (simple1Int >= constantInt);
+              g_constantInt = (simple1Int >= g_constantInt);
               break;
             case tIN :
               /* Not yet */
@@ -197,22 +197,22 @@ void pas_ConstantExpression(void)
           switch (operator)
             {
             case tEQ :
-              constantInt = (simple1Real == constantReal);
+              g_constantInt = (simple1Real == g_constantReal);
               break;
             case tNE :
-              constantInt = (simple1Real != constantReal);
+              g_constantInt = (simple1Real != g_constantReal);
               break;
             case tLT :
-              constantInt = (simple1Real < constantReal);
+              g_constantInt = (simple1Real < g_constantReal);
               break;
             case tLE :
-              constantInt = (simple1Real <= constantReal);
+              g_constantInt = (simple1Real <= g_constantReal);
               break;
             case tGT :
-              constantInt = (simple1Real > constantReal);
+              g_constantInt = (simple1Real > g_constantReal);
               break;
             case tGE :
-              constantInt = (simple1Real >= constantReal);
+              g_constantInt = (simple1Real >= g_constantReal);
               break;
             case tIN :
               /* Not yet */
@@ -229,7 +229,7 @@ void pas_ConstantExpression(void)
 
       /* The type resulting from these operations becomes BOOLEAN */
 
-      constantToken = tBOOLEAN_CONST;
+      g_constantToken = tBOOLEAN_CONST;
     }
 }
 
@@ -257,25 +257,25 @@ static void pas_ConstantSimpleExpression(void)
   /* Process first (non-optional) term and apply unary operation */
 
   pas_ConstantTerm();
-  term = constantToken;
+  term = g_constantToken;
   if ((unary != ' ') && !isAdditiveType(term))
     {
       error(eINVSIGNEDCONST);
     }
   else if (unary == '-')
     {
-      termInt  = -constantInt;
-      termReal = -constantReal;
+      termInt  = -g_constantInt;
+      termReal = -g_constantReal;
     }
   else
     {
-      termInt  = constantInt;
-      termReal = constantReal;
+      termInt  = g_constantInt;
+      termReal = g_constantReal;
     }
 
   /* Process subsequent (optional) terms and binary operations */
 
-  for (;;)
+  for (; ; )
     {
       int operator;
 
@@ -298,21 +298,21 @@ static void pas_ConstantSimpleExpression(void)
        * necessary.
        */
 
-      if (term != constantToken)
+      if (term != g_constantToken)
         {
           /* Handle the case where the 1st argument is REAL and the
            * second is INTEGER. */
 
-          if ((term == tREAL_CONST) && (constantToken == tINT_CONST))
+          if ((term == tREAL_CONST) && (g_constantToken == tINT_CONST))
             {
-              constantReal = (double)constantInt;
-              constantToken = tREAL_CONST;
+              g_constantReal  = (double)g_constantInt;
+              g_constantToken = tREAL_CONST;
             }
 
           /* Handle the case where the 1st argument is Integer and the
            * second is REAL. */
 
-          else if ((term == tINT_CONST) && (constantToken == tREAL_CONST))
+          else if ((term == tINT_CONST) && (g_constantToken == tREAL_CONST))
             {
               termReal = (double)termInt;
               term = tREAL_CONST;
@@ -324,7 +324,7 @@ static void pas_ConstantSimpleExpression(void)
             {
               error(eTERMTYPE);
             }
-        } /* end if */
+        }
 
 
       /* Perform the selected binary operation */
@@ -334,27 +334,27 @@ static void pas_ConstantSimpleExpression(void)
         case tINT_CONST :
           if (operator == '+')
             {
-              termInt += constantInt;
+              termInt += g_constantInt;
             }
           else
             {
-              termInt -= constantInt;
+              termInt -= g_constantInt;
             }
           break;
 
         case tREAL_CONST :
           if (operator == '+')
             {
-              termReal += constantReal;
+              termReal += g_constantReal;
             }
           else
             {
-              termReal -= constantReal;
+              termReal -= g_constantReal;
             }
           break;
 
         case tBOOLEAN_CONST :
-          termInt |= constantInt;
+          termInt |= g_constantInt;
           break;
 
         default :
@@ -363,9 +363,9 @@ static void pas_ConstantSimpleExpression(void)
         }
     }
 
-  constantToken = term;
-  constantInt   = termInt;
-  constantReal  = termReal;
+  g_constantToken = term;
+  g_constantInt   = termInt;
+  g_constantReal  = termReal;
 }
 
 /***************************************************************/
@@ -383,134 +383,135 @@ void pas_ConstantTerm(void)
   /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
 
   pas_ConstantFactor();
-  factor     = constantToken;
-  factorInt  = constantInt;
-  factorReal = constantReal;
-  for (;;) {
-    /* Check for binary operator */
+  factor     = g_constantToken;
+  factorInt  = g_constantInt;
+  factorReal = g_constantReal;
 
-    if (((g_token == tMUL) || (g_token == tMOD)) &&
-        (isMultiplicativeType(factor)))
-      operator = g_token;
-    else if (((g_token == tDIV) || (g_token == tSHL) || (g_token == tSHR)) &&
-             (factor == tINT_CONST))
-      operator = g_token;
-    else if ((g_token == tFDIV) && (factor == tREAL_CONST))
-      operator = g_token;
+  for (; ; )
+    {
+        /* Check for binary operator */
+
+        if (((g_token == tMUL) || (g_token == tMOD)) &&
+            (isMultiplicativeType(factor)))
+          operator = g_token;
+        else if (((g_token == tDIV) || (g_token == tSHL) || (g_token == tSHR)) &&
+                 (factor == tINT_CONST))
+          operator = g_token;
+        else if ((g_token == tFDIV) && (factor == tREAL_CONST))
+          operator = g_token;
 #if 0
-    else if ((g_token == tFDIV) && (factor == tINT_CONST))
-      {
-        factorReal = (double)factorInt;
-        factor     = tREAL_CONST;
-        operator  = g_token;
-      }
-#endif
-    else if ((g_token == tAND) && isLogicalType(factor))
-      operator = g_token;
-    else
-      {
-        constantToken = factor;
-        constantInt   = factorInt;
-        constantReal  = factorReal;
-        break;
-      }
-
-    /* Get the next factor */
-
-    getToken();
-    pas_ConstantFactor();
-
-    /* Before generating the operation, verify that the types match.
-     * Perform automatic type conversion from INTEGER to REAL as
-     * necessary.
-     */
-
-    if (factor != constantToken)
-      {
-        /* Handle the case where the 1st argument is REAL and the
-         * second is INTEGER. */
-
-        if ((factor == tREAL_CONST) && (constantToken == tINT_CONST))
-          {
-            constantReal = (double)constantInt;
-          }
-
-        /* Handle the case where the 1st argument is Integer and the
-         * second is REAL. */
-
-        else if ((factor == tINT_CONST) && (constantToken == tREAL_CONST))
+        else if ((g_token == tFDIV) && (factor == tINT_CONST))
           {
             factorReal = (double)factorInt;
-            factor = tREAL_CONST;
+            factor     = tREAL_CONST;
+            operator  = g_token;
           }
-
-        /* Otherwise, the two factors must agree in type */
-
+#endif
+        else if ((g_token == tAND) && isLogicalType(factor))
+          operator = g_token;
         else
           {
-            error(eFACTORTYPE);
+            g_constantToken = factor;
+            g_constantInt   = factorInt;
+            g_constantReal  = factorReal;
+            break;
           }
-      } /* end if */
 
-    /* Generate code to perform the selected binary operation */
+        /* Get the next factor */
 
-    switch (operator)
-      {
-      case tMUL :
-        if (factor == tINT_CONST)
-          factorInt *= constantInt;
-        else if (factor == tREAL_CONST)
-          factorReal *= constantReal;
-        else
-          error(eFACTORTYPE);
-        break;
+        getToken();
+        pas_ConstantFactor();
 
-      case tDIV :
-        if (factor == tINT_CONST)
-          factorInt /= constantInt;
-        else
-          error(eFACTORTYPE);
-        break;
+        /* Before generating the operation, verify that the types match.
+         * Perform automatic type conversion from INTEGER to REAL as
+         * necessary.
+         */
 
-      case tFDIV :
-        if (factor == tREAL_CONST)
-          factorReal /= constantReal;
-        else
-          error(eFACTORTYPE);
-        break;
+        if (factor != g_constantToken)
+          {
+            /* Handle the case where the 1st argument is REAL and the
+             * second is INTEGER. */
 
-      case tMOD :
-        if (factor == tINT_CONST)
-          factorInt %= constantInt;
-        else if (factor == tREAL_CONST)
-          factorReal = fmod(factorReal, constantReal);
-        else
-          error(eFACTORTYPE);
-        break;
+            if ((factor == tREAL_CONST) && (g_constantToken == tINT_CONST))
+              {
+                g_constantReal = (double)g_constantInt;
+              }
 
-      case tAND :
-        if ((factor == tINT_CONST) || (factor == tBOOLEAN_CONST))
-          factorInt &= constantInt;
-        else
-          error(eFACTORTYPE);
-        break;
+            /* Handle the case where the 1st argument is Integer and the
+             * second is REAL. */
 
-      case tSHL :
-        if (factor == tINT_CONST)
-          factorInt <<= constantInt;
-        else
-          error(eFACTORTYPE);
-        break;
+            else if ((factor == tINT_CONST) && (g_constantToken == tREAL_CONST))
+              {
+                factorReal = (double)factorInt;
+                factor = tREAL_CONST;
+              }
 
-      case tSHR :
-        if (factor == tINT_CONST)
-          factorInt >>= constantInt;
-        else
-          error(eFACTORTYPE);
-        break;
+            /* Otherwise, the two factors must agree in type */
 
-      }
-  }
+            else
+              {
+                error(eFACTORTYPE);
+              }
+          }
+
+        /* Generate code to perform the selected binary operation */
+
+        switch (operator)
+          {
+          case tMUL :
+            if (factor == tINT_CONST)
+              factorInt *= g_constantInt;
+            else if (factor == tREAL_CONST)
+              factorReal *= g_constantReal;
+            else
+              error(eFACTORTYPE);
+            break;
+
+          case tDIV :
+            if (factor == tINT_CONST)
+              factorInt /= g_constantInt;
+            else
+              error(eFACTORTYPE);
+            break;
+
+          case tFDIV :
+            if (factor == tREAL_CONST)
+              factorReal /= g_constantReal;
+            else
+              error(eFACTORTYPE);
+            break;
+
+          case tMOD :
+            if (factor == tINT_CONST)
+              factorInt %= g_constantInt;
+            else if (factor == tREAL_CONST)
+              factorReal = fmod(factorReal, g_constantReal);
+            else
+              error(eFACTORTYPE);
+            break;
+
+          case tAND :
+            if ((factor == tINT_CONST) || (factor == tBOOLEAN_CONST))
+              factorInt &= g_constantInt;
+            else
+              error(eFACTORTYPE);
+            break;
+
+          case tSHL :
+            if (factor == tINT_CONST)
+              factorInt <<= g_constantInt;
+            else
+              error(eFACTORTYPE);
+            break;
+
+          case tSHR :
+            if (factor == tINT_CONST)
+              factorInt >>= g_constantInt;
+            else
+              error(eFACTORTYPE);
+            break;
+        }
+    }
 }
 
 /***************************************************************/
@@ -527,20 +528,20 @@ static void pas_ConstantFactor(void)
     case tINT_CONST :
     case tBOOLEAN_CONST :
     case tCHAR_CONST :
-      constantToken = g_token;
-      constantInt   = g_tknInt;
+      g_constantToken = g_token;
+      g_constantInt   = g_tknInt;
       getToken();
       break;
 
     case tREAL_CONST     :
-      constantToken = g_token;
-      constantReal  = g_tknReal;
+      g_constantToken = g_token;
+      g_constantReal  = g_tknReal;
       getToken();
       break;
 
     case tSTRING_CONST :
-      constantToken = g_token;
-      constantStart = g_tokenString;
+      g_constantToken = g_token;
+      g_constantStart = g_tokenString;
       getToken();
       break;
 
@@ -549,12 +550,13 @@ static void pas_ConstantFactor(void)
     case tNOT:
       getToken();
       pas_ConstantFactor();
-      if ((constantToken != tINT_CONST) && (constantToken != tBOOLEAN_CONST))
+      if (g_constantToken != tINT_CONST &&
+          g_constantToken != tBOOLEAN_CONST)
         {
           error(eFACTORTYPE);
         }
 
-      constantInt = ~constantInt;
+      g_constantInt = ~g_constantInt;
       break;
 
       /* Standard or Built-in function? */

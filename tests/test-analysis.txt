@@ -181,50 +181,36 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0073 Error 27 Token 09
+Line 0:0175 Error 32 Token 2d
 
 Error:
-219 #define eNOTYET          ((uint16_t) 0x26)
+#define eRPAREN          ((uint16_t) 0x32)
 
 Line:
- 73                Str := ''
+ 175                    write(' ]', ' ': TableDayWidth - AllowForDay - 4)
 where
- 63=    PROCEDURE ReadString(VAR Str: string);
+ 34     CONST
+ 27         TableDayWidth = 9;
+ 158        CONST
 
-Token:
- 53 #define tASSIGN          0x09
+Token: '-'
 
 Analysis:
-This is due to unimplemented logic in pas_SimpleAssignment () of
-pas_statment.c in a switch for types sSTRING and sSHORTSTRING.  It just
-refers to string assigments to indexed variables, VAR parameters, and
-pointer.
-
-In this case, the unimplemented logic is assigning a string to string VAR
-parameter.
+Expressions of constants are not currently accepted for a fieldwidth.
 
 ########DayIO.pas########
-Line 0:0060 Error 0d Token 3b
+Line 0:0209 Error 3e Token 3b
 
 Line:
- 60       DayMap: ARRAY[DayType] of DayStrType;
-
-Where:
- 14    TYPE
- 16        DayType = (Sun, Mon, Tue, Wed, Thu, Fri, Sat, BadDay);
- 52    CONST
- 54        DaySize = 3;
- 55    TYPE
- 57        DayStrType = STRING[DaySize];
+ 209    Schedule[HourScan, DayScan] <> NotScheduled;
 
 Error:
-191 #define eHUH             ((uint16_t) 0x0d)
+#define eEXPRTYPE        ((uint16_t) 0x3e)
 
-Token: '='
+Token: ';'
 
 Analysis:
-I have not really looked into this yet, but I suspect the type definition at
-line 57 is the issue:  Sized strings like this are not supported.
+I have not looked into this yet.
 
 ########worksched.pex########
 ERROR: Could not open worksched.o: No such file or directory

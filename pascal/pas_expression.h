@@ -138,10 +138,10 @@ typedef enum exprType_e exprType_t;
  * Public Datas
  ***********************************************************************/
 
-extern int     constantToken;
-extern int32_t constantInt;
-extern double  constantReal;
-extern char   *constantStart;
+extern int     g_constantToken;
+extern int32_t g_constantInt;
+extern double  g_constantReal;
+extern char   *g_constantStart;
 
 /***********************************************************************
  * Public Function Protothypes

@@ -281,6 +281,9 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
     case sCHAR :
       return sCHAR_SIZE;
 
+    case sBOOLEAN :
+      return sBOOLEAN_SIZE;
+
     case sREAL :
       return sREAL_SIZE;
 
@@ -445,6 +448,11 @@ int pas_ActualParameterList(symbol_t *procPtr)
                     {
                     case sINT :
                       pas_VarParameter(exprIntegerPtr, typePtr);
+                      size += sPTR_SIZE;
+                      break;
+
+                    case sSCALAR :
+                      pas_VarParameter(exprScalarPtr, typePtr);
                       size += sPTR_SIZE;
                       break;
 
@@ -1478,7 +1486,7 @@ static void writeProcCommon(bool text, uint16_t fileSize)
        * by ')' meaning that we have processed all of the parameters.
        */
 
-      if (g_token == ':' || g_token == ',') getToken();
+      if (g_token == ',') getToken();
       else break;
     }
 }
@@ -1669,18 +1677,17 @@ static uint16_t writeFieldWidth(void)
 
   if (g_token == ':')
     {
-      /* A constant, integer field-width with must follow the colon.
-       * REVISIT:  Could this be an integer expression?
-       */
+      /* A constant, integer field-width with must follow the colon. */
 
       getToken();
-      if (g_token != tINT_CONST || g_tknInt > UINT8_MAX)
+      pas_ConstantExpression();
+      if (g_constantToken != tINT_CONST || g_constantInt < 0 ||
+          g_constantInt > UINT8_MAX)
         {
           error(eBADFIELDWIDTH);
         }
 
-      fieldWidth = (uint8_t)g_tknInt;
-      getToken();
+      fieldWidth = (uint8_t)g_constantInt;
 
       /* Check if a precision is present after the field-width (only applies
        * to REAL values.
@@ -1693,13 +1700,14 @@ static uint16_t writeFieldWidth(void)
            */
 
           getToken();
-          if (g_token != tINT_CONST || g_tknInt > UINT8_MAX)
+          pas_ConstantExpression();
+          if (g_constantToken != tINT_CONST || g_constantInt < 0 ||
+              g_constantInt > fieldWidth)
             {
               error(eBADPRECISION);
             }
 
-          precision = (uint8_t)g_tknInt;
-          getToken();
+          precision = (uint8_t)g_constantInt;
         }
     }
 

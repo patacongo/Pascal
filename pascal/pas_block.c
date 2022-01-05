@@ -188,23 +188,23 @@ static void pas_DeclareConst(void)
    * the constant found following the '= [ sign ]'
    */
 
-  switch (constantToken)
+  switch (g_constantToken)
     {
     case tINT_CONST :
     case tCHAR_CONST :
     case tBOOLEAN_CONST :
     case sSCALAR_OBJECT :
-      (void)pas_AddConstant(const_name, constantToken, &constantInt, NULL);
+      (void)pas_AddConstant(const_name, g_constantToken, &g_constantInt, NULL);
       break;
 
     case tREAL_CONST :
-      (void)pas_AddConstant(const_name, constantToken, (int32_t*)&constantReal, NULL);
+      (void)pas_AddConstant(const_name, g_constantToken, (int32_t*)&g_constantReal, NULL);
       break;
 
     case tSTRING_CONST :
       {
-        uint32_t offset = poffAddRoDataString(poffHandle, constantStart);
-        (void)pas_AddStringConstant(const_name, offset, strlen(constantStart));
+        uint32_t offset = poffAddRoDataString(poffHandle, g_constantStart);
+        (void)pas_AddStringConstant(const_name, offset, strlen(g_constantStart));
       }
       break;
 
@@ -805,12 +805,13 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
        *   FORM: pascal-string-type = 'string' [ max-string-length ]
        *
        * The left bracket should be followed by a constant expression.
-       * For now, we accept only an integer constant.
        */
 
       getToken();
-      if (g_token != tINT_CONST) error(eINTCONST);
-      else if (g_tknInt <= 0) error(eINVCONST);
+      pas_ConstantExpression();
+
+      if (g_constantToken != tINT_CONST) error(eINTCONST);
+      else if (g_constantInt <= 0) error(eINVCONST);
       else
         {
           /* Create a new, unique, un-named SHORTSTRING type. */
@@ -835,7 +836,6 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
            * specification.  This could be either ')' or ']'
            */
 
-          getToken();
           if (g_token != ']') error(eRBRACKET);
           else getToken();
         }

@@ -376,7 +376,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     {
       /* Automatic conversions from INTEGER to REAL will be performed */
 
-      if ((findExprType == exprReal) && (simple1Type == exprInteger))
+      if (findExprType == exprReal && simple1Type == exprInteger)
         {
           pas_GenerateFpOperation(fpFLOAT);
           simple1Type = exprReal;
@@ -665,6 +665,7 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
       /* Ordinal type mappings */
 
       case sINT :
+      case sSUBRANGE :
         return exprInteger;           /* integer value */
 
       case sCHAR :
@@ -920,7 +921,7 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
             {
               /* Integer addition */
 
-             case exprInteger :
+            case exprInteger :
               pas_GenerateSimple(opADD);
               break;
 

@@ -434,10 +434,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       break;
 
-    /* The only thing that real and strings have in common is that they are
-     * large, multi-word LValues.
-     */
-
     case sREAL :
       exprType = pas_AssignExprType(exprReal, assignFlags);
       if ((assignFlags & ASSIGN_INDEXED) != 0)
@@ -566,34 +562,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sSTRING :
     case sSHORTSTRING :
-      {
-        if ((assignFlags & ASSIGN_INDEXED) != 0)
-          {
-            if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
-              {
-                /* REVISIT -- Needs some thought */
-
-                error(eNOTYET);
-              }
-            else
-              {
-                pas_StringAssignment(varPtr, typePtr, assignFlags);
-              }
-          }
-        else
-          {
-            if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
-              {
-                /* REVISIT -- Needs some thought */
-
-                error(eNOTYET);
-              }
-            else
-              {
-                pas_StringAssignment(varPtr, typePtr, assignFlags);
-              }
-          }
-      }
+      pas_StringAssignment(varPtr, typePtr, assignFlags);
       break;
 
     case sRECORD :
@@ -993,10 +962,19 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
   lValueType     = varPtr->sKind;
 
   /* Place the address of the destination string structure instance on the
-   * stack.
+   * stack.  In the normal case, this means taking the address of the
+   * dest string variable (opLAS).  But in the case of a VAR parameter or
+   * a pointer, then we need, instead, to load the value of the pointer.
    */
 
-  pas_GenerateStackReference(opLAS, varPtr);
+  if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
+    {
+      pas_GenerateStackReference(opLDS, varPtr);
+    }
+  else
+    {
+      pas_GenerateStackReference(opLAS, varPtr);
+    }
 
   /* This is an assignment to a allocated Pascal string --
    * Generate a runtime library call to copy the destination
@@ -1926,22 +1904,38 @@ static void pas_ForStatement(void)
 
    /* Get and verify the left side of the assignment. */
 
-   if (g_token != sINT && g_token != sSUBRANGE)
+   if (g_token != sINT && g_token != sSUBRANGE && g_token != sSCALAR)
      {
        error(eINTVAR);
      }
    else
      {
-       /* Save the token associated with the left side of the assignment
-        * and evaluate the integer assignment.
-        */
+       exprType_t forExprType;
+       uint16_t forVarType;
 
-       varPtr = g_tknPtr;
-       getToken();
+       /* The expression type we need for the FOR index variable type */
+
+       forVarType = g_token;
+       varPtr     = g_tknPtr;
+
+       if (forVarType == sSUBRANGE)
+         {
+           symbol_t *baseTypePtr;
+
+           /* For a sub-range, use the parent type */
+
+           baseTypePtr = pas_GetBaseTypePointer(varPtr->sParm.v.vParent);
+           forVarType  = baseTypePtr->sParm.t.tSubType;
+         }
+
+       /* Then map the FOR index type to an expression type */
+
+       forExprType = pas_MapVariable2ExprType(forVarType, true);
 
        /* Generate the assignment to the integer variable */
 
-       pas_Assignment(opSTS, exprInteger, varPtr, varPtr->sParm.v.vParent);
+       getToken();
+       pas_Assignment(opSTS, forExprType, varPtr, varPtr->sParm.v.vParent);
 
        /* Determine if this is a TO or a DOWNTO loop and set up the opCodes
         * to generate appropriately.
@@ -1966,7 +1960,7 @@ static void pas_ForStatement(void)
 
        /* Evaluate <expression> DO */
 
-       pas_Expression(exprInteger, varPtr->sParm.v.vParent);
+       pas_Expression(forExprType, varPtr->sParm.v.vParent);
 
        /* Verify that the <expression> is followed by the DO token */
 

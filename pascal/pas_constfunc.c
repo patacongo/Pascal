@@ -90,18 +90,18 @@ static void pas_ConstantAbsFunc(void)
   pas_CheckLParen();
   pas_ConstantExpression();
 
-  if (constantToken == tINT_CONST)
+  if (g_constantToken == tINT_CONST)
     {
-      if (constantInt < 0)
+      if (g_constantInt < 0)
         {
-          constantInt = -constantInt;
+          g_constantInt = -g_constantInt;
         }
     }
-  else if (constantToken == tREAL_CONST)
+  else if (g_constantToken == tREAL_CONST)
     {
-      if (constantReal < 0)
+      if (g_constantReal < 0)
         {
-          constantReal = -constantInt;
+          g_constantReal = -g_constantInt;
         }
     }
   else
@@ -137,7 +137,7 @@ static void pas_ConstantPredFunc(void)
   pas_CheckLParen();
   pas_ConstantExpression();
   pas_IsOrdinalConstant();
-  constantInt--;
+  g_constantInt--;
   pas_CheckRParen();
 }
 
@@ -151,13 +151,13 @@ static void pas_ConstantSqrFunc(void)
 
   pas_CheckLParen();
   pas_ConstantExpression();
-  if (constantToken == tINT_CONST)
+  if (g_constantToken == tINT_CONST)
     {
-      constantInt *= constantInt;
+      g_constantInt *= g_constantInt;
     }
-  else if (constantToken == tREAL_CONST)
+  else if (g_constantToken == tREAL_CONST)
     {
-      constantReal *= constantReal;
+      g_constantReal *= g_constantReal;
     }
   else
     {
@@ -177,9 +177,9 @@ static void pas_ConstantRealFunc(uint8_t fpOpCode)
 
   pas_CheckLParen();
   pas_ConstantExpression();
-  if (constantToken == tINT_CONST)
+  if (g_constantToken == tINT_CONST)
     {
-      constantReal = (double)constantInt;
+      g_constantReal = (double)g_constantInt;
     }
   else
     {
@@ -200,7 +200,7 @@ static void pas_ConstantSuccFunc(void)
   pas_CheckLParen();
   pas_ConstantExpression();
   pas_IsOrdinalConstant();
-  constantInt++;
+  g_constantInt++;
   pas_CheckRParen();
 }
 
@@ -215,7 +215,7 @@ static void pas_ConstantOddFunc(void)
   pas_CheckLParen();
   pas_ConstantExpression();
   pas_IsOrdinalConstant();
-  constantInt &= 1;
+  g_constantInt &= 1;
   pas_Expression(exprAnyOrdinal, NULL);
   pas_CheckRParen();
 }
@@ -235,9 +235,9 @@ static void pas_ConstantChrFunc(void)
 
   pas_CheckLParen();
   pas_ConstantExpression();
-  if (constantToken == tINT_CONST)
+  if (g_constantToken == tINT_CONST)
     {
-      constantToken = tCHAR_CONST;
+      g_constantToken = tCHAR_CONST;
     }
   else
     {
@@ -258,9 +258,9 @@ static void pas_ConstantReal2IntFunc(int kind)
 
 static void pas_IsOrdinalConstant(void)
 {
-  if (constantToken == tINT_CONST     || /* integer value */
-      constantToken == tCHAR_CONST    || /* character value */
-      constantToken == tBOOLEAN_CONST)
+  if (g_constantToken == tINT_CONST     || /* integer value */
+      g_constantToken == tCHAR_CONST    || /* character value */
+      g_constantToken == tBOOLEAN_CONST)
     {
       return;
     }
