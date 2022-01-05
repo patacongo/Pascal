@@ -1872,7 +1872,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
 
       if (g_token == '[')
         {
-          factorFlags   |= FACTOR_INDEXED;
+          factorFlags |= FACTOR_INDEXED;
 
           /* Generate the array offset calculation and indexed load */
 

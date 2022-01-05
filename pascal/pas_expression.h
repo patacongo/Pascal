@@ -112,7 +112,7 @@ enum exprType_e
   exprBoolean        = 0x06,  /* boolean(integer) value */
   exprScalar         = 0x07,  /* scalar(integer) value */
   exprString         = 0x08,  /* variable length string reference */
-  exprShortString    = 0x00,  /* variable length string reference */
+  exprShortString    = 0x09,  /* variable length string reference */
   exprCString        = 0x0a,  /* pointer to C string */
   exprSet            = 0x0b,  /* set(integer) value */
   exprFile           = 0x0c,  /* file */

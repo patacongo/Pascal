@@ -172,7 +172,7 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0073 Error 26 Token 09
+Line 0:0073 Error 27 Token 09
 
 Error:
 219 #define eNOTYET          ((uint16_t) 0x26)
@@ -186,8 +186,13 @@ Token:
  53 #define tASSIGN          0x09
 
 Analysis:
-I have not looked at this yet.  Perhaps there is a problem parsing the empty
-string?  Or in assigning to the VAR string?
+This is due to unimplemented logic in pas_SimpleAssignment () of
+pas_statment.c in a switch for types sSTRING and sSHORTSTRING.  It just
+refers to string assigments to indexed variables, VAR parameters, and
+pointer.
+
+In this case, the unimplemented logic is assigning a string to string VAR
+parameter.
 
 ########DayIO.pas########
 Line 0:0060 Error 0d Token 3b

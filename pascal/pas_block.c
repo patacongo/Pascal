@@ -90,7 +90,7 @@ static void      pas_ProcedureDeclaration  (void);
 static void      pas_FunctionDeclaration   (void);
 
 static symbol_t *pas_TypeIdentifier        (void);
-static symbol_t *pas_CheckShortString      (symbol_t *typePtr);
+static symbol_t *pas_CheckShortString      (symbol_t *typePtr, char *typeName);
 static symbol_t *pas_TypeDenoter           (char *typeName);
 static symbol_t *pas_FileTypeDenoter       (void);
 static symbol_t *pas_NewComplexType        (char *typeName);
@@ -264,16 +264,33 @@ static symbol_t *pas_DeclareOrdinalType(char *typeName)
    */
 
   if (typePtr == NULL)
-     {
-       typeIdPtr = pas_TypeIdentifier();
-       if (typeIdPtr)
-         {
-           typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.tType,
-                                       g_dwVarSize, typeIdPtr);
-         }
-     }
+    {
+      typeIdPtr = pas_TypeIdentifier();
+      if (typeIdPtr)
+        {
+          /* Before we do that, handle the special case of short strings.
+           * These look like a standard string but have size information
+           * post-pended to them, making them a different type.
+           */
 
-   return typePtr;
+          if (typeIdPtr->sParm.t.tType == sSTRING)
+            {
+              /* Check if this is really a new short string type */
+
+              typePtr = pas_CheckShortString(typePtr, typeName);
+            }
+
+          /* No? Then define the new type as an alias for the existing type. */
+
+          if (typePtr == NULL)
+            {
+              typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.tType,
+                                          g_dwVarSize, typeIdPtr);
+            }
+        }
+    }
+
+  return typePtr;
 }
 
 /****************************************************************************/
@@ -752,6 +769,18 @@ static symbol_t *pas_TypeIdentifier(void)
       /* Return the size of an allocated instance of this type. */
 
       g_dwVarSize = typePtr->sParm.t.tAllocSize;
+
+      /* Before we fully commit to doing that, handle the special case of
+       * short strings:  These look like a standard string but have size
+       * information post-appended to them, making them a different type.
+       */
+
+      if (typePtr->sParm.t.tType == sSTRING)
+        {
+          /* Check if this is really a new, un-named short string type */
+
+          typePtr = pas_CheckShortString(typePtr, "");
+        }
     }
 
   return typePtr;
@@ -762,7 +791,7 @@ static symbol_t *pas_TypeIdentifier(void)
  * STRING, then create a new SHORTSTRING type.
  */
 
-static symbol_t *pas_CheckShortString(symbol_t *typePtr)
+static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
 {
   TRACE(g_lstFile,"[pas_CheckShortString]");
 
@@ -786,8 +815,8 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr)
         {
           /* Create a new, unique, un-named SHORTSTRING type. */
 
-          typePtr = pas_AddTypeDefine("", sSHORTSTRING, sSHORTSTRING_SIZE,
-                                      NULL);
+          typePtr = pas_AddTypeDefine(typeName, sSHORTSTRING,
+                                      sSHORTSTRING_SIZE, NULL);
 
           /* Save the size of the short string buffer allocation in the
            * tMaxValue field.
@@ -835,7 +864,7 @@ static symbol_t *pas_TypeDenoter(char *typeName)
 
       if (typePtr->sParm.t.tType == sSTRING)
         {
-          typePtr = pas_CheckShortString(typePtr);
+          typePtr = pas_CheckShortString(typePtr, "");
         }
 
       /* Return the type identifier */
