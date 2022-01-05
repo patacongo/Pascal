@@ -264,7 +264,7 @@ struct fileState_s
   int16_t        include;
 
   /* These fields are managed by the tokenizer.  These are all
-   * initialized by primeTokenizer().
+   * initialized by pas_PrimeTokenizer().
    *
    * buffer[]  - Holds the current input line
    * line      - Is the line number in this file for the current line

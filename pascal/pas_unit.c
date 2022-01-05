@@ -69,9 +69,9 @@
  * Private Function Prototypes
  ***********************************************************************/
 
-static void interfaceSection          (void);
-static void exportedProcedureHeading  (void);
-static void exportedFunctionHeading   (void);
+static void pas_InterfaceSection          (void);
+static void pas_ExportedProcedureHeading  (void);
+static void pas_ExportedFunctionHeading   (void);
 
 /***********************************************************************
  * Public Functions
@@ -132,7 +132,7 @@ void pas_UnitImplementation(void)
    *       'interface' [ uses-section ] interface-declaration
    */
 
-  interfaceSection();
+  pas_InterfaceSection();
 
   /* Check for the presence of an implementation section */
 
@@ -244,7 +244,7 @@ void pas_UnitInterface(void)
    *       'interface' [ uses-section ] interface-declaration
    */
 
-  interfaceSection();
+  pas_InterfaceSection();
 
   /* Verify that the implementation section is present
    * FORM: implementation-section =
@@ -273,14 +273,14 @@ void pas_UnitInterface(void)
  * Private Functions
  ***********************************************************************/
 
-static void interfaceSection(void)
+static void pas_InterfaceSection(void)
 {
   unsigned int saveNSym;        /* Save top of symbol table */
   unsigned int saveNConst;      /* Save top of constant table */
   unsigned int saveSymOffset;   /* Save previous level symbol offset */
   unsigned int saveConstOffset; /* Save previous level constant offset */
 
-  TRACE(g_lstFile, "[interfaceSection]");
+  TRACE(g_lstFile, "[pas_InterfaceSection]");
 
   /* Save the current top-of-stack data for symbols, constants, and
    * initializers.
@@ -404,7 +404,7 @@ static void interfaceSection(void)
 
            /* Process the interface declaration */
 
-           exportedFunctionHeading();
+           pas_ExportedFunctionHeading();
          }
 
        /* FORM: procedure-heading =
@@ -419,7 +419,7 @@ static void interfaceSection(void)
 
            /* Process the interface declaration */
 
-           exportedProcedureHeading();
+           pas_ExportedProcedureHeading();
          }
        else break;
      }
@@ -436,14 +436,14 @@ static void interfaceSection(void)
 
 /* Process Procedure Declaration Block */
 
-static void exportedProcedureHeading(void)
+static void pas_ExportedProcedureHeading(void)
 {
    uint16_t  procLabel = ++g_label;
    char     *saveChSp;
    symbol_t *procPtr;
    int       i;
 
-   TRACE(g_lstFile,"[exportedProcedureHeading]");
+   TRACE(g_lstFile,"[pas_ExportedProcedureHeading]");
 
    /* FORM: procedure-heading =
     *       'procedure' identifier [ formal-parameter-list ]
@@ -516,7 +516,7 @@ static void exportedProcedureHeading(void)
 /***************************************************************/
 /* Process Function Declaration Block */
 
-static void exportedFunctionHeading(void)
+static void pas_ExportedFunctionHeading(void)
 {
    uint16_t  funcLabel = ++g_label;
    int16_t   parameterOffset;
@@ -524,7 +524,7 @@ static void exportedFunctionHeading(void)
    symbol_t *funcPtr;
    int       i;
 
-   TRACE(g_lstFile,"[exportedFunctionHeading]");
+   TRACE(g_lstFile,"[pas_ExportedFunctionHeading]");
 
    /* FORM: function-declaration =
     *       function-heading ';' directive |

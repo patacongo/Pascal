@@ -64,8 +64,8 @@ extern int   g_levelConstOffset;     /* Index to constants for this level */
 
 void    getToken(void);
 void    getLevelToken(void);
-char    getNextCharacter(bool skipWhiteSpace);
-int16_t primeTokenizer(unsigned long stringStackSize);
+char    pas_GetNextCharacter(bool skipWhiteSpace);
+int16_t pas_PrimeTokenizer(unsigned long stringStackSize);
 int16_t pas_RePrimeTokenizer(void);
 
 #endif /* __PTKN_H */

@@ -95,9 +95,9 @@ int   g_levelConstOffset = 0;  /* Index to constants for this level */
  * Public Functions
  ***************************************************************/
 
-int16_t primeTokenizer(unsigned long stringStackSize)
+int16_t pas_PrimeTokenizer(unsigned long stringStackSize)
 {
-  TRACE(g_lstFile,"[primeTokenizer]");
+  TRACE(g_lstFile,"[pas_PrimeTokenizer]");
 
   /* Allocate and initialize the string stack and stack pointers */
 
@@ -157,7 +157,7 @@ int16_t pas_RePrimeTokenizer(void)
  * again.
  */
 
-char getNextCharacter(bool skipWhiteSpace)
+char pas_GetNextCharacter(bool skipWhiteSpace)
 {
   /* Get the next character from the line buffer. */
 
@@ -181,7 +181,7 @@ char getNextCharacter(bool skipWhiteSpace)
         {
           /* Otherwise, recurse to try again. */
 
-          return getNextCharacter(skipWhiteSpace);
+          return pas_GetNextCharacter(skipWhiteSpace);
 
         }
     }
@@ -210,7 +210,7 @@ char getNextCharacter(bool skipWhiteSpace)
 
       if (!inChar)
         {
-          return getNextCharacter(skipWhiteSpace);
+          return pas_GetNextCharacter(skipWhiteSpace);
         }
     }
 
@@ -706,7 +706,7 @@ static void unsignedNumber(void)
    * Otherwise, convert the integer string to binary.
    */
 
-  else if ((inChar != '.') || (getNextCharacter(false) == '.'))
+  else if ((inChar != '.') || (pas_GetNextCharacter(false) == '.'))
     {
       /* Terminate the integer string and convert it using sscanf */
 
@@ -721,7 +721,7 @@ static void unsignedNumber(void)
     {
       /* Its a real value!  Now really get the next character and
        * after the decimal point (this will work whether or not
-       * getNextCharacter() was called). Then process the real number.
+       * pas_GetNextCharacter() was called). Then process the real number.
        */
 
       getCharacter();

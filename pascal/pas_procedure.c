@@ -1558,7 +1558,7 @@ static void writeText(void)
         wPtr = g_tknPtr->sParm.v.vParent;
         if (wPtr != NULL && wPtr->sKind == sTYPE &&
             wPtr->sParm.t.tType == sCHAR &&
-            getNextCharacter(true) != '[')
+            pas_GetNextCharacter(true) != '[')
           {
             /* WRITE_STRING: TOS(0) = Field Width
              *               TOS(1) = Write address

@@ -48,8 +48,6 @@ STANDARD PROCEDURES and FUNCTIONS
 - The following statement procedures/functions not implemented:
     - GET, PUT, PACK, UNPACK, NEW
     - TBD
-- No fieldwidth colon operator on WRITE arguments or precision on REAL
-  arguments.
 
 FILE PROCEDURES and FUNCTIONS
 - Not all standard

@@ -1,4 +1,4 @@
-/***************************************************************
+/****************************************************************************
  * pas_stdfunc.c
  * Standard Functions
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************/
+ ****************************************************************************/
 
-/***************************************************************
+/****************************************************************************
  * Included Files
- ***************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -60,37 +60,37 @@
 #include "pas_insn.h"
 #include "pas_error.h"
 
-/***************************************************************
+/****************************************************************************
  * Private Function Prototypes
- ***************************************************************/
+ ****************************************************************************/
 
 /* Standard Pascal Functions */
 
-static exprType_t absFunc(void);    /* Integer absolute value */
-static exprType_t predFunc(void);
-static void       ordFunc(void);    /* Convert scalar to integer */
-static exprType_t sqrFunc(void);
-static void       realFunc(uint8_t fpCode);
-static exprType_t succFunc(void);
-static void       oddFunc(void);
-static void       chrFunc(void);
-static void       fileFunc(uint16_t opcode);
+static exprType_t pas_AbsFunc(void);     /* Integer absolute value */
+static exprType_t pas_PredFunc(void);
+static void       pas_OrdFunc(void);     /* Convert scalar to integer */
+static exprType_t pas_SqrFunc(void);
+static void       pas_RealFunc(uint8_t fpCode);
+static exprType_t pas_SuccFunc(void);
+static void       pas_OddFunc(void);
+static void       pas_ChrFunc(void);
+static void       pas_FileFunc(uint16_t opcode);
 
 /* Enhanced Pascal functions */
 
 /* Non-standard C-library interface functions */
 
-static exprType_t getenvFunc (void);    /* Get environment string value */
+static exprType_t pas_GetEnvFunc (void); /* Get environment string value */
 
-/***************************************************************
+/****************************************************************************
  * Public Functions
- ***************************************************************/
+ ****************************************************************************/
 
 void pas_PrimeStandardFunctions(void)
 {
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process a standard Pascal function call */
 
 exprType_t pas_StandardFunction(void)
@@ -109,23 +109,23 @@ exprType_t pas_StandardFunction(void)
         {
           /* Functions which return the same type as their argument */
         case txABS :
-          funcType = absFunc();
+          funcType = pas_AbsFunc();
           break;
 
         case txSQR :
-          funcType = sqrFunc();
+          funcType = pas_SqrFunc();
           break;
 
         case txPRED :
-          funcType = predFunc();
+          funcType = pas_PredFunc();
           break;
 
         case txSUCC :
-          funcType = succFunc();
+          funcType = pas_SuccFunc();
           break;
 
         case txGETENV : /* Non-standard C library interfaces */
-          funcType = getenvFunc();
+          funcType = pas_GetEnvFunc();
           break;
 
           /* Functions returning INTEGER with REAL arguments */
@@ -147,63 +147,63 @@ exprType_t pas_StandardFunction(void)
           /* Functions returning CHARACTER with INTEGER arguments. */
 
         case txCHR :
-          chrFunc();
+          pas_ChrFunc();
           funcType = exprChar;
           break;
 
           /* Function returning integer with scalar arguments */
 
         case txORD :
-          ordFunc();
+          pas_OrdFunc();
           funcType = exprInteger;
           break;
 
           /* Functions returning BOOLEAN */
 
         case txODD :
-          oddFunc();
+          pas_OddFunc();
           funcType = exprBoolean;
           break;
 
         case txEOF :
-          fileFunc(xEOF);
+          pas_FileFunc(xEOF);
           funcType = exprBoolean;
           break;
 
         case txEOLN :
-          fileFunc(xEOLN);
+          pas_FileFunc(xEOLN);
           funcType = exprBoolean;
           break;
 
           /* Functions returning REAL with REAL/INTEGER arguments */
 
         case txSQRT :
-          realFunc(fpSQRT);
+          pas_RealFunc(fpSQRT);
           funcType = exprReal;
           break;
 
         case txSIN :
-          realFunc(fpSIN);
+          pas_RealFunc(fpSIN);
           funcType = exprReal;
           break;
 
         case txCOS :
-          realFunc(fpCOS);
+          pas_RealFunc(fpCOS);
           funcType = exprReal;
           break;
 
         case txARCTAN :
-          realFunc(fpATAN);
+          pas_RealFunc(fpATAN);
           funcType = exprReal;
           break;
 
         case txLN :
-          realFunc(fpLN);
+          pas_RealFunc(fpLN);
           funcType = exprReal;
           break;
 
         case txEXP :
-          realFunc(fpEXP);
+          pas_RealFunc(fpEXP);
           funcType = exprReal;
           break;
 
@@ -230,15 +230,15 @@ void pas_CheckRParen(void)
    else getToken();
 }
 
-/***************************************************************
+/****************************************************************************
  * Private Functions
- ***************************************************************/
+ ****************************************************************************/
 
-static exprType_t absFunc(void)
+static exprType_t pas_AbsFunc(void)
 {
    exprType_t absType;
 
-   TRACE(g_lstFile,"[absFunc]");
+   TRACE(g_lstFile,"[pas_AbsFunc]");
 
    /* FORM:  ABS (<simple integer/real expression>) */
 
@@ -256,11 +256,11 @@ static exprType_t absFunc(void)
    return absType;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
-static void ordFunc(void)
+static void pas_OrdFunc(void)
 {
-   TRACE(g_lstFile,"[ordFunc]");
+   TRACE(g_lstFile,"[pas_OrdFunc]");
 
    /* FORM:  ORD (<scalar type>) */
 
@@ -269,13 +269,13 @@ static void ordFunc(void)
    pas_CheckRParen();
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
-static exprType_t predFunc(void)
+static exprType_t pas_PredFunc(void)
 {
    exprType_t predType;
 
-   TRACE(g_lstFile,"[predFunc]");
+   TRACE(g_lstFile,"[pas_PredFunc]");
 
    /* FORM:  PRED (<simple integer expression>) */
 
@@ -289,13 +289,13 @@ static exprType_t predFunc(void)
    return predType;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
-static exprType_t sqrFunc(void)
+static exprType_t pas_SqrFunc(void)
 {
    exprType_t sqrType;
 
-   TRACE(g_lstFile,"[sqrFunc]");
+   TRACE(g_lstFile,"[pas_SqrFunc]");
 
 /* FORM:  SQR (<simple integer OR real expression>) */
 
@@ -318,13 +318,13 @@ static exprType_t sqrFunc(void)
    return sqrType;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
-static void realFunc (uint8_t fpOpCode)
+static void pas_RealFunc (uint8_t fpOpCode)
 {
    exprType_t realType;
 
-   TRACE(g_lstFile,"[realFunc]");
+   TRACE(g_lstFile,"[pas_RealFunc]");
 
    /* FORM:  <function identifier> (<real/integer expression>) */
 
@@ -341,13 +341,13 @@ static void realFunc (uint8_t fpOpCode)
    pas_CheckRParen();
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
-static exprType_t succFunc(void)
+static exprType_t pas_SuccFunc(void)
 {
    exprType_t succType;
 
-   TRACE(g_lstFile,"[succFunc]");
+   TRACE(g_lstFile,"[pas_SuccFunc]");
 
    /* FORM:  SUCC (<simple integer expression>) */
 
@@ -362,11 +362,11 @@ static exprType_t succFunc(void)
    return succType;
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
-static void oddFunc(void)
+static void pas_OddFunc(void)
 {
-   TRACE(g_lstFile,"[oddFunc]");
+   TRACE(g_lstFile,"[pas_OddFunc]");
 
    /* FORM:  ODD (<simple integer expression>) */
 
@@ -381,10 +381,10 @@ static void oddFunc(void)
    pas_GenerateSimple(opNEQZ);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Process the standard chr function */
 
-static void chrFunc(void)
+static void pas_ChrFunc(void)
 {
    TRACE(g_lstFile,"[charFactor]");
 
@@ -402,9 +402,9 @@ static void chrFunc(void)
 /****************************************************************************/
 /* EOF/EOLN function */
 
-static void fileFunc(uint16_t opcode)
+static void pas_FileFunc(uint16_t opcode)
 {
-  TRACE(g_lstFile,"[fileFunc]");
+  TRACE(g_lstFile,"[pas_FileFunc]");
 
   /* FORM: EOF|EOLN {({<file number>})}
    *
@@ -440,14 +440,14 @@ static void fileFunc(uint16_t opcode)
     }
 }
 
-/**********************************************************************/
+/****************************************************************************/
 /* C library getenv interface */
 
-static exprType_t getenvFunc(void)
+static exprType_t pas_GetEnvFunc(void)
 {
   exprType_t stringType;
 
-  TRACE(g_lstFile, "[getenvFunc]");
+  TRACE(g_lstFile, "[pas_GetEnvFunc]");
 
   /* FORM:  <string_var> = getenv(<string>) */
 
@@ -468,5 +468,3 @@ static exprType_t getenvFunc(void)
   pas_CheckRParen();
   return exprCString;
 }
-
-/***********************************************************************/
