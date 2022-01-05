@@ -121,6 +121,8 @@
  * eREADPARMTYPE        Illegal read parameter type
  * eWRITEPARM           Illegal parameter in WRITE statement
  * eNOWRITEPARM         Missing parameter in WRITE statement
+ * eBADFIELDWIDTH       Bad field width in WRITE statement
+ * eBADPRECISION        Bad precision in WRITE statement
  * eINDEXTYPE           Illegal array index type
  * eARRAYTYPE           Illegal type for ARRAY OF
  * eTOOMANYINDICES      Two many indices for dimensionality of array
@@ -255,26 +257,28 @@
 #define eWRITEPARM       ((uint16_t) 0x45)
 #define eNOWRITEPARM     ((uint16_t) 0x46)
 #define eWRITEPARMTYPE   ((uint16_t) 0x47)
-#define eINDEXTYPE       ((uint16_t) 0x48)
-#define eARRAYTYPE       ((uint16_t) 0x49)
-#define ePOINTERTYPE     ((uint16_t) 0x4a)
-#define eTOOMANYINDICES  ((uint16_t) 0x4b)
-#define eVARPARMTYPE     ((uint16_t) 0x4c)
-#define eSUBRANGE        ((uint16_t) 0x4d)
-#define eSUBRANGETYPE    ((uint16_t) 0x4e)
-#define eSET             ((uint16_t) 0x4f)
+#define eBADFIELDWIDTH   ((uint16_t) 0x48)
+#define eBADPRECISION    ((uint16_t) 0x49)
+#define eINDEXTYPE       ((uint16_t) 0x4a)
+#define eARRAYTYPE       ((uint16_t) 0x4b)
+#define ePOINTERTYPE     ((uint16_t) 0x4c)
+#define eTOOMANYINDICES  ((uint16_t) 0x4d)
+#define eVARPARMTYPE     ((uint16_t) 0x4e)
+#define eSUBRANGE        ((uint16_t) 0x4f)
 
-#define eSETRANGE        ((uint16_t) 0x50)
-#define eSCALARTYPE      ((uint16_t) 0x51)
-#define eBADSHORTINT     ((uint16_t) 0x52)
-#define eSYMTABINTERNAL  ((uint16_t) 0x53)
-#define eRECORDDECLARE   ((uint16_t) 0x54)
-#define eRECORDOBJECT    ((uint16_t) 0x55)
-#define eRECORDVAR       ((uint16_t) 0x56)
-#define eRECORDTYPE      ((uint16_t) 0x57)
-#define eUNIT            ((uint16_t) 0x58)
-#define eUNITNAME        ((uint16_t) 0x59)
-#define eARGIGNORED      ((uint16_t) 0x5a)
+#define eSUBRANGETYPE    ((uint16_t) 0x50)
+#define eSET             ((uint16_t) 0x51)
+#define eSETRANGE        ((uint16_t) 0x52)
+#define eSCALARTYPE      ((uint16_t) 0x53)
+#define eBADSHORTINT     ((uint16_t) 0x54)
+#define eSYMTABINTERNAL  ((uint16_t) 0x55)
+#define eRECORDDECLARE   ((uint16_t) 0x56)
+#define eRECORDOBJECT    ((uint16_t) 0x57)
+#define eRECORDVAR       ((uint16_t) 0x58)
+#define eRECORDTYPE      ((uint16_t) 0x59)
+#define eUNIT            ((uint16_t) 0x5a)
+#define eUNITNAME        ((uint16_t) 0x5b)
+#define eARGIGNORED      ((uint16_t) 0x5c)
 
 /* LINK TIME ERRORS */
 

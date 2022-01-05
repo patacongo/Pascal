@@ -93,24 +93,25 @@ static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
 
 /* Helpers for standard procedures  */
 
-static void haltProc(void);                     /* HALT procedure */
+static void     haltProc(void);                     /* HALT procedure */
 
-static void readProc(void);                     /* READ procedure */
-static void readlnProc(void);                   /* READLN procedure */
-static void readProcCommon(bool text,           /* READ[LN] common logic */
-                           uint16_t fileSize);
-static void readText(void);                     /* READ text file */
-static void readBinary(uint16_t fileSize);      /* READ binary file */
-static void openFileProc(uint16_t opcode1,      /* File procedure with 1 arg*/
-                         uint16_t opcode2);
-static void fileProc(uint16_t opcode);          /* File procedure with 1 arg*/
-static void assignFileProc(void);               /* ASSIGNFILE procedure */
-static void writeProc(void);                    /* WRITE procedure */
-static void writelnProc (void);                 /* WRITELN procedure */
-static void writeProcCommon(bool text,          /* WRITE[LN] common logic */
-                            uint16_t fileSize);
-static void writeText(void);                    /* WRITE text file */
-static void writeBinary(uint16_t fileSize);     /* WRITE binary file */
+static void     readProc(void);                     /* READ procedure */
+static void     readlnProc(void);                   /* READLN procedure */
+static void     readProcCommon(bool text,           /* READ[LN] common logic */
+                               uint16_t fileSize);
+static void     readText(void);                     /* READ text file */
+static void     readBinary(uint16_t fileSize);      /* READ binary file */
+static void     openFileProc(uint16_t opcode1,      /* File procedure with 1 arg*/
+                             uint16_t opcode2);
+static void     fileProc(uint16_t opcode);          /* File procedure with 1 arg*/
+static void     assignFileProc(void);               /* ASSIGNFILE procedure */
+static void     writeProc(void);                    /* WRITE procedure */
+static void     writelnProc(void);                  /* WRITELN procedure */
+static void     writeProcCommon(bool text,          /* WRITE[LN] common logic */
+                                uint16_t fileSize);
+static void     writeText(void);                    /* WRITE text file */
+static uint16_t writeFieldWidth(void);              /* Get text file write field-width. */
+static void     writeBinary(uint16_t fileSize);     /* WRITE binary file */
 
 static uint16_t genVarFileNumber(symbol_t *varPtr,
                                  uint16_t *pFileSize,
@@ -952,11 +953,8 @@ static void readProcCommon(bool text, uint16_t fileSize)
           readBinary(fileSize);
         }
 
-      /* Should be followed by ':' meaning that there are more parameter, or
+      /* Should be followed by ',' meaning that there are more parameter, or
        * by ')' meaning that we have processed all of the parameters.
-       *
-       * NOTE:  Some test cases use ',' as the separator.  Let's supported
-       * either.
        */
 
       if (g_token == ':' || g_token == ',') getToken();
@@ -997,32 +995,32 @@ static void readText(void)
   exprType = pas_VarParameter(exprUnknown, NULL);
   switch (exprType)
     {
-      /* READ_INT: TOS   = Read address
-       *           TOS+1 = File number
+      /* READ_INT: TOS(0) = Read address
+       *           TOS(1) = File number
        */
 
       case exprIntegerPtr :
         pas_GenerateIoOperation(xREAD_INT);
         break;
 
-      /* READ_CHAR: TOS   = Read address
-       *            TOS+1 = File number
+      /* READ_CHAR: TOS(0) = Read address
+       *            TOS(1) = File number
        */
 
       case exprCharPtr :
         pas_GenerateIoOperation(xREAD_CHAR);
         break;
 
-      /* READ_REAL: TOS   = Read address
-       *            TOS+1 = File number
+      /* READ_REAL: TOS(0) = Read address
+       *            TOS(1) = File number
        */
 
       case exprRealPtr :
         pas_GenerateIoOperation(xREAD_REAL);
         break;
 
-      /* READ_STRING: TOS   = Address of string variable
-       *              TOS+1 = File number
+      /* READ_STRING: TOS(0) = Address of string variable
+       *              TOS(1) = File number
        *
        * REVISIT:  Won't that be the current string size?  Not the
        * maximum read size?
@@ -1115,9 +1113,9 @@ static void readBinary(uint16_t fileSize)
   if (size != fileSize) error(eREADPARMTYPE);
   else
     {
-      /* READ_BINARY: TOS   = Read address
-       *              TOS+1 = Read size
-       *              TOS+2 = File number
+      /* READ_BINARY: TOS(0) = Read address
+       *              TOS(1) = Read size
+       *              TOS(2)  = File number
        */
 
       pas_GenerateSimple(opDUP);
@@ -1476,11 +1474,8 @@ static void writeProcCommon(bool text, uint16_t fileSize)
           writeBinary(fileSize);
         }
 
-      /* Should be followed by ':' meaning that there are more parameter, or
+      /* Should be followed by ',' meaning that there are more parameter, or
        * by ')' meaning that we have processed all of the parameters.
-       *
-       * NOTE:  Some test cases use ',' as the separator.  Let's support
-       * either.
        */
 
       if (g_token == ':' || g_token == ',') getToken();
@@ -1492,9 +1487,6 @@ static void writeProcCommon(bool text, uint16_t fileSize)
 
 static void writeText(void)
 {
-  exprType_t writeType;
-  symbol_t  *wPtr;
-
   TRACE(g_lstFile, "[writeText]");
 
   /* The general form is <expression> */
@@ -1511,18 +1503,22 @@ static void writeText(void)
          * and receive the offset to the data.
          */
 
-        uint32_t offset = poffAddRoDataString(poffHandle, g_tokenString);
+        uint32_t offset     = poffAddRoDataString(poffHandle, g_tokenString);
+        int      size       = strlen(g_tokenString);
+        uint16_t fieldWidth = writeFieldWidth();
 
         /* Set the file number, offset and size on the stack
          *
-         * WRITE_STRING: TOS   = Write size
-         *               TOS+1 = Write address
-         *               TOS+2 = File number
+         * WRITE_STRING: TOS(0) = Field width
+         *               TOS(1) = Write address
+         *               TOS(2) = Write size
+         *               TOS(3) = File number
          */
 
         pas_GenerateSimple(opDUP);
-        pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
+        pas_GenerateDataOperation(opPUSH, size);
         pas_GenerateDataOperation(opLAC, (uint16_t)offset);
+        pas_GenerateDataOperation(opPUSH, fieldWidth);
         pas_GenerateIoOperation(xWRITE_STRING);
 
         g_stringSP = g_tokenString;
@@ -1531,102 +1527,183 @@ static void writeText(void)
       break;
 
     case sSTRING_CONST :
-      /* WRITE_STRING: TOS   = Write size
-       *               TOS+1 = Write address
-       *               TOS+2 = File number
-       */
+      {
+        uint32_t offset     = (uint16_t)g_tknPtr->sParm.s.roOffset;
+        int      size       = (uint16_t)g_tknPtr->sParm.s.roSize;
+        uint16_t fieldWidth = writeFieldWidth();
 
-      pas_GenerateSimple(opDUP);
-      pas_GenerateDataOperation(opPUSH, (uint16_t)g_tknPtr->sParm.s.roSize);
-      pas_GenerateDataOperation(opLAC, (uint16_t)g_tknPtr->sParm.s.roOffset);
-      pas_GenerateIoOperation(xWRITE_STRING);
+        /* WRITE_STRING: TOS(0) = Field width
+         *               TOS(1) = Write address
+         *               TOS(2) = Write size
+         *               TOS(3) = File number
+         */
 
-      getToken();
+        pas_GenerateSimple(opDUP);
+        pas_GenerateDataOperation(opPUSH, size);
+        pas_GenerateDataOperation(opLAC, offset);
+        pas_GenerateDataOperation(opPUSH, fieldWidth);
+        pas_GenerateIoOperation(xWRITE_STRING);
+
+        getToken();
+      }
       break;
 
       /* Array of type CHAR without indexing */
 
     case sARRAY :
-      wPtr = g_tknPtr->sParm.v.vParent;
-      if (wPtr != NULL && wPtr->sKind == sTYPE &&
-          wPtr->sParm.t.tType == sCHAR &&
-          getNextCharacter(true) != '[')
-        {
-          /* WRITE_STRING: TOS   = Write size
-           *               TOS+1 = Write address
-           *               TOS+2 = File number
-           */
+      {
+        symbol_t *wPtr;
+        uint16_t  fieldWidth;
 
-          pas_GenerateSimple(opDUP);
-          pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.vSize);
-          pas_GenerateStackReference(opLAS, wPtr);
-          pas_GenerateIoOperation(xWRITE_STRING);
-          getToken();
-          break;
-        }
+        wPtr = g_tknPtr->sParm.v.vParent;
+        if (wPtr != NULL && wPtr->sKind == sTYPE &&
+            wPtr->sParm.t.tType == sCHAR &&
+            getNextCharacter(true) != '[')
+          {
+            /* WRITE_STRING: TOS(0) = Field Width
+             *               TOS(1) = Write address
+             *               TOS(2) = Write size
+             *               TOS(3) = File number
+             */
+
+            fieldWidth = writeFieldWidth();
+
+            pas_GenerateSimple(opDUP);
+            pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.vSize);
+            pas_GenerateStackReference(opLAS, wPtr);
+            pas_GenerateDataOperation(opPUSH, fieldWidth);
+            pas_GenerateIoOperation(xWRITE_STRING);
+            getToken();
+            break;
+          }
+      }
 
       /* Otherwise, we fall through to process the ARRAY like any
        * expression.
        */
 
     default :
-      /* Put the file number and value on the stack */
+      {
+        exprType_t writeType;
 
-      pas_GenerateSimple(opDUP);
-      writeType = pas_Expression(exprUnknown, NULL);
+        /* Put the file number, valu, and field width on the stack */
 
-      /* Then generate the operation */
+        pas_GenerateSimple(opDUP);
+        writeType = pas_Expression(exprUnknown, NULL);
+        pas_GenerateDataOperation(opPUSH, writeFieldWidth());
 
-      switch (writeType)
+        /* Then generate the operation */
+
+        switch (writeType)
+          {
+          case exprInteger :
+            /* WRITE_INT: TOS(0) = Field width
+             *            TOS(1) = Write value
+             *            TOS(2) = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_INT);
+            break;
+
+          case exprChar :
+            /* WRITE_CHAR: TOS(0) = Field width
+             *             TOS(1) = Write value
+             *             TOS(2) = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_CHAR);
+            break;
+
+          case exprReal :
+            /* WRITE_CHAR: TOS(0)   = Field width/precision
+             *             TOS(1-4) = Write value
+             *             TOS(5)   = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_REAL);
+            break;
+
+          case exprString :
+            /* WRITE_STRING: TOS(0) = Field width
+             *               TOS(1) = Write address
+             *               TOS(2) = Write size
+             *               TOS(3) = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_STRING);
+            break;
+
+          case exprShortString :
+            /* WRITE_SHORTSTRING: TOS(0) = Field width
+             *                    TOS(1) = Write address
+             *                    TOS(2) = Write size
+             *                    TOS(3) = String allocation size (not used)
+             *                    TOS(4) = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_SHORTSTRING);
+            break;
+
+          default :
+            error(eWRITEPARM);
+            break;
+          }
+      }
+    }
+}
+
+/***********************************************************************/
+
+/* Get text file write field-width. */
+
+static uint16_t writeFieldWidth(void)
+{
+  uint8_t fieldWidth = 0;
+  uint8_t precision  = 0;
+
+  /* If a field width/precision is present, then the current token will
+   * be ':'
+   *
+   * FORM:  write-value [ : field-width [ : precision ]]
+   */
+
+  if (g_token == ':')
+    {
+      /* A constant, integer field-width with must follow the colon.
+       * REVISIT:  Could this be an integer expression?
+       */
+
+      getToken();
+      if (g_token != tINT_CONST || g_tknInt > UINT8_MAX)
         {
-        case exprInteger :
-          /* WRITE_INT: TOS   = Write value
-           *            TOS+1 = File number
+          error(eBADFIELDWIDTH);
+        }
+
+      fieldWidth = (uint8_t)g_tknInt;
+      getToken();
+
+      /* Check if a precision is present after the field-width (only applies
+       * to REAL values.
+       */
+
+      if (g_token == ':')
+        {
+          /* A constant, integer precision with must follow the colon.
+           * REVISIT:  Could this be an integer expression?
            */
 
-          pas_GenerateIoOperation(xWRITE_INT);
-          break;
+          getToken();
+          if (g_token != tINT_CONST || g_tknInt > UINT8_MAX)
+            {
+              error(eBADPRECISION);
+            }
 
-        case exprChar :
-          /* WRITE_CHAR: TOS   = Write value
-           *             TOS+1 = File number
-           */
-
-          pas_GenerateIoOperation(xWRITE_CHAR);
-          break;
-
-        case exprReal :
-          /* WRITE_CHAR: TOS-TOS+3 = Write value
-           *             TOS+4     = File number
-           */
-
-          pas_GenerateIoOperation(xWRITE_REAL);
-          break;
-
-        case exprString :
-          /* WRITE_STRING: TOS   = Write address
-           *               TOS+1 = Write size
-           *               TOS+2 = File number
-           */
-
-          pas_GenerateIoOperation(xWRITE_STRING);
-          break;
-
-        case exprShortString :
-          /* WRITE_SHORTSTRING: TOS   = Write address
-           *                    TOS+1 = Write size
-           *                    TOS+2 = String allocation size (not used)
-           *                    TOS+2 = File number
-           */
-
-          pas_GenerateIoOperation(xWRITE_SHORTSTRING);
-          break;
-
-        default :
-          error(eWRITEPARM);
-          break;
+          precision = (uint8_t)g_tknInt;
+          getToken();
         }
     }
+
+  return ((uint16_t)fieldWidth << 8) | ((uint16_t)precision & 0xff);
 }
 
 /***********************************************************************/
@@ -1693,9 +1770,9 @@ static void writeBinary(uint16_t fileSize)
   if (size != fileSize) error(eWRITEPARMTYPE);
   else
     {
-      /* WRITE_BINARY: TOS   = Write address
-       *               TOS+1 = Write size
-       *               TOS+2 = File number
+      /* WRITE_BINARY: TOS(0) = Write address
+       *               TOS(1) = Write size
+       *               TOS(2)  = File number
        */
 
       pas_GenerateSimple(opDUP);

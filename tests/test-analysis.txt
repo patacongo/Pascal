@@ -8,21 +8,30 @@ writing, the following errors are reported when testall.sh is ran:
     undefined functions, and  procedures (fsplit, addr, length, lowercase,
     etc.).  These test cases have been removed because there will never
     compile.
+
  2. Forward references to variables before they are defined do not work.  See
     failure in src/108-pointerrecode.pas.
+
  3. There are a couple of files with initialization like:
+
       input = 1;
       output = 2;
+
     I am not sure what these mean and have just commented them out for now.
     Assignment of a numeric value to a file is not supported.
+
  4. Pascal runtime memory is divided into three regions:  String stack, RO
     data, and the Pascal run-time stack.  The size of the string stack is
     set with the -t option to prun and 1024 is the default size used by the
     testone.sh script.  String allocations are large, 256 bytes, and the
-    string stack is lazy, only when a procedure/function returns.  As a
-    result, programs with functions that do a lot of string operations need
-    a start larger than the 1024 default.  All of the test files here work
-    OK with a string stack of 1024.
+    string stack cleanup is lazy; perhaps only when a procedure/function
+    returns.  As a result, programs with functions that do a lot of string
+    operations need a start larger than the 1024 default.  All of the test
+    files here work OK with a string stack of 1024.
+
+    This problem is largely alleviated by using short strings that do not
+    require such large string stack allocations.
+
  5. Some modern Pacal compilers support and string buffer size argument like:
 
       VAR
@@ -54,7 +63,7 @@ An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
 ########src/104-primes.pas########
-Line 0:0012 Error 50 Token 3b
+Line 0:0012 Error 52 Token 3b
 
 Line (in var section):
  12   sieve, primes : array[0..w] of set of 0..maxbit;
@@ -63,7 +72,7 @@ Where (in const section)
   8   maxbit = 58;
 
 Error:
-267 #define eSETRANGE        ((uint16_t) 50)
+269 #define eSETRANGE        ((uint16_t) 52)
 
 Token: '='
 

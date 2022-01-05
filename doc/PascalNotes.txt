@@ -1,8 +1,9 @@
                           AS OF 12/31/21
 
 TYPES
-- Only types INT, BOOLEAN, CHAR, REAL, SCALAR, SUBRANGE, RECORD and SET
-  implemented
+- All basic types INT, BOOLEAN, CHAR, REAL, SCALAR, SUBRANGE, RECORD and SET
+  implemented (along with some types from enhanced Pascal like STRING and
+  short STRING types).
   - No PACKED types (actually, types are always packed).  This is a bug
     and needs to be revisited in the future.
   - FILE OF and TEXTFILE types are supported
@@ -10,7 +11,6 @@ TYPES
       is treated as a binary file but has some string-like behaviors for
       limited backward compatibility.
     - No function returning FILE OF; No FILE OF procedure/function arguments
-    - Only one file identifier per FILE OF declaration in type block.
     - Older name TEXT also supported as an alias for TEXTFILE
   - SET is limit to 16/32 (# bits in int) adjacent elements
   - Expressions are not strongly typed across different SCALAR types
@@ -146,10 +146,12 @@ For comparison:
     procedure WriteLn(var F: Text; Args: Arguments);  - Writes variable to file and append newline
 
 Extended Pascal Features
-- Type STRING is implemented.
+- Type STRING and short strings are implemented.
 - PACKED ARRAY[..] OF CHAR is not a string.
 - INPUT and OUTPUT are text files.  Files of type TEXTFILE (TEXT) are text
   files.  All others of type FILE OF <type> are binary files.
+- PACKED ARRAY[] OF CHAR has some legacy behavior that allow them some limited
+  behavior like STRINGS
 - SIZEOF and LENGTH built-in is supported
 
 NON-standard Pascal extensions/differences
@@ -187,21 +189,21 @@ o IMPROVEMENTS
 - In tokenizer, verify that string stack does not overflow when
   character added.
 - Option to turn on listing
-- Option to interleave assembly language with listing
+- Option to interleave assembly language with listing.  Source line numbers
+  are already provided in the listing.
 - Option to select symbol table size (or let it grow dynamically)
 - List file should only be produced if option provided.
 - Provide instrumentation to use the line number data in the
   object files.  In debugger, display source line.  Allow stepping
   from source line to source line.
-- Need to have 32-bit integers and address
+- Need to have 32-bit integers and addresses.  Type LongInteger and LongWord.
+- Unsigned integer types (16-bit word and 32-bit LongWord)
+- Long integer type (LongInteger and LongWord, LongInt is an alias).
 - Translation to register model
 - Native code translator
 - Linker and support multiple source files
-- Runtime package
 - Other things from extended pascal:  'list of'
 - Need to optimize out JMP .+1
-- Unsigned integer types (16-bit word and 32-bit LongWord)
-- Long integer type (LongInteger and LongWord, LongInt is an alias).
 
 o ISSUES
 - Revisit procedure call logic in pexec.c & pdbg.c.  First stack parameter
