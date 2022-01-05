@@ -1047,16 +1047,16 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
                                     size);
       break;
 
-    /* WRITE_SHORTSTRING: TOS(0) = Write short string buffer address
+    /* WRITE_SHORTSTRING: TOS(2) = Write short string allocation (not used)
+     *                    TOS(0) = Write short string buffer address
      *                    TOS(1) = Write short string size
-     *                    TOS(2) = Write short string allocation (not used)
      *                    TOS(3) = File number
      */
 
     case xWRITE_SHORTSTRING :
+      DISCARD(st, 1);       /* Discard the unused stack allocation */
       POP(st, address);     /* String address */
       POP(st, size);        /* String size */
-      DISCARD(st, 1);       /* Discard the unused stack allocation */
       POP(st, fileNumber);  /* File number from stack */
 
       errorCode = pexec_WriteString(fileNumber,
