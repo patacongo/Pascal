@@ -408,6 +408,12 @@
 
 #define oSYSIO (o32|0x3a)
 
+/* Set operations:  arg = 32-bit file sub-function code
+ *                File number on stack
+ */
+
+#define oSETOP
+
 /* System functions: arg = 32-bit library call identifier */
 
 #define oLIB   (o32|0x3b)

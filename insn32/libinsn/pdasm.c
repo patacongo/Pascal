@@ -46,6 +46,7 @@
 #include "pinsn32.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"
+#include "pas_setops.h"
 #include "pas_library.h"
 #include "paslib.h"
 
@@ -325,6 +326,15 @@ static const char *xName[MAX_XOP] =
 /* 0x20 */ "WRITELN",   "WRITEPG",   "WRITEBIN",   "WRITEINT",
 /* 0x24 */ "WRITECHR",  "WRITESTR",  "WRITERL"
 };
+
+static const char invSetOp[] = "Invalid SETOP";
+static const char *sName[MAX_SETOP] =
+{ /* SYSIO opcode mnemonics */
+/* 0x00 */ invSetOp,     "INTERSECTION", "UNION",   "DIFFERENCE",
+/* 0x04 */ "SYMDIFF",    "EQUAL",     "NEQUAL",     "CONTAINS",
+/* 0x08 */ "MEMBER",     "INCLUDE",   "EXCLUDE"
+};
+
 
 static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =

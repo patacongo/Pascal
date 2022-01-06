@@ -140,6 +140,7 @@ static const uint16_t opmap[NUM_OPCODES] =
   oLAX,    /* opLAX */
   oLIB,    /* opLIB */
   oSYSIO,  /* opSYSIO */
+  oSETOP,  /* opSETOP */
   oLABEL,  /* opLABEL */
   oPCAL,   /* opPCAL */
   oLDSH,   /* opLDS -- integer store maps to 16-bit load */
@@ -266,6 +267,14 @@ void
 insn_GenerateIoOperation(uint16_t ioOpcode)
 {
   insn16_Generate(opSYSIO, 0, (int32_t)ioOpcode);
+}
+
+/***********************************************************************/
+
+void
+insn_GenerateSetOperation(uint16_t setOpcode)
+{
+  insn16_Generate(oSETOP, 0, (int32_t)setOpcode);
 }
 
 /***********************************************************************/

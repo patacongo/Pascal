@@ -47,6 +47,7 @@
 #include "pinsn16.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"
+#include "pas_setops.h"
 #include "pas_library.h"
 #include "paslib.h"
 
@@ -66,7 +67,8 @@
 #define xOP         5
 #define lbOP        6
 #define fpOP        7
-#define COMMENT     8
+#define setOP       8
+#define COMMENT     9
 
 /* The following table defines everything that is needed to disassemble
  * a P-Code.  NOTE:  The order of definition in this table must exactly
@@ -333,7 +335,7 @@ static const struct
 
 /* 0xb9 */ { "LIB  ", lbOP,   },
 /* 0xba */ { "SYSIO", xOP,    },
-/* 0xbb */ { invOp,   NOARG16 },
+/* 0xbb */ { "SETOP", setOP,  },
 /* 0xbc */ { invOp,   NOARG16 },
 /* 0xbd */ { invOp,   NOARG16 },
 /* 0xbe */ { invOp,   NOARG16 },
@@ -454,6 +456,14 @@ static const char *xName[MAX_XOP] =
 /* 0x1c */ invXOp,      invXOp,       invXOp,       invXOp,
 /* 0x20 */ "WRITELN",   "WRITEPG",    "WRITEBIN",   "WRITEINT",
 /* 0x24 */ "WRITECHR",  "WRITESTR",   "WRITERL"
+};
+
+static const char invSetOp[] = "Invalid SETOP";
+static const char *sName[MAX_SETOP] =
+{ /* SYSIO opcode mnemonics */
+/* 0x00 */ invSetOp,     "INTERSECTION", "UNION",   "DIFFERENCE",
+/* 0x04 */ "SYMDIFF",    "EQUAL",     "NEQUAL",     "CONTAINS",
+/* 0x08 */ "MEMBER",     "INCLUDE",   "EXCLUDE"
 };
 
 static const char invLbOp[] = "Invalid runtime code";
@@ -584,6 +594,17 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
               if (pop->arg2 < MAX_XOP)
                 {
                   fprintf(lfile, "%s", xName[pop->arg2]);
+                }
+              else
+                {
+                  fprintf(lfile, "%s", invXOp);
+                }
+              break;
+
+            case setOP     :
+              if (pop->arg2 < MAX_SETOP)
+                {
+                  fprintf(lfile, "%s", sName[pop->arg2]);
                 }
               else
                 {

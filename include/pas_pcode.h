@@ -149,7 +149,7 @@ enum pcode_e
 
   /* System functions: arg = 16-bit library/system call identifier */
 
-  opLIB, opSYSIO,
+  opLIB, opSYSIO, opSETOP,
 
   /* Program control:  arg = unsigned label (no stack arguments) */
 

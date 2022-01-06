@@ -48,16 +48,17 @@
 #define tREAL_CONST      0x05
 #define tSTRING_CONST    0x06
 
-#define tLE              0x07
-#define tGE              0x08
-#define tASSIGN          0x09
-#define tSUBRANGE        0x0a
+#define tLE              0x07  /* <= */
+#define tGE              0x08  /* >= */
+#define tASSIGN          0x09  /* := */
+#define tSUBRANGE        0x0a  /* .. */
+#define tSYMDIFF         0x0b  /* Symmetric difference '><' */
 
 /* Token Values 0x21-0x2F (except 0x24) are for ASCII character tokens:
  * '!', '"', '#', '$' '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/'
  */
 
-#define tNE              ('#')
+#define tNE              ('#')  /* Or '<>' */
 #define SQUOTE           0x27
 #define tMUL             ('*')
 #define tFDIV            ('/')

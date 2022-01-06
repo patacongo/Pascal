@@ -54,6 +54,7 @@ void insn_GenerateDataOperation(enum pcode_e opcode, int32_t data);
 void insn_GenerateDataSize(uint32_t dwDataSize);
 void insn_GenerateFpOperation(uint8_t fpOpcode);
 void insn_GenerateIoOperation(uint16_t ioOpcode);
+void insn_GenerateSetOperation(uint16_t setOpcode);
 void insn_StandardFunctionCall(uint16_t libOpcode);
 void insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level,
                                  int32_t offset);

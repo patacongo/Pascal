@@ -48,6 +48,7 @@
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"      /* general operation codes */
 #include "pas_fpops.h"      /* floating point operations */
+#include "pas_setops.h"     /* set operators */
 #include "pas_library.h"    /* library operations */
 #include "pas_errcodes.h"
 
@@ -139,6 +140,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
   uint16_t   intOpCode;
   uint16_t   fpOpCode;
   uint16_t   strOpCode;
+  uint16_t   setOpCode;
   exprType_t simple1Type;
   exprType_t simple2Type;
 
@@ -168,36 +170,42 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       intOpCode = opEQU;
       fpOpCode  = fpEQU;
       strOpCode = opEQUZ;
+      setOpCode = setEQUALITY;
       break;
 
     case tNE :
       intOpCode = opNEQ;
       fpOpCode  = fpNEQ;
       strOpCode = opNEQZ;
+      setOpCode = setNONEQUALITY;
       break;
 
     case tLT :
       intOpCode = opLT;
       fpOpCode  = fpLT;
       strOpCode = opLTZ;
+      setOpCode = setINVALID;
       break;
 
     case tLE :
       intOpCode = opLTE;
       fpOpCode  = fpLTE;
       strOpCode = opLTEZ;
+      setOpCode = setCONTAINS;
       break;
 
     case tGT :
       intOpCode = opGT;
       fpOpCode  = fpGT;
       strOpCode = opGTZ;
+      setOpCode = setINVALID;
       break;
 
     case tGE :
       intOpCode = opGTE;
       fpOpCode  = fpGTE;
       strOpCode = opGTEZ;
+      setOpCode = setINVALID;
       break;
 
     case tIN :
@@ -217,12 +225,14 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       intOpCode = opBIT;
       fpOpCode  = fpINVLD;
       strOpCode = opNOP;
+      setOpCode = setMEMBER;
       break;
 
     default  :
       intOpCode = opNOP;
       fpOpCode  = fpINVLD;
       strOpCode = opNOP;
+      setOpCode = setINVALID;
       break;
     }
 
@@ -796,7 +806,7 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
 
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]]
    *
-   * get +/- unary operation
+   * Get +/- unary operation
    */
 
   if (g_token == '+' || g_token == '-')
@@ -830,7 +840,8 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
     {
       /* Check for binary operator */
 
-      if (g_token == '+' || g_token == '-' || g_token == tOR)
+      if (g_token == '+' || g_token == '-' ||
+          g_token == tOR || g_token == tSYMDIFF)
         {
           operation = g_token;
         }
@@ -957,7 +968,7 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
               /* Set 'addition' */
 
             case exprSet :
-              pas_GenerateSimple(opOR);
+              pas_GenerateSetOperation(setUNION);
               break;
 
               /* Handle the special cases where '+' indicates that we are
@@ -1044,8 +1055,7 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
 
           else if (term1Type == exprSet)
             {
-              pas_GenerateSimple(opNOT);
-              pas_GenerateSimple(opAND);
+              pas_GenerateSetOperation(setDIFFERENCE);
             }
 
           /* Otherwise, the '-' operation is not permitted */
@@ -1058,12 +1068,36 @@ static exprType_t pas_SimplifyExpression(exprType_t findExprType)
           /* Integer/boolean 'OR' */
 
           if (term1Type == exprInteger || term1Type == exprBoolean)
-            pas_GenerateSimple(opOR);
+            {
+              pas_GenerateSimple(opOR);
+            }
 
           /* Otherwise, the 'OR' operation is not permitted */
 
           else
-            error(eTERMTYPE);
+            {
+              error(eTERMTYPE);
+            }
+          break;
+
+        case tSYMDIFF :
+          /* Set symmetric difference */
+
+          if (term1Type == exprSet)
+            {
+              pas_GenerateSetOperation(setSYMMETRICDIFF);
+            }
+
+          /* Otherwise, the 'OR' operation is not permitted */
+
+          else
+            {
+              error(eTERMTYPE);
+            }
+          break;
+
+        default :
+          error(eTERMTYPE);
           break;
         }
     }
@@ -1090,10 +1124,9 @@ static exprType_t pas_Term(exprType_t findExprType)
     {
       /* Check for binary operator */
 
-      if ((g_token == tMUL)  || (g_token == tDIV)  ||
-          (g_token == tFDIV) || (g_token == tMOD)  ||
-          (g_token == tAND)  || (g_token == tSHL)  ||
-          (g_token == tSHR))
+      if (g_token == tMUL  || g_token == tDIV  || g_token == tFDIV ||
+          g_token == tMOD  || g_token == tAND  || g_token == tSHL  ||
+          g_token == tSHR)
         {
           operation = g_token;
         }
@@ -1165,8 +1198,8 @@ static exprType_t pas_Term(exprType_t findExprType)
                * types with the result converted to a real type afterward.
                */
 
-              if ((operation == tMUL)  || (operation == tDIV)  ||
-                  (operation == tFDIV) || (operation == tMOD))
+              if (operation == tMUL  || operation == tDIV  ||
+                  operation == tFDIV || operation == tMOD)
                 {
                   /* Perform the conversion of both terms */
 
@@ -1200,7 +1233,7 @@ static exprType_t pas_Term(exprType_t findExprType)
             }
           else if (factor1Type == exprSet)
             {
-              pas_GenerateSimple(opAND);
+              pas_GenerateSetOperation(setINTERSECTION);
             }
           else
             {

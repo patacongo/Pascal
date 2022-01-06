@@ -115,8 +115,8 @@
  * xx11 0111  ---        ---            ---            ---
  * xx11 1000  ---        ---            LAX uoffs      LASX lvl,offs
  * xx11 1001  ---        ---            LIB lop        ---
- * xx11 1010  ---        ---            SYSIO fn,sop   ---
- * xx11 1011  ---        ---            ---            ---
+ * xx11 1010  ---        ---            SYSIO sop      ---
+ * xx11 1011  ---        ---            SETOP sop      ---
  * xx11 1100  ---        ---            ---            ---
  * xx11 1101  ---        ---            ---            ---
  * xx11 1110  ---        ---            ---            ---
@@ -128,7 +128,7 @@
  *   vt    = 8-bit type code (unsigned)
  *   nn    = 16-bit value (signed)
  *   fop   = 8-bit floating point operation
- *   sop   = 16-bit sysio operation
+ *   sop   = 16-bit sysio or set operation
  *   lop   = 16-bit library call identifier
  *   fn    = 8-bit file number
  *   ilbl  = instruction space label
@@ -337,6 +337,13 @@
  */
 
 #define oSYSIO  (o16|0x3a)
+
+/* System calls:
+ * For SETOP:        arg16 = sub-function code
+ *                   TOS   = file number
+ */
+
+#define oSETOP  (o16|0x3b)
 
 /* (o16|0x3b)-(o16|0x3e) -- unassigned */
 

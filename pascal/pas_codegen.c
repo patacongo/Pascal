@@ -268,6 +268,14 @@ void pas_GenerateIoOperation(uint16_t ioOpcode)
 }
 
 /***********************************************************************/
+/* Generate a pseudo call to a built-in, set operator/functionon */
+
+void pas_GenerateSetOperation(uint16_t setOpcode)
+{
+  insn_GenerateSetOperation(setOpcode);
+}
+
+/***********************************************************************/
 /* Generate a pseudo call to a built-in, standard pascal function */
 
 void pas_StandardFunctionCall(uint16_t libOpcode)

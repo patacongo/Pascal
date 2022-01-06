@@ -303,15 +303,18 @@ void getToken(void)
       getCharacter();
       if (inChar == '>')
         {
-          g_token = tNE; getCharacter();
+          g_token = tNE;
+          getCharacter();
         }
       else if (inChar == '=')
         {
-          g_token = tLE; getCharacter();
+          g_token = tLE;
+          getCharacter();
         }
       else if (inChar == '<')
         {
-          g_token = tSHL; getCharacter();
+          g_token = tSHL;
+          getCharacter();
         }
       else
         {
@@ -326,15 +329,18 @@ void getToken(void)
       getCharacter();
       if (inChar == '<')
         {
-          g_token = tNE; getCharacter();
+          g_token = tSYMDIFF;
+          getCharacter();
         }
       else if (inChar == '=')
         {
-          g_token = tGE; getCharacter();
+          g_token = tGE;
+          getCharacter();
         }
       else if (inChar == '>')
         {
-          g_token = tSHR; getCharacter();
+          g_token = tSHR;
+          getCharacter();
         }
       else
         {

@@ -165,6 +165,7 @@
  * eBADSYSIOFUNC        Illegal SYSIO sub-function
  * eBADSYSLIBCALL       Illegal runtime library call
  * eBADFPOPCODE         Illegal FLOAT POINT op-code
+ * eBADSETOPCODE        Illegal SET operator op-code
  * eINTEGEROVERFLOW     Integer overflow
  * eFAILEDLIBCALL       Runtime library call returned failure
  *
@@ -302,8 +303,9 @@
 #define eBADSYSIOFUNC    ((uint16_t) 0x85)
 #define eBADSYSLIBCALL   ((uint16_t) 0x86)
 #define eBADFPOPCODE     ((uint16_t) 0x87)
-#define eINTEGEROVERFLOW ((uint16_t) 0x88)
-#define eFAILEDLIBCALL   ((uint16_t) 0x89)
+#define eBADSETOPCODE    ((uint16_t) 0x88)
+#define eINTEGEROVERFLOW ((uint16_t) 0x89)
+#define eFAILEDLIBCALL   ((uint16_t) 0x8a)
 
 #define eBADFILE         ((uint16_t) 0xa0)
 #define eFILENOTINUSE    ((uint16_t) 0xa1)
