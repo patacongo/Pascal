@@ -87,7 +87,7 @@ fileState_t g_fileState[MAX_INCL];   /* State of all open files */
 char       *g_sourceFileName;
 char       *g_includePath[MAX_INCPATHES];
 
-poffHandle_t poffHandle;             /* Handle for POFF object */
+poffHandle_t g_poffHandle;           /* Handle for POFF object */
 
 FILE       *g_poffFile;              /* Pass1 POFF output file */
 FILE       *g_lstFile;               /* List File pointer */
@@ -339,13 +339,15 @@ int main(int argc, char *argv[])
 
   /* Initialize the POFF object */
 
-  poffHandle = poffCreateHandle();
-  if (poffHandle == NULL)
-    fatal(eNOMEMORY);
+  g_poffHandle = poffCreateHandle();
+  if (g_poffHandle == NULL)
+    {
+      fatal(eNOMEMORY);
+    }
 
   /* Save the soure file name in the POFF output file */
 
-  FP->include = poffAddFileName(poffHandle, filename);
+  FP->include = poffAddFileName(g_poffHandle, filename);
 
   /* We need the following in order to calculate relative stack positions. */
 
@@ -398,8 +400,8 @@ int main(int argc, char *argv[])
 
   /* Write the POFF output file */
 
-  poffWriteFile(poffHandle, g_poffFile);
-  poffDestroyHandle(poffHandle);
+  poffWriteFile(g_poffHandle, g_poffFile);
+  poffDestroyHandle(g_poffHandle);
 
   /* Close all output files */
 
@@ -485,7 +487,7 @@ void pas_OpenNestedFile(const char *fileName)
       /* Setup the newly opened file */
 
       fprintf(g_errFile, "%01x=%s\n", FP->include, fullpath);
-      FP->include = poffAddFileName(poffHandle, fullpath);
+      FP->include = poffAddFileName(g_poffHandle, fullpath);
 
       /* The caller may change this, but the default behavior is
        * to inherit the kind and section of the including file

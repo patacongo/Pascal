@@ -58,8 +58,8 @@
  * Public Data
  **********************************************************************/
 
-extern poffHandle_t poffHandle; /* Handle to POFF object */
-extern FILE *g_lstFile;         /* LIST file pointer */
+extern poffHandle_t g_poffHandle; /* Handle to POFF object */
+extern FILE *g_lstFile;           /* LIST file pointer */
 
 /**********************************************************************
  * Private Variables
@@ -204,19 +204,19 @@ insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2)
   uint16_t arg16;
   TRACE(g_lstFile,"[insn16_Generate:0x%02x->0x%04x]", opcode, insn_opcode);
 
-  poffAddProgByte(poffHandle, insn_opcode);
+  poffAddProgByte(g_poffHandle, insn_opcode);
   if (insn_opcode & o8)
     {
       if (arg1 > 0xff) error(eINTOVF);
-      poffAddProgByte(poffHandle, (uint8_t)arg1);
+      poffAddProgByte(g_poffHandle, (uint8_t)arg1);
     }
 
   if (insn_opcode & o16)
     {
       if (arg2 < -32768 || arg2 > 65535) error(eINTOVF);
       arg16 = (uint16_t)arg2;
-      poffAddProgByte(poffHandle, (uint8_t)(arg16 >> 8));
-      poffAddProgByte(poffHandle, (uint8_t)(arg16 & 0xff));
+      poffAddProgByte(g_poffHandle, (uint8_t)(arg16 >> 8));
+      poffAddProgByte(g_poffHandle, (uint8_t)(arg16 & 0xff));
     }
 
   /* Now, add the disassembled PCode to the list file. */

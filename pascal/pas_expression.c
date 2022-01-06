@@ -265,6 +265,15 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               simple1Type = exprReal;
             }
 
+          /* Handle operations on standard and short strings */
+
+          else if ((simple1Type == exprString &&
+                    simple2Type == exprShortString) ||
+                   (simple1Type == exprShortString &&
+                    simple2Type == exprString))
+            {
+            }
+
           /* Allow the case of <scalar type> IN <set type>
            * Otherwise, the two terms must agree in type
            */
@@ -416,7 +425,21 @@ exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
   factorType = pas_PointerFactor();
   if (varExprType != exprUnknown && factorType != varExprType)
     {
-      error(eINVVARPARM);
+      /* Allow automatic conversions between strings and short strings */
+
+      if ((factorType == exprStringPtr &&
+           varExprType == exprShortStringPtr) ||
+          (factorType == exprShortStringPtr &&
+           varExprType == exprStringPtr))
+        {
+          /* The supplied string pointer *almost* matches.
+           * REVISIT:  Do we need to take any specific conversion actions?
+           */
+        }
+      else
+        {
+          error(eINVVARPARM);
+        }
     }
 
   return factorType;
@@ -1365,7 +1388,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
          * and get the offset to the string location.
          */
 
-        uint32_t offset = poffAddRoDataString(poffHandle, g_tokenString);
+        uint32_t offset = poffAddRoDataString(g_poffHandle, g_tokenString);
 
         /* Get the offset then size of the string on the stack */
 
@@ -3040,7 +3063,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
-              factorType = exprFile;
+              factorType = exprFilePtr;
             }
           else
             {

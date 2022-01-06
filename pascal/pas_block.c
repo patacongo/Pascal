@@ -203,7 +203,7 @@ static void pas_DeclareConst(void)
 
     case tSTRING_CONST :
       {
-        uint32_t offset = poffAddRoDataString(poffHandle, g_constantStart);
+        uint32_t offset = poffAddRoDataString(g_poffHandle, g_constantStart);
         (void)pas_AddStringConstant(const_name, offset, strlen(g_constantStart));
       }
       break;
@@ -2461,11 +2461,12 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
       varInfo.sParm.v.vSymIndex = 0;
       varInfo.sParm.v.vParent   = baseTypePtr;
 
-      /* The index should be a SUBRANGE type */
+      /* The index should be a SUBRANGE or SCALAR type */
 
       indexPtr = typePtr->sParm.t.tIndex;
       if (indexPtr->sKind != sTYPE ||
-          indexPtr->sParm.t.tType != sSUBRANGE)
+          (indexPtr->sParm.t.tType != sSUBRANGE &&
+           indexPtr->sParm.t.tType != sSCALAR))
         {
           error(eHUH);  /* Should not happen */
         }
@@ -2612,7 +2613,7 @@ void pas_Block(int32_t preAllocatedDStack)
 
   if (g_level == 0 && FP0->kind == eIsProgram)
     {
-      poffSetEntryPoint(poffHandle, g_label);
+      poffSetEntryPoint(g_poffHandle, g_label);
     }
 
   /* Init size of the new DSEG.  Normally nothing is preallocated on the
@@ -2688,7 +2689,6 @@ void pas_Block(int32_t preAllocatedDStack)
     {
       pas_GenerateDataOperation(opINDS, -(int32_t)g_dStack);
     }
-
 
   /* Generate finalizers */
 

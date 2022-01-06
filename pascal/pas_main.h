@@ -85,7 +85,7 @@ extern fileState_t g_fileState[MAX_INCL];  /* State of all open files */
 extern char       *g_sourceFileName;
 extern char       *g_includePath[MAX_INCPATHES];
 
-extern poffHandle_t poffHandle;            /* Handle for POFF object */
+extern poffHandle_t g_poffHandle;          /* Handle for POFF object */
 
 extern FILE       *g_poffFile;             /* POFF output file */
 extern FILE       *g_errFile;              /* Error file pointer */

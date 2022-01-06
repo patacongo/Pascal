@@ -132,7 +132,7 @@ static exprType_t pas_BuiltInLength(void)
 
   /* Process the string-expression */
 
-  exprType = pas_Expression(exprString, g_tknPtr);
+  exprType = pas_Expression(exprAnyString, NULL);
   if (exprType == exprString)
     {
       /* The top of the stack now holds:
@@ -168,7 +168,7 @@ static exprType_t pas_BuiltInLength(void)
     }
 
   pas_CheckRParen();
-  return exprType;
+  return exprInteger;
 }
 
 /***************************************************************

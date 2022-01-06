@@ -85,41 +85,41 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
-                                   uint16_t *pFileSize,
-                                   symbol_t *defaultFilePtr);
-static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
-                                  uint16_t *pFileSize);
+static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
+                                       uint16_t *pFileSize,
+                                       symbol_t *defaultFilePtr);
+static uint16_t pas_DefaultFileNumber(symbol_t *defaultFilePtr,
+                                      uint16_t *pFileSize);
 
 /* Helpers for standard procedures  */
 
-static void     haltProc(void);                     /* HALT procedure */
+static void     pas_HaltProc(void);                 /* HALT procedure */
 
-static void     readProc(void);                     /* READ procedure */
-static void     readlnProc(void);                   /* READLN procedure */
-static void     readProcCommon(bool text,           /* READ[LN] common logic */
-                               uint16_t fileSize);
-static void     readText(void);                     /* READ text file */
-static void     readBinary(uint16_t fileSize);      /* READ binary file */
-static void     openFileProc(uint16_t opcode1,      /* File procedure with 1 arg*/
-                             uint16_t opcode2);
-static void     fileProc(uint16_t opcode);          /* File procedure with 1 arg*/
-static void     assignFileProc(void);               /* ASSIGNFILE procedure */
-static void     writeProc(void);                    /* WRITE procedure */
-static void     writelnProc(void);                  /* WRITELN procedure */
-static void     writeProcCommon(bool text,          /* WRITE[LN] common logic */
-                                uint16_t fileSize);
-static void     writeText(void);                    /* WRITE text file */
-static uint16_t writeFieldWidth(void);              /* Get text file write field-width. */
-static void     writeBinary(uint16_t fileSize);     /* WRITE binary file */
+static void     pas_ReadProc(void);                 /* READ procedure */
+static void     pas_ReadlnProc(void);               /* READLN procedure */
+static void     pas_ReadProcCommon(bool text,       /* READ[LN] common logic */
+                  uint16_t fileSize);
+static void     pas_ReadText(void);                 /* READ text file */
+static void     pas_ReadBinary(uint16_t fileSize);  /* READ binary file */
+static void     pas_OpenFileProc(uint16_t opcode1,  /* Open file */
+                  uint16_t opcode2);
+static void     pas_FileProc(uint16_t opcode);      /* File procedure with 1 arg */
+static void     pas_AssignFileProc(void);           /* ASSIGNFILE procedure */
+static void     pas_WriteProc(void);                /* WRITE procedure */
+static void     pas_WritelnProc(void);              /* WRITELN procedure */
+static void     pas_WriteProcCommon(bool text,      /* WRITE[LN] common logic */
+                  uint16_t fileSize);
+static void     pas_WriteText(void);                /* WRITE text file */
+static uint16_t pas_WriteFieldWidth(void);          /* Get text file write field-width. */
+static void     pas_WriteBinary(uint16_t fileSize); /* WRITE binary file */
 
-static uint16_t genVarFileNumber(symbol_t *varPtr,
-                                 uint16_t *pFileSize,
-                                 symbol_t *defaultFilePtr);
+static uint16_t pas_GenVarFileNumber(symbol_t *varPtr,
+                  uint16_t *pFileSize,
+                  symbol_t *defaultFilePtr);
 
 /* Helpers for less-than-standard procedures */
 
-static void valProc(void);                      /* VAL procedure */
+static void     pas_ValProc(void);                  /* VAL procedure */
 
 /****************************************************************************
  * Private Data
@@ -162,11 +162,11 @@ void pas_StandardProcedure(void)
 
         case txHALT :
           getToken();
-          haltProc();
+          pas_HaltProc();
           break;
 
         case txPAGE :
-          fileProc(xWRITE_PAGE);
+          pas_FileProc(xWRITE_PAGE);
           break;
 
         /* Not implemented */
@@ -183,45 +183,45 @@ void pas_StandardProcedure(void)
           /* less-than-standard procedures */
 
         case txVAL :
-          valProc();
+          pas_ValProc();
           break;
 
         /* File I/O */
 
         case txASSIGNFILE :
-          assignFileProc();
+          pas_AssignFileProc();
           break;
 
         case txREAD :
-          readProc();
+          pas_ReadProc();
           break;
 
         case txREADLN :
-          readlnProc();
+          pas_ReadlnProc();
           break;
 
         case txRESET  :
-          openFileProc(xRESET, xRESETR);
+          pas_OpenFileProc(xRESET, xRESETR);
           break;
 
         case txREWRITE :
-          openFileProc(xREWRITE, xREWRITER);
+          pas_OpenFileProc(xREWRITE, xREWRITER);
           break;
 
         case txAPPEND :
-          fileProc(xAPPEND);
+          pas_FileProc(xAPPEND);
           break;
 
         case txCLOSEFILE :
-          fileProc(xCLOSEFILE);
+          pas_FileProc(xCLOSEFILE);
           break;
 
         case txWRITE :
-          writeProc();
+          pas_WriteProc();
           break;
 
         case txWRITELN :
-          writelnProc();
+          pas_WritelnProc();
           break;
 
           /* Its not a recognized procedure */
@@ -251,11 +251,11 @@ uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
 
       /* Then work with the write-able copy */
 
-      return simplifyFileNumber(&varCopy, 0, pFileSize, defaultFilePtr);
+      return pas_SimplifyFileNumber(&varCopy, 0, pFileSize, defaultFilePtr);
     }
   else
     {
-      return defaultFileNumber(defaultFilePtr, pFileSize);
+      return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
     }
 }
 
@@ -296,6 +296,10 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
     case sARRAY :
     case sRECORD :
       return baseTypePtr->sParm.t.tAllocSize;
+
+    case sFILE :
+    case sTEXTFILE :
+      return sINT_SIZE;
 
     case sVAR_PARM :
       return sPTR_SIZE;
@@ -444,32 +448,40 @@ int pas_ActualParameterList(symbol_t *procPtr)
             case sVAR_PARM :
               if (typePtr)
                 {
-                  switch (typePtr->sParm.t.tType)
+                  exprType_t varExprType;
+                  uint16_t   varType = typePtr->sParm.t.tType;
+
+                  switch (varType)
                     {
+                    /* Simple ordinal types */
+
                     case sINT :
-                      pas_VarParameter(exprIntegerPtr, typePtr);
-                      size += sPTR_SIZE;
-                      break;
-
-                    case sSCALAR :
-                      pas_VarParameter(exprScalarPtr, typePtr);
-                      size += sPTR_SIZE;
-                      break;
-
-                    case sBOOLEAN :
-                      pas_VarParameter(exprBooleanPtr, typePtr);
-                      size += sPTR_SIZE;
-                      break;
-
+                    case sSUBRANGE :
                     case sCHAR :
-                      pas_VarParameter(exprCharPtr, typePtr);
+                    case sBOOLEAN :
+                    case sSCALAR :
+                    case sSCALAR_OBJECT :
+                      varExprType = pas_MapVariable2ExprPtrType(varType, true);
+                      pas_VarParameter(varExprType, typePtr);
                       size += sPTR_SIZE;
                       break;
 
+                    /* Simple non-ordinal types */
+
+                    case sSET_OF :
                     case sREAL :
-                      pas_VarParameter(exprRealPtr, typePtr);
+                    case sSTRING :
+                    case sSHORTSTRING :
+                    case sRECORD :
+                    case sRECORD_OBJECT :
+                    case sFILE :
+                    case sTEXTFILE :
+                      varExprType = pas_MapVariable2ExprPtrType(varType, false);
+                      pas_VarParameter(varExprType, typePtr);
                       size += sPTR_SIZE;
                       break;
+
+                    /* Not so simple types that require a little more effort */
 
                     case sARRAY :
                       {
@@ -500,15 +512,8 @@ int pas_ActualParameterList(symbol_t *procPtr)
                       }
                       break;
 
-                    case sRECORD :
-                      pas_VarParameter(exprRecordPtr, typePtr);
-                      size += sPTR_SIZE;
-                      break;
-
-                    case sFILE :
-                    case sTEXTFILE :
-                      pas_VarParameter(exprFilePtr, typePtr);
-                      size += sPTR_SIZE;
+                    case sPOINTER :
+                      error(eNOTYET);
                       break;
 
                     default :
@@ -545,9 +550,9 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
 /***********************************************************************/
 
-static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
-                                   uint16_t *pFileSize,
-                                   symbol_t *defaultFilePtr)
+static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
+                                       uint16_t *pFileSize,
+                                       symbol_t *defaultFilePtr)
 {
   uint16_t fileType;
   uint16_t fileSize;
@@ -558,7 +563,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
     {
       case sVAR_PARM :
         {
-          return genVarFileNumber(varPtr, pFileSize, defaultFilePtr);
+          return pas_GenVarFileNumber(varPtr, pFileSize, defaultFilePtr);
         }
 
 #ifdef CONFIG_PAS_FILERECORD
@@ -578,7 +583,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           if (g_token != '.')
             {
               error(eRECORDOBJECT);
-              return defaultFileNumber(defaultFilePtr, pFileSize);
+              return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
             }
           else
             {
@@ -588,7 +593,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           if (g_token != sRECORD_OBJECT)
             {
               error(eRECORDOBJECT);
-              return defaultFileNumber(defaultFilePtr, pFileSize);
+              return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
             }
           else
             {
@@ -662,7 +667,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           if (typePtr == NULL)
             {
               error(eHUH);
-              return defaultFileNumber(defaultFilePtr, pFileSize);
+              return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
             }
 
           /* Get a pointer to the underlying base type symbol */
@@ -685,7 +690,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           if (baseTypePtr->sParm.t.tType != sFILE &&
               baseTypePtr->sParm.t.tType != sTEXTFILE)
             {
-              return defaultFileNumber(defaultFilePtr, pFileSize);
+              return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
             }
 
           /* Skip over the array name */
@@ -703,8 +708,8 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
           varPtr->sKind         = baseTypePtr->sParm.t.tType;
           varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
 
-          return simplifyFileNumber(varPtr, fileFlags, pFileSize,
-                                    defaultFilePtr);
+          return pas_SimplifyFileNumber(varPtr, fileFlags, pFileSize,
+                                        defaultFilePtr);
         }
 
       /* Is this a variable representing a type binary or text FILE? */
@@ -741,7 +746,7 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
        */
 
       default :
-        return defaultFileNumber(defaultFilePtr, pFileSize);
+        return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
     }
 
   if (pFileSize != NULL)
@@ -754,8 +759,8 @@ static uint16_t simplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 
 /***********************************************************************/
 
-static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
-                                  uint16_t *pFileSize)
+static uint16_t pas_DefaultFileNumber(symbol_t *defaultFilePtr,
+                                      uint16_t *pFileSize)
 {
   /* Push the default file number */
 
@@ -773,7 +778,7 @@ static uint16_t defaultFileNumber(symbol_t *defaultFilePtr,
 
 /***********************************************************************/
 
-static void haltProc (void)
+static void pas_HaltProc (void)
 {
   /* FORM:
    *   halt
@@ -784,12 +789,12 @@ static void haltProc (void)
 
 /****************************************************************************/
 
-static void readProc(void)          /* READLN procedure */
+static void pas_ReadProc(void)  /* READ procedure */
 {
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
-  TRACE(g_lstFile, "[readProc]");
+  TRACE(g_lstFile, "[pas_ReadProc]");
 
   /* Handles read-parameter-list
    *
@@ -824,7 +829,7 @@ static void readProc(void)          /* READLN procedure */
 
   /* Process the rest of the write-parameter-list */
 
-  readProcCommon((fileType == sTEXTFILE), fileSize);
+  pas_ReadProcCommon((fileType == sTEXTFILE), fileSize);
 
   /* Discard the extra file number argument on the stack.  NOTE that the
    * file number is retained for READLN to handle the move to end-of-line
@@ -841,12 +846,12 @@ static void readProc(void)          /* READLN procedure */
 
 /****************************************************************************/
 
-static void readlnProc(void)          /* READLN procedure */
+static void pas_ReadlnProc(void)  /* READLN procedure */
 {
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
-  TRACE(g_lstFile, "[readlnProc]");
+  TRACE(g_lstFile, "[pas_ReadlnProc]");
 
   /* Handles read-parameter-list
    *
@@ -892,7 +897,7 @@ static void readlnProc(void)          /* READLN procedure */
 
           /* Process the rest of the write-parameter-list */
 
-          readProcCommon(true, fileSize);
+          pas_ReadProcCommon(true, fileSize);
         }
 
       /* If there was an opening ')' then there most alos be a matching
@@ -938,9 +943,9 @@ static void readlnProc(void)          /* READLN procedure */
  *                 underlying base type.
  */
 
-static void readProcCommon(bool text, uint16_t fileSize)
+static void pas_ReadProcCommon(bool text, uint16_t fileSize)
 {
-  TRACE(g_lstFile, "[readProcCommon]");
+  TRACE(g_lstFile, "[pas_ReadProcCommon]");
 
   /* On entry, g_token should refer to the the first variable-access.  The
    * caller has assure that g_token is not ',' or ')' before calling.
@@ -954,11 +959,11 @@ static void readProcCommon(bool text, uint16_t fileSize)
 
       if (text)
         {
-          readText();
+          pas_ReadText();
         }
       else
         {
-          readBinary(fileSize);
+          pas_ReadBinary(fileSize);
         }
 
       /* Should be followed by ',' meaning that there are more parameter, or
@@ -984,11 +989,11 @@ static void readProcCommon(bool text, uint16_t fileSize)
  * variable-access Has to be either INTEGER, CHAR, REAL, or STRING.
  */
 
-static void readText(void)
+static void pas_ReadText(void)
 {
   exprType_t exprType;
 
-  TRACE(g_lstFile, "[readText]");
+  TRACE(g_lstFile, "[pas_ReadText]");
 
   /* Get TOS = file number by duplicating the one that is already there (but
    * that we also need to preserve).
@@ -1059,12 +1064,12 @@ static void readText(void)
  *       selected-variable | buffer-variable
  */
 
-static void readBinary(uint16_t fileSize)
+static void pas_ReadBinary(uint16_t fileSize)
 {
   symbol_t *parent;
   uint16_t size;
 
-  TRACE(g_lstFile, "[readBinary]");
+  TRACE(g_lstFile, "[pas_ReadBinary]");
 
   /* It is binary.  Make sure that the token refers to a variable
    * with the same type as the FILE OF.
@@ -1151,16 +1156,16 @@ static void readBinary(uint16_t fileSize)
  * - RESET is similar to REWRITE except that it prepares the file for read
  *   access;
  *
- * APPEND also opens a file, but is handled by fileProc().  This function is
- * almost identical to fileProc(), differing only in that it accepts two
- * opcodes and handles the option record-size.
+ * APPEND also opens a file, but is handled by pas_FileProc().  This function
+ * is almost identical to pas_FileProc(), differing only in that it accepts
+ * two opcodes and handles the option record-size.
  */
 
-static void openFileProc(uint16_t opcode1, uint16_t opcode2)
+static void pas_OpenFileProc(uint16_t opcode1, uint16_t opcode2)
 {
   uint16_t opcode = opcode1;
 
-  TRACE(g_lstFile, "[fileProc]");
+  TRACE(g_lstFile, "[pas_OpenFileProc]");
 
   /* FORM: open-procedure-name '(' file-variable {, record-size} ')'
    * FORM: open-procedure-name = REWRITE | RESET
@@ -1218,9 +1223,9 @@ static void openFileProc(uint16_t opcode1, uint16_t opcode2)
  * - CLOSEFILE closes a previously opened file
  */
 
-static void fileProc(uint16_t opcode)
+static void pas_FileProc(uint16_t opcode)
 {
-  TRACE(g_lstFile, "[fileProc]");
+  TRACE(g_lstFile, "[pas_FileProc]");
 
   /* FORM: function-name(<file number>)
    * FORM: function-name = PAGE | APPEND | CLOSEFILE
@@ -1260,12 +1265,12 @@ static void fileProc(uint16_t opcode)
 
 /****************************************************************************/
 
-static void assignFileProc(void)       /* ASSIGNFILE procedure */
+static void pas_AssignFileProc(void)  /* ASSIGNFILE procedure */
 {
   exprType_t exprType;
   uint32_t   fileType;
 
-  TRACE(g_lstFile, "[assignFileProc]");
+  TRACE(g_lstFile, "[pas_AssignFileProc]");
 
   /* FORM: ASSIGNFILE|ASSIGN assignfile-parameter-list ';'
    * FORM: assignfile-parameter-list = '(' file-variable ',' file-name ')'
@@ -1323,17 +1328,17 @@ static void assignFileProc(void)       /* ASSIGNFILE procedure */
 
 /****************************************************************************/
 
-static void writeProc(void)            /* WRITE procedure */
+static void pas_WriteProc(void)  /* WRITE procedure */
 {
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
-   TRACE(g_lstFile, "[writeProc]");
+   TRACE(g_lstFile, "[pas_WriteProc]");
 
-  /* FORM: WRITE  write-parameter-list
-   * FORM:      write-parameter-list = '(' [ file-variable ',' ]
-   *            write-parameter { ',' write-parameter } ')'
-   * FORM:      write-parameter = expression [ ':' expression [ ':' expression ] ]
+  /* FORM: WRITE write-parameter-list
+   * FORM:       write-parameter-list = '(' [ file-variable ',' ]
+   *             write-parameter { ',' write-parameter } ')'
+   * FORM:       write-parameter = expression [ ':' expression [ ':' expression ] ]
    */
 
   getToken();                          /* Skip over WRITE */
@@ -1360,7 +1365,7 @@ static void writeProc(void)            /* WRITE procedure */
 
   /* Process the rest of the write-parameter-list */
 
-  writeProcCommon((fileType == sTEXTFILE), fileSize);
+  pas_WriteProcCommon((fileType == sTEXTFILE), fileSize);
 
   /* Discard the extra file number argument on the stack.  NOTE that the
    * file number is retained for READLN to handle the move to end-of-line
@@ -1377,12 +1382,12 @@ static void writeProc(void)            /* WRITE procedure */
 
 /****************************************************************************/
 
-static void writelnProc(void)         /* WRITELN procedure */
+static void pas_WritelnProc(void)  /* WRITELN procedure */
 {
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
-  TRACE(g_lstFile, "[writelnProc]");
+  TRACE(g_lstFile, "[pas_WritelnProc]");
 
   /* FORM: WRITELN writeln-parameter-list
    * FORM:      writeln-parameter-list = [ write-parameter-list ]
@@ -1424,7 +1429,7 @@ static void writelnProc(void)         /* WRITELN procedure */
 
           /* Process the rest of the write-parameter-list */
 
-          writeProcCommon(true, fileSize);
+          pas_WriteProcCommon(true, fileSize);
         }
 
       /* If there was an opening ')' then there most alos be a matching
@@ -1443,8 +1448,8 @@ static void writelnProc(void)         /* WRITELN procedure */
 
   /* Set the end-of-line in the file.
    *
-   * WRITELN: TOS = File number.  For WRITELN, writeProcCommon() will leave
-   * the file number at the top of the stack
+   * WRITELN: TOS = File number.  For WRITELN, pas_WriteProcCommon() will
+   * leave the file number at the top of the stack
    */
 
   pas_GenerateIoOperation(xWRITELN);
@@ -1452,9 +1457,9 @@ static void writelnProc(void)         /* WRITELN procedure */
 
 /***********************************************************************/
 
-static void writeProcCommon(bool text, uint16_t fileSize)
+static void pas_WriteProcCommon(bool text, uint16_t fileSize)
 {
-  TRACE(g_lstFile, "[writeProcCommon]");
+  TRACE(g_lstFile, "[pas_WriteProcCommon]");
 
   /* Handle the WRITE/WRITELN write-parameter
    *
@@ -1475,11 +1480,11 @@ static void writeProcCommon(bool text, uint16_t fileSize)
 
       if (text)
         {
-          writeText();
+          pas_WriteText();
         }
       else
         {
-          writeBinary(fileSize);
+          pas_WriteBinary(fileSize);
         }
 
       /* Should be followed by ',' meaning that there are more parameter, or
@@ -1493,9 +1498,9 @@ static void writeProcCommon(bool text, uint16_t fileSize)
 
 /***********************************************************************/
 
-static void writeText(void)
+static void pas_WriteText(void)
 {
-  TRACE(g_lstFile, "[writeText]");
+  TRACE(g_lstFile, "[pas_WriteText]");
 
   /* The general form is <expression> */
 
@@ -1511,9 +1516,9 @@ static void writeText(void)
          * and receive the offset to the data.
          */
 
-        uint32_t offset     = poffAddRoDataString(poffHandle, g_tokenString);
+        uint32_t offset     = poffAddRoDataString(g_poffHandle, g_tokenString);
         int      size       = strlen(g_tokenString);
-        uint16_t fieldWidth = writeFieldWidth();
+        uint16_t fieldWidth = pas_WriteFieldWidth();
 
         /* Set the file number, offset and size on the stack
          *
@@ -1538,7 +1543,7 @@ static void writeText(void)
       {
         uint32_t offset     = (uint16_t)g_tknPtr->sParm.s.roOffset;
         int      size       = (uint16_t)g_tknPtr->sParm.s.roSize;
-        uint16_t fieldWidth = writeFieldWidth();
+        uint16_t fieldWidth = pas_WriteFieldWidth();
 
         /* WRITE_STRING: TOS(0) = Field width
          *               TOS(1) = Write address
@@ -1574,7 +1579,7 @@ static void writeText(void)
              *               TOS(3) = File number
              */
 
-            fieldWidth = writeFieldWidth();
+            fieldWidth = pas_WriteFieldWidth();
 
             pas_GenerateSimple(opDUP);
             pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.vSize);
@@ -1598,7 +1603,7 @@ static void writeText(void)
 
         pas_GenerateSimple(opDUP);
         writeType = pas_Expression(exprUnknown, NULL);
-        pas_GenerateDataOperation(opPUSH, writeFieldWidth());
+        pas_GenerateDataOperation(opPUSH, pas_WriteFieldWidth());
 
         /* Then generate the operation */
 
@@ -1664,10 +1669,12 @@ static void writeText(void)
 
 /* Get text file write field-width. */
 
-static uint16_t writeFieldWidth(void)
+static uint16_t pas_WriteFieldWidth(void)
 {
   uint8_t fieldWidth = 0;
   uint8_t precision  = 0;
+
+  TRACE(g_lstFile, "[pas_WriteFieldWidth]");
 
   /* If a field width/precision is present, then the current token will
    * be ':'
@@ -1716,12 +1723,12 @@ static uint16_t writeFieldWidth(void)
 
 /***********************************************************************/
 
-static void writeBinary(uint16_t fileSize)
+static void pas_WriteBinary(uint16_t fileSize)
 {
   symbol_t *parent;
   uint16_t size;
 
-  TRACE(g_lstFile, "[writeBinary]");
+  TRACE(g_lstFile, "[pas_WriteBinary]");
 
   /* It is binary.  Make sure that the token refers to a variable
    * with the same type as the FILE OF.
@@ -1797,8 +1804,8 @@ static void writeBinary(uint16_t fileSize)
  * because the transfer unit size is more difficult to find.
  */
 
-static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
-                                 symbol_t *defaultFilePtr)
+static uint16_t pas_GenVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
+                                     symbol_t *defaultFilePtr)
 {
   symbol_t *typePtr;  /* The base type may be in a different symbol */
   uint16_t  symType;  /* The base type may not be a symbol */
@@ -1883,7 +1890,7 @@ static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
 
   else
     {
-      return defaultFileNumber(defaultFilePtr, pFileSize);
+      return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
     }
 
   if (pFileSize != NULL)
@@ -1896,9 +1903,9 @@ static uint16_t genVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
 
 /****************************************************************************/
 
-static void valProc(void)         /* VAL procedure */
+static void pas_ValProc(void)  /* VAL procedure */
 {
-  TRACE(g_lstFile, "[valProc]");
+  TRACE(g_lstFile, "[pas_ValProc]");
 
   /* Declaration:
    *   procedure val(const S : string; var V; var Code : word);

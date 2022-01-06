@@ -62,6 +62,7 @@
 #include "pas_symtable.h"    /* for pas_AddProcedure() */
 #include "pas_error.h"       /* for error() */
 #include "pas_program.h"     /* for pas_UsesSection() */
+#include "pas_statement.h"   /* for pas_CompoundStatement() */
 #include "pas_machine.h"     /* for INT_ALIGNUP() */
 #include "pas_unit.h"
 
@@ -112,8 +113,8 @@ void pas_UnitImplementation(void)
 
   /* Set a UNIT indication in the output poff file header */
 
-  poffSetFileType(poffHandle, FHT_UNIT, 0, g_tokenString);
-  poffSetArchitecture(poffHandle, FHA_PCODE);
+  poffSetFileType(g_poffHandle, FHT_UNIT, 0, g_tokenString);
+  poffSetArchitecture(g_poffHandle, FHA_PCODE);
 
   /* Discard the unit name and get the next token */
 
@@ -165,17 +166,29 @@ void pas_UnitImplementation(void)
 
   /* Check for the presence of an initialization section
    *
-   * FORM: init-section = 'initialization' statement-sequence
+   *   FORM: init-section = 'initialization' statement-sequence
+   *
+   * Or the Turbo Pascal form:
+   *
+   *   FORM: init-section = 'begin' statement-sequence
+   *
+   * No finalization section is supported in the Turbo Pascal form.
+   * The BEGIN will not be terminated with 'END;' if a FINALIZATION
+   * section is present.
    */
 
-  if (g_token == tINITIALIZATION)
+  if (g_token == tINITIALIZATION || g_token == tBEGIN)
     {
       FP->section = eIsInitializationSection;
-      getToken();
 
-      /* REVISIT:  Initialization section is not implemented */
+      /* Process statements until END or FINALIZATION encountered. */
 
-      error(eNOTYET);
+      do
+         {
+           getToken();
+           pas_Statement();
+         }
+      while (g_token == ';');
     }
 
   /* Check for the presence of an finalization section

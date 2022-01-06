@@ -112,7 +112,7 @@ pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *varPtr)
 
       if ((varPtr->sParm.v.vFlags & SVAR_EXTERNAL) != 0)
         {
-          (void)poffAddRelocation(poffHandle, RLT_LDST,
+          (void)poffAddRelocation(g_poffHandle, RLT_LDST,
                                   varPtr->sParm.v.vSymIndex, 0);
         }
     }
@@ -384,7 +384,7 @@ void pas_GenerateProcedureCall(symbol_t *pProc)
     {
       /* For now */
 # error "Don't know what last parameter should be"
-      (void)poffAddRelocation(poffHandle, RLT_PCAL,
+      (void)poffAddRelocation(g_poffHandle, RLT_PCAL,
                               varPtr->sParm.p.pSymIndex,
                               0);
     }
@@ -430,7 +430,7 @@ void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
 
    /* Add the contained information to the library */
 
-   poffAddDebugFuncInfo(poffHandle, pContainer);
+   poffAddDebugFuncInfo(g_poffHandle, pContainer);
 
    /* Release the container */
 
@@ -476,7 +476,7 @@ void pas_GenerateStackExport(symbol_t *varPtr)
 
   /* Add the symbol to the symbol table */
 
-  (void)poffAddSymbol(poffHandle, &symbol);
+  (void)poffAddSymbol(g_poffHandle, &symbol);
 }
 
 /***********************************************************************/
@@ -518,7 +518,7 @@ void pas_GenerateStackImport(symbol_t *varPtr)
 
   /* Add the symbol to the symbol table */
 
-  varPtr->sParm.v.vSymIndex= poffAddSymbol(poffHandle, &symbol);
+  varPtr->sParm.v.vSymIndex= poffAddSymbol(g_poffHandle, &symbol);
 }
 
 /***********************************************************************/
@@ -583,7 +583,7 @@ void pas_GenerateProcExport(symbol_t *pProc)
 
   /* Add the symbol to the symbol table */
 
-  (void)poffAddSymbol(poffHandle, &symbol);
+  (void)poffAddSymbol(g_poffHandle, &symbol);
 }
 
 /***********************************************************************/
@@ -646,5 +646,5 @@ void pas_GenerateProcImport(symbol_t *pProc)
 
   /* Add the symbol to the symbol table */
 
-  pProc->sParm.p.pSymIndex = poffAddSymbol(poffHandle, &symbol);
+  pProc->sParm.p.pSymIndex = poffAddSymbol(g_poffHandle, &symbol);
 }

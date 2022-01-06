@@ -56,6 +56,16 @@ PROGRAM a1 (input,output);
         { HourScanType = FirstHour..PastLastHour; }
         HourScanType = 8..18;
 
+    VAR
+        { The schedule. }
+        Schedule: ScheduleType;
+
+        { Main loop continue flag. }
+        KeepRunning: boolean;
+
+        { Command input local to main. }
+        Command: string;
+
     (***********************************************************************
      * Procedure to read the next non-blank.  It skips leading blanks, then
      * reads the string up to the first blank or eoln.
@@ -378,7 +388,7 @@ PROGRAM a1 (input,output);
         { Map from 24-hour time to 12-hour time.  Arguments less than
           13 are simply returned, arguments greater than 12 are
           reduced by 12 and returned. }
-        FUNCTION Map24to12(HourType: HourType): integer;
+        FUNCTION Map24to12(Hour: HourType): integer;
             BEGIN
                 IF Hour < 13 THEN
                     Map24to12 := Hour
@@ -433,16 +443,6 @@ PROGRAM a1 (input,output);
     {*****************************************************************
      * Main line.
      *****************************************************************}
-
-    VAR
-        { The schedule. }
-        Schedule: ScheduleType;
-
-        { Main loop continue flag. }
-        KeepRunning: boolean;
-
-        { Command input local to main. }
-        Command: string;
 
     BEGIN
         { Clear the schedule. }

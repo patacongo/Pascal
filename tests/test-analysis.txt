@@ -32,12 +32,10 @@ writing, the following errors are reported when testall.sh is ran:
     This problem is largely alleviated by using short strings that do not
     require such large string stack allocations.
 
- 5. Some modern Pacal compilers support and string buffer size argument like:
-
-      VAR
-        foobar : STRING[18];
-
-    Where the value in brackets provides the allocated string size.
+ 5. There are some files that have Turbo-Pascal style constructions.  For
+    example, DayIO.pas used BEGIN rather than INITIALIZATION to introduce
+    the initializers in a Unit file.  I have done a good faith effort to
+    support Turbo-Pascal-isms whereever possible.
 
 Successful test results are not shown.
 
@@ -181,39 +179,26 @@ sin(0.703117)**2 + cos(0.703117)**20.000000
 Compiles, links, and runs OK but the results don't look right.
 
 ########worksched.pas########
-Line 0:0175 Error 32 Token 2d
-
-Error:
-#define eRPAREN          ((uint16_t) 0x32)
-
-Line:
- 175                    write(' ]', ' ': TableDayWidth - AllowForDay - 4)
-where
- 34     CONST
- 27         TableDayWidth = 9;
- 158        CONST
-
-Token: '-'
-
-Analysis:
-Expressions of constants are not currently accepted for a fieldwidth.
-
 ########DayIO.pas########
-Line 0:0209 Error 3e Token 3b
-
-Line:
- 209    Schedule[HourScan, DayScan] <> NotScheduled;
-
-Error:
-#define eEXPRTYPE        ((uint16_t) 0x3e)
-
-Token: ';'
-
-Analysis:
-I have not looked into this yet.
-
 ########worksched.pex########
-ERROR: Could not open worksched.o: No such file or directory
-ERROR: Error opening 'worksched.pex': 2
-ERROR: Could not load worksched.pex
+These two Pascal files compile fine, but I did make two changes to
+worksched.pas for the clean compilation.  I changed:
 
+ 381        FUNCTION Map24to12(HourType: HourType): integer;
+
+To:
+
+ 381        FUNCTION Map24to12(Hour: HourType): integer;
+
+Where HourType is a sub-range.  Based on the usage, this change seems
+correct but, moreover, in my case the partial declaration of the parameter
+HourType was sufficient to occlude the type HourType.
+
+I also reorganized the program blocks.  They were in the order:  CONST,
+TYPE, PROCEDURES and FUNCTIONS, VAR then the main BEGIN-END.  I moved the
+VAR section to before PROCEDURES and FUNCTIONS.
+
+No real changes were made to the unit DayIO.pas.
+
+However, when building the combined PEX file, the optimizer, popt, coredumps
+before the object is generated.

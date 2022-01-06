@@ -64,8 +64,8 @@
  * Public Data
  **********************************************************************/
 
-extern poffHandle_t poffHandle; /* Handle to POFF object */
-extern FILE *g_lstFile;         /* LIST file pointer */
+extern poffHandle_t g_poffHandle; /* Handle to POFF object */
+extern FILE *g_lstFile;           /* LIST file pointer */
 
 /**********************************************************************
  * Private Variables
@@ -226,7 +226,7 @@ insn32_GenerateSimple(uint8_t opcode)
 
   /* Write the 8-bit opcode */
 
-  poffAddProgByte(poffHandle, opcode);
+  poffAddProgByte(g_poffHandle, opcode);
 
   /* Now, add the disassembled PCode to the list file. */
 
@@ -248,15 +248,15 @@ insn32_GenerateDataOperation(uint8_t opcode, uint32_t data)
 
   /* Write the 8-bit opcode */
 
-  poffAddProgByte(poffHandle, opcode);
+  poffAddProgByte(g_poffHandle, opcode);
 
   /* Write the 32-bit opcode */
 
   udata.w = data;
-  (void)poffAddProgByte(poffHandle, udata.b[opB1]);
-  (void)poffAddProgByte(poffHandle, udata.b[opB2]);
-  (void)poffAddProgByte(poffHandle, udata.b[opB3]);
-  (void)poffAddProgByte(poffHandle, udata.b[opB4]);
+  (void)poffAddProgByte(g_poffHandle, udata.b[opB1]);
+  (void)poffAddProgByte(g_poffHandle, udata.b[opB2]);
+  (void)poffAddProgByte(g_poffHandle, udata.b[opB3]);
+  (void)poffAddProgByte(g_poffHandle, udata.b[opB4]);
 
   /* Now, add the disassembled PCode to the list file. */
 

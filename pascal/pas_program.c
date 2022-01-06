@@ -139,8 +139,8 @@ void pas_Program(void)
 
   /* Set the POFF file header type */
 
-  poffSetFileType(poffHandle, FHT_PROGRAM, nFiles, programName);
-  poffSetArchitecture(poffHandle, FHA_PCODE);
+  poffSetFileType(g_poffHandle, FHT_PROGRAM, nFiles, programName);
+  poffSetArchitecture(g_poffHandle, FHA_PCODE);
 
   /* Discard the program name string */
 

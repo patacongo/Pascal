@@ -149,17 +149,16 @@ IMPLEMENTATION
             write(OutFile, DayMap[Day])
         END;
 
-    BEGIN
-        (* Initialize the DayMap.  This is an easy way to convert
-           DayType values to strings.  It is used internally by the
-           unit. *)
-        DayMap[Sun] := 'Sun';
-        DayMap[Mon] := 'Mon';
-        DayMap[Tue] := 'Tue';
-        DayMap[Wed] := 'Wed';
-        DayMap[Thu] := 'Thu';
-        DayMap[Fri] := 'Fri';
-        DayMap[Sat] := 'Sat';
-        DayMap[BadDay] := '***'
-    END.
-
+BEGIN
+    (* Initialize the DayMap.  This is an easy way to convert
+       DayType values to strings.  It is used internally by the
+       unit. *)
+    DayMap[Sun] := 'Sun';
+    DayMap[Mon] := 'Mon';
+    DayMap[Tue] := 'Tue';
+    DayMap[Wed] := 'Wed';
+    DayMap[Thu] := 'Thu';
+    DayMap[Fri] := 'Fri';
+    DayMap[Sat] := 'Sat';
+    DayMap[BadDay] := '***'
+END.
