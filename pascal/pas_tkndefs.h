@@ -91,7 +91,7 @@
 #define sSCALAR          0x4f
 #define sSCALAR_OBJECT   0x50
 #define sSUBRANGE        0x51
-#define sSET_OF          0x52
+#define sSET             0x52
 #define sARRAY           0x53
 #define sRECORD          0x54
 #define sRECORD_OBJECT   0x55

@@ -275,7 +275,6 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
     case sINT :
     case sSUBRANGE :
     case sSCALAR :
-    case sSET_OF :
       return sINT_SIZE;
 
     case sCHAR :
@@ -286,6 +285,9 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
 
     case sREAL :
       return sREAL_SIZE;
+
+    case sSET :
+      return sSET_SIZE;
 
     case sSTRING :
       return sSTRING_SIZE;
@@ -406,9 +408,9 @@ int pas_ActualParameterList(symbol_t *procPtr)
               size += sINT_SIZE;
               break;
 
-            case sSET_OF :
+            case sSET :
               pas_Expression(exprSet, typePtr);
-              size += sINT_SIZE;
+              size += sSET_SIZE;
               break;
 
             case sARRAY :
@@ -468,7 +470,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                     /* Simple non-ordinal types */
 
-                    case sSET_OF :
+                    case sSET :
                     case sREAL :
                     case sSTRING :
                     case sSHORTSTRING :

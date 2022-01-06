@@ -1384,7 +1384,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
         }
 
       /* Verify that the ordinal-type is either a scalar or a
-       * subrange type.  These are the only valid types for 'set of'
+       * subrange type.  These are the only valid types for 'SET'
        */
 
       if ((typeIdPtr) &&
@@ -1393,9 +1393,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
         {
           /* Declare the SET type */
 
-          typePtr = pas_AddTypeDefine(typeName, sSET_OF,
-                                      typeIdPtr->sParm.t.tAllocSize,
-                                      typeIdPtr);
+          typePtr = pas_AddTypeDefine(typeName, sSET, sSET_SIZE, typeIdPtr);
           if (typePtr)
             {
               int16_t nObjects;
@@ -1411,13 +1409,13 @@ static symbol_t *pas_NewComplexType(char *typeName)
                * representation of a set as a bit-string.
                */
 
-              nObjects = typeIdPtr->sParm.t.tMaxValue
-                - typeIdPtr->sParm.t.tMinValue + 1;
-              if (nObjects > BITS_IN_INTEGER)
+              nObjects = typeIdPtr->sParm.t.tMaxValue -
+                         typeIdPtr->sParm.t.tMinValue + 1;
+              if (nObjects > sSET_MAXELEM)
                 {
                   error(eSETRANGE);
-                  typePtr->sParm.t.tMaxValue = typePtr->sParm.t.tMinValue
-                    + BITS_IN_INTEGER - 1;
+                  typePtr->sParm.t.tMaxValue = typePtr->sParm.t.tMinValue +
+                                               sSET_MAXELEM - 1;
                 }
             }
         }

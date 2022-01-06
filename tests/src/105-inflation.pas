@@ -22,6 +22,6 @@ begin
     w1 := w1 * 1.07;
     w2 := w2 * 1.08;
     w3 := w3 * 1.10;
-     writeln(i, '. ', w1, ', ', w2, ', ', w3);
+     writeln(i:4, '. ', w1, ', ', w2, ', ', w3);
   until i=n
 end.

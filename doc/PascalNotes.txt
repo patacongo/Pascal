@@ -12,7 +12,7 @@ TYPES
       limited backward compatibility.
     - No function returning FILE OF; No FILE OF procedure/function arguments
     - Older name TEXT also supported as an alias for TEXTFILE
-  - SET is limit to 16/32 (# bits in int) adjacent elements
+  - SET is limit to 64-bits adjacent elements
   - Expressions are not strongly typed across different SCALAR types
     (see exprEnum in expr.h)
   - In RECORD CASE, there is no verification that the type of the tag

@@ -701,7 +701,7 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
       case sSCALAR_OBJECT :
         return exprScalar;            /* scalar(integer) value */
 
-      case sSET_OF :
+      case sSET :
         return exprSet;               /* set(integer) value */
 
       case sTYPE :                    /* Variable is defined type */
@@ -1334,7 +1334,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case sSCALAR_OBJECT :
-      if (g_abstractType)
+      if (g_abstractType != NULL)
         {
           if (g_tknPtr->sParm.c.cParent != g_abstractType) error(eSCALARTYPE);
         }
@@ -1436,7 +1436,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case sSCALAR :
-      if (g_abstractType)
+      if (g_abstractType != NULL)
         {
           if (g_tknPtr->sParm.v.vParent != g_abstractType) error(eSCALARTYPE);
         }
@@ -1450,22 +1450,26 @@ static exprType_t pas_Factor(exprType_t findExprType)
       factorType = exprScalar;
       break;
 
-    case sSET_OF :
-      /* If an g_abstractType is specified then it should either be the */
-      /* same SET OF <object> -OR- the same <object> */
+    case sSET :
+      /* If an g_abstractType is specified then it should either be the
+       * same SET OF <object> -OR- the same <object>
+       */
 
-      if (g_abstractType)
+      if (g_abstractType != NULL)
         {
           if ((g_tknPtr->sParm.v.vParent != g_abstractType) &&
               (g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractType))
-            error(eSET);
+            {
+              error(eSET);
+            }
         }
       else
         {
           g_abstractType = g_tknPtr->sParm.v.vParent;
         }
 
-      pas_GenerateStackReference(opLDS, g_tknPtr);
+      pas_GenerateDataSize(g_tknPtr->sParm.v.vSize);
+      pas_GenerateStackReference(opLDSM, g_tknPtr);
       getToken();
       factorType = exprSet;
       break;
@@ -1616,7 +1620,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
   switch (varPtr->sKind)
     {
     case sSUBRANGE :
-      if (!g_abstractType) g_abstractType = typePtr;
+      if (g_abstractType == NULL) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.tSubType;
       factorType    = pas_SimplifyFactor(varInfo, factorFlags);
       break;
@@ -2127,16 +2131,29 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
         }
       break;
 
-    /* The only thing that REAL and STRING type have in common is that they
-     * are all both represented by a multi-word objects.
+    /* The only thing that REAL, STRING, and SET types have in common is that
+     * they are all represented by a multi-word objects.
      */
+
+    case sSET :
+      if (g_abstractType == NULL)
+        {
+          g_abstractType = typePtr;
+        }
+      else if ((typePtr != g_abstractType) &&
+               (typePtr->sParm.v.vParent != g_abstractType))
+        {
+          error(eSCALARTYPE);
+        }
+
+      /* Fall through */
 
     case sREAL         :
     case sSTRING       :
     case sSHORTSTRING  :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          symbol_t   *baseTypePtr;
+          symbol_t *baseTypePtr;
 
           /* In the case of an array, the size of the variable refers to the
            * size of the array.  We need to traverse back to the base type of
@@ -2197,7 +2214,7 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
       break;
 
     case sSCALAR :
-      if (!g_abstractType)
+      if (g_abstractType == NULL)
         {
           g_abstractType = typePtr;
         }
@@ -2207,53 +2224,6 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
         }
 
       factorType = pas_FactorExprType(exprScalar, factorFlags);
-      if ((factorFlags & FACTOR_INDEXED) != 0)
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
-                {
-                  pas_GenerateSimple(opADD);
-                  pas_GenerateStackReference(opLDS, varPtr);
-                }
-              else
-                {
-                  pas_GenerateStackReference(opLDSX, varPtr);
-                }
-
-              pas_GenerateSimple(opLDI);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-            }
-        }
-      else
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              pas_GenerateSimple(opLDI);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-            }
-        }
-      break;
-
-    case sSET_OF :
-      if (!g_abstractType)
-        {
-          g_abstractType = typePtr;
-        }
-      else if ((typePtr != g_abstractType) &&
-               (typePtr->sParm.v.vParent != g_abstractType))
-        {
-          error(eSCALARTYPE);
-        }
-
-      factorType = pas_FactorExprType(exprSet, factorFlags);
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
@@ -2365,7 +2335,7 @@ static exprType_t pas_PointerFactor(void)
         break;
 
       case sSCALAR :
-        if (g_abstractType)
+        if (g_abstractType != NULL)
           {
             if (g_tknPtr->sParm.v.vParent != g_abstractType) error(eSCALARTYPE);
           }
@@ -2379,15 +2349,15 @@ static exprType_t pas_PointerFactor(void)
         factorType = exprScalarPtr;
         break;
 
-      case sSET_OF :
+      case sSET :
         /* If an g_abstractType is specified then it should either be the
          * same SET OF <object> -OR- the same <object>
          */
 
-        if (g_abstractType)
+        if (g_abstractType != NULL)
           {
-            if ((g_tknPtr->sParm.v.vParent != g_abstractType)
-            &&   (g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractType))
+            if (g_tknPtr->sParm.v.vParent != g_abstractType &&
+                g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractType)
               {
                  error(eSET);
               }
@@ -2397,10 +2367,7 @@ static exprType_t pas_PointerFactor(void)
              g_abstractType = g_tknPtr->sParm.v.vParent;
           }
 
-        pas_GenerateStackReference(opLAS, g_tknPtr);
-        getToken();
-        factorType = exprSetPtr;
-        break;
+        /* Fall through */
 
       case sREAL :
       case sSTRING :
@@ -2504,7 +2471,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
       /* Check if we have reduced the complex factor to a simple factor */
 
     case sSUBRANGE :
-      if (!g_abstractType) g_abstractType = typePtr;
+      if (g_abstractType == NULL) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.tSubType;
       factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
@@ -2900,9 +2867,26 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       break;
 
-    /* The only thing that REAL and STRING types have in common is that they
-     * are all represented by multi-word objects.
+    /* The only thing that REAL, STRING and SET types have in common is that
+     * they are all represented by multi-word objects.
      */
+
+    case sSET :
+      /* If an g_abstractType is specified then it should either be the
+       * same SET OF <object> -OR- the same <object>
+       */
+
+      if (g_abstractType == NULL)
+        {
+          g_abstractType = typePtr;
+        }
+      else if ((typePtr != g_abstractType) &&
+               (typePtr->sParm.v.vParent != g_abstractType))
+        {
+          error(eSCALARTYPE);
+        }
+
+      /* Fall through */
 
     case sREAL         :
     case sSTRING       :
@@ -2942,7 +2926,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
       break;
 
     case sSCALAR :
-      if (!g_abstractType)
+      if (g_abstractType == NULL)
         {
           g_abstractType = typePtr;
         }
@@ -2984,53 +2968,6 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
             }
 
           factorType = exprScalarPtr;
-        }
-      break;
-
-    case sSET_OF :
-      if (!g_abstractType)
-        {
-          g_abstractType = typePtr;
-        }
-      else if ((typePtr != g_abstractType) &&
-               (typePtr->sParm.v.vParent != g_abstractType))
-        {
-          error(eSCALARTYPE);
-        }
-
-      if ((factorFlags & FACTOR_INDEXED) != 0)
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
-                {
-                  pas_GenerateStackReference(opLDS, varPtr);
-                  pas_GenerateSimple(opADD);
-                }
-              else
-                {
-                  pas_GenerateStackReference(opLDSX, varPtr);
-                }
-            }
-          else
-            {
-              pas_GenerateStackReference(opLASX, varPtr);
-            }
-
-          factorType = exprSetPtr;
-        }
-      else
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLAS, varPtr);
-            }
-
-          factorType = exprSetPtr;
         }
       break;
 
@@ -3179,7 +3116,7 @@ static void pas_SetAbstractType(symbol_t *sType)
     switch (sType->sParm.t.tType)
       {
         case sSCALAR :
-          if (g_abstractType)
+          if (g_abstractType != NULL)
             {
               if (sType != g_abstractType) error(eSCALARTYPE);
             }
@@ -3190,12 +3127,12 @@ static void pas_SetAbstractType(symbol_t *sType)
           break;
 
         case sSUBRANGE :
-          if (!g_abstractType)
+          if (g_abstractType == NULL)
             {
               g_abstractType = sType;
             }
-          else if ((g_abstractType->sParm.t.tType != sSUBRANGE)
-          ||        (g_abstractType->sParm.t.tSubType != sType->sParm.t.tSubType))
+          else if (g_abstractType->sParm.t.tType != sSUBRANGE ||
+                   g_abstractType->sParm.t.tSubType != sType->sParm.t.tSubType)
             {
               error(eSUBRANGETYPE);
             }
@@ -3224,22 +3161,26 @@ static void pas_SetAbstractType(symbol_t *sType)
 }
 
 /****************************************************************************/
+
 static void pas_GetSetFactor(void)
 {
   setType_t s;
 
   TRACE(g_lstFile,"[pas_GetSetFactor]");
 
-  /* FORM: [[<constant>[,<constant>[, ...]]]] */
-  /* ASSUMPTION:  The first '[' has already been processed */
+  /* FORM: [[<constant>[,<constant>[, ...]]]]
+   *
+   * ASSUMPTION:  The first '[' has already been processed
+   */
 
-  /* First, verify that a scalar expression type has been specified */
-  /* If the g_abstractType is a SET, then we will need to get the TYPE */
-  /* that it is a SET OF */
+  /* First, verify that a scalar expression type has been specified
+   * If the g_abstractType is a SET, then we will need to get the TYPE
+   * that it is a SET of.
+   */
 
-  if (g_abstractType)
+  if (g_abstractType != NULL)
     {
-      if (g_abstractType->sParm.t.tType == sSET_OF)
+      if (g_abstractType->sParm.t.tType == sSET)
         {
           s.typePtr = g_abstractType->sParm.t.tParent;
         }
@@ -3275,7 +3216,7 @@ static void pas_GetSetFactor(void)
       s.typeFound = false;
       s.typePtr   = NULL;
       s.minValue  = 0;
-      s.maxValue  = BITS_IN_INTEGER - 1;
+      s.maxValue  = sSET_MAXELEM - 1;
     }
 
   /* Get the first element of the set */
@@ -3300,6 +3241,7 @@ static void pas_GetSetFactor(void)
 }
 
 /****************************************************************************/
+
 static void pas_GetSetElement(setType_t *s)
 {
   uint16_t setValue;

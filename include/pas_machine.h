@@ -82,7 +82,9 @@
 #define sBOOLEAN_SIZE       sINT_SIZE
 #define sREAL_SIZE          8
 #define sPTR_SIZE           sINT_SIZE
-#define sRETURN_SIZE       (3*sPTR_SIZE)
+#define sRETURN_SIZE       (3 * sPTR_SIZE)
+#define sSET_SIZE           8
+#define sSET_MAXELEM       (8 * sSET_SIZE)
 
 /* Pascal string variables consist of:
  *

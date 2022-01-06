@@ -138,7 +138,8 @@ static void       pas_WithStatement    (void);  /* With statement */
 
 void pas_Statement(void)
 {
-  symbol_t *symPtr;     /* Save Symbol Table pointer to token */
+  symbol_t  *symPtr;     /* Save Symbol Table pointer to token */
+  exprType_t exprType;
 
   TRACE(g_lstFile,"[pas_Statement");
 
@@ -182,22 +183,22 @@ void pas_Statement(void)
       pas_Assignment(opSTSB, exprBoolean, symPtr, NULL);
       break;
 
+      /* The only thing that SET and REAL have in common is that they both
+       * require large, multi-word assignments.
+       */
+
+    case sSET :
     case sREAL :
       symPtr = g_tknPtr;
+      exprType = (g_token == sSET) ? exprSet : exprReal;
       getToken();
-      pas_LargeAssignment(opSTSM, exprReal, symPtr, symPtr->sParm.v.vParent);
+      pas_LargeAssignment(opSTSM, exprType, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sSCALAR :
       symPtr = g_tknPtr;
       getToken();
       pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.vParent);
-      break;
-
-    case sSET_OF :
-      symPtr = g_tknPtr;
-      getToken();
-      pas_Assignment(opSTS, exprSet, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sSTRING :
@@ -289,6 +290,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 {
   symbol_t   *typePtr;
   exprType_t  exprType;
+  exprType_t  lvalueType;
 
   TRACE(g_lstFile,"[pas_SimpleAssignment]");
 
@@ -434,8 +436,15 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       break;
 
+    /* The only thing that REAL and SET types have in common is that they
+     * both require the same multi-word assignment.
+     */
+
+    case sSET :
     case sREAL :
-      exprType = pas_AssignExprType(exprReal, assignFlags);
+      lvalueType = (varPtr->sKind == sSET) ? exprSet : exprReal;
+      exprType   = pas_AssignExprType(lvalueType, assignFlags);
+
       if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
@@ -481,43 +490,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sSCALAR :
       exprType = pas_AssignExprType(exprScalar, assignFlags);
-      if ((assignFlags & ASSIGN_INDEXED) != 0)
-        {
-          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
-            {
-              if ((assignFlags & ASSIGN_STORE_INDEXED) != 0)
-                {
-                  pas_GenerateStackReference(opLDS, varPtr);
-                  pas_GenerateSimple(opADD);
-                }
-              else
-                {
-                  pas_GenerateStackReference(opLDSX, varPtr);
-                }
-
-              pas_Assignment(opSTI, exprType, varPtr, typePtr);
-            }
-          else
-            {
-              pas_Assignment(opSTSX, exprType, varPtr, typePtr);
-            }
-        }
-      else
-        {
-          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              pas_Assignment(opSTI, exprType, varPtr, typePtr);
-            }
-          else
-            {
-              pas_Assignment(opSTS, exprType, varPtr, typePtr);
-            }
-        }
-      break;
-
-    case sSET_OF :
-      exprType = pas_AssignExprType(exprSet, assignFlags);
       if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)

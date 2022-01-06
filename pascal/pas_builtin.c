@@ -86,7 +86,7 @@ static exprType_t pas_BuiltInSizeOf(void)
       case sSHORTSTRING :
       case sSCALAR :
       case sSUBRANGE :
-      case sSET_OF :
+      case sSET :
       case sARRAY :
       case sRECORD :
         size = g_tknPtr->sParm.v.vSize;
