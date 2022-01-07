@@ -57,7 +57,7 @@ CFLAGS   += $(EXTRA_INCLUDES)
 #
 # Objects and targets
 #
-RUNSRCS   = prun.c pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c
+RUNSRCS   = prun.c pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
 RUNOBJS   = $(RUNSRCS:.c=.o)
 
 OBJS      = $(RUNOBJS)

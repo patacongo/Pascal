@@ -53,7 +53,8 @@
 #include "pas_main.h"
 #include "pas_expression.h"
 #include "pas_procedure.h"
-#include "pas_function.h"
+#include "pas_function.h" /* for pas_StandardFunction() */
+#include "pas_setops.h"   /* Set operation codes */
 #include "pas_codegen.h"  /* for pas_Generate*() */
 #include "pas_token.h"
 #include "pas_symtable.h"
@@ -75,6 +76,7 @@ static exprType_t pas_SuccFunc(void);
 static void       pas_OddFunc(void);
 static void       pas_ChrFunc(void);
 static void       pas_FileFunc(uint16_t opcode);
+static void       pas_SetFunc(uint16_t setOpcode);
 
 /* Enhanced Pascal functions */
 
@@ -207,10 +209,19 @@ exprType_t pas_StandardFunction(void)
           funcType = exprReal;
           break;
 
+          /* Set operations */
+
+        case txINCLUDE :
+          pas_SetFunc(setINCLUDE);
+          break;
+
+        case txEXCLUDE :
+          pas_SetFunc(setEXCLUDE);
+          break;
+
         default :
           error(eINVALIDPROC);
           break;
-
         }
     }
 
@@ -438,6 +449,15 @@ static void pas_FileFunc(uint16_t opcode)
       pas_GenerateStackReference(opLDS, g_inputFile);
       pas_GenerateIoOperation(opcode);
     }
+}
+
+/****************************************************************************/
+
+static void pas_SetFunc(uint16_t setOpcode)
+{
+  /* FORM: 'include' | 'exclude' '(' dest-set, source-set ')' */
+
+  error(eNOTYET);
 }
 
 /****************************************************************************/

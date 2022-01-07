@@ -31,17 +31,17 @@ BEGIN
   showresult(S1 >< S2);
 
   if S1 = S2 THEN
-    WRITELN('TRUE');
+    WRITELN('TRUE')
   ELSE
     WRITELN('FALSE');
   
   if S1 <> S2 THEN
-    WRITELN('TRUE');
+    WRITELN('TRUE')
   ELSE
     WRITELN('FALSE');
 
   if S1 <= S2 THEN
-    WRITELN('TRUE');
+    WRITELN('TRUE')
   ELSE
     WRITELN('FALSE');
 
@@ -49,7 +49,7 @@ BEGIN
   showresult(EXCLUDE(S2, ['D']);
 
   if [E] IN S2 THEN
-    WRITELN('TRUE');
+    WRITELN('TRUE')
   ELSE
     WRITELN('FALSE');
 END.

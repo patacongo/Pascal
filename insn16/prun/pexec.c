@@ -55,6 +55,7 @@
 #include "paslib.h"
 #include "pfloat.h"
 #include "psysio.h"
+#include "psetops.h"
 #include "plib.h"
 #include "pexec.h"
 
@@ -857,8 +858,16 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
        *              File number on stack
        */
 
-    case oSYSIO  :
+    case oSYSIO :
       ret = pexec_sysio(st, imm16);
+      break;
+
+      /* Set operations:
+       * For SETOP:   imm16 = sub-function code
+       */
+
+    case oSETOP :
+      ret = pexec_setops(st, imm16);
       break;
 
       /* Program control:  imm16 = unsigned label (no stack arguments) */

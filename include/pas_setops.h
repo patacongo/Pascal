@@ -50,9 +50,9 @@
  *   =       Checks equality of two sets      S1 =  S2 is FALSE
  *   <>      Checks non-equality of two sets  S1 <> S2 is TRUE
  *   <=      Contains (subset)                S1 <= S2 is FALSE
- *   In      Check for membership in set      [E] In S2 gives TRUE
- *   Include Includes element in set          Include(S1, [D]) gives [A,B,C,D]
- *   Exclude Excludes element from set        Exclude(S2, [D]) gives [C,E]
+ *   In      Check for membership in set      E In S2 gives TRUE
+ *   Include Includes element in set          Include(S1, D) gives [A,B,C,D]
+ *   Exclude Excludes element from set        Exclude(S2, D) gives [C,E]
  *
  * Precedence:
  *   Highest *

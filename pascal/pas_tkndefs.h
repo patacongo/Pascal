@@ -226,10 +226,15 @@
 
 #define txWRITELN        0x90
 
+/* SET operators */
+
+#define txINCLUDE        0x91
+#define txEXCLUDE        0x92
+
 /* Built-in, compile-time operations */
 
-#define txSIZEOF         0x91
-#define txLENGTH         0x92
+#define txSIZEOF         0x92
+#define txLENGTH         0x93
 
 /* "Less than standard" Procedures 0xc0-0xff */
 

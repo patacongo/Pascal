@@ -121,6 +121,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"END",            tEND,            txNONE},       /* (1) */
   {"EOF",            tSTDFUNC,        txEOF},        /* (2) */
   {"EOLN",           tSTDFUNC,        txEOLN},       /* (2) */
+  {"EXCLUDE",        tSTDFUNC,        txEXCLUDE},    /* (2) */
   {"EXP",            tSTDFUNC,        txEXP},        /* (2) */
   {"FILE",           tFILE,           txNONE},       /* (1) */
   {"FINALIZATION",   tFINALIZATION,   txNONE},       /* (4) */
@@ -133,6 +134,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"IF",             tIF,             txNONE},       /* (1) */
   {"IMPLEMENTATION", tIMPLEMENTATION, txNONE},       /* (4) */
   {"IN",             tIN,             txNONE},       /* (1) */
+  {"INCLUDE",        tSTDFUNC,        txINCLUDE},    /* (2) */
   {"INITIALIZATION", tINITIALIZATION, txNONE},       /* (4) */
   {"INTERFACE",      tINTERFACE,      txNONE},       /* (4) */
   {"LABEL",          tLABEL,          txNONE},       /* (1) */
