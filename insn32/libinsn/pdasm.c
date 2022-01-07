@@ -332,7 +332,7 @@ static const char *sName[MAX_SETOP] =
 { /* SYSIO opcode mnemonics */
 /* 0x00 */ invSetOp,     "INTERSECTION", "UNION",   "DIFFERENCE",
 /* 0x04 */ "SYMDIFF",    "EQUAL",     "NEQUAL",     "CONTAINS",
-/* 0x08 */ "MEMBER",     "INCLUDE",   "EXCLUDE"
+/* 0x08 */ "MEMBER",     "INCLUDE",   "EXCLUDE",    "CARD"
 };
 
 

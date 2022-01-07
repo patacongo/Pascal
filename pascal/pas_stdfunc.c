@@ -77,169 +77,13 @@ static void       pas_OddFunc(void);
 static void       pas_ChrFunc(void);
 static void       pas_FileFunc(uint16_t opcode);
 static void       pas_SetFunc(uint16_t setOpcode);
+static void       pas_CardFunc(void);
 
 /* Enhanced Pascal functions */
 
 /* Non-standard C-library interface functions */
 
 static exprType_t pas_GetEnvFunc (void); /* Get environment string value */
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-void pas_PrimeStandardFunctions(void)
-{
-}
-
-/****************************************************************************/
-/* Process a standard Pascal function call */
-
-exprType_t pas_StandardFunction(void)
-{
-  exprType_t funcType = exprUnknown;
-
-  TRACE(g_lstFile,"[pas_StandardFunction]");
-
-  /* Is the token a function? */
-
-  if (g_token == tSTDFUNC)
-    {
-      /* Yes, process it procedure according to the extended token type */
-
-      switch (g_tknSubType)
-        {
-          /* Functions which return the same type as their argument */
-        case txABS :
-          funcType = pas_AbsFunc();
-          break;
-
-        case txSQR :
-          funcType = pas_SqrFunc();
-          break;
-
-        case txPRED :
-          funcType = pas_PredFunc();
-          break;
-
-        case txSUCC :
-          funcType = pas_SuccFunc();
-          break;
-
-        case txGETENV : /* Non-standard C library interfaces */
-          funcType = pas_GetEnvFunc();
-          break;
-
-          /* Functions returning INTEGER with REAL arguments */
-
-        case txROUND :
-          getToken();                          /* Skip over 'round' */
-          pas_Expression(exprReal, NULL);
-          pas_GenerateFpOperation(fpROUND);
-          funcType = exprInteger;
-          break;
-
-        case txTRUNC :
-          getToken();                          /* Skip over 'trunc' */
-          pas_Expression(exprReal, NULL);
-          pas_GenerateFpOperation(fpTRUNC);
-          funcType = exprInteger;
-          break;
-
-          /* Functions returning CHARACTER with INTEGER arguments. */
-
-        case txCHR :
-          pas_ChrFunc();
-          funcType = exprChar;
-          break;
-
-          /* Function returning integer with scalar arguments */
-
-        case txORD :
-          pas_OrdFunc();
-          funcType = exprInteger;
-          break;
-
-          /* Functions returning BOOLEAN */
-
-        case txODD :
-          pas_OddFunc();
-          funcType = exprBoolean;
-          break;
-
-        case txEOF :
-          pas_FileFunc(xEOF);
-          funcType = exprBoolean;
-          break;
-
-        case txEOLN :
-          pas_FileFunc(xEOLN);
-          funcType = exprBoolean;
-          break;
-
-          /* Functions returning REAL with REAL/INTEGER arguments */
-
-        case txSQRT :
-          pas_RealFunc(fpSQRT);
-          funcType = exprReal;
-          break;
-
-        case txSIN :
-          pas_RealFunc(fpSIN);
-          funcType = exprReal;
-          break;
-
-        case txCOS :
-          pas_RealFunc(fpCOS);
-          funcType = exprReal;
-          break;
-
-        case txARCTAN :
-          pas_RealFunc(fpATAN);
-          funcType = exprReal;
-          break;
-
-        case txLN :
-          pas_RealFunc(fpLN);
-          funcType = exprReal;
-          break;
-
-        case txEXP :
-          pas_RealFunc(fpEXP);
-          funcType = exprReal;
-          break;
-
-          /* Set operations */
-
-        case txINCLUDE :
-          pas_SetFunc(setINCLUDE);
-          break;
-
-        case txEXCLUDE :
-          pas_SetFunc(setEXCLUDE);
-          break;
-
-        default :
-          error(eINVALIDPROC);
-          break;
-        }
-    }
-
-  return funcType;
-}
-
-void pas_CheckLParen(void)
-{
-   getToken();                          /* Skip over function name */
-   if (g_token != '(') error(eLPAREN);  /* Check for '(' */
-   else getToken();
-}
-
-void pas_CheckRParen(void)
-{
-   if (g_token != ')') error(eRPAREN);  /* Check for ')') */
-   else getToken();
-}
 
 /****************************************************************************
  * Private Functions
@@ -257,11 +101,17 @@ static exprType_t pas_AbsFunc(void)
 
    absType = pas_Expression(exprUnknown, NULL);
    if (absType == exprInteger)
-      pas_GenerateSimple(opABS);
+      {
+        pas_GenerateSimple(opABS);
+      }
    else if (absType == exprReal)
-      pas_GenerateFpOperation(fpABS);
+      {
+        pas_GenerateFpOperation(fpABS);
+      }
    else
-      error(eINVARG);
+      {
+        error(eINVARG);
+      }
 
    pas_CheckRParen();
    return absType;
@@ -455,9 +305,85 @@ static void pas_FileFunc(uint16_t opcode)
 
 static void pas_SetFunc(uint16_t setOpcode)
 {
-  /* FORM: 'include' | 'exclude' '(' dest-set, source-set ')' */
+  exprType_t memberExprType;
+  symbol_t  *baseTypePtr;
+  uint16_t   baseType;
 
-  error(eNOTYET);
+  /* FORM: 'include' | 'exclude' '(' set-expression, set-member ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Get the SET expression */
+
+  pas_Expression(exprSet, NULL);
+
+  /* Verify the presence of the comma separating the parameters */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Successful parsing of a SET expression should have the side-effect of
+   * setting g_abstractType, the type of the SET expression (the full type,
+   * not the base type).
+   *
+   * The base type is probably a subrange.  So we will need the sub-type
+   * which will tell us the "Subrange of what?"
+   */
+
+  baseTypePtr    = pas_GetBaseTypePointer(g_abstractType);
+  baseType       = baseTypePtr->sParm.t.tType;
+
+  if (baseType == sSUBRANGE)
+    {
+      baseType   = baseTypePtr->sParm.t.tSubType;
+    }
+
+  memberExprType = pas_MapVariable2ExprType(baseType, true);
+
+  /* The set-member argument should then be a value of that type */
+
+  pas_Expression(memberExprType, g_abstractType);
+
+  /* Make the set-member value zero base */
+
+  if (baseTypePtr->sParm.t.tMinValue != 0)
+    {
+      pas_GenerateDataOperation(opPUSH, baseTypePtr->sParm.t.tMinValue);
+      pas_GenerateSimple(opSUB);
+    }
+
+  /* Now we can generate the set operation */
+
+  pas_GenerateSetOperation(setOpcode);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
+
+static void pas_CardFunc(void)
+{
+  /* FORM: 'card' '(' set-expression ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Get the SET expression */
+
+  pas_Expression(exprSet, NULL);
+
+  /* Now we can generate the set operation */
+
+  pas_GenerateSetOperation(setCARD);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
 }
 
 /****************************************************************************/
@@ -487,4 +413,168 @@ static exprType_t pas_GetEnvFunc(void)
   pas_StandardFunctionCall(lbGETENV);
   pas_CheckRParen();
   return exprCString;
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+void pas_PrimeStandardFunctions(void)
+{
+}
+
+/****************************************************************************/
+/* Process a standard Pascal function call */
+
+exprType_t pas_StandardFunction(void)
+{
+  exprType_t funcType = exprUnknown;
+
+  TRACE(g_lstFile,"[pas_StandardFunction]");
+
+  /* Is the token a function? */
+
+  if (g_token == tSTDFUNC)
+    {
+      /* Yes, process it procedure according to the extended token type */
+
+      switch (g_tknSubType)
+        {
+          /* Functions which return the same type as their argument */
+        case txABS :
+          funcType = pas_AbsFunc();
+          break;
+
+        case txSQR :
+          funcType = pas_SqrFunc();
+          break;
+
+        case txPRED :
+          funcType = pas_PredFunc();
+          break;
+
+        case txSUCC :
+          funcType = pas_SuccFunc();
+          break;
+
+        case txGETENV : /* Non-standard C library interfaces */
+          funcType = pas_GetEnvFunc();
+          break;
+
+          /* Functions returning INTEGER with REAL arguments */
+
+        case txROUND :
+          getToken();                          /* Skip over 'round' */
+          pas_Expression(exprReal, NULL);
+          pas_GenerateFpOperation(fpROUND);
+          funcType = exprInteger;
+          break;
+
+        case txTRUNC :
+          getToken();                          /* Skip over 'trunc' */
+          pas_Expression(exprReal, NULL);
+          pas_GenerateFpOperation(fpTRUNC);
+          funcType = exprInteger;
+          break;
+
+          /* Functions returning CHARACTER with INTEGER arguments. */
+
+        case txCHR :
+          pas_ChrFunc();
+          funcType = exprChar;
+          break;
+
+          /* Function returning integer with scalar arguments */
+
+        case txORD :
+          pas_OrdFunc();
+          funcType = exprInteger;
+          break;
+
+          /* Functions returning BOOLEAN */
+
+        case txODD :
+          pas_OddFunc();
+          funcType = exprBoolean;
+          break;
+
+        case txEOF :
+          pas_FileFunc(xEOF);
+          funcType = exprBoolean;
+          break;
+
+        case txEOLN :
+          pas_FileFunc(xEOLN);
+          funcType = exprBoolean;
+          break;
+
+          /* Functions returning REAL with REAL/INTEGER arguments */
+
+        case txSQRT :
+          pas_RealFunc(fpSQRT);
+          funcType = exprReal;
+          break;
+
+        case txSIN :
+          pas_RealFunc(fpSIN);
+          funcType = exprReal;
+          break;
+
+        case txCOS :
+          pas_RealFunc(fpCOS);
+          funcType = exprReal;
+          break;
+
+        case txARCTAN :
+          pas_RealFunc(fpATAN);
+          funcType = exprReal;
+          break;
+
+        case txLN :
+          pas_RealFunc(fpLN);
+          funcType = exprReal;
+          break;
+
+        case txEXP :
+          pas_RealFunc(fpEXP);
+          funcType = exprReal;
+          break;
+
+          /* Set operations */
+
+        case txINCLUDE :
+          pas_SetFunc(setINCLUDE);
+          funcType = exprSet;
+          break;
+
+        case txEXCLUDE :
+          pas_SetFunc(setEXCLUDE);
+          funcType = exprSet;
+          break;
+
+        case txCARD :
+          pas_CardFunc();
+          funcType = exprInteger;
+          break;
+
+        default :
+          error(eINVALIDPROC);
+          break;
+        }
+    }
+
+  return funcType;
+}
+
+void pas_CheckLParen(void)
+{
+   getToken();                          /* Skip over function name */
+   if (g_token != '(') error(eLPAREN);  /* Check for '(' */
+   else getToken();
+}
+
+void pas_CheckRParen(void)
+{
+   if (g_token != ')') error(eRPAREN);  /* Check for ')') */
+   else getToken();
 }

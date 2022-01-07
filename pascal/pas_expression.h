@@ -1,4 +1,4 @@
-/***********************************************************************
+/****************************************************************************
  * pas_expression.h
  * External Declarations associated with pas_expression.c
  *
@@ -32,21 +32,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***********************************************************************/
+ ****************************************************************************/
 
 #ifndef __PAS_EXPRESSION_H
 #define __PAS_EXPRESSION_H
 
-/***********************************************************************
+/****************************************************************************
  * Included Files
- ***********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdbool.h>
 
-/***********************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- ***********************************************************************/
+ ****************************************************************************/
 
 /* Bit 7 is set in all pointer expression types.  If bit 7 is cleared,
  * then the base expression type can be recovered.
@@ -86,9 +86,9 @@
 #define FACTOR_LOAD_ADDRESS  (1 << 3)
 #define FACTOR_VAR_PARM      (1 << 4)
 
-/***********************************************************************
+/****************************************************************************
  * Type Definitions
- ***********************************************************************/
+ ****************************************************************************/
 
 /* An integer type big enough to hold all factor flags */
 
@@ -134,18 +134,30 @@ enum exprType_e
 
 typedef enum exprType_e exprType_t;
 
-/***********************************************************************
+/****************************************************************************
  * Public Datas
- ***********************************************************************/
+ ****************************************************************************/
+
+/* Returned characterization of the constant set by pas_ConstantExpression. */
 
 extern int     g_constantToken;
 extern int32_t g_constantInt;
 extern double  g_constantReal;
 extern char   *g_constantStart;
 
-/***********************************************************************
+/* The abstract types - SETs, RECORDS, etc - require an exact
+ * match in type.  This variable points to the symbol table
+ * sTYPE entry associated with the expression.
+ *
+ * Normally this is used only within pas_expression.c, but it needs to have
+ * global scope for generating SET operations.
+ */
+
+extern symbol_t *g_abstractType;
+
+/****************************************************************************
  * Public Function Protothypes
- ***********************************************************************/
+ ***************************************************************************/
 
 exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr);
 exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr);

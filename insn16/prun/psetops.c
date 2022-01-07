@@ -82,6 +82,21 @@ static int pexec_member(uint16_t member, const uint16_t *src,
 
 static int pexec_include(uint16_t member, uint16_t *dest);
 static int pexec_exclude(uint16_t member, uint16_t *dest);
+static int pexec_card(const uint16_t *src, uint16_t *dest);
+
+static uint16_t pexec_BitsInWord(uint16_t word);
+static uint16_t pexec_BitsInByte(uint8_t byte);
+static uint16_t pexec_BitsInNibble(uint8_t nibble);
+
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
+
+static uint8_t g_bitsInNibble[16] =
+{
+/* 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f */
+   0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+};
 
 /****************************************************************************
  * Private Functions
@@ -116,7 +131,11 @@ static int pexec_difference(const uint16_t *src, uint16_t *dest)
 
 static int pexec_symmetricdiff(const uint16_t *src, uint16_t *dest)
 {
-  return eNOTYET;
+  dest[0] ^= src[0];
+  dest[1] ^= src[1];
+  dest[2] ^= src[2];
+  dest[3] ^= src[3];
+  return eNOERROR;
 }
 
 static int pexec_equality(const uint16_t *src1, const uint16_t *src2,
@@ -139,51 +158,86 @@ static int pexec_equality(const uint16_t *src1, const uint16_t *src2,
 static int pexec_nonequality(const uint16_t *src1, const uint16_t *src2,
                              uint16_t *result)
 {
-  uint16_t same = PASCAL_FALSE;
+  uint16_t different = PASCAL_FALSE;
 
   if (src1[0] != src2[0] ||
       src1[1] != src2[1] ||
       src1[2] != src2[2] ||
       src1[3] != src2[3])
     {
-      same = PASCAL_TRUE;
+      different = PASCAL_TRUE;
     }
 
-  *result = same;
+  *result = different;
   return eNOERROR;
 }
 
 static int pexec_contains(const uint16_t *src1, const uint16_t *src2,
                           uint16_t *result)
 {
-  uint16_t same = PASCAL_FALSE;
+  uint16_t contains = PASCAL_FALSE;
 
   if ((src1[0] & src2[0]) == src2[0] ||
       (src1[1] & src2[1]) == src2[1] ||
       (src1[2] & src2[2]) == src2[2] ||
       (src1[3] & src2[3]) == src2[3])
     {
-      same = PASCAL_TRUE;
+      contains = PASCAL_TRUE;
     }
 
-  *result = same;
+  *result = contains;
   return eNOERROR;
 }
 
 static int pexec_member(uint16_t member, const uint16_t *src,
                         uint16_t *result)
 {
-  return eNOTYET;
+  uint16_t wordIndex = member >> 4;
+  uint16_t bitIndex  = member & 0x0f;
+
+  *result = ((src[wordIndex] & (1 << bitIndex)) != 0) ?
+          PASCAL_TRUE : PASCAL_FALSE;
+  return eNOERROR;
 }
 
-static int pexec_include(uint16_t src, uint16_t *dest)
+static int pexec_include(uint16_t member, uint16_t *dest)
 {
-  return eNOTYET;
+  uint16_t wordIndex = member >> 4;
+  uint16_t bitIndex  = member & 0x0f;
+
+  dest[wordIndex] |= (1 << bitIndex);
+  return eNOERROR;
 }
 
-static int pexec_exclude(uint16_t src, uint16_t *dest)
+static int pexec_exclude(uint16_t member, uint16_t *dest)
 {
-  return eNOTYET;
+  uint16_t wordIndex = member >> 4;
+  uint16_t bitIndex  = member & 0x0f;
+
+  dest[wordIndex] &= ~(1 << bitIndex);
+  return eNOERROR;
+}
+
+static int pexec_card(const uint16_t *src, uint16_t *dest)
+{
+  *dest = pexec_BitsInWord(src[0]) + pexec_BitsInWord(src[1]) +
+          pexec_BitsInWord(src[2]) + pexec_BitsInWord(src[3]);
+  return eNOERROR;
+}
+
+static uint16_t pexec_BitsInWord(uint16_t word)
+{
+  return pexec_BitsInByte(word >> 8) + pexec_BitsInByte(word & 0xff);
+}
+
+static uint16_t pexec_BitsInByte(uint8_t byte)
+{
+  return pexec_BitsInNibble(byte >> 4) + pexec_BitsInNibble(byte & 0x0f);
+}
+
+static uint16_t pexec_BitsInNibble(uint8_t nibble)
+{
+  return (uint16_t)g_bitsInNibble[nibble & 0x0f];
 }
 
 /****************************************************************************
@@ -285,6 +339,15 @@ int pexec_setops(struct pexec_s *st, uint16_t subfunc)
         POP(st, member);
         dest = (uint16_t *)&TOS(st, 0);
         errorCode = pexec_exclude(member, dest);
+        break;
+
+      /* Reveives on set, returns the cardinality of the set */
+
+      case setCARD :
+        src1 = (const uint16_t *)&TOS(st, 0);
+        dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE - 1);
+        errorCode = pexec_card(src1, dest);
+        DISCARD(st, sSET_SIZE / sINT_SIZE  - 1);
         break;
 
       case setINVALID :

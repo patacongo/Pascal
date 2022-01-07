@@ -11,7 +11,8 @@ VAR
   letter : letters;
 
 BEGIN
-  FOR letter := 'A' TO 'B' DO
+  WRITE('Card result: ', card(result), 'Result: ');
+  FOR letter := 'A' TO 'E' DO
   BEGIN
     IF letter IN result THEN
     BEGIN
@@ -24,6 +25,9 @@ END;
 BEGIN
   s1 := ['A', 'B', 'C'];
   s2 := ['C', 'D', 'E'];
+
+  WRITE('Card S1: ', card(s1));
+  WRITE('Card S2: ', card(s2));
 
   showresult(S1 + S2);
   showresult(S1 - S2);
@@ -45,10 +49,10 @@ BEGIN
   ELSE
     WRITELN('FALSE');
 
-  showresult(INCLUDE(S1, ['D']);
-  showresult(EXCLUDE(S2, ['D']);
+  showresult(INCLUDE(S1, 'D'));
+  showresult(EXCLUDE(S2, 'D'));
 
-  if [E] IN S2 THEN
+  if 'E' IN S2 THEN
     WRITELN('TRUE')
   ELSE
     WRITELN('FALSE');

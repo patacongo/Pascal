@@ -53,6 +53,7 @@
  *   In      Check for membership in set      E In S2 gives TRUE
  *   Include Includes element in set          Include(S1, D) gives [A,B,C,D]
  *   Exclude Excludes element from set        Exclude(S2, D) gives [C,E]
+ *   Card    Returns cardinality of a set     Card(S1) gives 3
  *
  * Precedence:
  *   Highest *
@@ -71,7 +72,8 @@
 #define setMEMBER        (0x08)
 #define setINCLUDE       (0x09)
 #define setEXCLUDE       (0x0a)
+#define setCARD          (0x0b)
 
-#define MAX_SETOP        (0x0b) /* Number of set operations */
+#define MAX_SETOP        (0x0c) /* Number of set operations */
 
 #endif /* __PAS_SETOPS_H */

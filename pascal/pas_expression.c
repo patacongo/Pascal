@@ -63,6 +63,12 @@
 #include "pas_error.h"
 
 /****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#define SET_WORDS (sSET_SIZE / sINT_SIZE)
+
+/****************************************************************************
  * Private Type Definitions
  ****************************************************************************/
 
@@ -78,7 +84,7 @@ struct varInfo_s
 
 typedef struct varInfo_s varInfo_t;
 
-/* This structure is used for managing SET variables */
+/* This structure is used for parsing SET constants */
 
 struct setType_s
 {
@@ -86,6 +92,7 @@ struct setType_s
   bool       typeFound;
   int16_t    minValue;
   int16_t    maxValue;
+  uint16_t   setValue[SET_WORDS];
   symbol_t  *typePtr;
 };
 
@@ -116,12 +123,16 @@ static exprType_t pas_FactorExprType(exprType_t baseExprType,
 static void       pas_SetAbstractType(symbol_t *sType);
 static void       pas_GetSetFactor(void);
 static void       pas_GetSetElement(setType_t *s);
+static void       pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
+                                        uint16_t lastValue);
+static void       pas_InitializeSet(setType_t *s);
+static void       pas_PushSet(setType_t *s);
 static bool       pas_IsOrdinalType(exprType_t testExprType);
 static bool       pas_IsAnyStringType(exprType_t testExprType);
 static bool       pas_IsStringReference(exprType_t testExprType);
 
 /****************************************************************************
- * Private Variables
+ * Public Data
  ****************************************************************************/
 
 /* The abstract types - SETs, RECORDS, etc - require an exact
@@ -129,7 +140,7 @@ static bool       pas_IsStringReference(exprType_t testExprType);
  * sTYPE entry associated with the expression.
  */
 
-static symbol_t *g_abstractType;
+symbol_t *g_abstractType;
 
 /****************************************************************************/
 /* Evaluate (boolean) Expression */
@@ -143,6 +154,8 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
   uint16_t   setOpCode;
   exprType_t simple1Type;
   exprType_t simple2Type;
+  bool       haveSimple2;
+  bool       handled;
 
   TRACE(g_lstFile,"[expression]");
 
@@ -167,68 +180,99 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
   switch (operation)
     {
     case tEQ :
+      /* Select all opcodes for all cases */
+
       intOpCode = opEQU;
       fpOpCode  = fpEQU;
       strOpCode = opEQUZ;
       setOpCode = setEQUALITY;
+
+      /* Skip over the operator */
+
+      getToken();
       break;
 
     case tNE :
+      /* Select all opcodes for all cases */
+
       intOpCode = opNEQ;
       fpOpCode  = fpNEQ;
       strOpCode = opNEQZ;
       setOpCode = setNONEQUALITY;
+
+      /* Skip over the operator */
+
+      getToken();
       break;
 
     case tLT :
+      /* Select all opcodes for all cases */
+
       intOpCode = opLT;
       fpOpCode  = fpLT;
       strOpCode = opLTZ;
       setOpCode = setINVALID;
+
+      /* Skip over the operator */
+
+      getToken();
       break;
 
     case tLE :
+      /* Select all opcodes for all cases */
+
       intOpCode = opLTE;
       fpOpCode  = fpLTE;
       strOpCode = opLTEZ;
       setOpCode = setCONTAINS;
+
+      /* Skip over the operator */
+
+      getToken();
       break;
 
     case tGT :
+      /* Select all opcodes for all cases */
+
       intOpCode = opGT;
       fpOpCode  = fpGT;
       strOpCode = opGTZ;
       setOpCode = setINVALID;
+
+      /* Skip over the operator */
+
+      getToken();
       break;
 
     case tGE :
+      /* Select all opcodes for all cases */
+
       intOpCode = opGTE;
       fpOpCode  = fpGTE;
       strOpCode = opGTEZ;
       setOpCode = setINVALID;
+
+      /* Skip over the operator */
+
+      getToken();
       break;
 
     case tIN :
-      if (!g_abstractType ||
-          (g_abstractType->sParm.t.tType != sSCALAR &&
-           g_abstractType->sParm.t.tType != sSUBRANGE))
-        {
-          error(eEXPRTYPE);
-        }
-      else if (g_abstractType->sParm.t.tMinValue)
-        {
-          pas_GenerateDataOperation(opPUSH,
-                                    g_abstractType->sParm.t.tMinValue);
-          pas_GenerateSimple(opSUB);
-        }
+      /* Select all opcodes for all cases */
 
       intOpCode = opBIT;
       fpOpCode  = fpINVLD;
       strOpCode = opNOP;
       setOpCode = setMEMBER;
+
+      /* Skip over the operator */
+
+      getToken();
       break;
 
     default  :
+      /* Set all opcodes to no-op or invalid */
+
       intOpCode = opNOP;
       fpOpCode  = fpINVLD;
       strOpCode = opNOP;
@@ -236,14 +280,219 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       break;
     }
 
-  /* Check if there is a 2nd simple expression needed */
+  /* Check if there is a 2nd simple expression needed.  This depends on the
+   * kind of expression we found for the first expression and the kind of
+   * operator that was found.
+   *
+   * Check for operations on sets first.  These may be:
+   *
+   *   FORM:  set-expression set-operator set-expression
+   *          set-operator = '=' | '<>' | '<='
+   *   FORM:  set-member 'in' set-expression
+   *
+   * The set member may be any value for the sub-range of the ordinal type
+   * that underlies the set.
+   */
 
-  if (intOpCode != opNOP)
+  haveSimple2 = false;
+  handled     = false;
+
+  if (setOpCode != setINVALID &&
+      ((simple1Type == exprSet && setOpCode != setMEMBER) ||
+       (pas_IsOrdinalType(simple1Type) && setOpCode == setMEMBER)))
     {
-      /* Get the second simple expression */
+      symbol_t *abstract1Type = g_abstractType;
+      symbol_t *abstract2Type = NULL;
 
-      getToken();
-      simple2Type = pas_SimplifyExpression(findExprType);
+      /* Get the second simple expression. */
+
+      g_abstractType = NULL;
+      simple2Type    = pas_SimplifyExpression(exprUnknown);
+      haveSimple2    = true;
+      abstract2Type  = g_abstractType;
+
+      /* In all cases, the second expression must always be a SET */
+
+      if (simple2Type == exprSet)
+        {
+          switch (setOpCode)
+            {
+              case setEQUALITY :
+              case setNONEQUALITY :
+              case setCONTAINS :
+                /* The two set expressions must refer to the same, underlying
+                 * abstract type.
+                 */
+
+                if (abstract1Type != abstract2Type) error(eEXPRTYPE);
+                else
+                  {
+                    pas_GenerateSetOperation(setOpCode);
+                    simple1Type = exprBoolean;
+                    handled     = true;
+                  }
+                break;
+
+              case setMEMBER :
+                /* The parent of the set should be a subrange and
+                 * the member should be an in-range ordinal value with
+                 * same type as the base type of the subrange.
+                 */
+
+                if (abstract2Type == NULL) error(eHUH);
+                else
+                  {
+                    symbol_t *subRangePtr;
+
+                    subRangePtr = abstract2Type->sParm.t.tParent;
+                    if (subRangePtr->sParm.t.tType != sSUBRANGE) error(eHUH);
+                    else
+                      {
+                        uint16_t baseType = subRangePtr->sParm.t.tSubType;
+
+                        if (simple1Type != pas_MapVariable2ExprType(baseType, true))
+                          {
+                            error(eEXPRTYPE);
+                          }
+                        else
+                          {
+                            /* Make the member value zero base */
+
+                            if (g_abstractType->sParm.t.tMinValue != 0)
+                              {
+                                 pas_GenerateDataOperation(opPUSH,
+                                    g_abstractType->sParm.t.tMinValue);
+                                 pas_GenerateSimple(opSUB);
+                              }
+
+                            /* Then generate the set operation */
+
+                            pas_GenerateSetOperation(setOpCode);
+                            simple1Type = exprBoolean;
+                            handled     = true;
+                          }
+
+                        g_abstractType = abstract1Type; /* Restore */
+                      }
+                  }
+                  break;
+
+              default :
+                error(eHUH);
+                g_abstractType = abstract1Type; /* Restore */
+                break;
+            }
+        }
+      else
+        {
+          /* Hmmm..  Some error occurred, either:
+           *
+           * 1. The first expression of '=', '<>", or "<=" was a SET, but
+           *    the second is not.
+           * 2. The second expression of 'IN' is not set.
+           */
+
+          error(eEXPRTYPE);
+          g_abstractType = abstract1Type; /* Restore */
+        }
+    }
+
+  /* Check for operations on strings first.  These may be:
+   *
+   *   FORM:  string-expression string-operator string-expression
+   *          string-expression = standard-string-expression |
+   *            short-string-expression
+   *          string-operator = '=', '<>', '<', '<=', '>', '>='
+   *
+   * The set member may be any value for the sub-range of the ordinal type
+   * that underlies the set.
+   */
+
+  if (strOpCode != opNOP && !handled)
+    {
+      /* Get the second simple expression (if we did not already) */
+
+      if (!haveSimple2)
+        {
+          simple2Type = pas_SimplifyExpression(findExprType);
+          haveSimple2 = true;
+        }
+
+      /* Was the first expression a standard string? */
+
+      if (simple1Type == exprString)
+        {
+          /* What kind of string was the second expression? */
+
+          if (simple2Type == exprString)
+            {
+              pas_StandardFunctionCall(lbSTRCMP);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else if (simple2Type == exprShortString)
+            {
+              pas_StandardFunctionCall(lbSTRCMPSSTR);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else
+            {
+              error(eCOMPARETYPE);
+            }
+        }
+
+      /* Was the first expression a short string? */
+
+      else if (simple1Type == exprShortString)
+        {
+          if (simple2Type == exprString)
+            {
+              pas_StandardFunctionCall(lbSSTRCMPSTR);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else if (simple2Type == exprShortString)
+            {
+              pas_StandardFunctionCall(lbSSTRCMP);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else
+            {
+              error(eCOMPARETYPE);
+            }
+        }
+    }
+
+  /* Deal with integer and real arithmetic */
+
+  if (intOpCode != opNOP && !handled)
+    {
+      /* Get the second simple expression (if we did not already) */
+
+      if (!haveSimple2)
+        {
+          getToken();
+          simple2Type = pas_SimplifyExpression(findExprType);
+          haveSimple2 = true;
+        }
 
       /* Perform automatic type conversion from INTEGER to REAL
        * for integer vs. real comparisons.
@@ -275,20 +524,9 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               simple1Type = exprReal;
             }
 
-          /* Handle operations on standard and short strings */
+          /* Otherwise, the two terms must agree in type */
 
-          else if ((simple1Type == exprString &&
-                    simple2Type == exprShortString) ||
-                   (simple1Type == exprShortString &&
-                    simple2Type == exprString))
-            {
-            }
-
-          /* Allow the case of <scalar type> IN <set type>
-           * Otherwise, the two terms must agree in type
-           */
-
-          else if (operation != tIN || simple2Type != exprSet)
+          else
             {
               error(eEXPRTYPE);
             }
@@ -305,58 +543,22 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
           else
             {
               pas_GenerateFpOperation(fpOpCode);
-            }
-        }
-      else if (simple1Type == exprString)
-        {
-          if (strOpCode == opNOP)
-            {
-              error(eEXPRTYPE);
-            }
-          else if (simple2Type == exprString)
-            {
-              pas_StandardFunctionCall(lbSTRCMP);
-              pas_GenerateSimple(strOpCode);
-            }
-          else if (simple2Type == exprShortString)
-            {
-              pas_StandardFunctionCall(lbSTRCMPSSTR);
-              pas_GenerateSimple(strOpCode);
-            }
-          else
-            {
-              error(eCOMPARETYPE);
-            }
-        }
-      else if (simple1Type == exprShortString)
-        {
-          if (strOpCode == opNOP)
-            {
-              error(eEXPRTYPE);
-            }
-          else if (simple2Type == exprString)
-            {
-              pas_StandardFunctionCall(lbSSTRCMPSTR);
-              pas_GenerateSimple(strOpCode);
-            }
-          else if (simple2Type == exprShortString)
-            {
-              pas_StandardFunctionCall(lbSSTRCMP);
-              pas_GenerateSimple(strOpCode);
-            }
-          else
-            {
-              error(eCOMPARETYPE);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
             }
         }
       else
         {
           pas_GenerateSimple(intOpCode);
+
+          /* The resulting type is boolean */
+
+          simple1Type = exprBoolean;
+          handled     = true;
         }
-
-      /* The type resulting from these operations becomes BOOLEAN */
-
-      simple1Type = exprBoolean;
     }
 
   /* Verify that the expression is of the requested type.
@@ -583,7 +785,7 @@ void pas_ArrayIndex(symbol_t *arrayTypePtr)
     }
 }
 
-/*************************************************************************/
+/****************************************************************************/
 /* Determine the expression type associated with a pointer to a type
  * symbol
  */
@@ -689,7 +891,7 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
   return factorType;
 }
 
-/*************************************************************************/
+/****************************************************************************/
 
 exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
 {
@@ -1587,8 +1789,6 @@ static exprType_t pas_Factor(exprType_t findExprType)
     case tBUILTIN:
       factorType = pas_BuiltInFunction();
       break;
-
-      /* Hmmm... Try the standard functions */
 
     default :
       error(eINVFACTOR);
@@ -3119,7 +3319,7 @@ static exprType_t pas_FunctionDesignator(void)
   return factorType;
 }
 
-/*************************************************************************/
+/****************************************************************************/
 
 static exprType_t pas_FactorExprType(exprType_t baseExprType,
                                      uint8_t assignFlags)
@@ -3128,7 +3328,7 @@ static exprType_t pas_FactorExprType(exprType_t baseExprType,
           MK_POINTER_EXPRTYPE(baseExprType);
 }
 
-/*************************************************************************/
+/****************************************************************************/
 /* Determine the expression type associated with a pointer to a type
  * symbol
  */
@@ -3252,13 +3452,17 @@ static void pas_GetSetFactor(void)
       s.maxValue  = sSET_MAXELEM - 1;
     }
 
+  /* Initialize the bitsets to zero.  As each new set member is found, it
+   * will be OR'ed into the bitset array.
+   */
+
+  pas_InitializeSet(&s);
+
   /* Get the first element of the set */
 
   pas_GetSetElement(&s);
 
   /* Incorporate each additional element into the set */
-  /* NOTE:  The optimizer will combine sets of constant elements into a */
-  /* single PUSH! */
 
   while (g_token == ',')
     {
@@ -3266,21 +3470,20 @@ static void pas_GetSetFactor(void)
 
       getToken();
       pas_GetSetElement(&s);
-
-      /* OR it with the previous element */
-
-      pas_GenerateSimple(opOR);
     }
+
+  /* And finally push the accumulated set */
+
+  pas_PushSet(&s);
 }
 
 /****************************************************************************/
 
 static void pas_GetSetElement(setType_t *s)
 {
-  uint16_t setValue;
-  int16_t firstValue;
-  int16_t lastValue;
-  symbol_t  *setPtr;
+  int16_t   firstValue;
+  int16_t   lastValue;
+  symbol_t *setPtr;
 
   TRACE(g_lstFile,"[pas_GetSetElement]");
 
@@ -3343,16 +3546,15 @@ static void pas_GetSetElement(setType_t *s)
             if (firstValue < s->minValue || firstValue > s->maxValue)
               {
                error(eSETRANGE);
-               setValue = 0;
               }
             else
               {
-                setValue = (1 << (firstValue - s->minValue));
+                uint16_t bitNumber = firstValue - s->minValue;
+                int wordIndex      = bitNumber >> 4;
+                int bitIndex       = bitNumber & 0x0f;
+
+                s->setValue[wordIndex] |= (1 << bitIndex);
               }
-
-            /* Now, generate P-Code to push the set value onto the stack */
-
-            pas_GenerateDataOperation(opPUSH, setValue);
           }
         else
           {
@@ -3377,146 +3579,140 @@ static void pas_GetSetElement(setType_t *s)
                   goto addLottaBits;
 
                 case tINT_CONST : /* An integer subrange constant ? */
-                   lastValue = g_tknInt;
-                   if (s->setType != sINT) error(eSET);
-                   goto addLottaBits;
+                  lastValue = g_tknInt;
+                  if (s->setType != sINT) error(eSET);
+                  goto addLottaBits;
 
                 case tCHAR_CONST : /* A character subrange constant */
-                   lastValue = g_tknInt;
-                   if (s->setType != sCHAR) error(eSET);
+                  lastValue = g_tknInt;
+                  if (s->setType != sCHAR) error(eSET);
 
                 addLottaBits :
-                   /* Verify that the first value is in range */
+                  /* Verify that the first value is in range */
 
-                    if (firstValue < s->minValue)
-                      {
-                        error(eSETRANGE);
-                        firstValue = s->minValue;
-                      }
-                    else if (firstValue > s->maxValue)
-                      {
-                        error(eSETRANGE);
-                        firstValue = s->maxValue;
-                      }
+                  if (firstValue < s->minValue)
+                    {
+                      error(eSETRANGE);
+                      firstValue = s->minValue;
+                    }
+                  else if (firstValue > s->maxValue)
+                    {
+                      error(eSETRANGE);
+                      firstValue = s->maxValue;
+                    }
 
-                    /* Verify that the last value is in range */
+                  /* Verify that the last value is in range */
 
-                    if (lastValue < firstValue)
-                      {
-                        error(eSETRANGE);
-                        lastValue = firstValue;
-                      }
-                    else if (lastValue > s->maxValue)
-                      {
-                        error(eSETRANGE);
-                        lastValue = s->maxValue;
-                      }
+                  if (lastValue < firstValue)
+                    {
+                      error(eSETRANGE);
+                      lastValue = firstValue;
+                    }
+                  else if (lastValue > s->maxValue)
+                    {
+                      error(eSETRANGE);
+                      lastValue = s->maxValue;
+                    }
 
-                    /* Set all bits from firstValue through lastValue */
+                  pas_AddBitSetElements(s, firstValue, lastValue);
+                  break;
 
-                    setValue  = (0xffff << (firstValue - s->minValue));
-                    setValue &= (0xffff >> ((BITS_IN_INTEGER - 1) -
-                                            (lastValue - s->minValue)));
+                case sSCALAR :
+                  if (!s->typePtr ||
+                      s->typePtr != g_tknPtr->sParm.v.vParent)
+                    {
+                      error(eSET);
 
-                    /* Now, generate P-Code to push the set value onto the
-                     * stack.
-                     */
+                      if (!s->typePtr)
+                        {
+                          s->typeFound = true;
+                          s->typePtr   = g_tknPtr->sParm.v.vParent;
+                          s->setType   = sSCALAR;
+                          s->minValue  = s->typePtr->sParm.t.tMinValue;
+                          s->maxValue  = s->typePtr->sParm.t.tMaxValue;
+                        }
+                    }
 
-                    pas_GenerateDataOperation(opPUSH, setValue);
-                    break;
+                  goto addVarToBits;
 
-                 case sSCALAR :
-                    if (!s->typePtr ||
-                        s->typePtr != g_tknPtr->sParm.v.vParent)
-                      {
-                        error(eSET);
+                case sINT : /* An integer subrange variable ? */
+                case sCHAR : /* A character subrange variable? */
+                  if (s->setType != g_token) error(eSET);
+                  goto addVarToBits;
 
-                        if (!s->typePtr)
-                          {
-                            s->typeFound = true;
-                            s->typePtr   = g_tknPtr->sParm.v.vParent;
-                            s->setType   = sSCALAR;
-                            s->minValue  = s->typePtr->sParm.t.tMinValue;
-                            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
-                          }
-                      }
+                case sSUBRANGE :
+                  if (!s->typePtr || s->typePtr != g_tknPtr->sParm.v.vParent)
+                    {
+                      if (g_tknPtr->sParm.v.vParent->sParm.t.tSubType == sSCALAR ||
+                          g_tknPtr->sParm.v.vParent->sParm.t.tSubType != s->setType)
+                        {
+                          error(eSET);
+                        }
 
-                    goto addVarToBits;
+                      if (!s->typePtr)
+                        {
+                          s->typeFound = true;
+                          s->typePtr   = g_tknPtr->sParm.v.vParent;
+                          s->setType   = s->typePtr->sParm.t.tSubType;
+                          s->minValue  = s->typePtr->sParm.t.tMinValue;
+                          s->maxValue  = s->typePtr->sParm.t.tMaxValue;
+                        }
+                    }
 
-                  case sINT : /* An integer subrange variable ? */
-                  case sCHAR : /* A character subrange variable? */
-                    if (s->setType != g_token) error(eSET);
-                    goto addVarToBits;
+                addVarToBits:
+                  /* Verify that the first value is in range */
 
-                  case sSUBRANGE :
-                    if (!s->typePtr || s->typePtr != g_tknPtr->sParm.v.vParent)
-                      {
-                        if (g_tknPtr->sParm.v.vParent->sParm.t.tSubType == sSCALAR ||
-                            g_tknPtr->sParm.v.vParent->sParm.t.tSubType != s->setType)
-                          {
-                            error(eSET);
-                          }
+                  if (firstValue < s->minValue)
+                    {
+                      error(eSETRANGE);
+                      firstValue = s->minValue;
+                    }
+                  else if (firstValue > s->maxValue)
+                    {
+                      error(eSETRANGE);
+                      firstValue = s->maxValue;
+                    }
 
-                        if (!s->typePtr)
-                          {
-                            s->typeFound = true;
-                            s->typePtr   = g_tknPtr->sParm.v.vParent;
-                            s->setType   = s->typePtr->sParm.t.tSubType;
-                            s->minValue  = s->typePtr->sParm.t.tMinValue;
-                            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
-                          }
-                      }
+                  /* Set all bits from firstValue through maxValue */
+#if 0 /* Not Yet */
+                  pas_AddBitSetElements(s, firstValue, s->maxValue);
+#endif
+#warning "#### REVISIT:  multi-byte SETS not implemented"
+uint16_t setValue;
+                  setValue  = (0xffff >> ((BITS_IN_INTEGER -1 ) -
+                                          (s->maxValue - s->minValue)));
+                  setValue &= (0xffff << (firstValue - s->minValue));
 
-                  addVarToBits:
-                    /* Verify that the first value is in range */
+                  /* Generate run-time logic to get all bits from firstValue
+                   * through last value, i.e., need to generate logic to get:
+                   * 0xffff >> ((BITS_IN_INTEGER - 1) - (lastValue - minValue))
+                   */
 
-                    if (firstValue < s->minValue)
-                      {
-                        error(eSETRANGE);
-                        firstValue = s->minValue;
-                      }
-                    else if (firstValue > s->maxValue)
-                      {
-                        error(eSETRANGE);
-                        firstValue = s->maxValue;
-                      }
+                  pas_GenerateDataOperation(opPUSH, 0xffff);
+                  pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER - 1) +
+                                                      s->minValue));
+                  pas_GenerateStackReference(opLDS, g_tknPtr);
+                  pas_GenerateSimple(opSUB);
+                  pas_GenerateSimple(opSRL);
 
-                    /* Set all bits from firstValue through maxValue */
+                  /* Then AND this with the setValue */
 
-                    setValue  = (0xffff >> ((BITS_IN_INTEGER -1 ) -
-                                            (s->maxValue - s->minValue)));
-                    setValue &= (0xffff << (firstValue - s->minValue));
+                  if (setValue != 0xffff)
+                    {
+                      pas_GenerateDataOperation(opPUSH, setValue);
+                      pas_GenerateSimple(opAND);
+                    }
 
-                    /* Generate run-time logic to get all bits from firstValue
-                     * through last value, i.e., need to generate logic to get:
-                     * 0xffff >> ((BITS_IN_INTEGER - 1) - (lastValue - minValue))
-                     */
+                  getToken();
+                  break;
 
-                    pas_GenerateDataOperation(opPUSH, 0xffff);
-                    pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER - 1) +
-                                                        s->minValue));
-                    pas_GenerateStackReference(opLDS, g_tknPtr);
-                    pas_GenerateSimple(opSUB);
-                    pas_GenerateSimple(opSRL);
-
-                    /* Then AND this with the setValue */
-
-                    if (setValue != 0xffff)
-                      {
-                        pas_GenerateDataOperation(opPUSH, setValue);
-                        pas_GenerateSimple(opAND);
-                      }
-
-                    getToken();
-                    break;
-
-                  default :
-                    error(eSET);
-                    pas_GenerateDataOperation(opPUSH, 0);
-                    break;
-              }
-          }
-          break;
+                default :
+                  error(eSET);
+                  pas_GenerateDataOperation(opPUSH, 0);
+                  break;
+            }
+        }
+        break;
 
       case sSCALAR :
         if (s->typeFound)
@@ -3617,6 +3813,7 @@ static void pas_GetSetElement(setType_t *s)
                   if (s->setType != sCHAR) error(eSET);
 
                 addBitsToVar :
+#warning "#### REVISIT:  multi-byte SETS not implemented"
                   /* Verify that the last value is in range */
 
                   if (lastValue < s->minValue)
@@ -3631,7 +3828,7 @@ static void pas_GetSetElement(setType_t *s)
                     }
 
                   /* Set all bits from minValue through lastValue */
-
+uint16_t setValue; // FIXE ME
                   setValue  = (0xffff >> ((BITS_IN_INTEGER - 1) -
                                         (lastValue - s->minValue)));
 
@@ -3720,6 +3917,113 @@ static void pas_GetSetElement(setType_t *s)
         error(eSET);
         pas_GenerateDataOperation(opPUSH, 0);
         break;
+    }
+}
+
+/****************************************************************************/
+
+static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
+                                  uint16_t lastValue)
+
+{
+  uint16_t firstBitNo;
+  uint16_t lastBitNo;
+  uint16_t leadMask;
+  uint16_t tailMask;
+  uint16_t bitMask;
+  int      nBits;
+  int      leadBits;
+  int      tailBits;
+  int      wordIndex;
+  int      bitsInWord;
+
+
+  /* Set all bits from firstValue through lastValue.
+   * Eg., Given
+   *    minValue   =  2
+   *    maxValue   = 31
+   *    firstValue = 14
+   *    lastValue  = 37
+   * Then
+   *    nBits      = 37 - 14 + 1        = 24
+   *    firstBitNo = 14 - 2             = 12
+   *    lastBitNo  = 37 - 2             = 35
+   *    leadMask   = 0xffff << 12       = 0xf000
+   *    tailMask   = 0xffff >> (15 - 3) = 0x000f
+   *    leadBits   = 16 - 12            = 4
+   *    tailBits   = 3 + 1              = 4
+   */
+
+  nBits      = lastValue - firstValue + 1;
+  firstBitNo = firstValue - s->minValue;
+  lastBitNo  = firstValue - s->minValue;
+  leadMask   = (0xffff << (firstBitNo & 0x0f));
+  tailMask   = (0xffff >> ((BITS_IN_INTEGER - 1) - (lastBitNo & 0x0f)));
+  leadBits   = BITS_IN_INTEGER - firstBitNo;
+  tailBits   = (lastBitNo & 0x0f) + 1;
+
+  /* First time through the loop:
+   *    wordIndex  =                    = 0
+   *    bitMask    =                    = 0xf000
+   *    bitsInWord =                    = 4
+   *    nBits      =                    = 20
+   * Second time through the loop:
+   *    wordIndex  =                    = 1
+   *    bitMask    =                    = 0xffff
+   *    bitsInWord =                    = 16
+   *    nBits      =                    = 4
+   * Last time through the loop:
+   *    wordIndex  =                    = 2
+   *    bitMask    =                    = 0x000f
+   *    bitsInWord =                    = 4
+   *    nBits      =                    = 0
+   */
+
+  for (wordIndex = firstBitNo >> 4, bitMask = leadMask, bitsInWord = leadBits;
+       nBits > 0;
+       wordIndex++)
+    {
+      s->setValue[wordIndex] = bitMask;
+      nBits                 -= bitsInWord;
+
+      if (nBits >= BITS_IN_INTEGER)
+        {
+          bitsInWord = BITS_IN_INTEGER;
+          bitMask    = 0xffff;
+        }
+      else if (nBits > 0)
+        {
+          nBits   = tailBits;
+          bitMask = tailMask;
+        }
+    }
+}
+
+/****************************************************************************/
+
+static void pas_InitializeSet(setType_t *s)
+{
+  int i;
+
+  /* Push up stack so we PUSH in the opposite order */
+
+  for (i = 0; i < SET_WORDS; i++)
+    {
+      s->setValue[i] = 0;
+    }
+}
+
+/****************************************************************************/
+
+static void pas_PushSet(setType_t *s)
+{
+  int i;
+
+  /* Push up stack so we PUSH in the opposite order */
+
+  for (i = SET_WORDS - 1; i >= 0; i--)
+    {
+      pas_GenerateDataOperation(opPUSH, s->setValue[i]);
     }
 }
 

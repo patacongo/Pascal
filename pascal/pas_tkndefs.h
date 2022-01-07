@@ -230,11 +230,12 @@
 
 #define txINCLUDE        0x91
 #define txEXCLUDE        0x92
+#define txCARD           0x93
 
 /* Built-in, compile-time operations */
 
-#define txSIZEOF         0x92
-#define txLENGTH         0x93
+#define txSIZEOF         0x94
+#define txLENGTH         0x95
 
 /* "Less than standard" Procedures 0xc0-0xff */
 
