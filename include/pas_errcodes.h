@@ -305,7 +305,8 @@
 #define eBADFPOPCODE     ((uint16_t) 0x87)
 #define eBADSETOPCODE    ((uint16_t) 0x88)
 #define eINTEGEROVERFLOW ((uint16_t) 0x89)
-#define eFAILEDLIBCALL   ((uint16_t) 0x8a)
+#define eVALUERANGE      ((uint16_t) 0x8a)
+#define eFAILEDLIBCALL   ((uint16_t) 0x8b)
 
 #define eBADFILE         ((uint16_t) 0xa0)
 #define eFILENOTINUSE    ((uint16_t) 0xa1)

@@ -11,7 +11,7 @@ VAR
   letter : letters;
 
 BEGIN
-  WRITE('Card result: ', card(result), 'Result: ');
+  WRITE('Card result: ', CARD(result), ' Result: ');
   FOR letter := 'A' TO 'E' DO
   BEGIN
     IF letter IN result THEN
@@ -26,8 +26,8 @@ BEGIN
   s1 := ['A', 'B', 'C'];
   s2 := ['C', 'D', 'E'];
 
-  WRITE('Card S1: ', card(s1));
-  WRITE('Card S2: ', card(s2));
+  WRITELN('Card S1: ', CARD(s1));
+  WRITELN('Card S2: ', CARD(s2));
 
   showresult(S1 + S2);
   showresult(S1 - S2);

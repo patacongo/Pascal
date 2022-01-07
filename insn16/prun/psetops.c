@@ -83,6 +83,8 @@ static int pexec_member(uint16_t member, const uint16_t *src,
 static int pexec_include(uint16_t member, uint16_t *dest);
 static int pexec_exclude(uint16_t member, uint16_t *dest);
 static int pexec_card(const uint16_t *src, uint16_t *dest);
+static int pexec_singleton(uint16_t member, uint16_t *dest);
+static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest);
 
 static uint16_t pexec_BitsInWord(uint16_t word);
 static uint16_t pexec_BitsInByte(uint8_t byte);
@@ -225,6 +227,119 @@ static int pexec_card(const uint16_t *src, uint16_t *dest)
   return eNOERROR;
 }
 
+static int pexec_singleton(uint16_t member, uint16_t *dest)
+{
+  int wordIndex;
+  int bitIndex;
+
+  /* Initialize the result */
+
+  dest[0] = 0;
+  dest[1] = 0;
+  dest[2] = 0;
+  dest[3] = 0;
+
+  /* Check that subrange values are in order and in range */
+
+  if (member >= BPERI * sSET_SIZE)
+    {
+      return eVALUERANGE;
+    }
+
+  wordIndex = member >> 4;
+  bitIndex  = member & 0x0f;
+
+  dest[wordIndex] |= (1 << bitIndex);
+  return eNOERROR;
+}
+
+static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
+{
+  uint16_t leadMask;
+  uint16_t tailMask;
+  uint16_t bitMask;
+  int      nBits;
+  int      leadBits;
+  int      tailBits;
+  int      wordIndex;
+  int      bitsInWord;
+
+  /* Initialize the result */
+
+  dest[0] = 0;
+  dest[1] = 0;
+  dest[2] = 0;
+  dest[3] = 0;
+
+  /* Check that subrange values are in order and in range */
+
+  if (member2 >= BPERI * sSET_SIZE)
+    {
+      return eVALUERANGE;
+    }
+
+  if (member1 > member2)
+    {
+      return eVALUERANGE;
+    }
+
+  /* Set all bits from member1 through member2.
+   * Eg., Given
+   *    member1  = 12
+   *    member2  = 35
+   * Then
+   *    nBits    = 35 - 12 + 1        = 24
+   *    leadMask = 0xffff << 12       = 0xf000
+   *    tailMask = 0xffff >> (15 - 3) = 0x000f
+   *    leadBits = 16 - 12            = 4
+   *    tailBits = 3 + 1              = 4
+   */
+
+  nBits      = member2 - member1 + 1;
+  leadMask   = (0xffff << (member1 & 0x0f));
+  tailMask   = (0xffff >> ((BITS_IN_INTEGER - 1) - (member2 & 0x0f)));
+  leadBits   = BITS_IN_INTEGER - member1;
+  tailBits   = (member2 & 0x0f) + 1;
+
+  /* First time through the loop:
+   *    wordIndex  =                    = 0
+   *    bitMask    =                    = 0xf000
+   *    bitsInWord =                    = 4
+   *    nBits      =                    = 20
+   * Second time through the loop:
+   *    wordIndex  =                    = 1
+   *    bitMask    =                    = 0xffff
+   *    bitsInWord =                    = 16
+   *    nBits      =                    = 4
+   * Last time through the loop:
+   *    wordIndex  =                    = 2
+   *    bitMask    =                    = 0x000f
+   *    bitsInWord =                    = 4
+   *    nBits      =                    = 0
+   */
+
+  for (wordIndex = member1 >> 4, bitMask = leadMask, bitsInWord = leadBits;
+       nBits > 0;
+       wordIndex++)
+    {
+      dest[wordIndex] = bitMask;
+      nBits          -= bitsInWord;
+
+      if (nBits >= BITS_IN_INTEGER)
+        {
+          bitsInWord = BITS_IN_INTEGER;
+          bitMask    = 0xffff;
+        }
+      else if (nBits > 0)
+        {
+          nBits   = tailBits;
+          bitMask = tailMask;
+        }
+    }
+
+  return eNOERROR;
+}
+
 static uint16_t pexec_BitsInWord(uint16_t word)
 {
   return pexec_BitsInByte(word >> 8) + pexec_BitsInByte(word & 0xff);
@@ -257,7 +372,8 @@ int pexec_setops(struct pexec_s *st, uint16_t subfunc)
   const uint16_t *src1;
   const uint16_t *src2;
   uint16_t *dest;
-  uint16_t member;
+  uint16_t member1;
+  uint16_t member2;
   int errorCode = eNOERROR;
 
   switch (subfunc)
@@ -320,25 +436,25 @@ int pexec_setops(struct pexec_s *st, uint16_t subfunc)
       /* Receive a set member and one set, returns a boolean */
 
       case setMEMBER :
-        POP(st, member);
+        POP(st, member1);
         src1 = (const uint16_t *)&TOS(st, 0);
         dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE - 1);
-        errorCode = pexec_member(member, src1, dest);
+        errorCode = pexec_member(member1, src1, dest);
         DISCARD(st, sSET_SIZE / sINT_SIZE  - 1);
         break;
 
-      /* Receive one set and a set member, returns the modified set */
+      /* Receive one set and a set member1, returns the modified set */
 
       case setINCLUDE :
-        POP(st, member);
+        POP(st, member1);
         dest = (uint16_t *)&TOS(st, 0);
-        errorCode = pexec_include(member, dest);
+        errorCode = pexec_include(member1, dest);
         break;
 
       case setEXCLUDE :
-        POP(st, member);
+        POP(st, member1);
         dest = (uint16_t *)&TOS(st, 0);
-        errorCode = pexec_exclude(member, dest);
+        errorCode = pexec_exclude(member1, dest);
         break;
 
       /* Reveives on set, returns the cardinality of the set */
@@ -348,6 +464,25 @@ int pexec_setops(struct pexec_s *st, uint16_t subfunc)
         dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE - 1);
         errorCode = pexec_card(src1, dest);
         DISCARD(st, sSET_SIZE / sINT_SIZE  - 1);
+        break;
+
+      /* Receives one integer value, returns a set representing the subrange */
+
+      case setSINGLETON :
+        POP(st, member1);
+        st->sp += sSET_SIZE;
+        dest = (uint16_t *)&TOS(st, 0);
+        errorCode = pexec_singleton(member1, dest);
+        break;
+
+      /* Receives two integer values, returns a set representing the subrange */
+
+      case setSUBRANGE :
+        POP(st, member2);
+        POP(st, member1);
+        st->sp += sSET_SIZE;
+        dest = (uint16_t *)&TOS(st, 0);
+        errorCode = pexec_subrange(member1, member2, dest);
         break;
 
       case setINVALID :

@@ -274,7 +274,7 @@ insn_GenerateIoOperation(uint16_t ioOpcode)
 void
 insn_GenerateSetOperation(uint16_t setOpcode)
 {
-  insn16_Generate(oSETOP, 0, (int32_t)setOpcode);
+  insn16_Generate(opSETOP, 0, (int32_t)setOpcode);
 }
 
 /***********************************************************************/

@@ -73,7 +73,9 @@
 #define setINCLUDE       (0x09)
 #define setEXCLUDE       (0x0a)
 #define setCARD          (0x0b)
+#define setSINGLETON     (0x0c)
+#define setSUBRANGE      (0x0d)
 
-#define MAX_SETOP        (0x0c) /* Number of set operations */
+#define MAX_SETOP        (0x0e) /* Number of set operations */
 
 #endif /* __PAS_SETOPS_H */

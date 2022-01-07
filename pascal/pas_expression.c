@@ -90,6 +90,7 @@ struct setType_s
 {
   uint8_t    setType;
   bool       typeFound;
+  bool       dirty;
   int16_t    minValue;
   int16_t    maxValue;
   uint16_t   setValue[SET_WORDS];
@@ -122,11 +123,10 @@ static exprType_t pas_FactorExprType(exprType_t baseExprType,
                                      uint8_t assignFlags);
 static void       pas_SetAbstractType(symbol_t *sType);
 static void       pas_GetSetFactor(void);
-static void       pas_GetSetElement(setType_t *s);
+static bool       pas_GetSetElement(setType_t *s, bool first);
 static void       pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
                                         uint16_t lastValue);
-static void       pas_InitializeSet(setType_t *s);
-static void       pas_PushSet(setType_t *s);
+static void       pas_CleanDirtySet(setType_t *s, bool first);
 static bool       pas_IsOrdinalType(exprType_t testExprType);
 static bool       pas_IsAnyStringType(exprType_t testExprType);
 static bool       pas_IsStringReference(exprType_t testExprType);
@@ -3398,6 +3398,7 @@ static void pas_SetAbstractType(symbol_t *sType)
 static void pas_GetSetFactor(void)
 {
   setType_t s;
+  bool first;
 
   TRACE(g_lstFile,"[pas_GetSetFactor]");
 
@@ -3456,11 +3457,11 @@ static void pas_GetSetFactor(void)
    * will be OR'ed into the bitset array.
    */
 
-  pas_InitializeSet(&s);
+  pas_CleanDirtySet(&s, false);
 
   /* Get the first element of the set */
 
-  pas_GetSetElement(&s);
+  first = pas_GetSetElement(&s, true);
 
   /* Incorporate each additional element into the set */
 
@@ -3469,17 +3470,17 @@ static void pas_GetSetFactor(void)
       /* Get the next element of the set */
 
       getToken();
-      pas_GetSetElement(&s);
+      first = pas_GetSetElement(&s, first);
     }
 
   /* And finally push the accumulated set */
 
-  pas_PushSet(&s);
+  pas_CleanDirtySet(&s, first);
 }
 
 /****************************************************************************/
 
-static void pas_GetSetElement(setType_t *s)
+static bool pas_GetSetElement(setType_t *s, bool first)
 {
   int16_t   firstValue;
   int16_t   lastValue;
@@ -3489,6 +3490,10 @@ static void pas_GetSetElement(setType_t *s)
 
   switch (g_token)
     {
+      /* Handle cases where we encounter a constant value, either a alone
+       * or as the lower value in a subrange.
+       */
+
       case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
         firstValue = g_tknPtr->sParm.c.cValue.i;
         if (!s->typeFound)
@@ -3541,7 +3546,9 @@ static void pas_GetSetElement(setType_t *s)
         getToken();
         if (g_token != tSUBRANGE)
           {
-            /* Verify that the new value is in range */
+            /* No.. it is a single constant value.
+             * Verify that the new value is in range.
+             */
 
             if (firstValue < s->minValue || firstValue > s->maxValue)
               {
@@ -3554,6 +3561,7 @@ static void pas_GetSetElement(setType_t *s)
                 int bitIndex       = bitNumber & 0x0f;
 
                 s->setValue[wordIndex] |= (1 << bitIndex);
+                s->dirty                = true;
               }
           }
         else
@@ -3568,6 +3576,10 @@ static void pas_GetSetElement(setType_t *s)
 
             switch (g_token)
               {
+                /* Check for cases where  the sub-range starts with and ends
+                 * with a constant value.
+                 */
+
                 case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
                   lastValue = g_tknPtr->sParm.c.cValue.i;
                   if (s->setType != sSCALAR ||
@@ -3588,7 +3600,9 @@ static void pas_GetSetElement(setType_t *s)
                   if (s->setType != sCHAR) error(eSET);
 
                 addLottaBits :
-                  /* Verify that the first value is in range */
+                  /* Yes, it is a subrange with both endpoints constant.
+                   * Verify that the first value is in range.
+                   */
 
                   if (firstValue < s->minValue)
                     {
@@ -3614,8 +3628,14 @@ static void pas_GetSetElement(setType_t *s)
                       lastValue = s->maxValue;
                     }
 
+                  /* We can handle this case at compile-time */
+
                   pas_AddBitSetElements(s, firstValue, lastValue);
                   break;
+
+                /* Now check for cases where the subrange begins with a
+                 * constant value but ends with a variable value.
+                 */
 
                 case sSCALAR :
                   if (!s->typePtr ||
@@ -3660,7 +3680,11 @@ static void pas_GetSetElement(setType_t *s)
                     }
 
                 addVarToBits:
-                  /* Verify that the first value is in range */
+                  /* The subrange lower value is a constant, but the upper value is
+                   * variable.
+                   *
+                   * Verify that the first value is in range.
+                   */
 
                   if (firstValue < s->minValue)
                     {
@@ -3673,46 +3697,45 @@ static void pas_GetSetElement(setType_t *s)
                       firstValue = s->maxValue;
                     }
 
-                  /* Set all bits from firstValue through maxValue */
-#if 0 /* Not Yet */
-                  pas_AddBitSetElements(s, firstValue, s->maxValue);
-#endif
-#warning "#### REVISIT:  multi-byte SETS not implemented"
-uint16_t setValue;
-                  setValue  = (0xffff >> ((BITS_IN_INTEGER -1 ) -
-                                          (s->maxValue - s->minValue)));
-                  setValue &= (0xffff << (firstValue - s->minValue));
+                  /* This we will need to handle at run-time */
 
-                  /* Generate run-time logic to get all bits from firstValue
-                   * through last value, i.e., need to generate logic to get:
-                   * 0xffff >> ((BITS_IN_INTEGER - 1) - (lastValue - minValue))
-                   */
+                  pas_CleanDirtySet(s, first);
 
-                  pas_GenerateDataOperation(opPUSH, 0xffff);
-                  pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER - 1) +
-                                                      s->minValue));
+                  pas_GenerateDataOperation(opPUSH, firstValue - s->minValue);
                   pas_GenerateStackReference(opLDS, g_tknPtr);
-                  pas_GenerateSimple(opSUB);
-                  pas_GenerateSimple(opSRL);
-
-                  /* Then AND this with the setValue */
-
-                  if (setValue != 0xffff)
+                  if (s->minValue != 0)
                     {
-                      pas_GenerateDataOperation(opPUSH, setValue);
-                      pas_GenerateSimple(opAND);
+                      pas_GenerateDataOperation(opPUSH, s->minValue);
+                      pas_GenerateSimple(opSUB);
                     }
 
+                  pas_GenerateSetOperation(setSUBRANGE);
+
+                  /* If this is not the first chunk of the set we generated,
+                   * then we will need to OR it with the previous chunk on
+                   * the stack.
+                   */
+
+                  if (!first)
+                    {
+                      pas_GenerateSetOperation(setUNION);
+                    }
+
+                  first = false;
                   getToken();
                   break;
 
                 default :
                   error(eSET);
-                  pas_GenerateDataOperation(opPUSH, 0);
                   break;
             }
         }
         break;
+
+      /* Now check for cases where the set element begins with a variable
+       * value.  This may be a single value or may be the lower value of
+       * a subrange.
+       */
 
       case sSCALAR :
         if (s->typeFound)
@@ -3765,21 +3788,39 @@ uint16_t setValue;
           }
 
       addVar:
-        /* Check if the variable set element is the first value in a */
-        /* subrange of values */
+        /* Check if the variable set element is the first value in a
+         * subrange of values.
+         */
 
         setPtr = g_tknPtr;
         getToken();
         if (g_token != tSUBRANGE)
           {
-            /* Generate P-Code to push the set value onto the stack */
-            /* FORM:  1 << (firstValue - minValue) */
+            /* It is a single, variable member of the set.  We will have
+             * to do this at run-time.
+             */
 
-            pas_GenerateDataOperation(opPUSH, 1);
+            pas_CleanDirtySet(s, first);
+
             pas_GenerateStackReference(opLDS, setPtr);
-            pas_GenerateDataOperation(opPUSH, s->minValue);
-            pas_GenerateSimple(opSUB);
-            pas_GenerateSimple(opSLL);
+            if (s->minValue != 0)
+              {
+                pas_GenerateDataOperation(opPUSH, s->minValue);
+                pas_GenerateSimple(opSUB);
+              }
+
+            pas_GenerateSetOperation(setSINGLETON);
+
+            /* If this is not the first chunk of the set we generated, then
+             * we will need to OR it with the previous chunk on the stack.
+             */
+
+            if (!first)
+              {
+                pas_GenerateSetOperation(setUNION);
+              }
+
+            first = false;
           }
         else
           {
@@ -3813,8 +3854,11 @@ uint16_t setValue;
                   if (s->setType != sCHAR) error(eSET);
 
                 addBitsToVar :
-#warning "#### REVISIT:  multi-byte SETS not implemented"
-                  /* Verify that the last value is in range */
+                  /* It is subrange, commencing with a variable first element
+                   * and extending to constant terminal element.
+                   *
+                   * Verify that the last value is in range.
+                   */
 
                   if (lastValue < s->minValue)
                     {
@@ -3827,36 +3871,35 @@ uint16_t setValue;
                       lastValue = s->maxValue;
                     }
 
-                  /* Set all bits from minValue through lastValue */
-uint16_t setValue; // FIXE ME
-                  setValue  = (0xffff >> ((BITS_IN_INTEGER - 1) -
-                                        (lastValue - s->minValue)));
+                  /* We will have to do this at run-time. */
 
-                  /* Now, generate P-Code to push the set value onto the stack */
-                  /* First generate: 0xffff << (firstValue - minValue) */
+                  pas_CleanDirtySet(s, first);
 
-                  pas_GenerateDataOperation(opPUSH, 0xffff);
                   pas_GenerateStackReference(opLDS, setPtr);
-                  if (s->minValue)
+                  if (s->minValue != 0)
                     {
                       pas_GenerateDataOperation(opPUSH, s->minValue);
                       pas_GenerateSimple(opSUB);
-                   }
-
-                   pas_GenerateSimple(opSLL);
-
-                  /* Then and this with the pre-computed constant set value */
-
-                  if (setValue != 0xffff)
-                    {
-                      pas_GenerateDataOperation(opPUSH, setValue);
-                      pas_GenerateSimple(opAND);
                     }
 
+                  pas_GenerateDataOperation(opPUSH, lastValue - s->minValue);
+                  pas_GenerateSetOperation(setSUBRANGE);
+
+                  /* If this is not the first chunk of the set we generated,
+                   * then we will need to OR it with the previous chunk on the
+                   * stack.
+                   */
+
+                  if (!first)
+                    {
+                      pas_GenerateSetOperation(setUNION);
+                    }
+
+                  first = false;
                   getToken();
                   break;
 
-                case sINT : /* An integer subrange variable ? */
+                case sINT :  /* An integer subrange variable ? */
                 case sCHAR : /* A character subrange variable? */
                   if (s->setType != g_token) error(eSET);
                   goto addVarToVar;
@@ -3874,12 +3917,13 @@ uint16_t setValue; // FIXE ME
                     }
 
                 addVarToVar:
+                  /* Both the first and last values of the subrange are variable.
+                   *
+                   * We will have to do this at run-time.
+                   */
 
-                  /* Generate run-time logic to get all bits from firstValue */
-                  /* through lastValue */
-                  /* First generate: 0xffff << (firstValue - minValue) */
+                  pas_CleanDirtySet(s, first);
 
-                  pas_GenerateDataOperation(opPUSH, 0xffff);
                   pas_GenerateStackReference(opLDS, setPtr);
                   if (s->minValue)
                     {
@@ -3887,21 +3931,26 @@ uint16_t setValue; // FIXE ME
                       pas_GenerateSimple(opSUB);
                     }
 
-                  pas_GenerateSimple(opSLL);
-
-                  /* Generate logic to get: */
-                  /* 0xffff >> ((BITS_IN_INTEGER-1)-(lastValue - minValue)) */
-
-                  pas_GenerateDataOperation(opPUSH, 0xffff);
-                  pas_GenerateDataOperation(opPUSH, ((BITS_IN_INTEGER - 1) + s->minValue));
                   pas_GenerateStackReference(opLDS, g_tknPtr);
-                  pas_GenerateSimple(opSUB);
-                  pas_GenerateSimple(opSRL);
+                  if (s->minValue)
+                    {
+                      pas_GenerateDataOperation(opPUSH, s->minValue);
+                      pas_GenerateSimple(opSUB);
+                    }
 
-                  /* Then AND the two values */
+                  pas_GenerateSetOperation(setSUBRANGE);
 
-                  pas_GenerateSimple(opAND);
+                  /* If this is not the first chunk of the set we generated,
+                   * then we will need to OR it with the previous chunk on the
+                   * stack.
+                   */
 
+                  if (!first)
+                    {
+                      pas_GenerateSetOperation(setUNION);
+                    }
+
+                  first = false;
                   getToken();
                   break;
 
@@ -3918,6 +3967,8 @@ uint16_t setValue; // FIXE ME
         pas_GenerateDataOperation(opPUSH, 0);
         break;
     }
+
+  return first;
 }
 
 /****************************************************************************/
@@ -3937,7 +3988,6 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
   int      wordIndex;
   int      bitsInWord;
 
-
   /* Set all bits from firstValue through lastValue.
    * Eg., Given
    *    minValue   =  2
@@ -3954,9 +4004,9 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
    *    tailBits   = 3 + 1              = 4
    */
 
-  nBits      = lastValue - firstValue + 1;
+  nBits      = lastValue  - firstValue + 1;
   firstBitNo = firstValue - s->minValue;
-  lastBitNo  = firstValue - s->minValue;
+  lastBitNo  = lastValue  - s->minValue;
   leadMask   = (0xffff << (firstBitNo & 0x0f));
   tailMask   = (0xffff >> ((BITS_IN_INTEGER - 1) - (lastBitNo & 0x0f)));
   leadBits   = BITS_IN_INTEGER - firstBitNo;
@@ -3997,33 +4047,44 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
           bitMask = tailMask;
         }
     }
+
+  s->dirty = true;
 }
 
 /****************************************************************************/
 
-static void pas_InitializeSet(setType_t *s)
+static void pas_CleanDirtySet(setType_t *s, bool first)
 {
   int i;
 
-  /* Push up stack so we PUSH in the opposite order */
+  if (s->dirty)
+    {
+      /* Push up stack so we PUSH in the opposite order */
+
+      for (i = SET_WORDS - 1; i >= 0; i--)
+        {
+          pas_GenerateDataOperation(opPUSH, s->setValue[i]);
+        }
+
+      s->dirty = false;
+
+      /* If this is not the first chunk of the set we have generated, then we
+       * need to OR it with what is already on the stack.
+       */
+
+      if (!first)
+        {
+          pas_GenerateSetOperation(setUNION);
+        }
+
+      first = false;
+    }
+
+  /* Reset the SET */
 
   for (i = 0; i < SET_WORDS; i++)
     {
       s->setValue[i] = 0;
-    }
-}
-
-/****************************************************************************/
-
-static void pas_PushSet(setType_t *s)
-{
-  int i;
-
-  /* Push up stack so we PUSH in the opposite order */
-
-  for (i = SET_WORDS - 1; i >= 0; i--)
-    {
-      pas_GenerateDataOperation(opPUSH, s->setValue[i]);
     }
 }
 

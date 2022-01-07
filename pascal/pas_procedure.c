@@ -1601,7 +1601,7 @@ static void pas_WriteText(void)
       {
         exprType_t writeType;
 
-        /* Put the file number, valu, and field width on the stack */
+        /* Put the file number, value, and field width on the stack */
 
         pas_GenerateSimple(opDUP);
         writeType = pas_Expression(exprUnknown, NULL);
