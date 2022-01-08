@@ -67,7 +67,6 @@ enum pcode_e
   /* Comparisons (Two stack arguments) */
 
   opEQU, opNEQ, opLT, opGTE, opGT, opLTE,
-  opBIT,
 
   /* Load Immediate */
 
@@ -99,9 +98,9 @@ enum pcode_e
    ** OPCODES WITH ONE ARGUMENT
    **-------------------------------------------------------------------**/
 
-  /* Floating point operations: arg = FP op-code */
+  /* Floating point/Set operations: arg = FP/SET op-code */
 
-  opFLOAT,
+  opFLOAT,  opSETOP,
 
   /* Program control:  arg = unsigned label (One stack argument) */
 
@@ -149,7 +148,7 @@ enum pcode_e
 
   /* System functions: arg = 16-bit library/system call identifier */
 
-  opLIB, opSYSIO, opSETOP,
+  opLIB, opSYSIO,
 
   /* Program control:  arg = unsigned label (no stack arguments) */
 

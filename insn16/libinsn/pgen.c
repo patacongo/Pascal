@@ -97,7 +97,6 @@ static const uint16_t opmap[NUM_OPCODES] =
   oGTE,    /* opGTE */
   oGT,     /* opGT */
   oLTE,    /* opLTE */
-  oBIT,    /* opBIT */
   oLDIH,   /* opLDI -- integer load maps to 16-bit load */
   oLDIB,   /* opLDIB */
   oLDIM,   /* opLDIM */
@@ -111,6 +110,7 @@ static const uint16_t opmap[NUM_OPCODES] =
   oRET,    /* opRET */
   oEND,    /* opEND */
   oFLOAT,  /* opFLOAT */
+  oSETOP,  /* opSETOP */
   oJEQUZ,  /* opJEQUZ */
   oJNEQZ,  /* opJNEQZ */
   oJMP,    /* opJMP */
@@ -140,7 +140,6 @@ static const uint16_t opmap[NUM_OPCODES] =
   oLAX,    /* opLAX */
   oLIB,    /* opLIB */
   oSYSIO,  /* opSYSIO */
-  oSETOP,  /* opSETOP */
   oLABEL,  /* opLABEL */
   oPCAL,   /* opPCAL */
   oLDSH,   /* opLDS -- integer store maps to 16-bit load */
@@ -264,17 +263,17 @@ insn_GenerateFpOperation(uint8_t fpOpcode)
 /***********************************************************************/
 
 void
-insn_GenerateIoOperation(uint16_t ioOpcode)
+insn_GenerateSetOperation(uint8_t setOpcode)
 {
-  insn16_Generate(opSYSIO, 0, (int32_t)ioOpcode);
+  insn16_Generate(opSETOP, setOpcode, 0);
 }
 
 /***********************************************************************/
 
 void
-insn_GenerateSetOperation(uint16_t setOpcode)
+insn_GenerateIoOperation(uint16_t ioOpcode)
 {
-  insn16_Generate(opSETOP, 0, (int32_t)setOpcode);
+  insn16_Generate(opSYSIO, 0, (int32_t)ioOpcode);
 }
 
 /***********************************************************************/

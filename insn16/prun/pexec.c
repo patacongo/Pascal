@@ -199,19 +199,6 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       TOS(st, 0) = (TOS(st, 0) & uparm1);
       break;
 
-    case oBIT :
-      POP(st, uparm1);
-      uparm2 = TOS(st, 0);
-      if ((uparm1 & (1 << uparm2)) != 0)
-        {
-          TOS(st, 0) = PASCAL_TRUE;
-        }
-      else
-        {
-          TOS(st, 0) = PASCAL_FALSE;
-        }
-      break;
-
       /* Comparisons (One stack argument) */
 
      case oEQUZ :
@@ -512,8 +499,15 @@ static inline int pexec16(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8)
       break;
 
       /* Floating Point:  imm8 = FP op-code (varying number of stack arguments) */
+
     case oFLOAT  :
       ret = pexec_execfp(st, imm8);
+      break;
+
+      /* Set operations:  imm8 = SET op-code (varying number of stack arguments) */
+
+    case oSETOP :
+      ret = pexec_setops(st, imm8);
       break;
 
     default :
@@ -860,14 +854,6 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
 
     case oSYSIO :
       ret = pexec_sysio(st, imm16);
-      break;
-
-      /* Set operations:
-       * For SETOP:   imm16 = sub-function code
-       */
-
-    case oSETOP :
-      ret = pexec_setops(st, imm16);
       break;
 
       /* Program control:  imm16 = unsigned label (no stack arguments) */

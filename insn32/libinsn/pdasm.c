@@ -129,7 +129,7 @@ static const struct optab_s g_sNoArgOpTable[64] =
   /* 0x1c */ { "GT   ", SIMPLE },
   /* 0x1d */ { "LTE  ", SIMPLE },
   /* 0x1e */ { invOp,   SIMPLE },
-  /* 0x1f */ { "BIT  ", SIMPLE },
+  /* 0x1f */ { invOp,   SIMPLE },
 
   /* Load (One) or Store (Two stack argument) */
 

@@ -128,7 +128,7 @@ static const struct
 /* 0x1c */ { "GT   ", NOARG16 },
 /* 0x1d */ { "LTE  ", NOARG16 },
 /* 0x1e */ { invOp,   NOARG16 },
-/* 0x1f */ { "BIT  ", NOARG16 },
+/* 0x1f */ { invOp,   NOARG16 },
 
 /* Load (One) or Store (Two stack argument) */
 
@@ -230,7 +230,7 @@ static const struct
 /* Floating Point Operations:  arg8 = FP op-code */
 
 /* 0x70 */ { "FLOAT", fpOP    },
-/* 0x71 */ { invOp,   NOARG16 },
+/* 0x71 */ { "SETOP", setOP,  },
 /* 0x72 */ { invOp,   NOARG16 },
 /* 0x73 */ { invOp,   NOARG16 },
 /* 0x74 */ { "PUSHB", NOARG16 },
@@ -335,7 +335,7 @@ static const struct
 
 /* 0xb9 */ { "LIB  ", lbOP,   },
 /* 0xba */ { "SYSIO", xOP,    },
-/* 0xbb */ { "SETOP", setOP,  },
+/* 0xbb */ { invOp,   NOARG16 },
 /* 0xbc */ { invOp,   NOARG16 },
 /* 0xbd */ { invOp,   NOARG16 },
 /* 0xbe */ { invOp,   NOARG16 },
@@ -591,21 +591,21 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
                 }
               break;
 
-            case xOP       :
-              if (pop->arg2 < MAX_XOP)
-                {
-                  fprintf(lfile, "%s", xName[pop->arg2]);
-                }
-              else
-                {
-                  fprintf(lfile, "%s", invXOp);
-                }
-              break;
-
             case setOP     :
               if (pop->arg2 < MAX_SETOP)
                 {
                   fprintf(lfile, "%s", sName[pop->arg2]);
+                }
+              else
+                {
+                  fprintf(lfile, "%s", invSetOp);
+                }
+              break;
+
+            case xOP       :
+              if (pop->arg2 < MAX_XOP)
+                {
+                  fprintf(lfile, "%s", xName[pop->arg2]);
                 }
               else
                 {

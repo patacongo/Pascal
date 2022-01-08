@@ -260,19 +260,19 @@ void pas_GenerateFpOperation(uint8_t fpOpcode)
 }
 
 /***********************************************************************/
+/* Generate a pseudo call to a built-in, set operator/functionon */
+
+void pas_GenerateSetOperation(uint8_t setOpcode)
+{
+  insn_GenerateSetOperation(setOpcode);
+}
+
+/***********************************************************************/
 /* Generate an IO operation */
 
 void pas_GenerateIoOperation(uint16_t ioOpcode)
 {
   insn_GenerateIoOperation(ioOpcode);
-}
-
-/***********************************************************************/
-/* Generate a pseudo call to a built-in, set operator/functionon */
-
-void pas_GenerateSetOperation(uint16_t setOpcode)
-{
-  insn_GenerateSetOperation(setOpcode);
 }
 
 /***********************************************************************/

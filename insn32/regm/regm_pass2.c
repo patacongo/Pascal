@@ -245,7 +245,7 @@ static const struct regm_opmap_s vrgOpMap1[64] =
     /* 0x1c: oGT */     {rBGT,    0,   0,   regm_BinaryComparison},
     /* 0x1d: oLTE */    {rBLTE,   0,   0,   regm_BinaryComparison},
     /* 0x1e: */         {0,       0,   0,   regm_IllegalPCode},
-    /* 0x1f: oBIT */    {rBEQ,    0,   0,   regm_BinaryComparison},
+    /* 0x1f: */         {0,       0,   0,   regm_IllegalPCode},
 
     /* 0x20: oLDI */    {rLD,     2,   SPB, regm_LoadImmediate},
     /* 0x21: oLDIH */   {rLDH,    1,   SPB, regm_LoadImmediate},
@@ -604,19 +604,7 @@ static void regm_BinaryComparison(const struct regm_opmap_s *pEntry,
 
   TRACE(stderr, "[regm_BinaryComparison]");
 
-
-  switch (GETOP(pOpCode))
-    {
-    case oBIT:
-      regm_GenerateForm3R(rAND, dwRDest, dwROperand1, dwROperand2);
-      regm_GenerateForm1ICc(rCMPI, dwRDest, 0, dwCcRegister);
-      break;
-
-    default:
-      regm_GenerateForm1RCc(rCMP, dwROperand1, dwROperand2, dwCcRegister);
-      break;
-    }
-
+  regm_GenerateForm1RCc(rCMP, dwROperand1, dwROperand2, dwCcRegister);
   regm_GenerateForm2I(rMOVI, dwRDest, 0);
   regm_GenerateForm4ICc(pEntry->chOpCode, 2, dwCcRegister);
   regm_GenerateForm2I(rMOVI, dwRDest, 1);

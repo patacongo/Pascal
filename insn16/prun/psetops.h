@@ -49,6 +49,6 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-int pexec_setops(struct pexec_s *st, uint16_t subfunc);
+int pexec_setops(struct pexec_s *st, uint8_t subfunc);
 
 #endif /* __PSETOPS_H */

@@ -103,7 +103,6 @@ static const uint8_t opmap[NUM_OPCODES] =
   oGTE,    /* opGTE */
   oGT,     /* opGT */
   oLTE,    /* opLTE */
-  oBIT,    /* opBIT */
   oLDI,    /* opLDI */
   oLDIB,   /* opLDIB */
   oLDIM,   /* opLDIM */
@@ -116,6 +115,7 @@ static const uint8_t opmap[NUM_OPCODES] =
   oRET,    /* opRET */
   oEND,    /* opEND */
   oFLOAT,  /* opFLOAT */
+  oSETOP,  /* opSETOP */
   oJEQUZ,  /* opJEQUZ */
   oJNEQZ,  /* opJNEQZ */
   oJMP,    /* opJMP */
@@ -145,7 +145,6 @@ static const uint8_t opmap[NUM_OPCODES] =
   oLAX,    /* opLAX */
   oLIB,    /* opLIB */
   oSYSIO,  /* opSYSIO */
-  oSETOP,  /* opSETOP */
   oLABEL,  /* opLABEL */
   oPCAL,   /* opPCAL */
   oLDS,    /* opLDS */
@@ -329,17 +328,17 @@ insn_GenerateFpOperation(uint8_t fpOpcode)
 /***********************************************************************/
 
 void
-insn_GenerateIoOperation(uint16_t ioOpcode)
+insn_GenerateSetOperation(uint8_t setOpcode)
 {
-  insn32_GenerateDataOperation(oSYSIO, (uint32_t)ioOpcode);
+  insn32_GenerateDataOperation(oSETOP, setOpcode);
 }
 
 /***********************************************************************/
 
 void
-insn_GenerateSetOperation(uint16_t setOpcode)
+insn_GenerateIoOperation(uint16_t ioOpcode)
 {
-  insn32_GenerateDataOperation(oSETOP, (uint32_t)setOpcode);
+  insn32_GenerateDataOperation(oSYSIO, (uint32_t)ioOpcode);
 }
 
 /***********************************************************************/

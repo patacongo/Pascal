@@ -108,7 +108,7 @@
  * xr01 1100  GT         JGT   ilbl
  * xr01 1101  LTE        JLTE  ilbl
  * xr01 1110  ---        ---
- * xr01 1111  BIT        INDS  nn
+ * xr01 1111  ---        INDS  nn
  *
  * xr10 0000  LDI        LDS   offs4
  * xr10 0001  LDIH       LDSH  offs3
@@ -237,7 +237,6 @@
 #define oGTE   (0x1b)
 #define oGT    (0x1c)
 #define oLTE   (0x1d)
-#define oBIT   (0x1f)
 
 /* Load Immediate */
 
@@ -408,12 +407,6 @@
 
 #define oSYSIO (o32|0x3a)
 
-/* Set operations:  arg = 32-bit file sub-function code
- *                File number on stack
- */
-
-#define oSETOP
-
 /* System functions: arg = 32-bit library call identifier */
 
 #define oLIB   (o32|0x3b)
@@ -421,6 +414,10 @@
 /* Floating point operations: arg = FP op-code */
 
 #define oFLOAT (o32|0x3c)
+
+/* Set operations:  arg = SET op-code */
+
+#define oSETOP
 
 /* Program control:  arg = unsigned label (no stack arguments) */
 

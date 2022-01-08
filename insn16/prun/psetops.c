@@ -377,7 +377,7 @@ static uint16_t pexec_BitsInNibble(uint8_t nibble)
  *
  ****************************************************************************/
 
-int pexec_setops(struct pexec_s *st, uint16_t subfunc)
+int pexec_setops(struct pexec_s *st, uint8_t subfunc)
 {
   const uint16_t *src1;
   const uint16_t *src2;

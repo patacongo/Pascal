@@ -86,7 +86,7 @@
  * xx01 1100  GT         ---            JGT   ilbl     ---
  * xx01 1101  LTE        ---            JLTE  ilbl     ---
  * xx01 1110  ---        ---            ---            ---
- * xx01 1111  BIT        ---            ---            ---
+ * xx01 1111  ---        ---            ---            ---
  *
  * xx10 0000  LDI        ---            LD uoffs       LDS lvl,offs
  * xx10 0001  LDIH       ---            LDH uoffs      LDSH lvl,offs
@@ -106,7 +106,7 @@
  * xx10 1111  RET        ---            STXM uoffs     STSXM lvl,offs
  *
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS lvl,offs
- * xx11 0001  ---        ---            LAC dlbl       ---
+ * xx11 0001  ---        SETOP sop      LAC dlbl       ---
  * xx11 0010  ---        ---            ---            ---
  * xx11 0011  ---        ---            ---            ---
  * xx11 0100  ---        PUSHB n        PUSH nn        ---
@@ -115,8 +115,8 @@
  * xx11 0111  ---        ---            ---            ---
  * xx11 1000  ---        ---            LAX uoffs      LASX lvl,offs
  * xx11 1001  ---        ---            LIB lop        ---
- * xx11 1010  ---        ---            SYSIO sop      ---
- * xx11 1011  ---        ---            SETOP sop      ---
+ * xx11 1010  ---        ---            SYSIO iop      ---
+ * xx11 1011  ---        ---            ---            ---
  * xx11 1100  ---        ---            ---            ---
  * xx11 1101  ---        ---            ---            ---
  * xx11 1110  ---        ---            ---            ---
@@ -128,7 +128,8 @@
  *   vt    = 8-bit type code (unsigned)
  *   nn    = 16-bit value (signed)
  *   fop   = 8-bit floating point operation
- *   sop   = 16-bit sysio or set operation
+ *   sop   = 8-bit set operation
+ *   iop   = 16-bit sysio operation
  *   lop   = 16-bit library call identifier
  *   fn    = 8-bit file number
  *   ilbl  = instruction space label
@@ -187,9 +188,7 @@
 #define oGT    (0x1c)
 #define oLTE   (0x1d)
 
-/* 0x1e -- unassigned */
-
-#define oBIT   (0x1f)
+/* 0x1e - 0x1f -- unassigned */
 
 /* Load Immediate */
 
@@ -239,6 +238,10 @@
 /* Floating point operations: arg8 = FP op-code */
 
 #define oFLOAT  (o8|0x30)
+
+/* Set operations:  arg8  = SET opcode */
+
+#define oSETOP  (o8|0x31)
 
 /* (o8|0x31)-(o8|0x33) -- unassigned */
 
@@ -337,13 +340,6 @@
  */
 
 #define oSYSIO  (o16|0x3a)
-
-/* System calls:
- * For SETOP:        arg16 = sub-function code
- *                   TOS   = file number
- */
-
-#define oSETOP  (o16|0x3b)
 
 /* (o16|0x3b)-(o16|0x3e) -- unassigned */
 

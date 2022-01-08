@@ -260,7 +260,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tIN :
       /* Select all opcodes for all cases */
 
-      intOpCode = opBIT;
+      intOpCode = opNOP;
       fpOpCode  = fpINVLD;
       strOpCode = opNOP;
       setOpCode = setMEMBER;
