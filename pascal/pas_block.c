@@ -343,9 +343,9 @@ static symbol_t *pas_DeclareVar(void)
       typePtr = pas_FileTypeDenoter();
       if (typePtr == NULL)
         {
-          /* Process the normal type-denoter */
+          /* Process the normal, un-named type-denoter */
 
-          typePtr = pas_TypeDenoter(varName);
+          typePtr = pas_TypeDenoter("");
           if (typePtr == NULL)
             {
               error(eINVTYPE);
@@ -2187,7 +2187,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
 static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
 {
   symbol_t *fieldPtr = NULL;
-  symbol_t *typePtr;
+  symbol_t *typePtr  = NULL;
 
   TRACE(g_lstFile,"[pas_DeclareField]");
 
@@ -2208,11 +2208,13 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
 
       if (g_token == ',')
         {
+          symbol_t *nextPtr;
+
           getToken();
-          fieldPtr = pas_DeclareField(recordPtr, fieldPtr);
-          if (fieldPtr != NULL)
+          nextPtr = pas_DeclareField(recordPtr, fieldPtr);
+          if (nextPtr != NULL)
             {
-              typePtr = fieldPtr->sParm.r.rParent;
+              typePtr = nextPtr->sParm.r.rParent;
             }
         }
       else
@@ -2369,7 +2371,10 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
           parentTypePtr = recordObjectPtr->sParm.r.rParent;
 
-          if (parentTypePtr->sKind != sTYPE) error(eHUH);
+          if (parentTypePtr == NULL || parentTypePtr->sKind != sTYPE)
+            {
+              error(eHUH);
+            }
           else if (parentTypePtr->sParm.t.tType == sSTRING ||
                    parentTypePtr->sParm.t.tType == sSHORTSTRING)
             {

@@ -1058,13 +1058,13 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       break;
 
     /* WRITE_INT: TOS(0) = Field width
-     *            TOS(0) = Write value
-     *            TOS(1) = File number
+     *            TOS(1) = Write integer value
+     *            TOS(2) = File number
      */
 
     case xWRITE_INT :
       POP(st, fieldWidth);  /* Field width */
-      POP(st, value);       /* Write address */
+      POP(st, value);       /* Write integer value */
       POP(st, fileNumber);  /* File number from stack */
 
       errorCode = pexec_WriteInteger(fileNumber, (int16_t)value, fieldWidth);

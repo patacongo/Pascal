@@ -11,7 +11,7 @@ VAR
   letter : letters;
 
 BEGIN
-  WRITE('Card result: ', CARD(result), ' Result: ');
+  WRITE('Card result: ', CARD(result), ' Result: [');
   FOR letter := 'A' TO 'E' DO
   BEGIN
     IF letter IN result THEN
@@ -19,7 +19,7 @@ BEGIN
       WRITE(letter);
     END
   END;
-  WRITELN;
+  WRITELN(']');
 END;
   
 BEGIN

@@ -103,7 +103,7 @@ typedef struct setType_s setType_t;
  * Private Function Prototypes
  ****************************************************************************/
 
-static exprType_t pas_SimplifyExpression(exprType_t findExprType);
+static exprType_t pas_SimpleExpression(exprType_t findExprType);
 static exprType_t pas_Term(exprType_t findExprType);
 static exprType_t pas_Factor(exprType_t findExprType);
 static exprType_t pas_ComplexFactor(void);
@@ -172,7 +172,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
    * Get the first <simple expression>
    */
 
-  simple1Type = pas_SimplifyExpression(findExprType);
+  simple1Type = pas_SimpleExpression(findExprType);
 
   /* Get the optional <relational operator> which may follow */
 
@@ -304,10 +304,16 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       symbol_t *abstract1Type = g_abstractType;
       symbol_t *abstract2Type = NULL;
 
-      /* Get the second simple expression. */
+      /* The top of the stack may hold either (1) the first set in a binary
+       * operation or (2) an integer-size, subrange member as the first part of
+       * the set-member.  g_abstractType will be NULL in that latter case.
+       *
+       * Get the second simple expression which should be a SET in all cases
+       * and should have a non-NULL g_abstractType.
+       */
 
       g_abstractType = NULL;
-      simple2Type    = pas_SimplifyExpression(exprUnknown);
+      simple2Type    = pas_SimpleExpression(exprSet);
       haveSimple2    = true;
       abstract2Type  = g_abstractType;
 
@@ -344,7 +350,12 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
                   {
                     symbol_t *subRangePtr;
 
-                    subRangePtr = abstract2Type->sParm.t.tParent;
+                    subRangePtr = pas_GetBaseTypePointer(abstract2Type);
+                    if (subRangePtr->sParm.t.tType == sSET)
+                      {
+                        subRangePtr = subRangePtr->sParm.t.tParent;
+                      }
+
                     if (subRangePtr->sParm.t.tType != sSUBRANGE) error(eHUH);
                     else
                       {
@@ -356,14 +367,12 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
                           }
                         else
                           {
-                            /* Make the member value zero base */
+                            /* Push the minimum value of the set-member.  This
+                             * will be used to make the sub-range zero-based.
+                             */
 
-                            if (g_abstractType->sParm.t.tMinValue != 0)
-                              {
-                                 pas_GenerateDataOperation(opPUSH,
-                                    g_abstractType->sParm.t.tMinValue);
-                                 pas_GenerateSimple(opSUB);
-                              }
+                            pas_GenerateDataOperation(opPUSH,
+                              g_abstractType->sParm.t.tMinValue);
 
                             /* Then generate the set operation */
 
@@ -414,7 +423,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
 
       if (!haveSimple2)
         {
-          simple2Type = pas_SimplifyExpression(findExprType);
+          simple2Type = pas_SimpleExpression(findExprType);
           haveSimple2 = true;
         }
 
@@ -490,7 +499,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       if (!haveSimple2)
         {
           getToken();
-          simple2Type = pas_SimplifyExpression(findExprType);
+          simple2Type = pas_SimpleExpression(findExprType);
           haveSimple2 = true;
         }
 
@@ -985,7 +994,14 @@ symbol_t *pas_GetBaseTypePointer(symbol_t *typePtr)
   baseTypePtr     = typePtr;
   nextTypePtr     = typePtr->sParm.t.tParent;
 
-  while (nextTypePtr != NULL && nextTypePtr->sKind == sTYPE)
+  /* Loop until the terminal type is found.  Exception:  A SET is not really
+   * reducible.  The parent type of the sSET characterizes the SEt but is
+   * not the base type of the set (which will be a sub-range or a scalar).
+   */
+
+  while (nextTypePtr != NULL &&
+         nextTypePtr->sKind == sTYPE &&
+         baseTypePtr->sParm.t.tType != sSET)
     {
       baseTypePtr = nextTypePtr;
       nextTypePtr = baseTypePtr->sParm.t.tParent;
@@ -997,14 +1013,14 @@ symbol_t *pas_GetBaseTypePointer(symbol_t *typePtr)
 /****************************************************************************/
 /* Process Simple Expression */
 
-static exprType_t pas_SimplifyExpression(exprType_t findExprType)
+static exprType_t pas_SimpleExpression(exprType_t findExprType)
 {
   int16_t    operation = '+';
   uint16_t   arg8FpBits;
   exprType_t term1Type;
   exprType_t term2Type;
 
-  TRACE(g_lstFile,"[pas_SimplifyExpression]");
+  TRACE(g_lstFile,"[pas_SimpleExpression]");
 
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]]
    *
@@ -3407,6 +3423,12 @@ static void pas_GetSetFactor(void)
    * ASSUMPTION:  The first '[' has already been processed
    */
 
+  /* Initialize the bitsets to zero.  As each new set member is found, it
+   * will be OR'ed into the bitset array.
+   */
+
+  memset(&s, 0, sizeof(setType_t));
+
   /* First, verify that a scalar expression type has been specified
    * If the g_abstractType is a SET, then we will need to get the TYPE
    * that it is a SET of.
@@ -3414,18 +3436,31 @@ static void pas_GetSetFactor(void)
 
   if (g_abstractType != NULL)
     {
-      if (g_abstractType->sParm.t.tType == sSET)
+      symbol_t *setTypePtr = g_abstractType;
+
+      /* This is a little like pas_GetBaseType(), but does not traverse
+       * all the way to the base type, only to the parent of the SET.
+       */
+
+      /* It might be an array of SETs? */
+
+      if (setTypePtr->sParm.t.tType == sARRAY)
         {
-          s.typePtr = g_abstractType->sParm.t.tParent;
+          setTypePtr = setTypePtr->sParm.t.tParent;
+        }
+
+      if (setTypePtr->sParm.t.tType == sSET)
+        {
+          s.typePtr = setTypePtr->sParm.t.tParent;
         }
       else
         {
-          s.typePtr = g_abstractType;
+          s.typePtr = setTypePtr;
         }
     }
   else
     {
-      s.typePtr   = NULL;
+      s.typePtr = NULL;
     }
 
   /* Now, get the associated type and MIN/MAX values */
@@ -3452,12 +3487,6 @@ static void pas_GetSetFactor(void)
       s.minValue  = 0;
       s.maxValue  = sSET_MAXELEM - 1;
     }
-
-  /* Initialize the bitsets to zero.  As each new set member is found, it
-   * will be OR'ed into the bitset array.
-   */
-
-  pas_CleanDirtySet(&s, false);
 
   /* Get the first element of the set */
 
@@ -3631,6 +3660,7 @@ static bool pas_GetSetElement(setType_t *s, bool first)
                   /* We can handle this case at compile-time */
 
                   pas_AddBitSetElements(s, firstValue, lastValue);
+                  getToken();
                   break;
 
                 /* Now check for cases where the subrange begins with a
@@ -3961,6 +3991,23 @@ static bool pas_GetSetElement(setType_t *s, bool first)
               }
           }
           break;
+
+      case ']' :
+        /* The empty set is a special case.  If the first thing we encounter
+         * after the '[' is ']', then this is an empty set.
+         *
+         * REVISIT:  'first' is not a reliable indicator that this is would
+         * have been the first element of the SET.
+         */
+
+        if (first)
+          {
+            break;
+          }
+
+        /* If this is not the first element of the set, then fall through to
+         * to declare an error.
+         */
 
       default :
         error(eSET);

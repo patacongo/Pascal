@@ -328,12 +328,18 @@ static void pas_SetFunc(uint16_t setOpcode)
    * setting g_abstractType, the type of the SET expression (the full type,
    * not the base type).
    *
-   * The base type is probably a subrange.  So we will need the sub-type
+   * The base type is probably a SET.  So we will need the child subrange
    * which will tell us the "Subrange of what?"
    */
 
-  baseTypePtr    = pas_GetBaseTypePointer(g_abstractType);
-  baseType       = baseTypePtr->sParm.t.tType;
+  baseTypePtr     = pas_GetBaseTypePointer(g_abstractType);
+  baseType        = baseTypePtr->sParm.t.tType;
+
+  if (baseType == sSET)
+    {
+      baseTypePtr = baseTypePtr->sParm.t.tParent;
+      baseType    = baseTypePtr->sParm.t.tType;
+    }
 
   if (baseType == sSUBRANGE)
     {

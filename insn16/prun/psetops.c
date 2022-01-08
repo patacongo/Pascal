@@ -75,7 +75,7 @@ static int pexec_contains(const uint16_t *src1, const uint16_t *src2,
 
 /* Receive a set member and one set, returns a boolean */
 
-static int pexec_member(uint16_t member, const uint16_t *src,
+static int pexec_member(int16_t member, const uint16_t *src,
                         uint16_t *result);
 
 /* Receive one set and a set member, returns the modified set */
@@ -179,9 +179,9 @@ static int pexec_contains(const uint16_t *src1, const uint16_t *src2,
 {
   uint16_t contains = PASCAL_FALSE;
 
-  if ((src1[0] & src2[0]) == src2[0] ||
-      (src1[1] & src2[1]) == src2[1] ||
-      (src1[2] & src2[2]) == src2[2] ||
+  if ((src1[0] & src2[0]) == src2[0] &&
+      (src1[1] & src2[1]) == src2[1] &&
+      (src1[2] & src2[2]) == src2[2] &&
       (src1[3] & src2[3]) == src2[3])
     {
       contains = PASCAL_TRUE;
@@ -191,15 +191,25 @@ static int pexec_contains(const uint16_t *src1, const uint16_t *src2,
   return eNOERROR;
 }
 
-static int pexec_member(uint16_t member, const uint16_t *src,
+static int pexec_member(int16_t member, const uint16_t *src,
                         uint16_t *result)
 {
-  uint16_t wordIndex = member >> 4;
-  uint16_t bitIndex  = member & 0x0f;
+  int errorCode = eNOERROR;
 
-  *result = ((src[wordIndex] & (1 << bitIndex)) != 0) ?
-          PASCAL_TRUE : PASCAL_FALSE;
-  return eNOERROR;
+  if (member < 0 || member > 8 * sSET_SIZE)
+    {
+      errorCode = eVALUERANGE;
+    }
+  else
+    {
+      uint16_t wordIndex = member >> 4;
+      uint16_t bitIndex  = member & 0x0f;
+
+      *result = ((src[wordIndex] & (1 << bitIndex)) != 0) ?
+              PASCAL_TRUE : PASCAL_FALSE;
+    }
+
+  return errorCode;
 }
 
 static int pexec_include(uint16_t member, uint16_t *dest)
@@ -374,6 +384,7 @@ int pexec_setops(struct pexec_s *st, uint16_t subfunc)
   uint16_t *dest;
   uint16_t member1;
   uint16_t member2;
+  uint16_t offset;
   int errorCode = eNOERROR;
 
   switch (subfunc)
@@ -384,6 +395,7 @@ int pexec_setops(struct pexec_s *st, uint16_t subfunc)
         src1 = (const uint16_t *)&TOS(st, 0);
         dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
         errorCode = pexec_intersection(src1, dest);
+        DISCARD(st, sSET_SIZE / sINT_SIZE);
         break;
 
       case setUNION :
@@ -433,14 +445,22 @@ int pexec_setops(struct pexec_s *st, uint16_t subfunc)
         DISCARD(st, 2 * sSET_SIZE / sINT_SIZE  - 1);
         break;
 
-      /* Receive a set member and one set, returns a boolean */
+      /* Receives a set member, one set, and an offset.  Returns a boolean.
+       *
+       * On entry:
+       *   TOS(0)   = offset value    1 word
+       *   TOS(1-4) = set value       sSET_SIZE / sINT_SIZE words
+       *   TOS(5)   = member to test  1 word
+       */
 
       case setMEMBER :
-        POP(st, member1);
-        src1 = (const uint16_t *)&TOS(st, 0);
-        dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE - 1);
-        errorCode = pexec_member(member1, src1, dest);
-        DISCARD(st, sSET_SIZE / sINT_SIZE  - 1);
+        offset    = TOS(st, 0);
+        src1      = (const uint16_t *)&TOS(st, 1);
+        member1   = TOS(st, sSET_SIZE / sINT_SIZE + 1);
+        dest      = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE + 1);
+        errorCode = pexec_member((int16_t)member1 - (int16_t)offset,
+                                 src1, dest);
+        DISCARD(st, sSET_SIZE / sINT_SIZE + 1);
         break;
 
       /* Receive one set and a set member1, returns the modified set */

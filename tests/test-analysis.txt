@@ -60,23 +60,31 @@ following the constant identifier.
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
+########src/018-setops.pas########
+Compiles and runs but the card() set operation prints garbage value.  I am not
+sure why this is; when I single step through the code, it prints the correct
+value, but when I execute it normally, the value returned by card() is bogus.
+
 ########src/104-primes.pas########
-Line 0:0012 Error 52 Token 3b
+Line 0:0034 Error 51 Token 55
 
-Line (in var section):
- 12   sieve, primes : array[0..w] of set of 0..maxbit;
-
-Where (in const section)
-  8   maxbit = 58;
+Line:
+ 30   with next do
+ 34     primes[word] := primes[word] + [bit];
+Where:
+ 13   next : record
+ 14            word, bit : integer
+ 15          end;
 
 Error:
-269 #define eSETRANGE        ((uint16_t) 52)
+271 #define eSET             ((uint16_t) 0x51)
 
-Token: '='
+Token:
+ 98 #define sRECORD_OBJECT   0x55
 
 Analysis:
-This is a consequence of the fact that sets are implemented as bitsets and
-the bitset is currently limited to 32-bits:
+Apparently the WITH record logic is broken.  the compiler sees the record
+bject 'bit' but does not connect it with the preceding WITH statement.
 
 ########src/107-quicksort.pas########
 Comples error free but hangs at run-time.  Perhaps it is waiting on input.
