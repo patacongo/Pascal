@@ -298,7 +298,7 @@ static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
   wordIndex = member1 >> 4;
   if (wordIndex == (member2 >> 4))
     {
-      dest[wordIndex] = (leadMask & ~tailMask);
+      dest[wordIndex] = (leadMask & tailMask);
     }
 
   /* No, the last bit lies in a different word than the first */
@@ -379,119 +379,161 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
 
   switch (subfunc)
     {
-      /* Receive two sets, return one */
+      /* Receive two sets, return one.  On entry:
+       *
+       * On entry:
+       *   TOS[0-(sSET_WORDS - 1)]   = Set2
+       *   TOS[X-(2*sSET_WORDS - 1)] = Set1
+       * On return:
+       *   TOS[0-(sSET_WORDS - 1)]   = Resulting set.
+       */
 
       case setINTERSECTION :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         errorCode = pexec_intersection(src1, dest);
-        DISCARD(st, sSET_SIZE / sINT_SIZE);
+        DISCARD(st, sSET_WORDS);
         break;
 
       case setUNION :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         errorCode = pexec_union(src1, dest);
-        DISCARD(st, sSET_SIZE / sINT_SIZE);
+        DISCARD(st, sSET_WORDS);
         break;
 
       case setDIFFERENCE :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         errorCode = pexec_difference(src1, dest);
-        DISCARD(st, sSET_SIZE / sINT_SIZE);
+        DISCARD(st, sSET_WORDS);
         break;
 
       case setSYMMETRICDIFF :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         errorCode = pexec_symmetricdiff(src1, dest);
-        DISCARD(st, sSET_SIZE / sINT_SIZE);
+        DISCARD(st, sSET_WORDS);
         break;
 
-      /* Receive two sets, return a boolean */
+      /* Receive two sets, return a boolean.
+       *
+       * On entry:
+       *   TOS[0-(sSET_WORDS - 1)]   = Set2
+       *   TOS[X-(2*sSET_WORDS - 1)] = Set1
+       * On return:
+       *   TOS[0]                    = Boolean result
+       */
 
       case setEQUALITY :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        src2 = (const uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
-        dest = (uint16_t *)&TOS(st, 2 * sSET_SIZE / sINT_SIZE - 1);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        src2 = (const uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         errorCode = pexec_equality(src1, src2, dest);
-        DISCARD(st, 2 * sSET_SIZE / sINT_SIZE  - 1);
+        DISCARD(st, 2 * sSET_WORDS  - 1);
         break;
 
       case setNONEQUALITY :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        src2 = (const uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
-        dest = (uint16_t *)&TOS(st, 2 * sSET_SIZE / sINT_SIZE - 1);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        src2 = (const uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         errorCode = pexec_nonequality(src1, src2, dest);
-        DISCARD(st, 2 * sSET_SIZE / sINT_SIZE  - 1);
+        DISCARD(st, 2 * sSET_WORDS  - 1);
         break;
 
       case setCONTAINS :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        src2 = (const uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE);
-        dest = (uint16_t *)&TOS(st, 2 * sSET_SIZE / sINT_SIZE - 1);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        src2 = (const uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         errorCode = pexec_contains(src1, src2, dest);
-        DISCARD(st, 2 * sSET_SIZE / sINT_SIZE  - 1);
+        DISCARD(st, 2 * sSET_WORDS  - 1);
         break;
 
       /* Receives a set member, one set, and an offset.  Returns a boolean.
        *
        * On entry:
-       *   TOS(0)   = offset value    1 word
-       *   TOS(1-4) = set value       sSET_SIZE / sINT_SIZE words
-       *   TOS(5)   = member to test  1 word
+       *   TOS(0)            = offset value
+       *   TOS(1-sSET_WORDS) = set value
+       *   TOS(sSET_WORDS+1) = member to test
+       * On return:
+       *   TOS[0]            = Boolean result
        */
 
       case setMEMBER :
         offset    = TOS(st, 0);
-        src1      = (const uint16_t *)&TOS(st, 1);
-        member1   = TOS(st, sSET_SIZE / sINT_SIZE + 1);
-        dest      = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE + 1);
+        src1      = (const uint16_t *)&TOS(st, sSET_WORDS);
+        member1   = TOS(st, sSET_WORDS + 1);
+        dest      = (uint16_t *)&TOS(st, sSET_WORDS + 1);
         errorCode = pexec_member((int16_t)member1 - (int16_t)offset,
                                  src1, dest);
-        DISCARD(st, sSET_SIZE / sINT_SIZE + 1);
+        DISCARD(st, sSET_WORDS + 1);
         break;
 
-      /* Receive one set and a set member1, returns the modified set */
+      /* Receive one set and a set member1, returns the modified set.
+       *
+       * On entry:
+       *   TOS(0)                = member to test
+       *   TOS(1-sSET_WORDS)     = set value
+       * On return:
+       *   TOS[0-(sSET_WORDS-1)] = Set result
+       */
 
       case setINCLUDE :
         POP(st, member1);
-        dest = (uint16_t *)&TOS(st, 0);
+        dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
         errorCode = pexec_include(member1, dest);
         break;
 
       case setEXCLUDE :
         POP(st, member1);
-        dest = (uint16_t *)&TOS(st, 0);
+        dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
         errorCode = pexec_exclude(member1, dest);
         break;
 
-      /* Reveives on set, returns the cardinality of the set */
+      /* Reveives on set, returns the cardinality of the set.
+       *
+       * On entry:
+       *   TOS(0-(sSET_WORDS-1)) = Set value
+       * On return:
+       *   TOS[0]                = Cardinality of set
+       */
 
       case setCARD :
-        src1 = (const uint16_t *)&TOS(st, 0);
-        dest = (uint16_t *)&TOS(st, sSET_SIZE / sINT_SIZE - 1);
+        src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
+        dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
         errorCode = pexec_card(src1, dest);
-        DISCARD(st, sSET_SIZE / sINT_SIZE  - 1);
+        DISCARD(st, sSET_WORDS  - 1);
         break;
 
-      /* Receives one integer value, returns a set representing the subrange */
+      /* Receives one integer value, returns a set representing the subrange:
+       *
+       * On entry:
+       *   TOS(0)               = member
+       * On return:
+       *   TOS(0-(sSET_WORDS-1) = Set result
+       */
 
       case setSINGLETON :
         POP(st, member1);
         st->sp += sSET_SIZE;
-        dest = (uint16_t *)&TOS(st, 0);
+        dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
         errorCode = pexec_singleton(member1, dest);
         break;
 
-      /* Receives two integer values, returns a set representing the subrange */
+      /* Receives two integer values, returns a set representing the subrange:
+       *
+       * On entry:
+       *   TOS(0)               = member2
+       *   TOS(1)               = member1
+       * On return:
+       *   TOS(0-(sSET_WORDS-1) = Set result
+       */
 
       case setSUBRANGE :
         POP(st, member2);
         POP(st, member1);
         st->sp += sSET_SIZE;
-        dest = (uint16_t *)&TOS(st, 0);
+        dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
         errorCode = pexec_subrange(member1, member2, dest);
         break;
 

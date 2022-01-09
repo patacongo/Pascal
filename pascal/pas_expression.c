@@ -63,12 +63,6 @@
 #include "pas_error.h"
 
 /****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-#define SET_WORDS (sSET_SIZE / sINT_SIZE)
-
-/****************************************************************************
  * Private Type Definitions
  ****************************************************************************/
 
@@ -93,7 +87,7 @@ struct setType_s
   bool       dirty;
   int16_t    minValue;
   int16_t    maxValue;
-  uint16_t   setValue[SET_WORDS];
+  uint16_t   setValue[sSET_WORDS];
   symbol_t  *typePtr;
 };
 
@@ -107,7 +101,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType);
 static exprType_t pas_Term(exprType_t findExprType);
 static exprType_t pas_Factor(exprType_t findExprType);
 static exprType_t pas_ComplexFactor(void);
-static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
+static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
                     exprFlag_t factorFlags);
 static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags);
 static exprType_t pas_PointerFactor(void);
@@ -123,12 +117,12 @@ static exprType_t pas_FactorExprType(exprType_t baseExprType,
                                      uint8_t assignFlags);
 static void       pas_SetAbstractType(symbol_t *sType);
 static void       pas_GetSetFactor(void);
-static bool       pas_GetSetElement(setType_t *s, bool first);
+static bool       pas_GetSubSet(setType_t *s, bool first);
 static void       pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
                                         uint16_t lastValue);
 static void       pas_CleanDirtySet(setType_t *s, bool first);
-static bool       pas_IsOrdinalType(exprType_t testExprType);
-static bool       pas_IsAnyStringType(exprType_t testExprType);
+static bool       pas_IsOrdinalExpression(exprType_t testExprType);
+static bool       pas_IsStringExpression(exprType_t testExprType);
 static bool       pas_IsStringReference(exprType_t testExprType);
 
 /****************************************************************************
@@ -299,7 +293,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
 
   if (setOpCode != setINVALID &&
       ((simple1Type == exprSet && setOpCode != setMEMBER) ||
-       (pas_IsOrdinalType(simple1Type) && setOpCode == setMEMBER)))
+       (pas_IsOrdinalExpression(simple1Type) && setOpCode == setMEMBER)))
     {
       symbol_t *abstract1Type = g_abstractType;
       symbol_t *abstract2Type = NULL;
@@ -595,14 +589,14 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
    *    if the requested type is a real expression.
    */
 
-  if (findExprType != exprUnknown &&           /* 1) NOT Any expression */
-      findExprType != simple1Type &&           /* 2) NOT Matched expression */
-      (findExprType != exprAnyOrdinal ||       /* 3) NOT any ordinal type */
-       !pas_IsOrdinalType(simple1Type)) &&     /*    OR type is not ordinal */
-      (findExprType != exprAnyString ||        /* 4) NOT any string type */
-       !pas_IsAnyStringType(simple1Type)) &&   /*    OR type is not string */
-      (!pas_IsStringReference(findExprType) || /* 5) Not looking for string ref */
-       !pas_IsStringReference(simple1Type)))   /*    OR type is not string ref */
+  if (findExprType != exprUnknown &&             /* 1) NOT Any expression */
+      findExprType != simple1Type &&             /* 2) NOT Matched expression */
+      (findExprType != exprAnyOrdinal ||         /* 3) NOT any ordinal type */
+       !pas_IsOrdinalExpression(simple1Type)) && /*    OR type is not ordinal */
+      (findExprType != exprAnyString ||          /* 4) NOT any string type */
+       !pas_IsStringExpression(simple1Type)) &&  /*    OR type is not string */
+      (!pas_IsStringReference(findExprType) ||   /* 5) Not looking for string ref */
+       !pas_IsStringReference(simple1Type)))     /*    OR type is not string ref */
     {
       /* Automatic conversions from INTEGER to REAL will be performed */
 
@@ -922,9 +916,6 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
       case sSCALAR_OBJECT :
         return exprScalar;            /* scalar(integer) value */
 
-      case sSET :
-        return exprSet;               /* set(integer) value */
-
       case sTYPE :                    /* Variable is defined type */
         return exprUnknown;           /* REVISIT */
 
@@ -950,6 +941,9 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
                 case sRECORD :
                 case sRECORD_OBJECT :
                   return exprRecord;  /* record */
+
+                case sSET :
+                  return exprSet;     /* set(integer) value */
 
                 case sARRAY :         /* REVISIT: array of something */
                 case sPOINTER :       /* REVISIT: pointer to something */
@@ -1824,7 +1818,7 @@ static exprType_t pas_ComplexFactor(void)
   TRACE(g_lstFile,"[pas_ComplexFactor]");
 
   /* First, make a copy of the symbol table entry because the call to
-   * pas_SimplifyFactor() will modify it.
+   * pas_SimpleFactor() will modify it.
    */
 
   varInfo.variable = *g_tknPtr;
@@ -1835,14 +1829,14 @@ static exprType_t pas_ComplexFactor(void)
    * (like int, char, etc.)
    */
 
-  return pas_SimplifyFactor(&varInfo, 0);
+  return pas_SimpleFactor(&varInfo, 0);
 }
 
 /****************************************************************************/
 /* Process a complex factor (recursively) until it becomes a simple factor */
 
-static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
-                                     exprFlag_t factorFlags)
+static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
+                                   exprFlag_t factorFlags)
 {
   symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
@@ -1850,7 +1844,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
   exprType_t factorType;
   uint16_t   arrayKind;
 
-  TRACE(g_lstFile,"[pas_SimplifyFactor]");
+  TRACE(g_lstFile,"[pas_SimpleFactor]");
 
   /* Check if it has been reduced to a simple factor. */
 
@@ -1871,7 +1865,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
     case sSUBRANGE :
       if (g_abstractType == NULL) g_abstractType = typePtr;
       varPtr->sKind = typePtr->sParm.t.tSubType;
-      factorType    = pas_SimplifyFactor(varInfo, factorFlags);
+      factorType    = pas_SimpleFactor(varInfo, factorFlags);
       break;
 
     case sRECORD :
@@ -1967,7 +1961,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
                 }
 
               getToken();
-              factorType = pas_SimplifyFactor(varInfo, factorFlags);
+              factorType = pas_SimpleFactor(varInfo, factorFlags);
             }
         }
 
@@ -2028,7 +2022,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
           int16_t tempOffset;
 
           /* Now there are two cases to consider:  (1) the g_withRecord is a */
-          /* pointer to a RECORD, or (2) the g_withRecord is the RECOR itself */
+          /* pointer to a RECORD, or (2) the g_withRecord is the RECORD itself */
 
           if (g_withRecord.wPointer)
             {
@@ -2054,22 +2048,22 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
               tempOffset   = varPtr->sParm.r.rOffset + g_withRecord.wOffset;
             }
 
-          /* Modify the variable so that it has the characteristics of the */
-          /* the field but with level and offset associated with the record */
-          /* NOTE:  We have to be careful here because the structure */
-          /* associated with sRECORD_OBJECT is not the same as for */
-          /* variables! */
+          /* Modify the variable so that it has the characteristics of the
+           * the field but with level and offset associated with the record
+           * NOTE:  We have to be careful here because the structure
+           * associated with sRECORD_OBJECT is not the same as for
+           * variables!
+           */
 
           typePtr                 = varPtr->sParm.r.rParent;
-          tempOffset              = varPtr->sParm.r.rOffset;
 
           varPtr->sKind           = typePtr->sParm.t.tType;
           varPtr->sLevel          = g_withRecord.wLevel;
           varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
-          varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
+          varPtr->sParm.v.vOffset = tempOffset;
           varPtr->sParm.v.vParent = typePtr;
 
-          factorType = pas_SimplifyFactor(varInfo, factorFlags);
+          factorType = pas_SimpleFactor(varInfo, factorFlags);
         }
       break;
 
@@ -2106,7 +2100,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
           varPtr->sKind = typePtr->sParm.t.tType;
         }
 
-      factorType = pas_SimplifyFactor(varInfo, factorFlags);
+      factorType = pas_SimpleFactor(varInfo, factorFlags);
       break;
 
     case sVAR_PARM :
@@ -2119,7 +2113,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
       factorFlags  |= (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
                        FACTOR_VAR_PARM);
       varPtr->sKind = typePtr->sParm.t.tType;
-      factorType    = pas_SimplifyFactor(varInfo, factorFlags);
+      factorType    = pas_SimpleFactor(varInfo, factorFlags);
       break;
 
     case sARRAY :
@@ -2160,7 +2154,7 @@ static exprType_t pas_SimplifyFactor(varInfo_t *varInfo,
            */
 
           varPtr->sKind  = arrayKind;
-          factorType     = pas_SimplifyFactor(varInfo, factorFlags);
+          factorType     = pas_SimpleFactor(varInfo, factorFlags);
 
           if (factorType == exprUnknown)
             {
@@ -2815,7 +2809,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
           int16_t tempOffset;
 
           /* Now there are two cases to consider:  (1) the g_withRecord is a
-           * pointer to a RECORD, or (2) the g_withRecord is the RECOR itself
+           * pointer to a RECORD, or (2) the g_withRecord is the RECORD itself
            */
 
           if (g_withRecord.wPointer)
@@ -2836,17 +2830,14 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
            * NOTE:  We have to be careful here because the structure
            * associated with sRECORD_OBJECT is not the same as for
            * variables!
-           *
-           * REVISIT:  What is going on with tempOffset here?
            */
 
           typePtr                 = varPtr->sParm.r.rParent;
-          tempOffset              = varPtr->sParm.r.rOffset;
 
           varPtr->sKind           = typePtr->sParm.t.tType;
           varPtr->sLevel          = g_withRecord.wLevel;
           varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
-          varPtr->sParm.v.vOffset = tempOffset + g_withRecord.wOffset;
+          varPtr->sParm.v.vOffset = tempOffset;
           varPtr->sParm.v.vParent = typePtr;
 
           factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
@@ -3418,7 +3409,10 @@ static void pas_GetSetFactor(void)
 
   TRACE(g_lstFile,"[pas_GetSetFactor]");
 
-  /* FORM: [[<constant>[,<constant>[, ...]]]]
+  /* FORM: '['[ set-subset [',' set-subset [',' ...]]]']'
+   *       set-subset = set-element | set-subrange
+   *       set-element = set-constant | set-ordinal-variable
+   *       set-subrange = set-element '..' set-element
    *
    * ASSUMPTION:  The first '[' has already been processed
    */
@@ -3490,7 +3484,7 @@ static void pas_GetSetFactor(void)
 
   /* Get the first element of the set */
 
-  first = pas_GetSetElement(&s, true);
+  first = pas_GetSubSet(&s, true);
 
   /* Incorporate each additional element into the set */
 
@@ -3499,7 +3493,7 @@ static void pas_GetSetFactor(void)
       /* Get the next element of the set */
 
       getToken();
-      first = pas_GetSetElement(&s, first);
+      first = pas_GetSubSet(&s, first);
     }
 
   /* And finally push the accumulated set */
@@ -3509,13 +3503,13 @@ static void pas_GetSetFactor(void)
 
 /****************************************************************************/
 
-static bool pas_GetSetElement(setType_t *s, bool first)
+static bool pas_GetSubSet(setType_t *s, bool first)
 {
   int16_t   firstValue;
   int16_t   lastValue;
   symbol_t *setPtr;
 
-  TRACE(g_lstFile,"[pas_GetSetElement]");
+  TRACE(g_lstFile,"[pas_GetSubSet]");
 
   switch (g_token)
     {
@@ -4042,7 +4036,7 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
   wordIndex = firstBitNo >> 4;
   if (wordIndex == (lastBitNo >> 4))
     {
-      s->setValue[wordIndex] = (leadMask & ~tailMask);
+      s->setValue[wordIndex] = (leadMask & tailMask);
     }
 
   /* No, the last bit lies in a different word than the first */
@@ -4092,9 +4086,9 @@ static void pas_CleanDirtySet(setType_t *s, bool first)
 
   if (s->dirty)
     {
-      /* Push up stack so we PUSH in the opposite order */
+      /* Push the SET onto the stack */
 
-      for (i = SET_WORDS - 1; i >= 0; i--)
+      for (i = 0; i < sSET_WORDS; i++)
         {
           pas_GenerateDataOperation(opPUSH, s->setValue[i]);
         }
@@ -4115,21 +4109,20 @@ static void pas_CleanDirtySet(setType_t *s, bool first)
 
   /* Reset the SET */
 
-  for (i = 0; i < SET_WORDS; i++)
+  for (i = 0; i < sSET_WORDS; i++)
     {
       s->setValue[i] = 0;
     }
 }
 
 /****************************************************************************/
-
-/* Check if this is a ordinal type.  This is what is needed, for
+/* Check if this is a ordinal expression.  This is what is needed, for
  * example, as an argument to ord(), pred(), succ(), or odd().
  * This is the kind of expression we need in a CASE statement
  * as well.
  */
 
-static bool pas_IsOrdinalType(exprType_t testExprType)
+static bool pas_IsOrdinalExpression(exprType_t testExprType)
 {
   if (testExprType == exprInteger || /* integer value */
       testExprType == exprChar ||    /* character value */
@@ -4150,7 +4143,7 @@ static bool pas_IsOrdinalType(exprType_t testExprType)
  * records upon assignment.
  */
 
-static bool pas_IsAnyStringType(exprType_t testExprType)
+static bool pas_IsStringExpression(exprType_t testExprType)
 {
   if (testExprType == exprString      ||
       testExprType == exprShortString ||

@@ -60,11 +60,6 @@ following the constant identifier.
 An appropriate fix might involve repartitioning pas_DeclareVar() so that the
 part that creates the (nameless) type could be called from pas_DeclareConst().
 
-########src/018-setops.pas########
-Compiles and runs but the card() set operation prints garbage value.  I am not
-sure why this is; when I single step through the code, it prints the correct
-value, but when I execute it normally, the value returned by card() is bogus.
-
 ########src/104-primes.pas########
 Line 0:0034 Error 51 Token 55
 

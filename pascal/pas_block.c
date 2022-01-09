@@ -84,7 +84,7 @@
 static void      pas_DeclareLabel          (void);
 static void      pas_DeclareConst          (void);
 static symbol_t *pas_DeclareType           (char *typeName);
-static symbol_t *pas_DeclareOrdinalType    (char *typeName);
+static symbol_t *pas_DeclareSimpleType     (char *typeName);
 static symbol_t *pas_DeclareVar            (void);
 static void      pas_ProcedureDeclaration  (void);
 static void      pas_FunctionDeclaration   (void);
@@ -94,7 +94,7 @@ static symbol_t *pas_CheckShortString      (symbol_t *typePtr, char *typeName);
 static symbol_t *pas_TypeDenoter           (char *typeName);
 static symbol_t *pas_FileTypeDenoter       (void);
 static symbol_t *pas_NewComplexType        (char *typeName);
-static symbol_t *pas_NewOrdinalType        (char *typeName);
+static symbol_t *pas_NewSimpleType         (char *typeName);
 static symbol_t *pas_OrdinalTypeIdentifier (void);
 static symbol_t *pas_GetArrayIndexType     (void);
 static void      pas_GetArrayBaseType      (symbol_t *arrayTypePtr);
@@ -236,7 +236,7 @@ static symbol_t *pas_DeclareType(char *typeName)
     {
       /* Check for Simple Types */
 
-      typePtr = pas_DeclareOrdinalType(typeName);
+      typePtr = pas_DeclareSimpleType(typeName);
       if (typePtr == NULL)
         {
           error(eINVTYPE);
@@ -249,14 +249,14 @@ static symbol_t *pas_DeclareType(char *typeName)
 /****************************************************************************/
 /* Process a simple TYPE declaration */
 
-static symbol_t *pas_DeclareOrdinalType(char *typeName)
+static symbol_t *pas_DeclareSimpleType(char *typeName)
 {
   symbol_t *typePtr;
   symbol_t *typeIdPtr;
 
   /* Declare a new ordinal type */
 
-  typePtr = pas_NewOrdinalType(typeName);
+  typePtr = pas_NewSimpleType(typeName);
 
   /* Otherwise, declare a type equivalent to a previously defined type
    * NOTE: the following logic is incomplete.  Its is only good for
@@ -883,7 +883,7 @@ static symbol_t *pas_TypeDenoter(char *typeName)
     {
       /* Check for new-ordinal-type */
 
-      typePtr = pas_NewOrdinalType(typeName);
+      typePtr = pas_NewSimpleType(typeName);
     }
 
   /* Return the size of an allocated instance of this type. */
@@ -895,7 +895,7 @@ static symbol_t *pas_TypeDenoter(char *typeName)
 /****************************************************************************/
 /* Declare is new ordinal type */
 
-static symbol_t *pas_NewOrdinalType(char *typeName)
+static symbol_t *pas_NewSimpleType(char *typeName)
 {
   symbol_t *typePtr = NULL;
 
@@ -1380,7 +1380,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
         }
       else
         {
-          typeIdPtr = pas_DeclareOrdinalType(NULL);
+          typeIdPtr = pas_DeclareSimpleType(NULL);
         }
 
       /* Verify that the ordinal-type is either a scalar or a

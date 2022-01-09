@@ -1,4 +1,4 @@
-                          AS OF 12/31/21
+                          AS OF 01/09/22
 
 TYPES
 - All basic types INT, BOOLEAN, CHAR, REAL, SCALAR, SUBRANGE, RECORD and SET
@@ -162,9 +162,6 @@ OPERATORS
 - Binary shift operators -- << and >> like in C
 - '#', "<>", and "><" are all equivalent
 
-COMPILER PSEUDO-OPERATIONS
-- INCLUDE
-
 STATEMENTS
 - CASE statement expects integer expression for the switch
   variable
@@ -176,12 +173,15 @@ EXPRESSIONS
 
 TODO LIST
 
-o BUGS
+o BUGS / MISSING FUNCTIONALITY
 - Implement PUT and GET.
 - In FUNC/PROC calls, if simpleExpression fails to find a parameter (eg.,
   proc (,,), no error is detected.
 - There are lots of cases where the string stack is not being managed
   correctly (e.g., usesSection()).
+- Implement variable initializers, i.e., support initializers of the form:
+    VAR
+      name : type = initial-value
 
 o IMPROVEMENTS
 - In tokenizer, verify that string stack does not overflow when
@@ -202,6 +202,9 @@ o IMPROVEMENTS
 - Linker and support multiple source files
 - Other things from extended pascal:  'list of'
 - Need to optimize out JMP .+1
+- All RO strings should be represented as short strings when converted to
+  Pascal strings
+- Should check for duplicate strings in the RO string area.
 
 o ISSUES
 - Revisit procedure call logic in pexec.c & pdbg.c.  First stack parameter
