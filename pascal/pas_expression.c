@@ -4035,21 +4035,7 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
   int      wordIndex;
   int      bitsInWord;
 
-  /* Set all bits from firstValue through lastValue.
-   * Eg., Given
-   *    minValue   =  2
-   *    maxValue   = 31
-   *    firstValue = 14
-   *    lastValue  = 37
-   * Then
-   *    nBits      = 37 - 14 + 1        = 24
-   *    firstBitNo = 14 - 2             = 12
-   *    lastBitNo  = 37 - 2             = 35
-   *    leadMask   = 0xffff << 12       = 0xf000
-   *    tailMask   = 0xffff >> (15 - 3) = 0x000f
-   *    leadBits   = 16 - 12            = 4
-   *    tailBits   = 3 + 1              = 4
-   */
+  /* Set all bits from firstValue through lastValue. */
 
   nBits      = lastValue  - firstValue + 1;
   firstBitNo = firstValue - s->minValue;
@@ -4059,39 +4045,37 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
   leadBits   = BITS_IN_INTEGER - firstBitNo;
   tailBits   = (lastBitNo & 0x0f) + 1;
 
-  /* First time through the loop:
-   *    wordIndex  =                    = 0
-   *    bitMask    =                    = 0xf000
-   *    bitsInWord =                    = 4
-   *    nBits      =                    = 20
-   * Second time through the loop:
-   *    wordIndex  =                    = 1
-   *    bitMask    =                    = 0xffff
-   *    bitsInWord =                    = 16
-   *    nBits      =                    = 4
-   * Last time through the loop:
-   *    wordIndex  =                    = 2
-   *    bitMask    =                    = 0x000f
-   *    bitsInWord =                    = 4
-   *    nBits      =                    = 0
-   */
+  /* Special case:  The entire sub-range fits in one word */
 
-  for (wordIndex = firstBitNo >> 4, bitMask = leadMask, bitsInWord = leadBits;
-       nBits > 0;
-       wordIndex++)
+  wordIndex = firstBitNo >> 4;
+  if (wordIndex == (lastBitNo >> 4))
     {
-      s->setValue[wordIndex] = bitMask;
-      nBits                 -= bitsInWord;
+      s->setValue[wordIndex] = (leadMask & ~tailMask);
+    }
 
-      if (nBits >= BITS_IN_INTEGER)
+  /* No, the last bit lies in a different word than the first */
+
+  else
+    {
+      /* Loop for each word */
+
+      for (bitMask = leadMask, bitsInWord = leadBits;
+           nBits > 0;
+           wordIndex++)
         {
-          bitsInWord = BITS_IN_INTEGER;
-          bitMask    = 0xffff;
-        }
-      else if (nBits > 0)
-        {
-          nBits   = tailBits;
-          bitMask = tailMask;
+          s->setValue[wordIndex] = bitMask;
+          nBits                 -= bitsInWord;
+
+          if (nBits >= BITS_IN_INTEGER)
+            {
+              bitsInWord = BITS_IN_INTEGER;
+              bitMask    = 0xffff;
+            }
+          else if (nBits > 0)
+            {
+              nBits   = tailBits;
+              bitMask = tailMask;
+            }
         }
     }
 

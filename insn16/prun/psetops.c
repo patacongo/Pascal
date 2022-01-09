@@ -293,17 +293,7 @@ static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
       return eVALUERANGE;
     }
 
-  /* Set all bits from member1 through member2.
-   * Eg., Given
-   *    member1  = 12
-   *    member2  = 35
-   * Then
-   *    nBits    = 35 - 12 + 1        = 24
-   *    leadMask = 0xffff << 12       = 0xf000
-   *    tailMask = 0xffff >> (15 - 3) = 0x000f
-   *    leadBits = 16 - 12            = 4
-   *    tailBits = 3 + 1              = 4
-   */
+  /* Set all bits from member1 through member2. */
 
   nBits      = member2 - member1 + 1;
   leadMask   = (0xffff << (member1 & 0x0f));
@@ -311,39 +301,37 @@ static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
   leadBits   = BITS_IN_INTEGER - member1;
   tailBits   = (member2 & 0x0f) + 1;
 
-  /* First time through the loop:
-   *    wordIndex  =                    = 0
-   *    bitMask    =                    = 0xf000
-   *    bitsInWord =                    = 4
-   *    nBits      =                    = 20
-   * Second time through the loop:
-   *    wordIndex  =                    = 1
-   *    bitMask    =                    = 0xffff
-   *    bitsInWord =                    = 16
-   *    nBits      =                    = 4
-   * Last time through the loop:
-   *    wordIndex  =                    = 2
-   *    bitMask    =                    = 0x000f
-   *    bitsInWord =                    = 4
-   *    nBits      =                    = 0
-   */
+  /* Special case:  The entire sub-range fits in one word */
 
-  for (wordIndex = member1 >> 4, bitMask = leadMask, bitsInWord = leadBits;
-       nBits > 0;
-       wordIndex++)
+  wordIndex = member1 >> 4;
+  if (wordIndex == (member2 >> 4))
     {
-      dest[wordIndex] = bitMask;
-      nBits          -= bitsInWord;
+      dest[wordIndex] = (leadMask & ~tailMask);
+    }
 
-      if (nBits >= BITS_IN_INTEGER)
+  /* No, the last bit lies in a different word than the first */
+
+  else
+    {
+      /* Loop for each word */
+
+      for (bitMask = leadMask, bitsInWord = leadBits;
+           nBits > 0;
+           wordIndex++)
         {
-          bitsInWord = BITS_IN_INTEGER;
-          bitMask    = 0xffff;
-        }
-      else if (nBits > 0)
-        {
-          nBits   = tailBits;
-          bitMask = tailMask;
+          dest[wordIndex] = bitMask;
+          nBits          -= bitsInWord;
+
+          if (nBits >= BITS_IN_INTEGER)
+            {
+              bitsInWord = BITS_IN_INTEGER;
+              bitMask    = 0xffff;
+            }
+          else if (nBits > 0)
+            {
+              nBits   = tailBits;
+              bitMask = tailMask;
+            }
         }
     }
 
