@@ -267,12 +267,7 @@ static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
 {
   uint16_t leadMask;
   uint16_t tailMask;
-  uint16_t bitMask;
-  int      nBits;
-  int      leadBits;
-  int      tailBits;
   int      wordIndex;
-  int      bitsInWord;
 
   /* Initialize the result */
 
@@ -295,11 +290,8 @@ static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
 
   /* Set all bits from member1 through member2. */
 
-  nBits      = member2 - member1 + 1;
-  leadMask   = (0xffff << (member1 & 0x0f));
-  tailMask   = (0xffff >> ((BITS_IN_INTEGER - 1) - (member2 & 0x0f)));
-  leadBits   = BITS_IN_INTEGER - member1;
-  tailBits   = (member2 & 0x0f) + 1;
+  leadMask = (0xffff << (member1 & 0x0f));
+  tailMask = (0xffff >> ((BITS_IN_INTEGER - 1) - (member2 & 0x0f)));
 
   /* Special case:  The entire sub-range fits in one word */
 
@@ -313,6 +305,16 @@ static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
 
   else
     {
+      uint16_t bitMask;
+      int      nBits;
+      int      leadBits;
+      int      tailBits;
+      int      bitsInWord;
+
+      nBits    = member2 - member1 + 1;
+      leadBits = BITS_IN_INTEGER - member1;
+      tailBits = (member2 & 0x0f) + 1;
+
       /* Loop for each word */
 
       for (bitMask = leadMask, bitsInWord = leadBits;

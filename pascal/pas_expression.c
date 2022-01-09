@@ -4028,22 +4028,14 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
   uint16_t lastBitNo;
   uint16_t leadMask;
   uint16_t tailMask;
-  uint16_t bitMask;
-  int      nBits;
-  int      leadBits;
-  int      tailBits;
   int      wordIndex;
-  int      bitsInWord;
 
   /* Set all bits from firstValue through lastValue. */
 
-  nBits      = lastValue  - firstValue + 1;
   firstBitNo = firstValue - s->minValue;
   lastBitNo  = lastValue  - s->minValue;
   leadMask   = (0xffff << (firstBitNo & 0x0f));
   tailMask   = (0xffff >> ((BITS_IN_INTEGER - 1) - (lastBitNo & 0x0f)));
-  leadBits   = BITS_IN_INTEGER - firstBitNo;
-  tailBits   = (lastBitNo & 0x0f) + 1;
 
   /* Special case:  The entire sub-range fits in one word */
 
@@ -4057,6 +4049,16 @@ static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
 
   else
     {
+      uint16_t bitMask;
+      int      nBits;
+      int      leadBits;
+      int      tailBits;
+      int      bitsInWord;
+
+      nBits    = lastValue  - firstValue + 1;
+      leadBits = BITS_IN_INTEGER - firstBitNo;
+      tailBits = (lastBitNo & 0x0f) + 1;
+
       /* Loop for each word */
 
       for (bitMask = leadMask, bitsInWord = leadBits;
