@@ -1,8 +1,8 @@
 /***************************************************************************
- * polocal.h
- * External Declarations associated with polocal.c
+ * popt_branch.h
+ * External Declarations associated with popt_branch.c
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,41 +34,19 @@
  *
  ***************************************************************************/
 
-#ifndef __POLOCAL_H
-#define __POLOCAL_H
+#ifndef __PJOPT_H
+#define __PJOPT_H
 
 /***************************************************************************
-* Included Files
-****************************************************************************/
+ * Included Files
+ ***************************************************************************/
 
 #include <stdint.h>
-#include "pas_debug.h"
-#include "pas_machine.h"
-#include "pofflib.h"
 
 /***************************************************************************
-* Definitions
-****************************************************************************/
+ * Public Function Prototypes
+ ***************************************************************************/
 
-#define WINDOW             10           /* size of optimization window */
+int16_t BranchOptimize(void);
 
-/***************************************************************************
-* Public Function Prototypes
-****************************************************************************/
-
-extern void localOptimization(poffHandle_t poffHandle,
-                              poffProgHandle_t poffProgHandle);
-extern void deletePcode      (int16_t delIndex);
-extern void deletePcodePair  (int16_t delIndex1, int16_t delIndex2);
-
-/***************************************************************************
- * Public Datas
- ****************************************************************************/
-
-extern opType_t  ptable[WINDOW];       /* Pcode Table */
-extern opType_t *pptr[WINDOW];         /* Valid Pcode Pointers */
-
-extern int16_t   nops;                 /* No. Valid Pcode Pointers */
-extern int16_t   end_out;              /* 1 = oEND pcode has been output */
-
-#endif /* __PLOCAL_H */
+#endif /* __PJOPT_H */

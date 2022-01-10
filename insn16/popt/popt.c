@@ -50,8 +50,8 @@
 #include "pas_insn.h"
 #include "popt.h"
 #include "psopt.h"
-#include "polocal.h"
-#include "pfopt.h"
+#include "popt_local.h"
+#include "popt_finalize.h"
 
 /**********************************************************************
  * Private Function Prototypes

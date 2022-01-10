@@ -1,5 +1,5 @@
 /**********************************************************************
- * pcopt.c
+ * popt_constants.c
  * Constant Expression Optimizations
  *
  *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
@@ -47,8 +47,8 @@
 
 #include "paslib.h"
 #include "popt.h"
-#include "polocal.h"
-#include "pcopt.h"
+#include "popt_local.h"
+#include "popt_constants.h"
 
 /**********************************************************************/
 

@@ -1,5 +1,5 @@
 /**********************************************************************
- * polocal.c
+ * popt_local.c
  * P-Code Local Optimizer
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -48,10 +48,10 @@
 #include "pofflib.h"
 #include "paslib.h"
 #include "pas_insn.h"
-#include "pcopt.h"
-#include "plopt.h"
-#include "pjopt.h"
-#include "polocal.h"
+#include "popt_constants.h"
+#include "popt_loadstore.h"
+#include "popt_branch.h"
+#include "popt_local.h"
 
 /**********************************************************************
  * Private Function Prototypes

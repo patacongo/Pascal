@@ -1,5 +1,5 @@
 /**********************************************************************
- * plopt.c
+ * popt_loadstore.c
  * Load/Store Optimizations
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -46,8 +46,8 @@
 #include "pinsn16.h"
 
 #include "popt.h"
-#include "polocal.h"
-#include "plopt.h"
+#include "popt_local.h"
+#include "popt_loadstore.h"
 
 /**********************************************************************/
 

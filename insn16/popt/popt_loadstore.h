@@ -1,6 +1,6 @@
 /***************************************************************************
- * pjopt.h
- * External Declarations associated with pjopt.c
+ * popt_loadstore.h
+ * External Declarations associated with popt_loadstore.c
  *
  *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PJOPT_H
-#define __PJOPT_H
+#ifndef __PLOPT_H
+#define __PLOPT_H
 
 /***************************************************************************
  * Included Files
@@ -47,6 +47,8 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-int16_t BranchOptimize(void);
+extern int16_t LoadOptimize ( void );
+extern int16_t StoreOptimize ( void );
 
-#endif /* __PJOPT_H */
+#endif /* __PLOPT_H */
+

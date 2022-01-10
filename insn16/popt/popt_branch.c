@@ -1,5 +1,5 @@
 /**********************************************************************
- *  pjopt.c
+ *  popt_branch.c
  *  Branch Optimizations
  *
  *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
@@ -46,8 +46,8 @@
 #include "pinsn16.h"
 
 #include "popt.h"
-#include "polocal.h"
-#include "pjopt.h"
+#include "popt_local.h"
+#include "popt_branch.h"
 
 /**********************************************************************/
 

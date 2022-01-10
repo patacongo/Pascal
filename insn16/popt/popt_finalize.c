@@ -1,5 +1,5 @@
 /**********************************************************************
- * pfopt.c
+ * popt_finalize.c
  * Finalization of optimized image
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -54,7 +54,7 @@
 #include "pofflib.h"
 
 #include "popt.h"
-#include "pfopt.h"
+#include "popt_finalize.h"
 #include "pas_insn.h"
 #include "pas_error.h"
 

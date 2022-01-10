@@ -1,8 +1,8 @@
 /***************************************************************************
- * pfopt.h
- * External Declarations associated with pfopt.c
+ * popt_constants.h
+ * External Declarations associated with PCOPT.C
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 200-2009 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,21 +34,20 @@
  *
  ***************************************************************************/
 
-#ifndef __PFOPT_H
-#define __PFOPT_H
+#ifndef __PCOPT_H
+#define __PCOPT_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
-#include "pofflib.h"
+#include <stdint.h>
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void optFinalize(poffHandle_t poffHandle,
-			poffProgHandle_t poffProgHandle);
+extern int16_t unaryOptimize(void);
+extern int16_t binaryOptimize(void);
 
-#endif /* __PFOPT_H */
-
+#endif /* __PCOPT_H */

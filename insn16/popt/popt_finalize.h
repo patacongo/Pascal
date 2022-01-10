@@ -1,8 +1,8 @@
 /***************************************************************************
- * plopt.h
- * External Declarations associated with plopt.c
+ * popt_finalize.h
+ * External Declarations associated with popt_finalize.c
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,21 +34,21 @@
  *
  ***************************************************************************/
 
-#ifndef __PLOPT_H
-#define __PLOPT_H
+#ifndef __PFOPT_H
+#define __PFOPT_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
-#include <stdint.h>
+#include "pofflib.h"
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-extern int16_t LoadOptimize ( void );
-extern int16_t StoreOptimize ( void );
+extern void optFinalize(poffHandle_t poffHandle,
+			poffProgHandle_t poffProgHandle);
 
-#endif /* __PLOPT_H */
+#endif /* __PFOPT_H */
 
