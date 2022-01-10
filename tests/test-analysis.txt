@@ -115,17 +115,6 @@ Average Rainfall:  3.23500072
 This comes from:
  47    writeln('Average Rainfall: ', average:7:2);
 
-Notice the file width and precision arguments.  That is the 7 and the 2
-printed at the end of the output.  For all types, the form is:
-
-  Value : field_width
-
-Real types can also have precision:
-
-  Value : field_width : decimal_field_width
-
-This is true at least for Free Pascal.
-
 ########sinecos.pas########
 ########unit-cosine.pas########
 ########unit-sine.pas########
