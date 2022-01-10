@@ -62,20 +62,21 @@
  */
 
 #define setINVALID       (0x00)
-#define setINTERSECTION  (0x01)
-#define setUNION         (0x02)
-#define setDIFFERENCE    (0x03)
-#define setSYMMETRICDIFF (0x04)
-#define setEQUALITY      (0x05)
-#define setNONEQUALITY   (0x06)
-#define setCONTAINS      (0x07)
-#define setMEMBER        (0x08)
-#define setINCLUDE       (0x09)
-#define setEXCLUDE       (0x0a)
-#define setCARD          (0x0b)
-#define setSINGLETON     (0x0c)
-#define setSUBRANGE      (0x0d)
+#define setEMPTY         (0x01)
+#define setINTERSECTION  (0x02)
+#define setUNION         (0x03)
+#define setDIFFERENCE    (0x04)
+#define setSYMMETRICDIFF (0x05)
+#define setEQUALITY      (0x06)
+#define setNONEQUALITY   (0x07)
+#define setCONTAINS      (0x08)
+#define setMEMBER        (0x09)
+#define setINCLUDE       (0x0a)
+#define setEXCLUDE       (0x0b)
+#define setCARD          (0x0c)
+#define setSINGLETON     (0x0d)
+#define setSUBRANGE      (0x0e)
 
-#define MAX_SETOP        (0x0e) /* Number of set operations */
+#define MAX_SETOP        (0x0f) /* Number of set operations */
 
 #endif /* __PAS_SETOPS_H */

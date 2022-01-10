@@ -78,21 +78,6 @@ struct varInfo_s
 
 typedef struct varInfo_s varInfo_t;
 
-/* This structure is used for parsing SET constants */
-
-struct setType_s
-{
-  uint8_t    setType;
-  bool       typeFound;
-  bool       dirty;
-  int16_t    minValue;
-  int16_t    maxValue;
-  uint16_t   setValue[sSET_WORDS];
-  symbol_t  *typePtr;
-};
-
-typedef struct setType_s setType_t;
-
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
@@ -116,11 +101,8 @@ static exprType_t pas_FunctionDesignator(void);
 static exprType_t pas_FactorExprType(exprType_t baseExprType,
                                      uint8_t assignFlags);
 static void       pas_SetAbstractType(symbol_t *sType);
-static void       pas_GetSetFactor(void);
-static bool       pas_GetSubSet(setType_t *s, bool first);
-static void       pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
-                                        uint16_t lastValue);
-static void       pas_CleanDirtySet(setType_t *s, bool first);
+static exprType_t pas_GetSetFactor(void);
+static bool       pas_GetSubSet(symbol_t *setTypePtr, bool first);
 static bool       pas_IsOrdinalExpression(exprType_t testExprType);
 static bool       pas_IsStringExpression(exprType_t testExprType);
 static bool       pas_IsStringReference(exprType_t testExprType);
@@ -134,875 +116,11 @@ static bool       pas_IsStringReference(exprType_t testExprType);
  * sTYPE entry associated with the expression.
  */
 
-symbol_t *g_abstractType;
-
-/****************************************************************************/
-/* Evaluate (boolean) Expression */
-
-exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
-{
-  uint8_t    operation;
-  uint16_t   intOpCode;
-  uint16_t   fpOpCode;
-  uint16_t   strOpCode;
-  uint16_t   setOpCode;
-  exprType_t simple1Type;
-  exprType_t simple2Type;
-  bool       haveSimple2;
-  bool       handled;
-
-  TRACE(g_lstFile,"[expression]");
-
-  /* The abstract types - SETs, RECORDS, etc - require an exact
-   * match in type.  Save the symbol table sTYPE entry associated
-   * with the expression.
-   */
-
-  if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
-  g_abstractType = typePtr;
-
-  /* FORM <simple expression> [<relational operator> <simple expression>]
-   *
-   * Get the first <simple expression>
-   */
-
-  simple1Type = pas_SimpleExpression(findExprType);
-
-  /* Get the optional <relational operator> which may follow */
-
-  operation = g_token;
-  switch (operation)
-    {
-    case tEQ :
-      /* Select all opcodes for all cases */
-
-      intOpCode = opEQU;
-      fpOpCode  = fpEQU;
-      strOpCode = opEQUZ;
-      setOpCode = setEQUALITY;
-
-      /* Skip over the operator */
-
-      getToken();
-      break;
-
-    case tNE :
-      /* Select all opcodes for all cases */
-
-      intOpCode = opNEQ;
-      fpOpCode  = fpNEQ;
-      strOpCode = opNEQZ;
-      setOpCode = setNONEQUALITY;
-
-      /* Skip over the operator */
-
-      getToken();
-      break;
-
-    case tLT :
-      /* Select all opcodes for all cases */
-
-      intOpCode = opLT;
-      fpOpCode  = fpLT;
-      strOpCode = opLTZ;
-      setOpCode = setINVALID;
-
-      /* Skip over the operator */
-
-      getToken();
-      break;
-
-    case tLE :
-      /* Select all opcodes for all cases */
-
-      intOpCode = opLTE;
-      fpOpCode  = fpLTE;
-      strOpCode = opLTEZ;
-      setOpCode = setCONTAINS;
-
-      /* Skip over the operator */
-
-      getToken();
-      break;
-
-    case tGT :
-      /* Select all opcodes for all cases */
-
-      intOpCode = opGT;
-      fpOpCode  = fpGT;
-      strOpCode = opGTZ;
-      setOpCode = setINVALID;
-
-      /* Skip over the operator */
-
-      getToken();
-      break;
-
-    case tGE :
-      /* Select all opcodes for all cases */
-
-      intOpCode = opGTE;
-      fpOpCode  = fpGTE;
-      strOpCode = opGTEZ;
-      setOpCode = setINVALID;
-
-      /* Skip over the operator */
-
-      getToken();
-      break;
-
-    case tIN :
-      /* Select all opcodes for all cases */
-
-      intOpCode = opNOP;
-      fpOpCode  = fpINVLD;
-      strOpCode = opNOP;
-      setOpCode = setMEMBER;
-
-      /* Skip over the operator */
-
-      getToken();
-      break;
-
-    default  :
-      /* Set all opcodes to no-op or invalid */
-
-      intOpCode = opNOP;
-      fpOpCode  = fpINVLD;
-      strOpCode = opNOP;
-      setOpCode = setINVALID;
-      break;
-    }
-
-  /* Check if there is a 2nd simple expression needed.  This depends on the
-   * kind of expression we found for the first expression and the kind of
-   * operator that was found.
-   *
-   * Check for operations on sets first.  These may be:
-   *
-   *   FORM:  set-expression set-operator set-expression
-   *          set-operator = '=' | '<>' | '<='
-   *   FORM:  set-member 'in' set-expression
-   *
-   * The set member may be any value for the sub-range of the ordinal type
-   * that underlies the set.
-   */
-
-  haveSimple2 = false;
-  handled     = false;
-
-  if (setOpCode != setINVALID &&
-      ((simple1Type == exprSet && setOpCode != setMEMBER) ||
-       (pas_IsOrdinalExpression(simple1Type) && setOpCode == setMEMBER)))
-    {
-      symbol_t *abstract1Type = g_abstractType;
-      symbol_t *abstract2Type = NULL;
-
-      /* The top of the stack may hold either (1) the first set in a binary
-       * operation or (2) an integer-size, subrange member as the first part of
-       * the set-member.  g_abstractType will be NULL in that latter case.
-       *
-       * Get the second simple expression which should be a SET in all cases
-       * and should have a non-NULL g_abstractType.
-       */
-
-      g_abstractType = NULL;
-      simple2Type    = pas_SimpleExpression(exprSet);
-      haveSimple2    = true;
-      abstract2Type  = g_abstractType;
-
-      /* In all cases, the second expression must always be a SET */
-
-      if (simple2Type == exprSet)
-        {
-          switch (setOpCode)
-            {
-              case setEQUALITY :
-              case setNONEQUALITY :
-              case setCONTAINS :
-                /* The two set expressions must refer to the same, underlying
-                 * abstract type.
-                 */
-
-                if (abstract1Type != abstract2Type) error(eEXPRTYPE);
-                else
-                  {
-                    pas_GenerateSetOperation(setOpCode);
-                    simple1Type = exprBoolean;
-                    handled     = true;
-                  }
-                break;
-
-              case setMEMBER :
-                /* The parent of the set should be a subrange and
-                 * the member should be an in-range ordinal value with
-                 * same type as the base type of the subrange.
-                 */
-
-                if (abstract2Type == NULL) error(eHUH);
-                else
-                  {
-                    symbol_t *subRangePtr;
-
-                    subRangePtr = pas_GetBaseTypePointer(abstract2Type);
-                    if (subRangePtr->sParm.t.tType == sSET)
-                      {
-                        subRangePtr = subRangePtr->sParm.t.tParent;
-                      }
-
-                    if (subRangePtr->sParm.t.tType != sSUBRANGE) error(eHUH);
-                    else
-                      {
-                        uint16_t baseType = subRangePtr->sParm.t.tSubType;
-
-                        if (simple1Type != pas_MapVariable2ExprType(baseType, true))
-                          {
-                            error(eEXPRTYPE);
-                          }
-                        else
-                          {
-                            /* Push the minimum value of the set-member.  This
-                             * will be used to make the sub-range zero-based.
-                             */
-
-                            pas_GenerateDataOperation(opPUSH,
-                              g_abstractType->sParm.t.tMinValue);
-
-                            /* Then generate the set operation */
-
-                            pas_GenerateSetOperation(setOpCode);
-                            simple1Type = exprBoolean;
-                            handled     = true;
-                          }
-
-                        g_abstractType = abstract1Type; /* Restore */
-                      }
-                  }
-                  break;
-
-              default :
-                error(eHUH);
-                g_abstractType = abstract1Type; /* Restore */
-                break;
-            }
-        }
-      else
-        {
-          /* Hmmm..  Some error occurred, either:
-           *
-           * 1. The first expression of '=', '<>", or "<=" was a SET, but
-           *    the second is not.
-           * 2. The second expression of 'IN' is not set.
-           */
-
-          error(eEXPRTYPE);
-          g_abstractType = abstract1Type; /* Restore */
-        }
-    }
-
-  /* Check for operations on strings first.  These may be:
-   *
-   *   FORM:  string-expression string-operator string-expression
-   *          string-expression = standard-string-expression |
-   *            short-string-expression
-   *          string-operator = '=', '<>', '<', '<=', '>', '>='
-   *
-   * The set member may be any value for the sub-range of the ordinal type
-   * that underlies the set.
-   */
-
-  if (strOpCode != opNOP && !handled)
-    {
-      /* Get the second simple expression (if we did not already) */
-
-      if (!haveSimple2)
-        {
-          simple2Type = pas_SimpleExpression(findExprType);
-          haveSimple2 = true;
-        }
-
-      /* Was the first expression a standard string? */
-
-      if (simple1Type == exprString)
-        {
-          /* What kind of string was the second expression? */
-
-          if (simple2Type == exprString)
-            {
-              pas_StandardFunctionCall(lbSTRCMP);
-              pas_GenerateSimple(strOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
-          else if (simple2Type == exprShortString)
-            {
-              pas_StandardFunctionCall(lbSTRCMPSSTR);
-              pas_GenerateSimple(strOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
-          else
-            {
-              error(eCOMPARETYPE);
-            }
-        }
-
-      /* Was the first expression a short string? */
-
-      else if (simple1Type == exprShortString)
-        {
-          if (simple2Type == exprString)
-            {
-              pas_StandardFunctionCall(lbSSTRCMPSTR);
-              pas_GenerateSimple(strOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
-          else if (simple2Type == exprShortString)
-            {
-              pas_StandardFunctionCall(lbSSTRCMP);
-              pas_GenerateSimple(strOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
-          else
-            {
-              error(eCOMPARETYPE);
-            }
-        }
-    }
-
-  /* Deal with integer and real arithmetic */
-
-  if (intOpCode != opNOP && !handled)
-    {
-      /* Get the second simple expression (if we did not already) */
-
-      if (!haveSimple2)
-        {
-          getToken();
-          simple2Type = pas_SimpleExpression(findExprType);
-          haveSimple2 = true;
-        }
-
-      /* Perform automatic type conversion from INTEGER to REAL
-       * for integer vs. real comparisons.
-       */
-
-      if (simple1Type != simple2Type)
-        {
-          /* Handle the case where the 1st argument is REAL and the
-           * second is INTEGER.
-           */
-
-          if (simple1Type == exprReal &&
-              simple2Type == exprInteger &&
-              fpOpCode != fpINVLD)
-            {
-              fpOpCode   |= fpARG2;
-              simple2Type = exprReal;
-            }
-
-          /* Handle the case where the 1st argument is Integer and the
-           * second is REAL.
-           */
-
-          else if (simple1Type == exprInteger &&
-                   simple2Type == exprReal &&
-                   fpOpCode != fpINVLD)
-            {
-              fpOpCode   |= fpARG1;
-              simple1Type = exprReal;
-            }
-
-          /* Otherwise, the two terms must agree in type */
-
-          else
-            {
-              error(eEXPRTYPE);
-            }
-        }
-
-      /* Generate the comparison */
-
-      if (simple1Type == exprReal)
-        {
-          if (fpOpCode == fpINVLD)
-            {
-              error(eEXPRTYPE);
-            }
-          else
-            {
-              pas_GenerateFpOperation(fpOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
-        }
-      else
-        {
-          pas_GenerateSimple(intOpCode);
-
-          /* The resulting type is boolean */
-
-          simple1Type = exprBoolean;
-          handled     = true;
-        }
-    }
-
-  /* Verify that the expression is of the requested type.
-   * The following are okay:
-   *
-   * 1. We were told to find any kind of expression
-   *
-   * 2. We were told to find a specific kind of expression and
-   *    we found just that type.
-   *
-   * 3. We were told to find any kind of ordinal expression and
-   *    we found a ordinal expression.  This is what is needed, for
-   *    example, as an argument to ord(), pred(), succ(), or odd().
-   *    This is the kind of expression we need in a CASE statement
-   *    as well.
-   *
-   * 4. We were told to find any kind of string expression and
-   *    we found a string expression. This is a hack to handle
-   *    calls to system functions that return exprCString pointers
-   *    that must be converted to exprString records upon assignment.
-   *
-   * Special case:
-   *
-   *    We will perform automatic conversions to real from integer
-   *    if the requested type is a real expression.
-   */
-
-  if (findExprType != exprUnknown &&             /* 1) NOT Any expression */
-      findExprType != simple1Type &&             /* 2) NOT Matched expression */
-      (findExprType != exprAnyOrdinal ||         /* 3) NOT any ordinal type */
-       !pas_IsOrdinalExpression(simple1Type)) && /*    OR type is not ordinal */
-      (findExprType != exprAnyString ||          /* 4) NOT any string type */
-       !pas_IsStringExpression(simple1Type)) &&  /*    OR type is not string */
-      (!pas_IsStringReference(findExprType) ||   /* 5) Not looking for string ref */
-       !pas_IsStringReference(simple1Type)))     /*    OR type is not string ref */
-    {
-      /* Automatic conversions from INTEGER to REAL will be performed */
-
-      if (findExprType == exprReal && simple1Type == exprInteger)
-        {
-          pas_GenerateFpOperation(fpFLOAT);
-          simple1Type = exprReal;
-        }
-
-      /* Any other type mismatch is an error */
-
-      else
-        {
-          error(eEXPRTYPE);
-        }
-    }
-
-  return simple1Type;
-}
-
-/****************************************************************************/
-/* Provide VAR parameter assignments */
-
-exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
-{
-  exprType_t factorType;
-
-  /* The abstract types - SETs, RECORDS, etc - require an exact
-   * match in type.  Save the symbol table sTYPE entry associated
-   * with the expression.
-   */
-
-  if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
-  g_abstractType = typePtr;
-
-  /* This function is really just an interface to the
-   * static function pas_PointerFactor with some extra error
-   * checking.
-   */
-
-  factorType = pas_PointerFactor();
-  if (varExprType != exprUnknown && factorType != varExprType)
-    {
-      /* Allow automatic conversions between strings and short strings */
-
-      if ((factorType == exprStringPtr &&
-           varExprType == exprShortStringPtr) ||
-          (factorType == exprShortStringPtr &&
-           varExprType == exprStringPtr))
-        {
-          /* The supplied string pointer *almost* matches.
-           * REVISIT:  Do we need to take any specific conversion actions?
-           */
-        }
-      else
-        {
-          error(eINVVARPARM);
-        }
-    }
-
-  return factorType;
-}
-
-/****************************************************************************/
-/* Process Array Index */
-
-void pas_ArrayIndex(symbol_t *arrayTypePtr)
-{
-  TRACE(g_lstFile,"[pas_ArrayIndex]");
-
-  /* Parse the index-type-list.
-   *
-   *   FORM:  array-type = 'array' '[' index-type-list ']' 'of' type-denoter
-   *   FORM:  index-type-list = index-type { ',' index-type }
-   *
-   * On entry 'g_token' should refer to the '[' token.
-   */
-
-  if (g_token != '[') error(eLBRACKET);
-  else
-    {
-      symbol_t *indexTypePtr = arrayTypePtr->sParm.t.tIndex;
-      uint16_t  dimension    = 1;
-      uint16_t  elemSize;
-
-      do
-        {
-          exprType_t exprType;
-          uint16_t   indexType;
-          uint16_t   offset;
-
-          /* Sanity checks */
-
-          if (dimension > arrayTypePtr->sParm.t.tDimension)
-            {
-              /* Program apparently has more indices that dimensions. */
-
-              error(eTOOMANYINDICES);
-            }
-          else if (indexTypePtr == NULL)
-            {
-              /* Not enough index types for dimensionality of the array.
-               * This should never happen.
-               */
-
-              error(eHUH);
-            }
-
-          /* Get the type of the index */
-
-          if (indexTypePtr->sKind != sTYPE)
-            {
-              error(eINDEXTYPE);
-              exprType = exprUnknown;
-            }
-          else
-            {
-              indexType = indexTypePtr->sParm.t.tType;
-
-              /* REVISIT:  For subranges, we use the base type of the
-               * subrange.
-               */
-
-              if (indexType == sSUBRANGE)
-                {
-                  indexType = indexTypePtr->sParm.t.tSubType;
-                }
-
-              /* Get the expression type from the index type */
-
-              exprType = pas_MapVariable2ExprType(indexType, true);
-            }
-
-          /* Skip over the initial '[' or subsequent ',' and evaluate the
-           * index expression.
-           */
-
-          getToken();
-          pas_Expression(exprType, NULL);
-
-          /* We now have the array element at the top of the stack.  If the
-           * index is not zero-based, the we need to offset the index value
-           * so that it is.
-           */
-
-          offset = indexTypePtr->sParm.t.tMinValue;
-          if (offset != 0)
-            {
-              pas_GenerateDataOperation(opPUSH, offset);
-              pas_GenerateSimple(opSUB);
-            }
-
-          /* The first index is in units of the base type of the elements of
-           * array.  But the next index is in units of the index range of the
-           * first element times the size of the base type.
-           *
-           * We need to multiply the zero-based index by the element size
-           * (unless, of course, the element size is one).
-           */
-
-          elemSize = indexTypePtr->sParm.t.tAllocSize;
-          if (elemSize != 1)
-            {
-              pas_GenerateDataOperation(opPUSH, elemSize);
-              pas_GenerateSimple(opMUL);
-            }
-
-          /* If this is not the first dimension, then we need to add the
-           * offset that we just calculated to the offset calculated from
-           * the previous dimension.
-           */
-
-          if (dimension > 1)
-            {
-              pas_GenerateSimple(opADD);
-            }
-
-          /* Set up for the next time through the loop.  */
-
-          indexTypePtr = indexTypePtr->sParm.t.tIndex;
-          dimension++;
-        }
-      while (g_token == ',');
-
-      /* Verify that a right bracket terminates the index-type-list. */
-
-      if (g_token !=  ']') error(eRBRACKET);
-      else getToken();
-    }
-}
-
-/****************************************************************************/
-/* Determine the expression type associated with a pointer to a type
- * symbol
- */
-
-exprType_t pas_GetExpressionType(symbol_t *sType)
-{
-  exprType_t factorType = sINT;
-
-  TRACE(g_lstFile,"[getExprType]");
-
-  if (sType != NULL && sType->sKind == sTYPE)
-    {
-      switch (sType->sParm.t.tType)
-        {
-        case sINT :
-          factorType = exprInteger;
-          break;
-
-        case sBOOLEAN :
-          factorType = exprBoolean;
-          break;
-
-        case sCHAR :
-          factorType = exprChar;
-          break;
-
-        case sREAL :
-          factorType = exprReal;
-          break;
-
-        case sSCALAR :
-          factorType = exprScalar;
-          break;
-
-        case sSTRING :
-          factorType = exprString;
-          break;
-
-        case sSHORTSTRING :
-          factorType = exprShortString;
-          break;
-
-        case sSUBRANGE :
-          switch (sType->sParm.t.tSubType)
-            {
-            case sINT :
-              factorType = exprInteger;
-              break;
-
-            case sCHAR :
-              factorType = exprChar;
-              break;
-
-            case sSCALAR :
-              factorType = exprScalar;
-              break;
-
-            default :
-              error(eSUBRANGETYPE);
-              break;
-            }
-          break;
-
-        case sPOINTER :
-          sType = sType->sParm.t.tParent;
-          if (sType)
-            {
-              switch (sType->sKind)
-                {
-                case sINT :
-                  factorType = exprIntegerPtr;
-                  break;
-
-                case sBOOLEAN :
-                  factorType = exprBooleanPtr;
-                  break;
-
-                case sCHAR :
-                  factorType = exprCharPtr;
-                  break;
-
-                case sREAL :
-                  factorType = exprRealPtr;
-                  break;
-
-                case sSCALAR :
-                  factorType = exprScalarPtr;
-                  break;
-
-                default :
-                  error(eINVTYPE);
-                  break;
-                }
-            }
-          break;
-
-        default :
-          error(eINVTYPE);
-          break;
-        }
-    }
-
-  return factorType;
-}
-
-/****************************************************************************/
-
-exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
-{
-  switch (varType)
-    {
-      /* Ordinal type mappings */
-
-      case sINT :
-      case sSUBRANGE :
-        return exprInteger;           /* integer value */
-
-      case sCHAR :
-        return exprChar;              /* character value */
-
-      case sBOOLEAN :
-        return exprBoolean;           /* boolean(integer) value */
-
-      case sSCALAR :
-      case sSCALAR_OBJECT :
-        return exprScalar;            /* scalar(integer) value */
-
-      case sTYPE :                    /* Variable is defined type */
-        return exprUnknown;           /* REVISIT */
-
-      default:
-        if (!ordinal)
-          {
-            switch (varType)
-              {
-                case sREAL :
-                  return exprReal;    /* real value */
-
-                case sSTRING :
-                case sSTRING_CONST :
-                  return exprString;  /* variable length string reference */
-
-                case sSHORTSTRING :
-                  return exprShortString;  /* short string reference */
-
-                case sFILE :
-                case sTEXTFILE :
-                  return exprFile;    /* File number */
-
-                case sRECORD :
-                case sRECORD_OBJECT :
-                  return exprRecord;  /* record */
-
-                case sSET :
-                  return exprSet;     /* set(integer) value */
-
-                case sARRAY :         /* REVISIT: array of something */
-                case sPOINTER :       /* REVISIT: pointer to something */
-                default:
-                  error(eEXPRTYPE);
-                  return exprUnknown;
-              }
-          }
-        else
-          {
-            error(eEXPRTYPE);
-            return exprUnknown;
-          }
-    }
-}
-
-/****************************************************************************/
-
-exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal)
-{
-  exprType_t exprType;
-
-  exprType = pas_MapVariable2ExprType(varType, ordinal);
-  if (exprType != exprUnknown)
-    {
-      exprType = (exprType_t)((unsigned int)exprType | EXPRTYPE_POINTER);
-    }
-
-  return exprType;
-}
-
-/****************************************************************************/
-/* The base type of complex, defined type */
-
-symbol_t *pas_GetBaseTypePointer(symbol_t *typePtr)
-{
-  symbol_t  *baseTypePtr;
-  symbol_t  *nextTypePtr;
-
-  /* Get a pointer to the underlying base type symbol */
-
-  baseTypePtr     = typePtr;
-  nextTypePtr     = typePtr->sParm.t.tParent;
-
-  /* Loop until the terminal type is found.  Exception:  A SET is not really
-   * reducible.  The parent type of the sSET characterizes the SEt but is
-   * not the base type of the set (which will be a sub-range or a scalar).
-   */
-
-  while (nextTypePtr != NULL &&
-         nextTypePtr->sKind == sTYPE &&
-         baseTypePtr->sParm.t.tType != sSET)
-    {
-      baseTypePtr = nextTypePtr;
-      nextTypePtr = baseTypePtr->sParm.t.tParent;
-    }
-
-  return baseTypePtr;
-}
+symbol_t *g_abstractTypePtr;
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
 
 /****************************************************************************/
 /* Process Simple Expression */
@@ -1180,6 +298,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
               /* Set 'addition' */
 
             case exprSet :
+            case exprEmptySet :
               pas_GenerateSetOperation(setUNION);
               break;
 
@@ -1265,7 +384,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
 
           /* Set 'subtraction' */
 
-          else if (term1Type == exprSet)
+          else if (term1Type == exprSet ||
+                   term1Type == exprEmptySet)
             {
               pas_GenerateSetOperation(setDIFFERENCE);
             }
@@ -1295,7 +415,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         case tSYMDIFF :
           /* Set symmetric difference */
 
-          if (term1Type == exprSet)
+          if (term1Type == exprSet ||
+              term1Type == exprEmptySet)
             {
               pas_GenerateSetOperation(setSYMMETRICDIFF);
             }
@@ -1443,7 +564,8 @@ static exprType_t pas_Term(exprType_t findExprType)
             {
               pas_GenerateFpOperation(fpMUL | arg8FpBits);
             }
-          else if (factor1Type == exprSet)
+          else if (factor1Type == exprSet ||
+                   factor1Type == exprEmptySet)
             {
               pas_GenerateSetOperation(setINTERSECTION);
             }
@@ -1579,13 +701,13 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case sSCALAR_OBJECT :
-      if (g_abstractType != NULL)
+      if (g_abstractTypePtr != NULL)
         {
-          if (g_tknPtr->sParm.c.cParent != g_abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.c.cParent != g_abstractTypePtr) error(eSCALARTYPE);
         }
       else
         {
-         g_abstractType = g_tknPtr->sParm.c.cParent;
+         g_abstractTypePtr = g_tknPtr->sParm.c.cParent;
         }
 
       pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.c.cValue.i);
@@ -1681,13 +803,13 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case sSCALAR :
-      if (g_abstractType != NULL)
+      if (g_abstractTypePtr != NULL)
         {
-          if (g_tknPtr->sParm.v.vParent != g_abstractType) error(eSCALARTYPE);
+          if (g_tknPtr->sParm.v.vParent != g_abstractTypePtr) error(eSCALARTYPE);
         }
       else
         {
-          g_abstractType = g_tknPtr->sParm.v.vParent;
+          g_abstractTypePtr = g_tknPtr->sParm.v.vParent;
         }
 
       pas_GenerateStackReference(opLDS, g_tknPtr);
@@ -1696,21 +818,21 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case sSET :
-      /* If an g_abstractType is specified then it should either be the
+      /* If an g_abstractTypePtr is specified then it should either be the
        * same SET OF <object> -OR- the same <object>
        */
 
-      if (g_abstractType != NULL)
+      if (g_abstractTypePtr != NULL)
         {
-          if ((g_tknPtr->sParm.v.vParent != g_abstractType) &&
-              (g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractType))
+          if ((g_tknPtr->sParm.v.vParent != g_abstractTypePtr) &&
+              (g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractTypePtr))
             {
               error(eSET);
             }
         }
       else
         {
-          g_abstractType = g_tknPtr->sParm.v.vParent;
+          g_abstractTypePtr = g_tknPtr->sParm.v.vParent;
         }
 
       pas_GenerateDataSize(g_tknPtr->sParm.v.vSize);
@@ -1723,10 +845,9 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
     case '[' : /* Set constant */
       getToken();
-      pas_GetSetFactor();
+      factorType = pas_GetSetFactor();
       if (g_token != ']') error(eRBRACKET);
       else getToken();
-      factorType = exprSet;
       break;
 
       /* Complex factors */
@@ -1750,7 +871,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
     case '(' :
       getToken();
-      factorType = pas_Expression(exprUnknown, g_abstractType);
+      factorType = pas_Expression(exprUnknown, g_abstractTypePtr);
       if (g_token == ')') getToken();
       else error (eRPAREN);
       break;
@@ -1863,7 +984,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
   switch (varPtr->sKind)
     {
     case sSUBRANGE :
-      if (g_abstractType == NULL) g_abstractType = typePtr;
+      if (g_abstractTypePtr == NULL) g_abstractTypePtr = typePtr;
       varPtr->sKind = typePtr->sParm.t.tSubType;
       factorType    = pas_SimpleFactor(varInfo, factorFlags);
       break;
@@ -1968,7 +1089,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
       /* A RECORD name may be a valid factor -- as the input */
       /* parameter of a function or in an assignment */
 
-      else if (g_abstractType == typePtr)
+      else if (g_abstractTypePtr == typePtr)
         {
           /* Special case:  The record is a VAR parameter. */
 
@@ -2213,7 +1334,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
        * a function.
        */
 
-      else if (g_abstractType == varPtr)
+      else if (g_abstractTypePtr == varPtr)
         {
           pas_GenerateDataSize(varPtr->sParm.v.vSize);
           pas_GenerateStackReference(opLDSM, varPtr);
@@ -2379,12 +1500,12 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
      */
 
     case sSET :
-      if (g_abstractType == NULL)
+      if (g_abstractTypePtr == NULL)
         {
-          g_abstractType = typePtr;
+          g_abstractTypePtr = typePtr;
         }
-      else if ((typePtr != g_abstractType) &&
-               (typePtr->sParm.v.vParent != g_abstractType))
+      else if ((typePtr != g_abstractTypePtr) &&
+               (typePtr->sParm.v.vParent != g_abstractTypePtr))
         {
           error(eSCALARTYPE);
         }
@@ -2457,11 +1578,11 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
       break;
 
     case sSCALAR :
-      if (g_abstractType == NULL)
+      if (g_abstractTypePtr == NULL)
         {
-          g_abstractType = typePtr;
+          g_abstractTypePtr = typePtr;
         }
-      else if (typePtr != g_abstractType)
+      else if (typePtr != g_abstractTypePtr)
         {
           error(eSCALARTYPE);
         }
@@ -2578,13 +1699,13 @@ static exprType_t pas_PointerFactor(void)
         break;
 
       case sSCALAR :
-        if (g_abstractType != NULL)
+        if (g_abstractTypePtr != NULL)
           {
-            if (g_tknPtr->sParm.v.vParent != g_abstractType) error(eSCALARTYPE);
+            if (g_tknPtr->sParm.v.vParent != g_abstractTypePtr) error(eSCALARTYPE);
           }
         else
           {
-           g_abstractType = g_tknPtr->sParm.v.vParent;
+           g_abstractTypePtr = g_tknPtr->sParm.v.vParent;
           }
 
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -2593,21 +1714,21 @@ static exprType_t pas_PointerFactor(void)
         break;
 
       case sSET :
-        /* If an g_abstractType is specified then it should either be the
+        /* If an g_abstractTypePtr is specified then it should either be the
          * same SET OF <object> -OR- the same <object>
          */
 
-        if (g_abstractType != NULL)
+        if (g_abstractTypePtr != NULL)
           {
-            if (g_tknPtr->sParm.v.vParent != g_abstractType &&
-                g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractType)
+            if (g_tknPtr->sParm.v.vParent != g_abstractTypePtr &&
+                g_tknPtr->sParm.v.vParent->sParm.t.tParent != g_abstractTypePtr)
               {
                  error(eSET);
               }
           }
         else
           {
-             g_abstractType = g_tknPtr->sParm.v.vParent;
+             g_abstractTypePtr = g_tknPtr->sParm.v.vParent;
           }
 
         /* Fall through */
@@ -2714,7 +1835,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
       /* Check if we have reduced the complex factor to a simple factor */
 
     case sSUBRANGE :
-      if (g_abstractType == NULL) g_abstractType = typePtr;
+      if (g_abstractTypePtr == NULL) g_abstractTypePtr = typePtr;
       varPtr->sKind = typePtr->sParm.t.tSubType;
       factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
       break;
@@ -3112,16 +2233,16 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
      */
 
     case sSET :
-      /* If an g_abstractType is specified then it should either be the
+      /* If an g_abstractTypePtr is specified then it should either be the
        * same SET OF <object> -OR- the same <object>
        */
 
-      if (g_abstractType == NULL)
+      if (g_abstractTypePtr == NULL)
         {
-          g_abstractType = typePtr;
+          g_abstractTypePtr = typePtr;
         }
-      else if ((typePtr != g_abstractType) &&
-               (typePtr->sParm.v.vParent != g_abstractType))
+      else if ((typePtr != g_abstractTypePtr) &&
+               (typePtr->sParm.v.vParent != g_abstractTypePtr))
         {
           error(eSCALARTYPE);
         }
@@ -3166,11 +2287,11 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
       break;
 
     case sSCALAR :
-      if (g_abstractType == NULL)
+      if (g_abstractTypePtr == NULL)
         {
-          g_abstractType = typePtr;
+          g_abstractTypePtr = typePtr;
         }
-      else if (typePtr != g_abstractType)
+      else if (typePtr != g_abstractTypePtr)
         {
           error(eSCALARTYPE);
         }
@@ -3356,23 +2477,23 @@ static void pas_SetAbstractType(symbol_t *sType)
     switch (sType->sParm.t.tType)
       {
         case sSCALAR :
-          if (g_abstractType != NULL)
+          if (g_abstractTypePtr != NULL)
             {
-              if (sType != g_abstractType) error(eSCALARTYPE);
+              if (sType != g_abstractTypePtr) error(eSCALARTYPE);
             }
           else
             {
-              g_abstractType = sType;
+              g_abstractTypePtr = sType;
             }
           break;
 
         case sSUBRANGE :
-          if (g_abstractType == NULL)
+          if (g_abstractTypePtr == NULL)
             {
-              g_abstractType = sType;
+              g_abstractTypePtr = sType;
             }
-          else if (g_abstractType->sParm.t.tType != sSUBRANGE ||
-                   g_abstractType->sParm.t.tSubType != sType->sParm.t.tSubType)
+          else if (g_abstractTypePtr->sParm.t.tType != sSUBRANGE ||
+                   g_abstractTypePtr->sParm.t.tSubType != sType->sParm.t.tSubType)
             {
               error(eSUBRANGETYPE);
             }
@@ -3384,7 +2505,7 @@ static void pas_SetAbstractType(symbol_t *sType)
                 break;
 
               case sSCALAR :
-                if (g_abstractType != sType) error(eSUBRANGETYPE);
+                if (g_abstractTypePtr != sType) error(eSUBRANGETYPE);
                 break;
 
               default :
@@ -3402,9 +2523,10 @@ static void pas_SetAbstractType(symbol_t *sType)
 
 /****************************************************************************/
 
-static void pas_GetSetFactor(void)
+static exprType_t pas_GetSetFactor(void)
 {
-  setType_t s;
+  symbol_t *abstractTypePtr;
+  symbol_t *setTypePtr;
   bool first;
 
   TRACE(g_lstFile,"[pas_GetSetFactor]");
@@ -3417,74 +2539,54 @@ static void pas_GetSetFactor(void)
    * ASSUMPTION:  The first '[' has already been processed
    */
 
-  /* Initialize the bitsets to zero.  As each new set member is found, it
-   * will be OR'ed into the bitset array.
+  /* Check for the empty set [] */
+
+  if (g_token == ']')
+    {
+      /* Generate the empty set.  An empty set differs from other sets in
+       * that there is no abstract base type for the empty set.
+       */
+
+      pas_GenerateSetOperation(setEMPTY);
+      return exprEmptySet;
+    }
+
+  /* If we are here processing a non-empty SET, then the g_abstractTypePtr
+   * should be valid.
    */
 
-  memset(&s, 0, sizeof(setType_t));
+  abstractTypePtr = g_abstractTypePtr;
+  if (abstractTypePtr == NULL)
+    {
+      error(eHUH);
+    }
 
-  /* First, verify that a scalar expression type has been specified
-   * If the g_abstractType is a SET, then we will need to get the TYPE
+  /* Verify that a scalar expression type has been specified.  If the
+   * g_abstractTypePtr is a SET, then we will need to get the TYPE
    * that it is a SET of.
    */
 
-  if (g_abstractType != NULL)
+  setTypePtr = g_abstractTypePtr;
+
+  /* This is a little like pas_GetBaseType(), but does not traverse
+   * all the way to the base type, only to the parent of the SET.
+   */
+
+  /* It might be an array of SETs? */
+
+  if (setTypePtr->sParm.t.tType == sARRAY)
     {
-      symbol_t *setTypePtr = g_abstractType;
-
-      /* This is a little like pas_GetBaseType(), but does not traverse
-       * all the way to the base type, only to the parent of the SET.
-       */
-
-      /* It might be an array of SETs? */
-
-      if (setTypePtr->sParm.t.tType == sARRAY)
-        {
-          setTypePtr = setTypePtr->sParm.t.tParent;
-        }
-
-      if (setTypePtr->sParm.t.tType == sSET)
-        {
-          s.typePtr = setTypePtr->sParm.t.tParent;
-        }
-      else
-        {
-          s.typePtr = setTypePtr;
-        }
-    }
-  else
-    {
-      s.typePtr = NULL;
+      setTypePtr = setTypePtr->sParm.t.tParent;
     }
 
-  /* Now, get the associated type and MIN/MAX values */
-
-  if (s.typePtr && s.typePtr->sParm.t.tType == sSCALAR)
+  if (setTypePtr->sParm.t.tType == sSET)
     {
-      s.typeFound = true;
-      s.setType   = sSCALAR;
-      s.minValue  = s.typePtr->sParm.t.tMinValue;
-      s.maxValue  = s.typePtr->sParm.t.tMaxValue;
-    }
-  else if (s.typePtr && s.typePtr->sParm.t.tType == sSUBRANGE)
-    {
-      s.typeFound = true;
-      s.setType   = s.typePtr->sParm.t.tSubType;
-      s.minValue  = s.typePtr->sParm.t.tMinValue;
-      s.maxValue  = s.typePtr->sParm.t.tMaxValue;
-    }
-  else
-    {
-      error(eSET);
-      s.typeFound = false;
-      s.typePtr   = NULL;
-      s.minValue  = 0;
-      s.maxValue  = sSET_MAXELEM - 1;
+      setTypePtr = setTypePtr->sParm.t.tParent;
     }
 
   /* Get the first element of the set */
 
-  first = pas_GetSubSet(&s, true);
+  first = pas_GetSubSet(setTypePtr, true);
 
   /* Incorporate each additional element into the set */
 
@@ -3493,626 +2595,97 @@ static void pas_GetSetFactor(void)
       /* Get the next element of the set */
 
       getToken();
-      first = pas_GetSubSet(&s, first);
+      first = pas_GetSubSet(setTypePtr, first);
     }
 
-  /* And finally push the accumulated set */
+  /* Restore the abstract type pointer */
 
-  pas_CleanDirtySet(&s, first);
+  g_abstractTypePtr = abstractTypePtr;
+  return exprSet;
 }
 
 /****************************************************************************/
 
-static bool pas_GetSubSet(setType_t *s, bool first)
+static bool pas_GetSubSet(symbol_t *setTypePtr, bool first)
 {
-  int16_t   firstValue;
-  int16_t   lastValue;
-  symbol_t *setPtr;
+  exprType_t subset1ExprType;
+  exprType_t findExprType;
+  uint16_t   findType;
 
-  TRACE(g_lstFile,"[pas_GetSubSet]");
+  /* Process a subset:
+   *
+   * FORM: set-subset = set-element | set-subrange
+   *       set-element = set-constant | set-ordinal-variable
+   *       set-subrange = set-element '..' set-element
+   */
 
-  switch (g_token)
+  /* Get the first set-element.  Whatever that first element is, it will be
+   * pushed at the top of the stack if pas_Expression() is successful.
+   */
+
+  if (setTypePtr->sParm.t.tType == sSUBRANGE)
     {
-      /* Handle cases where we encounter a constant value, either a alone
-       * or as the lower value in a subrange.
-       */
-
-      case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-        firstValue = g_tknPtr->sParm.c.cValue.i;
-        if (!s->typeFound)
-          {
-            s->typeFound = true;
-            s->typePtr   = g_tknPtr->sParm.c.cParent;
-            s->setType   = sSCALAR;
-            s->minValue  = s->typePtr->sParm.t.tMinValue;
-            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
-          }
-        else if (s->setType != sSCALAR ||
-                 s->typePtr != g_tknPtr->sParm.c.cParent)
-          {
-            error(eSET);
-          }
-
-        goto addBit;
-
-      case tINT_CONST : /* An integer subrange constant ? */
-        firstValue = g_tknInt;
-        if (!s->typeFound)
-          {
-            s->typeFound = true;
-            s->setType   = sINT;
-          }
-        else if (s->setType != sINT)
-          {
-            error(eSET);
-          }
-
-        goto addBit;
-
-      case tCHAR_CONST : /* A character subrange constant */
-        firstValue = g_tknInt;
-        if (!s->typeFound)
-          {
-            s->typeFound = true;
-            s->setType   = sCHAR;
-          }
-        else if (s->setType != sCHAR)
-          {
-            error(eSET);
-          }
-
-      addBit:
-        /* Check if the constant set element is the first value in a
-         * subrange of values.
-         */
-
-        getToken();
-        if (g_token != tSUBRANGE)
-          {
-            /* No.. it is a single constant value.
-             * Verify that the new value is in range.
-             */
-
-            if (firstValue < s->minValue || firstValue > s->maxValue)
-              {
-               error(eSETRANGE);
-              }
-            else
-              {
-                uint16_t bitNumber = firstValue - s->minValue;
-                int wordIndex      = bitNumber >> 4;
-                int bitIndex       = bitNumber & 0x0f;
-
-                s->setValue[wordIndex] |= (1 << bitIndex);
-                s->dirty                = true;
-              }
-          }
-        else
-          {
-            if (!s->typeFound) error(eSUBRANGETYPE);
-
-            /* Skip over the tSUBRANGE token */
-
-            getToken();
-
-            /* TYPE check */
-
-            switch (g_token)
-              {
-                /* Check for cases where  the sub-range starts with and ends
-                 * with a constant value.
-                 */
-
-                case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-                  lastValue = g_tknPtr->sParm.c.cValue.i;
-                  if (s->setType != sSCALAR ||
-                      s->typePtr != g_tknPtr->sParm.c.cParent)
-                    {
-                      error(eSET);
-                    }
-
-                  goto addLottaBits;
-
-                case tINT_CONST : /* An integer subrange constant ? */
-                  lastValue = g_tknInt;
-                  if (s->setType != sINT) error(eSET);
-                  goto addLottaBits;
-
-                case tCHAR_CONST : /* A character subrange constant */
-                  lastValue = g_tknInt;
-                  if (s->setType != sCHAR) error(eSET);
-
-                addLottaBits :
-                  /* Yes, it is a subrange with both endpoints constant.
-                   * Verify that the first value is in range.
-                   */
-
-                  if (firstValue < s->minValue)
-                    {
-                      error(eSETRANGE);
-                      firstValue = s->minValue;
-                    }
-                  else if (firstValue > s->maxValue)
-                    {
-                      error(eSETRANGE);
-                      firstValue = s->maxValue;
-                    }
-
-                  /* Verify that the last value is in range */
-
-                  if (lastValue < firstValue)
-                    {
-                      error(eSETRANGE);
-                      lastValue = firstValue;
-                    }
-                  else if (lastValue > s->maxValue)
-                    {
-                      error(eSETRANGE);
-                      lastValue = s->maxValue;
-                    }
-
-                  /* We can handle this case at compile-time */
-
-                  pas_AddBitSetElements(s, firstValue, lastValue);
-                  getToken();
-                  break;
-
-                /* Now check for cases where the subrange begins with a
-                 * constant value but ends with a variable value.
-                 */
-
-                case sSCALAR :
-                  if (!s->typePtr ||
-                      s->typePtr != g_tknPtr->sParm.v.vParent)
-                    {
-                      error(eSET);
-
-                      if (!s->typePtr)
-                        {
-                          s->typeFound = true;
-                          s->typePtr   = g_tknPtr->sParm.v.vParent;
-                          s->setType   = sSCALAR;
-                          s->minValue  = s->typePtr->sParm.t.tMinValue;
-                          s->maxValue  = s->typePtr->sParm.t.tMaxValue;
-                        }
-                    }
-
-                  goto addVarToBits;
-
-                case sINT : /* An integer subrange variable ? */
-                case sCHAR : /* A character subrange variable? */
-                  if (s->setType != g_token) error(eSET);
-                  goto addVarToBits;
-
-                case sSUBRANGE :
-                  if (!s->typePtr || s->typePtr != g_tknPtr->sParm.v.vParent)
-                    {
-                      if (g_tknPtr->sParm.v.vParent->sParm.t.tSubType == sSCALAR ||
-                          g_tknPtr->sParm.v.vParent->sParm.t.tSubType != s->setType)
-                        {
-                          error(eSET);
-                        }
-
-                      if (!s->typePtr)
-                        {
-                          s->typeFound = true;
-                          s->typePtr   = g_tknPtr->sParm.v.vParent;
-                          s->setType   = s->typePtr->sParm.t.tSubType;
-                          s->minValue  = s->typePtr->sParm.t.tMinValue;
-                          s->maxValue  = s->typePtr->sParm.t.tMaxValue;
-                        }
-                    }
-
-                addVarToBits:
-                  /* The subrange lower value is a constant, but the upper value is
-                   * variable.
-                   *
-                   * Verify that the first value is in range.
-                   */
-
-                  if (firstValue < s->minValue)
-                    {
-                      error(eSETRANGE);
-                      firstValue = s->minValue;
-                    }
-                  else if (firstValue > s->maxValue)
-                    {
-                      error(eSETRANGE);
-                      firstValue = s->maxValue;
-                    }
-
-                  /* This we will need to handle at run-time */
-
-                  pas_CleanDirtySet(s, first);
-
-                  pas_GenerateDataOperation(opPUSH, firstValue - s->minValue);
-                  pas_GenerateStackReference(opLDS, g_tknPtr);
-                  if (s->minValue != 0)
-                    {
-                      pas_GenerateDataOperation(opPUSH, s->minValue);
-                      pas_GenerateSimple(opSUB);
-                    }
-
-                  pas_GenerateSetOperation(setSUBRANGE);
-
-                  /* If this is not the first chunk of the set we generated,
-                   * then we will need to OR it with the previous chunk on
-                   * the stack.
-                   */
-
-                  if (!first)
-                    {
-                      pas_GenerateSetOperation(setUNION);
-                    }
-
-                  first = false;
-                  getToken();
-                  break;
-
-                default :
-                  error(eSET);
-                  break;
-            }
-        }
-        break;
-
-      /* Now check for cases where the set element begins with a variable
-       * value.  This may be a single value or may be the lower value of
-       * a subrange.
-       */
-
-      case sSCALAR :
-        if (s->typeFound)
-          {
-            if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.vParent))
-              {
-               error(eSET);
-              }
-          }
-        else
-          {
-            s->typeFound = true;
-            s->typePtr   = g_tknPtr->sParm.v.vParent;
-            s->setType   = sSCALAR;
-            s->minValue  = s->typePtr->sParm.t.tMinValue;
-            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
-          }
-
-        goto addVar;
-
-      case sINT : /* An integer subrange variable ? */
-      case sCHAR : /* A character subrange variable? */
-        if (!s->typeFound)
-          {
-            s->typeFound = true;
-            s->setType   = g_token;
-          }
-        else if (s->setType != g_token)
-          {
-            error(eSET);
-          }
-
-         goto addVar;
-
-      case sSUBRANGE :
-        if (s->typeFound)
-          {
-             if ((!s->typePtr) || (s->typePtr != g_tknPtr->sParm.v.vParent))
-               {
-                 error(eSET);
-               }
-          }
-        else
-          {
-            s->typeFound = true;
-            s->typePtr   = g_tknPtr->sParm.v.vParent;
-            s->setType   = s->typePtr->sParm.t.tSubType;
-            s->minValue  = s->typePtr->sParm.t.tMinValue;
-            s->maxValue  = s->typePtr->sParm.t.tMaxValue;
-          }
-
-      addVar:
-        /* Check if the variable set element is the first value in a
-         * subrange of values.
-         */
-
-        setPtr = g_tknPtr;
-        getToken();
-        if (g_token != tSUBRANGE)
-          {
-            /* It is a single, variable member of the set.  We will have
-             * to do this at run-time.
-             */
-
-            pas_CleanDirtySet(s, first);
-
-            pas_GenerateStackReference(opLDS, setPtr);
-            if (s->minValue != 0)
-              {
-                pas_GenerateDataOperation(opPUSH, s->minValue);
-                pas_GenerateSimple(opSUB);
-              }
-
-            pas_GenerateSetOperation(setSINGLETON);
-
-            /* If this is not the first chunk of the set we generated, then
-             * we will need to OR it with the previous chunk on the stack.
-             */
-
-            if (!first)
-              {
-                pas_GenerateSetOperation(setUNION);
-              }
-
-            first = false;
-          }
-        else
-          {
-            if (!s->typeFound) error(eSUBRANGETYPE);
-
-            /* Skip over the tSUBRANGE token */
-
-            getToken();
-
-            /* TYPE check */
-
-            switch (g_token)
-              {
-                case sSCALAR_OBJECT : /* A scalar or scalar subrange constant */
-                  lastValue = g_tknPtr->sParm.c.cValue.i;
-                  if (s->setType != sSCALAR ||
-                      s->typePtr != g_tknPtr->sParm.c.cParent)
-                    {
-                      error(eSET);
-                    }
-
-                  goto addBitsToVar;
-
-                case tINT_CONST : /* An integer subrange constant ? */
-                  lastValue = g_tknInt;
-                  if (s->setType != sINT) error(eSET);
-                  goto addBitsToVar;
-
-                case tCHAR_CONST : /* A character subrange constant */
-                  lastValue = g_tknInt;
-                  if (s->setType != sCHAR) error(eSET);
-
-                addBitsToVar :
-                  /* It is subrange, commencing with a variable first element
-                   * and extending to constant terminal element.
-                   *
-                   * Verify that the last value is in range.
-                   */
-
-                  if (lastValue < s->minValue)
-                    {
-                      error(eSETRANGE);
-                      lastValue = s->minValue;
-                    }
-                  else if (lastValue > s->maxValue)
-                    {
-                      error(eSETRANGE);
-                      lastValue = s->maxValue;
-                    }
-
-                  /* We will have to do this at run-time. */
-
-                  pas_CleanDirtySet(s, first);
-
-                  pas_GenerateStackReference(opLDS, setPtr);
-                  if (s->minValue != 0)
-                    {
-                      pas_GenerateDataOperation(opPUSH, s->minValue);
-                      pas_GenerateSimple(opSUB);
-                    }
-
-                  pas_GenerateDataOperation(opPUSH, lastValue - s->minValue);
-                  pas_GenerateSetOperation(setSUBRANGE);
-
-                  /* If this is not the first chunk of the set we generated,
-                   * then we will need to OR it with the previous chunk on the
-                   * stack.
-                   */
-
-                  if (!first)
-                    {
-                      pas_GenerateSetOperation(setUNION);
-                    }
-
-                  first = false;
-                  getToken();
-                  break;
-
-                case sINT :  /* An integer subrange variable ? */
-                case sCHAR : /* A character subrange variable? */
-                  if (s->setType != g_token) error(eSET);
-                  goto addVarToVar;
-
-                case sSCALAR :
-                  if (s->typePtr != g_tknPtr->sParm.v.vParent) error(eSET);
-                  goto addVarToVar;
-
-                case sSUBRANGE :
-                  if (s->typePtr != g_tknPtr->sParm.v.vParent &&
-                     (g_tknPtr->sParm.v.vParent->sParm.t.tSubType == sSCALAR ||
-                      g_tknPtr->sParm.v.vParent->sParm.t.tSubType != s->setType))
-                    {
-                      error(eSET);
-                    }
-
-                addVarToVar:
-                  /* Both the first and last values of the subrange are variable.
-                   *
-                   * We will have to do this at run-time.
-                   */
-
-                  pas_CleanDirtySet(s, first);
-
-                  pas_GenerateStackReference(opLDS, setPtr);
-                  if (s->minValue)
-                    {
-                      pas_GenerateDataOperation(opPUSH, s->minValue);
-                      pas_GenerateSimple(opSUB);
-                    }
-
-                  pas_GenerateStackReference(opLDS, g_tknPtr);
-                  if (s->minValue)
-                    {
-                      pas_GenerateDataOperation(opPUSH, s->minValue);
-                      pas_GenerateSimple(opSUB);
-                    }
-
-                  pas_GenerateSetOperation(setSUBRANGE);
-
-                  /* If this is not the first chunk of the set we generated,
-                   * then we will need to OR it with the previous chunk on the
-                   * stack.
-                   */
-
-                  if (!first)
-                    {
-                      pas_GenerateSetOperation(setUNION);
-                    }
-
-                  first = false;
-                  getToken();
-                  break;
-
-                default :
-                  error(eSET);
-                  pas_GenerateDataOperation(opPUSH, 0);
-                  break;
-              }
-          }
-          break;
-
-      case ']' :
-        /* The empty set is a special case.  If the first thing we encounter
-         * after the '[' is ']', then this is an empty set.
-         *
-         * REVISIT:  'first' is not a reliable indicator that this is would
-         * have been the first element of the SET.
-         */
-
-        if (first)
-          {
-            break;
-          }
-
-        /* If this is not the first element of the set, then fall through to
-         * to declare an error.
-         */
-
-      default :
-        error(eSET);
-        pas_GenerateDataOperation(opPUSH, 0);
-        break;
+      findType = setTypePtr->sParm.t.tSubType;
     }
-
-  return first;
-}
-
-/****************************************************************************/
-
-static void pas_AddBitSetElements(setType_t *s, uint16_t firstValue,
-                                  uint16_t lastValue)
-
-{
-  uint16_t firstBitNo;
-  uint16_t lastBitNo;
-  uint16_t leadMask;
-  uint16_t tailMask;
-  int      wordIndex;
-
-  /* Set all bits from firstValue through lastValue. */
-
-  firstBitNo = firstValue - s->minValue;
-  lastBitNo  = lastValue  - s->minValue;
-  leadMask   = (0xffff << (firstBitNo & 0x0f));
-  tailMask   = (0xffff >> ((BITS_IN_INTEGER - 1) - (lastBitNo & 0x0f)));
-
-  /* Special case:  The entire sub-range fits in one word */
-
-  wordIndex = firstBitNo >> 4;
-  if (wordIndex == (lastBitNo >> 4))
-    {
-      s->setValue[wordIndex] = (leadMask & tailMask);
-    }
-
-  /* No, the last bit lies in a different word than the first */
-
   else
     {
-      uint16_t bitMask;
-      int      nBits;
-      int      leadBits;
-      int      tailBits;
-      int      bitsInWord;
-
-      nBits    = lastValue  - firstValue + 1;
-      leadBits = BITS_IN_INTEGER - firstBitNo;
-      tailBits = (lastBitNo & 0x0f) + 1;
-
-      /* Loop for each word */
-
-      for (bitMask = leadMask, bitsInWord = leadBits;
-           nBits > 0;
-           wordIndex++)
-        {
-          s->setValue[wordIndex] = bitMask;
-          nBits                 -= bitsInWord;
-
-          if (nBits >= BITS_IN_INTEGER)
-            {
-              bitsInWord = BITS_IN_INTEGER;
-              bitMask    = 0xffff;
-            }
-          else if (nBits > 0)
-            {
-              nBits   = tailBits;
-              bitMask = tailMask;
-            }
-        }
+      findType = setTypePtr->sParm.t.tType;
     }
 
-  s->dirty = true;
-}
-
-/****************************************************************************/
-
-static void pas_CleanDirtySet(setType_t *s, bool first)
-{
-  int i;
-
-  if (s->dirty)
+  findExprType = pas_MapVariable2ExprType(findType, true);
+  if (findExprType == exprUnknown)
     {
-      /* Push the SET onto the stack */
+      error(eSETELEMENT);
+    }
 
-      for (i = 0; i < sSET_WORDS; i++)
-        {
-          pas_GenerateDataOperation(opPUSH, s->setValue[i]);
-        }
+  subset1ExprType = pas_Expression(findExprType, setTypePtr);
+  if (subset1ExprType == exprUnknown)
+    {
+      error(eSETELEMENT);
+    }
 
-      s->dirty = false;
+  /* Check if what we just pushed is the first value in a sub-range */
 
-      /* If this is not the first chunk of the set we have generated, then we
-       * need to OR it with what is already on the stack.
+  if (g_token != tSUBRANGE)
+    {
+      /* Yes, then expand the pushed value into a singleton set */
+
+      pas_GenerateDataOperation(opPUSH, setTypePtr->sParm.t.tMinValue);
+      pas_GenerateSetOperation(setSINGLETON);
+    }
+  else
+    {
+      exprType_t subset2ExprType;
+
+      /* No, then get the up value of the subrange.  That value will also be
+       * pushed at the top of the stack of pas_Expression() is successful.
        */
 
-      if (!first)
+      getToken();
+      subset2ExprType = pas_Expression(subset1ExprType, setTypePtr);
+      if (subset2ExprType == exprUnknown)
         {
-          pas_GenerateSetOperation(setUNION);
+          error(eSETELEMENT);
         }
 
-      first = false;
+       /* Then convert the two values at the top of the stand into a SET that
+        * represents the subrange.
+        */
+
+      pas_GenerateDataOperation(opPUSH, setTypePtr->sParm.t.tMinValue);
+      pas_GenerateSetOperation(setSUBRANGE);
     }
 
-  /* Reset the SET */
+  /* If this was not the first set-subset, then push an operation to OR it
+   * it with the previous subset.
+   */
 
-  for (i = 0; i < sSET_WORDS; i++)
+  if (!first)
     {
-      s->setValue[i] = 0;
+      pas_GenerateSetOperation(setUNION);
     }
+
+  return false;
 }
 
 /****************************************************************************/
@@ -4168,4 +2741,919 @@ static bool pas_IsStringReference(exprType_t testExprType)
     {
       return false;
     }
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+/* Evaluate (boolean) Expression */
+
+exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
+{
+  uint8_t    operation;
+  uint16_t   intOpCode;
+  uint16_t   fpOpCode;
+  uint16_t   strOpCode;
+  uint16_t   setOpCode;
+  exprType_t simple1Type;
+  exprType_t simple2Type;
+  bool       haveSimple2;
+  bool       handled;
+
+  TRACE(g_lstFile,"[expression]");
+
+  /* The abstract types - SETs, RECORDS, etc - require an exact
+   * match in type.  Save the symbol table sTYPE entry associated
+   * with the expression.
+   */
+
+  if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
+  g_abstractTypePtr = typePtr;
+
+  /* FORM <simple expression> [<relational operator> <simple expression>]
+   *
+   * Get the first <simple expression>
+   */
+
+  simple1Type = pas_SimpleExpression(findExprType);
+
+  /* Get the optional <relational operator> which may follow */
+
+  operation = g_token;
+  switch (operation)
+    {
+    case tEQ :
+      /* Select all opcodes for all cases */
+
+      intOpCode = opEQU;
+      fpOpCode  = fpEQU;
+      strOpCode = opEQUZ;
+      setOpCode = setEQUALITY;
+
+      /* Skip over the operator */
+
+      getToken();
+      break;
+
+    case tNE :
+      /* Select all opcodes for all cases */
+
+      intOpCode = opNEQ;
+      fpOpCode  = fpNEQ;
+      strOpCode = opNEQZ;
+      setOpCode = setNONEQUALITY;
+
+      /* Skip over the operator */
+
+      getToken();
+      break;
+
+    case tLT :
+      /* Select all opcodes for all cases */
+
+      intOpCode = opLT;
+      fpOpCode  = fpLT;
+      strOpCode = opLTZ;
+      setOpCode = setINVALID;
+
+      /* Skip over the operator */
+
+      getToken();
+      break;
+
+    case tLE :
+      /* Select all opcodes for all cases */
+
+      intOpCode = opLTE;
+      fpOpCode  = fpLTE;
+      strOpCode = opLTEZ;
+      setOpCode = setCONTAINS;
+
+      /* Skip over the operator */
+
+      getToken();
+      break;
+
+    case tGT :
+      /* Select all opcodes for all cases */
+
+      intOpCode = opGT;
+      fpOpCode  = fpGT;
+      strOpCode = opGTZ;
+      setOpCode = setINVALID;
+
+      /* Skip over the operator */
+
+      getToken();
+      break;
+
+    case tGE :
+      /* Select all opcodes for all cases */
+
+      intOpCode = opGTE;
+      fpOpCode  = fpGTE;
+      strOpCode = opGTEZ;
+      setOpCode = setINVALID;
+
+      /* Skip over the operator */
+
+      getToken();
+      break;
+
+    case tIN :
+      /* Select all opcodes for all cases */
+
+      intOpCode = opNOP;
+      fpOpCode  = fpINVLD;
+      strOpCode = opNOP;
+      setOpCode = setMEMBER;
+
+      /* Skip over the operator */
+
+      getToken();
+      break;
+
+    default  :
+      /* Set all opcodes to no-op or invalid */
+
+      intOpCode = opNOP;
+      fpOpCode  = fpINVLD;
+      strOpCode = opNOP;
+      setOpCode = setINVALID;
+      break;
+    }
+
+  /* Check if there is a 2nd simple expression needed.  This depends on the
+   * kind of expression we found for the first expression and the kind of
+   * operator that was found.
+   *
+   * Check for operations on sets first.  These may be:
+   *
+   *   FORM:  set-expression set-operator set-expression
+   *          set-operator = '=' | '<>' | '<='
+   *   FORM:  set-member 'in' set-expression
+   *
+   * The set member may be any value for the sub-range of the ordinal type
+   * that underlies the set.
+   */
+
+  haveSimple2 = false;
+  handled     = false;
+
+  if (setOpCode != setINVALID &&
+      (((simple1Type == exprSet || simple1Type == exprEmptySet) &&
+        setOpCode != setMEMBER) ||
+       (pas_IsOrdinalExpression(simple1Type) && setOpCode == setMEMBER)))
+    {
+      symbol_t *abstract1Type = g_abstractTypePtr;
+      symbol_t *abstract2Type = NULL;
+
+      /* The top of the stack may hold either (1) the first set in a binary
+       * operation or (2) an integer-size, subrange member as the first part of
+       * the set-member.  g_abstractTypePtr will be NULL in that latter case.
+       *
+       * Get the second simple expression which should be a SET in all cases
+       * and should have a non-NULL g_abstractTypePtr.
+       */
+
+      g_abstractTypePtr = NULL;
+      simple2Type       = pas_SimpleExpression(exprSet);
+      haveSimple2       = true;
+      abstract2Type     = g_abstractTypePtr;
+
+      /* In all cases, the second expression must always be a SET */
+
+      if (simple2Type == exprSet || simple2Type == exprEmptySet)
+        {
+          switch (setOpCode)
+            {
+              case setEQUALITY :
+              case setNONEQUALITY :
+              case setCONTAINS :
+                /* FORM:  set1 comparison-operator set2
+                 * FORM:  comparison-operator = '=' | '<>' | '<='
+                 *
+                 * The two set expressions must refer to the same, underlying
+                 * abstract type (unless one is the empty set which has no
+                 * base abstract type).
+                 */
+
+                if ((simple1Type == exprReal && simple2Type == exprReal) &&
+                    abstract1Type != abstract2Type)
+                  {
+                    error(eEXPRTYPE);
+                  }
+                else
+                  {
+                    pas_GenerateSetOperation(setOpCode);
+                    simple1Type = exprBoolean;
+                    handled     = true;
+                  }
+                break;
+
+              case setMEMBER :
+                /* FORM:  member 'in' set
+                 *
+                 * The parent of the set should be a subrange and
+                 * the member should be an in-range ordinal value with
+                 * same type as the base type of the subrange.
+                 *
+                 * A perverse case is when set is the empty set.  The
+                 * result is always false in that case.
+                 */
+
+                if (abstract2Type == NULL)
+                  {
+                    if (simple2Type != exprEmptySet)
+                      {
+                        error(eHUH);
+                      }
+                    else
+                      {
+                        /* Check if a value is a member of an empty set???
+                         *
+                         * REVISIT:  This bogus logic but should provide the
+                         * correct result.
+                         */
+
+                         pas_GenerateSimple(opDUP);
+                         pas_GenerateSetOperation(setOpCode);
+                         simple1Type = exprBoolean;
+                         handled     = true;
+                      }
+                  }
+                else
+                  {
+                    symbol_t *subRangePtr;
+
+                    subRangePtr = pas_GetBaseTypePointer(abstract2Type);
+                    if (subRangePtr->sParm.t.tType == sSET)
+                      {
+                        subRangePtr = subRangePtr->sParm.t.tParent;
+                      }
+
+                    if (subRangePtr->sParm.t.tType != sSUBRANGE)
+                      {
+                        error(eHUH);
+                      }
+                    else
+                      {
+                        uint16_t baseType = subRangePtr->sParm.t.tSubType;
+
+                        if (simple1Type != pas_MapVariable2ExprType(baseType, true))
+                          {
+                            error(eEXPRTYPE);
+                          }
+                        else
+                          {
+                            /* Push the minimum value of the set-member.  This
+                             * will be used to make the sub-range zero-based.
+                             */
+
+                            pas_GenerateDataOperation(opPUSH,
+                              g_abstractTypePtr->sParm.t.tMinValue);
+
+                            /* Then generate the set operation */
+
+                            pas_GenerateSetOperation(setOpCode);
+                            simple1Type = exprBoolean;
+                            handled     = true;
+                          }
+
+                        g_abstractTypePtr = abstract1Type; /* Restore */
+                      }
+                  }
+                  break;
+
+              default :
+                error(eHUH);
+                g_abstractTypePtr = abstract1Type; /* Restore */
+                break;
+            }
+        }
+      else
+        {
+          /* Hmmm..  Some error occurred, either:
+           *
+           * 1. The first expression of '=', '<>", or "<=" was a SET, but
+           *    the second is not.
+           * 2. The second expression of 'IN' is not set.
+           */
+
+          error(eEXPRTYPE);
+          g_abstractTypePtr = abstract1Type; /* Restore */
+        }
+    }
+
+  /* Check for operations on strings first.  These may be:
+   *
+   *   FORM:  string-expression string-operator string-expression
+   *          string-expression = standard-string-expression |
+   *            short-string-expression
+   *          string-operator = '=', '<>', '<', '<=', '>', '>='
+   *
+   * The set member may be any value for the sub-range of the ordinal type
+   * that underlies the set.
+   */
+
+  if (strOpCode != opNOP && !handled)
+    {
+      /* Get the second simple expression (if we did not already) */
+
+      if (!haveSimple2)
+        {
+          simple2Type = pas_SimpleExpression(findExprType);
+          haveSimple2 = true;
+        }
+
+      /* Was the first expression a standard string? */
+
+      if (simple1Type == exprString)
+        {
+          /* What kind of string was the second expression? */
+
+          if (simple2Type == exprString)
+            {
+              pas_StandardFunctionCall(lbSTRCMP);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else if (simple2Type == exprShortString)
+            {
+              pas_StandardFunctionCall(lbSTRCMPSSTR);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else
+            {
+              error(eCOMPARETYPE);
+            }
+        }
+
+      /* Was the first expression a short string? */
+
+      else if (simple1Type == exprShortString)
+        {
+          if (simple2Type == exprString)
+            {
+              pas_StandardFunctionCall(lbSSTRCMPSTR);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else if (simple2Type == exprShortString)
+            {
+              pas_StandardFunctionCall(lbSSTRCMP);
+              pas_GenerateSimple(strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+          else
+            {
+              error(eCOMPARETYPE);
+            }
+        }
+    }
+
+  /* Deal with integer and real arithmetic */
+
+  if (intOpCode != opNOP && !handled)
+    {
+      /* Get the second simple expression (if we did not already) */
+
+      if (!haveSimple2)
+        {
+          getToken();
+          simple2Type = pas_SimpleExpression(findExprType);
+          haveSimple2 = true;
+        }
+
+      /* Perform automatic type conversion from INTEGER to REAL
+       * for integer vs. real comparisons.
+       */
+
+      if (simple1Type != simple2Type)
+        {
+          /* Handle the case where the 1st argument is REAL and the
+           * second is INTEGER.
+           */
+
+          if (simple1Type == exprReal &&
+              simple2Type == exprInteger &&
+              fpOpCode != fpINVLD)
+            {
+              fpOpCode   |= fpARG2;
+              simple2Type = exprReal;
+            }
+
+          /* Handle the case where the 1st argument is Integer and the
+           * second is REAL.
+           */
+
+          else if (simple1Type == exprInteger &&
+                   simple2Type == exprReal &&
+                   fpOpCode != fpINVLD)
+            {
+              fpOpCode   |= fpARG1;
+              simple1Type = exprReal;
+            }
+
+          /* Otherwise, the two terms must agree in type */
+
+          else
+            {
+              error(eEXPRTYPE);
+            }
+        }
+
+      /* Generate the comparison */
+
+      if (simple1Type == exprReal)
+        {
+          if (fpOpCode == fpINVLD)
+            {
+              error(eEXPRTYPE);
+            }
+          else
+            {
+              pas_GenerateFpOperation(fpOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
+        }
+      else
+        {
+          pas_GenerateSimple(intOpCode);
+
+          /* The resulting type is boolean */
+
+          simple1Type = exprBoolean;
+          handled     = true;
+        }
+    }
+
+  /* Verify that the expression is of the requested type.
+   * The following are okay:
+   *
+   * 1. We were told to find any kind of expression
+   *
+   * 2. We were told to find a specific kind of expression and
+   *    we found just that type.
+   *
+   * 3. We were told to find any kind of ordinal expression and
+   *    we found a ordinal expression.  This is what is needed, for
+   *    example, as an argument to ord(), pred(), succ(), or odd().
+   *    This is the kind of expression we need in a CASE statement
+   *    as well.
+   *
+   * 4. We were told to find any kind of string expression and
+   *    we found a string expression. This is a hack to handle
+   *    calls to system functions that return exprCString pointers
+   *    that must be converted to exprString records upon assignment.
+   *
+   * Special case:
+   *
+   *    We will perform automatic conversions to real from integer
+   *    if the requested type is a real expression.
+   */
+
+  if (findExprType != exprUnknown &&             /* 1) NOT Any expression */
+      findExprType != simple1Type &&             /* 2) NOT Matched expression */
+      (findExprType != exprAnyOrdinal ||         /* 3) NOT any ordinal type */
+       !pas_IsOrdinalExpression(simple1Type)) && /*    OR type is not ordinal */
+      (findExprType != exprAnyString ||          /* 4) NOT any string type */
+       !pas_IsStringExpression(simple1Type)) &&  /*    OR type is not string */
+      (!pas_IsStringReference(findExprType) ||   /* 5) Not looking for string ref */
+       !pas_IsStringReference(simple1Type)))     /*    OR type is not string ref */
+    {
+      /* Automatic conversions from INTEGER to REAL will be performed */
+
+      if (findExprType == exprReal && simple1Type == exprInteger)
+        {
+          pas_GenerateFpOperation(fpFLOAT);
+          simple1Type = exprReal;
+        }
+
+      /* Outside of this logic, an empty set is just treated like a set. */
+
+      else if (simple1Type == exprEmptySet)
+        {
+          simple1Type = exprSet;
+        }
+
+      /* Any other type mismatch is an error */
+
+      else
+        {
+          error(eEXPRTYPE);
+        }
+    }
+
+  return simple1Type;
+}
+
+/****************************************************************************/
+/* Provide VAR parameter assignments */
+
+exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
+{
+  exprType_t factorType;
+
+  /* The abstract types - SETs, RECORDS, etc - require an exact
+   * match in type.  Save the symbol table sTYPE entry associated
+   * with the expression.
+   */
+
+  if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
+  g_abstractTypePtr = typePtr;
+
+  /* This function is really just an interface to the
+   * static function pas_PointerFactor with some extra error
+   * checking.
+   */
+
+  factorType = pas_PointerFactor();
+  if (varExprType != exprUnknown && factorType != varExprType)
+    {
+      /* Allow automatic conversions between strings and short strings */
+
+      if ((factorType == exprStringPtr &&
+           varExprType == exprShortStringPtr) ||
+          (factorType == exprShortStringPtr &&
+           varExprType == exprStringPtr))
+        {
+          /* The supplied string pointer *almost* matches.
+           * REVISIT:  Do we need to take any specific conversion actions?
+           */
+        }
+      else
+        {
+          error(eINVVARPARM);
+        }
+    }
+
+  return factorType;
+}
+
+/****************************************************************************/
+/* Process Array Index */
+
+void pas_ArrayIndex(symbol_t *arrayTypePtr)
+{
+  TRACE(g_lstFile,"[pas_ArrayIndex]");
+
+  /* Parse the index-type-list.
+   *
+   *   FORM:  array-type = 'array' '[' index-type-list ']' 'of' type-denoter
+   *   FORM:  index-type-list = index-type { ',' index-type }
+   *
+   * On entry 'g_token' should refer to the '[' token.
+   */
+
+  if (g_token != '[') error(eLBRACKET);
+  else
+    {
+      symbol_t *indexTypePtr = arrayTypePtr->sParm.t.tIndex;
+      uint16_t  dimension    = 1;
+      uint16_t  elemSize;
+
+      do
+        {
+          exprType_t exprType;
+          uint16_t   indexType;
+          uint16_t   offset;
+
+          /* Sanity checks */
+
+          if (dimension > arrayTypePtr->sParm.t.tDimension)
+            {
+              /* Program apparently has more indices that dimensions. */
+
+              error(eTOOMANYINDICES);
+            }
+          else if (indexTypePtr == NULL)
+            {
+              /* Not enough index types for dimensionality of the array.
+               * This should never happen.
+               */
+
+              error(eHUH);
+            }
+
+          /* Get the type of the index */
+
+          if (indexTypePtr->sKind != sTYPE)
+            {
+              error(eINDEXTYPE);
+              exprType = exprUnknown;
+            }
+          else
+            {
+              indexType = indexTypePtr->sParm.t.tType;
+
+              /* REVISIT:  For subranges, we use the base type of the
+               * subrange.
+               */
+
+              if (indexType == sSUBRANGE)
+                {
+                  indexType = indexTypePtr->sParm.t.tSubType;
+                }
+
+              /* Get the expression type from the index type */
+
+              exprType = pas_MapVariable2ExprType(indexType, true);
+            }
+
+          /* Skip over the initial '[' or subsequent ',' and evaluate the
+           * index expression.
+           */
+
+          getToken();
+          pas_Expression(exprType, NULL);
+
+          /* We now have the array element at the top of the stack.  If the
+           * index is not zero-based, the we need to offset the index value
+           * so that it is.
+           */
+
+          offset = indexTypePtr->sParm.t.tMinValue;
+          if (offset != 0)
+            {
+              pas_GenerateDataOperation(opPUSH, offset);
+              pas_GenerateSimple(opSUB);
+            }
+
+          /* The first index is in units of the base type of the elements of
+           * array.  But the next index is in units of the index range of the
+           * first element times the size of the base type.
+           *
+           * We need to multiply the zero-based index by the element size
+           * (unless, of course, the element size is one).
+           */
+
+          elemSize = indexTypePtr->sParm.t.tAllocSize;
+          if (elemSize != 1)
+            {
+              pas_GenerateDataOperation(opPUSH, elemSize);
+              pas_GenerateSimple(opMUL);
+            }
+
+          /* If this is not the first dimension, then we need to add the
+           * offset that we just calculated to the offset calculated from
+           * the previous dimension.
+           */
+
+          if (dimension > 1)
+            {
+              pas_GenerateSimple(opADD);
+            }
+
+          /* Set up for the next time through the loop.  */
+
+          indexTypePtr = indexTypePtr->sParm.t.tIndex;
+          dimension++;
+        }
+      while (g_token == ',');
+
+      /* Verify that a right bracket terminates the index-type-list. */
+
+      if (g_token !=  ']') error(eRBRACKET);
+      else getToken();
+    }
+}
+
+/****************************************************************************/
+/* Determine the expression type associated with a pointer to a type
+ * symbol
+ */
+
+exprType_t pas_GetExpressionType(symbol_t *sType)
+{
+  exprType_t factorType = sINT;
+
+  TRACE(g_lstFile,"[getExprType]");
+
+  if (sType != NULL && sType->sKind == sTYPE)
+    {
+      switch (sType->sParm.t.tType)
+        {
+        case sINT :
+          factorType = exprInteger;
+          break;
+
+        case sBOOLEAN :
+          factorType = exprBoolean;
+          break;
+
+        case sCHAR :
+          factorType = exprChar;
+          break;
+
+        case sREAL :
+          factorType = exprReal;
+          break;
+
+        case sSCALAR :
+          factorType = exprScalar;
+          break;
+
+        case sSTRING :
+          factorType = exprString;
+          break;
+
+        case sSHORTSTRING :
+          factorType = exprShortString;
+          break;
+
+        case sSUBRANGE :
+          switch (sType->sParm.t.tSubType)
+            {
+            case sINT :
+              factorType = exprInteger;
+              break;
+
+            case sCHAR :
+              factorType = exprChar;
+              break;
+
+            case sSCALAR :
+              factorType = exprScalar;
+              break;
+
+            default :
+              error(eSUBRANGETYPE);
+              break;
+            }
+          break;
+
+        case sPOINTER :
+          sType = sType->sParm.t.tParent;
+          if (sType)
+            {
+              switch (sType->sKind)
+                {
+                case sINT :
+                  factorType = exprIntegerPtr;
+                  break;
+
+                case sBOOLEAN :
+                  factorType = exprBooleanPtr;
+                  break;
+
+                case sCHAR :
+                  factorType = exprCharPtr;
+                  break;
+
+                case sREAL :
+                  factorType = exprRealPtr;
+                  break;
+
+                case sSCALAR :
+                  factorType = exprScalarPtr;
+                  break;
+
+                default :
+                  error(eINVTYPE);
+                  break;
+                }
+            }
+          break;
+
+        default :
+          error(eINVTYPE);
+          break;
+        }
+    }
+
+  return factorType;
+}
+
+/****************************************************************************/
+
+exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
+{
+  switch (varType)
+    {
+      /* Ordinal type mappings */
+
+      case sINT :
+      case sSUBRANGE :
+        return exprInteger;           /* integer value */
+
+      case sCHAR :
+        return exprChar;              /* character value */
+
+      case sBOOLEAN :
+        return exprBoolean;           /* boolean(integer) value */
+
+      case sSCALAR :
+      case sSCALAR_OBJECT :
+        return exprScalar;            /* scalar(integer) value */
+
+      case sTYPE :                    /* Variable is defined type */
+        return exprUnknown;           /* REVISIT */
+
+      default:
+        if (!ordinal)
+          {
+            switch (varType)
+              {
+                case sREAL :
+                  return exprReal;    /* real value */
+
+                case sSTRING :
+                case sSTRING_CONST :
+                  return exprString;  /* variable length string reference */
+
+                case sSHORTSTRING :
+                  return exprShortString;  /* short string reference */
+
+                case sFILE :
+                case sTEXTFILE :
+                  return exprFile;    /* File number */
+
+                case sRECORD :
+                case sRECORD_OBJECT :
+                  return exprRecord;  /* record */
+
+                case sSET :
+                  return exprSet;     /* set(integer) value */
+
+                case sARRAY :         /* REVISIT: array of something */
+                case sPOINTER :       /* REVISIT: pointer to something */
+                default:
+                  error(eEXPRTYPE);
+                  return exprUnknown;
+              }
+          }
+        else
+          {
+            error(eEXPRTYPE);
+            return exprUnknown;
+          }
+    }
+}
+
+/****************************************************************************/
+
+exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal)
+{
+  exprType_t exprType;
+
+  exprType = pas_MapVariable2ExprType(varType, ordinal);
+  if (exprType != exprUnknown)
+    {
+      exprType = (exprType_t)((unsigned int)exprType | EXPRTYPE_POINTER);
+    }
+
+  return exprType;
+}
+
+/****************************************************************************/
+/* The base type of complex, defined type */
+
+symbol_t *pas_GetBaseTypePointer(symbol_t *typePtr)
+{
+  symbol_t  *baseTypePtr;
+  symbol_t  *nextTypePtr;
+
+  /* Get a pointer to the underlying base type symbol */
+
+  baseTypePtr     = typePtr;
+  nextTypePtr     = typePtr->sParm.t.tParent;
+
+  /* Loop until the terminal type is found.  Exception:  A SET is not really
+   * reducible.  The parent type of the sSET characterizes the SEt but is
+   * not the base type of the set (which will be a sub-range or a scalar).
+   */
+
+  while (nextTypePtr != NULL &&
+         nextTypePtr->sKind == sTYPE &&
+         baseTypePtr->sParm.t.tType != sSET)
+    {
+      baseTypePtr = nextTypePtr;
+      nextTypePtr = baseTypePtr->sParm.t.tParent;
+    }
+
+  return baseTypePtr;
 }

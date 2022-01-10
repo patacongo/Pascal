@@ -80,11 +80,12 @@ static int pexec_member(int16_t member, const uint16_t *src,
 
 /* Receive one set and a set member, returns the modified set */
 
-static int pexec_include(uint16_t member, uint16_t *dest);
-static int pexec_exclude(uint16_t member, uint16_t *dest);
+static int pexec_include(int16_t member, uint16_t *dest);
+static int pexec_exclude(int16_t member, uint16_t *dest);
 static int pexec_card(const uint16_t *src, uint16_t *dest);
-static int pexec_singleton(uint16_t member, uint16_t *dest);
-static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest);
+static int pexec_singleton(int16_t minValue, int16_t member, uint16_t *dest);
+static int pexec_subrange(int16_t minValue, int16_t member1, int16_t member2,
+                          uint16_t *dest);
 
 static uint16_t pexec_BitsInWord(uint16_t word);
 static uint16_t pexec_BitsInByte(uint8_t byte);
@@ -212,7 +213,7 @@ static int pexec_member(int16_t member, const uint16_t *src,
   return errorCode;
 }
 
-static int pexec_include(uint16_t member, uint16_t *dest)
+static int pexec_include(int16_t member, uint16_t *dest)
 {
   uint16_t wordIndex = member >> 4;
   uint16_t bitIndex  = member & 0x0f;
@@ -221,7 +222,7 @@ static int pexec_include(uint16_t member, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_exclude(uint16_t member, uint16_t *dest)
+static int pexec_exclude(int16_t member, uint16_t *dest)
 {
   uint16_t wordIndex = member >> 4;
   uint16_t bitIndex  = member & 0x0f;
@@ -237,7 +238,7 @@ static int pexec_card(const uint16_t *src, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_singleton(uint16_t member, uint16_t *dest)
+static int pexec_singleton(int16_t minValue, int16_t member, uint16_t *dest)
 {
   int wordIndex;
   int bitIndex;
@@ -251,7 +252,8 @@ static int pexec_singleton(uint16_t member, uint16_t *dest)
 
   /* Check that subrange values are in order and in range */
 
-  if (member >= BPERI * sSET_SIZE)
+  member -= minValue;
+  if (member < 0 || member >= sSET_MAXELEM)
     {
       return eVALUERANGE;
     }
@@ -263,7 +265,8 @@ static int pexec_singleton(uint16_t member, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
+static int pexec_subrange(int16_t minValue, int16_t member1, int16_t member2,
+                          uint16_t *dest)
 {
   uint16_t leadMask;
   uint16_t tailMask;
@@ -278,12 +281,14 @@ static int pexec_subrange(uint16_t member1, uint16_t member2, uint16_t *dest)
 
   /* Check that subrange values are in order and in range */
 
-  if (member2 >= BPERI * sSET_SIZE)
+  member2 -= minValue;
+  if (member2 < 0 || member2 >= sSET_MAXELEM)
     {
       return eVALUERANGE;
     }
 
-  if (member1 > member2)
+  member1 -= minValue;
+  if (member1 < 0 || member1 > member2)
     {
       return eVALUERANGE;
     }
@@ -372,13 +377,23 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
   const uint16_t *src1;
   const uint16_t *src2;
   uint16_t *dest;
-  uint16_t member1;
-  uint16_t member2;
-  uint16_t offset;
+  int16_t member1;
+  int16_t member2;
+  int16_t minValue;
+  int16_t offset;
   int errorCode = eNOERROR;
 
   switch (subfunc)
     {
+      /* No inputs, generate an empty set */
+
+      case setEMPTY:
+        PUSH(st, 0);
+        PUSH(st, 0);
+        PUSH(st, 0);
+        PUSH(st, 0);
+        break;
+
       /* Receive two sets, return one.  On entry:
        *
        * On entry:
@@ -508,33 +523,37 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
       /* Receives one integer value, returns a set representing the subrange:
        *
        * On entry:
-       *   TOS(0)               = member
+       *   TOS(0)               = minimum value of a member
+       *   TOS(2)               = member
        * On return:
        *   TOS(0-(sSET_WORDS-1) = Set result
        */
 
       case setSINGLETON :
+        POP(st, minValue);
         POP(st, member1);
         st->sp += sSET_SIZE;
         dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
-        errorCode = pexec_singleton(member1, dest);
+        errorCode = pexec_singleton(minValue, member1, dest);
         break;
 
       /* Receives two integer values, returns a set representing the subrange:
        *
        * On entry:
-       *   TOS(0)               = member2
-       *   TOS(1)               = member1
+       *   TOS(0)               = minimum value of a member
+       *   TOS(1)               = member2
+       *   TOS(2)               = member1
        * On return:
        *   TOS(0-(sSET_WORDS-1) = Set result
        */
 
       case setSUBRANGE :
+        POP(st, minValue);
         POP(st, member2);
         POP(st, member1);
         st->sp += sSET_SIZE;
         dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
-        errorCode = pexec_subrange(member1, member2, dest);
+        errorCode = pexec_subrange(minValue, member1, member2, dest);
         break;
 
       case setINVALID :

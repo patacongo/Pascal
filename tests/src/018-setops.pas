@@ -54,7 +54,7 @@ BEGIN
     WRITELN('FALSE');
 
   WRITE('INCLUDE(S1, D)'); showresult(INCLUDE(S1, 'D'));
-  WRITE('INCLUDE(S2, D)'); showresult(EXCLUDE(S2, 'D'));
+  WRITE('EXCLUDE(S2, D)'); showresult(EXCLUDE(S2, 'D'));
 
   WRITE('E IN S2 is ');
   if 'E' IN S2 THEN

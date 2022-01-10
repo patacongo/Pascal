@@ -132,6 +132,7 @@
  * eSUBRANGETYPE        Illegal subrange type
  * eSET                 Expected valid/consistent type for SET OF
  * sSETRANGE            Value out of range for SET OF
+ * sSETELEMENT          Invalid or missing set element
  * eSCALARTYPE          Illegal scalar type
  * eBADSHORTINT         Short integer is out of range
  * eSYMTABINTERNAL      Internal error in symbol table
@@ -270,16 +271,17 @@
 #define eSUBRANGETYPE    ((uint16_t) 0x50)
 #define eSET             ((uint16_t) 0x51)
 #define eSETRANGE        ((uint16_t) 0x52)
-#define eSCALARTYPE      ((uint16_t) 0x53)
-#define eBADSHORTINT     ((uint16_t) 0x54)
-#define eSYMTABINTERNAL  ((uint16_t) 0x55)
-#define eRECORDDECLARE   ((uint16_t) 0x56)
-#define eRECORDOBJECT    ((uint16_t) 0x57)
-#define eRECORDVAR       ((uint16_t) 0x58)
-#define eRECORDTYPE      ((uint16_t) 0x59)
-#define eUNIT            ((uint16_t) 0x5a)
-#define eUNITNAME        ((uint16_t) 0x5b)
-#define eARGIGNORED      ((uint16_t) 0x5c)
+#define eSETELEMENT      ((uint16_t) 0x53)
+#define eSCALARTYPE      ((uint16_t) 0x54)
+#define eBADSHORTINT     ((uint16_t) 0x55)
+#define eSYMTABINTERNAL  ((uint16_t) 0x56)
+#define eRECORDDECLARE   ((uint16_t) 0x57)
+#define eRECORDOBJECT    ((uint16_t) 0x58)
+#define eRECORDVAR       ((uint16_t) 0x59)
+#define eRECORDTYPE      ((uint16_t) 0x5a)
+#define eUNIT            ((uint16_t) 0x5b)
+#define eUNITNAME        ((uint16_t) 0x5c)
+#define eARGIGNORED      ((uint16_t) 0x5d)
 
 /* LINK TIME ERRORS */
 

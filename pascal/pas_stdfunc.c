@@ -325,14 +325,14 @@ static void pas_SetFunc(uint16_t setOpcode)
   else getToken();
 
   /* Successful parsing of a SET expression should have the side-effect of
-   * setting g_abstractType, the type of the SET expression (the full type,
+   * setting g_abstractTypePtr, the type of the SET expression (the full type,
    * not the base type).
    *
    * The base type is probably a SET.  So we will need the child subrange
    * which will tell us the "Subrange of what?"
    */
 
-  baseTypePtr     = pas_GetBaseTypePointer(g_abstractType);
+  baseTypePtr     = pas_GetBaseTypePointer(g_abstractTypePtr);
   baseType        = baseTypePtr->sParm.t.tType;
 
   if (baseType == sSET)
@@ -350,7 +350,7 @@ static void pas_SetFunc(uint16_t setOpcode)
 
   /* The set-member argument should then be a value of that type */
 
-  pas_Expression(memberExprType, g_abstractType);
+  pas_Expression(memberExprType, g_abstractTypePtr);
 
   /* Make the set-member value zero base */
 
