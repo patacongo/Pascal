@@ -452,6 +452,10 @@ static void pas_SetInitialValues(void)
                 pas_GenerateDataOperation(opPUSH, initializer->v.value.iPointer);
                 pas_GenerateStackReference(opSTS, varPtr);
                 break;
+
+              default:
+                error(eHUH);
+                break;
             }
         }
     }

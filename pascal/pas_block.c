@@ -1243,7 +1243,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
     case '^'      :
       getToken();
       typeIdPtr = pas_TypeIdentifier();
-      if (typeIdPtr)
+      if (typeIdPtr != NULL)
         {
           typePtr = pas_AddTypeDefine(typeName, sPOINTER, g_dwVarSize,
                                       typeIdPtr);
@@ -1401,11 +1401,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
        */
 
       typeIdPtr = pas_OrdinalTypeIdentifier();
-      if (typeIdPtr)
-        {
-          getToken();
-        }
-      else
+      if (typeIdPtr == NULL)
         {
           typeIdPtr = pas_DeclareSimpleType(NULL);
         }
@@ -1550,6 +1546,7 @@ static symbol_t *pas_OrdinalTypeIdentifier(void)
           break;
         }
     }
+
   return typePtr;
 }
 
@@ -2442,6 +2439,13 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
         }
     }
 
+  /* Check for SET initializers */
+
+  else if (g_token == '[' && typePtr->sParm.t.tType == sSET)
+    {
+      error(eNOTYET);
+    }
+
   /* Pointers differ in that we care less about the base type, particularly
    * since this logic only supports setting a pointer to NIL.
    */
@@ -3121,7 +3125,7 @@ void pas_VariableDeclarationGroup(void)
 
       if (initializer) getToken();
 
-      /* Then the variable definieion (with or without initializer) should
+      /* Then the variable definition (with or without initializer) should
        * be terminated with a semi-colon.
        */
 
