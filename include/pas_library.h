@@ -270,7 +270,7 @@
 
 #define lbSSTRINIT      (0x0013)
 
-/* Initialize a temporary string variable on the stack. It is similar to
+/* Initialize a temporary string variable on the stack. This is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
  * is currently used only when calling a function that returns a string in
  * order to catch the returned string value in an initialized container.

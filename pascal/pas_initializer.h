@@ -41,6 +41,33 @@
  * Public Data
  ***************************************************************************/
 
+/* Describes the initialization of one variable */
+
+union varInitValue_u
+{
+  int16_t  iOrdinal;    /* Integer/char/boolean/scalar value */
+  double   iReal;       /* Real value */
+  uint32_t iRoOffset;   /* Offset to read-only string */
+  uint16_t iPointer;    /* Pointer value (NIL) */
+  uint16_t iAltReal[4]; /* Alternative access to real value */
+};
+
+typedef union varInitValue_u varInitValue_t;
+
+struct varInitializer_s
+{
+  symbol_t      *iVarPtr;   /* Variable to be initialized */
+  uint32_t       iBaseType; /* Base type of the variable */
+  int            iStrLen;   /* Length of string */
+  varInitValue_t iValue;    /* Initial value of the variable */
+};
+
+typedef struct varInitializer_s varInitializer_t;
+
+/***************************************************************************
+ * Public Data
+ ***************************************************************************/
+
 extern int g_nInitializer;           /* The top of the initializer stack */
 extern int g_levelInitializerOffset; /* Index to initializers for this level */
 
@@ -48,6 +75,7 @@ extern int g_levelInitializerOffset; /* Index to initializers for this level */
  * Public Function Prototypes
  ***************************************************************************/
 
+void pas_AddInitialValue(varInitializer_t *varInitializer);
 void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
        uint16_t fileNumber);
 void pas_AddStringInitializer(symbol_t *stringPtr);

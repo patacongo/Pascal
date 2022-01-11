@@ -1,4 +1,4 @@
-/**********************************************************************
+/****************************************************************************
  * pas_initializer.c
  * Handle initialization of level variables
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -57,24 +57,48 @@
 #include "pas_expression.h"
 #include "pas_initializer.h"
 
-/**********************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- **********************************************************************/
+ ****************************************************************************/
 
 #define MAX_INITIALIZERS 32
 
-/**********************************************************************
+/****************************************************************************
  * Private Type Definitions
- **********************************************************************/
+ ****************************************************************************/
+
+/* Initializer type */
+
+enum initializerType_e
+{
+  VAR_INITIALIZER = 0,
+  FILE_INITIALIZER,
+  STRING_INITIALIZER,
+  RECORD_OBJECT_INITIALIZER
+};
+
+typedef enum initializerType_e initializerType_t;
+
+/* This structure describes one initializer */
 
 struct initializer_s
 {
-  symbol_t variable;               /* Copy of the symbol table entry */
+  symbol_t          variable;      /* Copy of the symbol table entry */
+  initializerType_t kind;          /* Kind of initializer */
 
   /* Information specific to a symbol type */
 
   union
     {
+      /* Variable value initialization data */
+
+      struct
+        {
+          uint32_t       baseType; /* Base type of the variable */
+          int            strLen;   /* Length of the string */
+          varInitValue_t value;    /* Initial value of the variable */
+        } v;
+
       /* File variable initialization data */
 
       struct
@@ -100,24 +124,34 @@ struct initializer_s
 
 typedef struct initializer_s initializer_t;
 
-/**********************************************************************
+/****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
+static initializer_t *pas_AddInitializer(symbol_t *varPtr,
+                                         initializerType_t kind);
+static void pas_BasicInitialization(void);
+static void pas_SetInitialValues(void);
+
+/****************************************************************************
  * Private Data
- **********************************************************************/
+ ****************************************************************************/
 
 static initializer_t g_initializers[MAX_INITIALIZERS];
 
-/**********************************************************************
+/****************************************************************************
  * Public Data
- **********************************************************************/
+ ****************************************************************************/
 
 int g_nInitializer           = 0;  /* The top of the initializer stack */
 int g_levelInitializerOffset = 0;  /* Index to initializers for this level */
 
-/**********************************************************************
+/****************************************************************************
  * Private Functions
- **********************************************************************/
+ ****************************************************************************/
 
-static initializer_t *pas_AddInitializer(symbol_t *varPtr)
+static initializer_t *pas_AddInitializer(symbol_t *varPtr,
+                                         initializerType_t kind)
 {
   initializer_t *initializer = NULL;
 
@@ -132,49 +166,23 @@ static initializer_t *pas_AddInitializer(symbol_t *varPtr)
 
       memset(initializer, 0, sizeof(initializer_t));
       memcpy(&initializer->variable, varPtr, sizeof(symbol_t));
+      initializer->kind   = kind;
       g_nInitializer++;
     }
 
   return initializer;
 }
 
-/**********************************************************************
- * Public Functions
- **********************************************************************/
+/* Perform basic initialization needed by files and string:
+ *
+ * - Files need to have a file number assigned to them,
+ * - Strings need to have a string buffer assigned to them
+ *
+ * This basic initialization must be done before we attempt to assign
+ * initialization values to variables.
+ */
 
-void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
-                            uint16_t fileNumber)
-{
-  initializer_t *initializer = pas_AddInitializer(filePtr);
-  if (initializer != NULL)
-    {
-      /* Remember the file variable info so that we can use it at the
-       * appropriate time.
-       */
-
-      initializer->f.preallocated  = preallocated;
-      initializer->f.fileNumber    = fileNumber;
-    }
-}
-
-void pas_AddStringInitializer(symbol_t *stringPtr)
-{
-  (void)pas_AddInitializer(stringPtr);
-}
-
-void pas_AddRecordObjectInitializer(symbol_t *recordVarPtr,
-                                    symbol_t *recordObjectPtr)
-{
-  initializer_t *initializer = pas_AddInitializer(recordVarPtr);
-  if (initializer != NULL)
-    {
-      /* Remember the record object too.*/
-
-      initializer->r.recordObjectPtr = recordObjectPtr;
-    }
-}
-
-void pas_Initialization(void)
+static void pas_BasicInitialization(void)
 {
   bool pushs = false;
   int  index;
@@ -188,9 +196,18 @@ void pas_Initialization(void)
       initializer_t *initializer = &g_initializers[index];
       symbol_t      *varPtr      = &initializer->variable;
 
+      /* Skip over setting of inital values on this first pass */
+
+      if (initializer->kind == VAR_INITIALIZER)
+        {
+          continue;
+        }
+
+      /* Initialize files and strings (include files and strings within records). */
+
       switch (varPtr->sKind)
         {
-          /* REVISIT:  How about ARRAYs of files. */
+          /* Handle kind == FILE_INITIALIZER */
 
           case sFILE :
           case sTEXTFILE :
@@ -205,6 +222,8 @@ void pas_Initialization(void)
 
             pas_GenerateStackReference(opSTS, varPtr);
             break;
+
+          /* Handle kind == STRING_INITIALIZER */
 
           case sSTRING:
             {
@@ -257,6 +276,10 @@ void pas_Initialization(void)
               pushs = true;
             }
             break;
+
+          /* Handle kind == RECORD_OBJECT_INITIALIZER, i.e., file and
+           * string fields in RECORDS.
+           */
 
           case sRECORD:
             {
@@ -346,6 +369,168 @@ void pas_Initialization(void)
             break;
         }
     }
+}
+
+static void pas_SetInitialValues(void)
+{
+  int index;
+
+  /* Generate each index */
+
+  for (index = g_levelInitializerOffset;
+       index < g_nInitializer;
+       index++)
+    {
+      initializer_t *initializer = &g_initializers[index];
+      symbol_t      *varPtr      = &initializer->variable;
+
+      /* Only process setting of initial values of variables */
+
+      if (initializer->kind == VAR_INITIALIZER)
+        {
+          switch (initializer->v.baseType)
+            {
+              /* Ordinal types */
+
+              case sINT :
+              case sBOOLEAN :
+              case sSCALAR :
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iOrdinal);
+                pas_GenerateStackReference(opSTS, varPtr);
+                break;
+
+              case sCHAR:
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iOrdinal);
+                pas_GenerateStackReference(opSTSB, varPtr);
+                break;
+
+              /* Real values */
+
+              case sREAL:
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[0]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[1]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[2]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[3]);
+                pas_GenerateDataOperation(opPUSH, sREAL_SIZE);
+                pas_GenerateStackReference(opSTSM, varPtr);
+                break;
+
+              /* Strings.  In all cases, the initial value of the string is a
+               * C string in read-only memory.
+               */
+
+              case sSTRING :
+              case sSHORTSTRING :
+                {
+                  uint16_t opCode;
+
+                  /* Create a standard string.  Get the offset then size of
+                   * the string on the stack.
+                   */
+
+                  pas_GenerateDataOperation(opPUSH, initializer->v.strLen);
+                  pas_GenerateDataOperation(opLAC, initializer->v.value.iRoOffset);
+
+                  /* And copy the string to the string valiable */
+
+                  pas_GenerateStackReference(opLAS, varPtr);
+
+                  if (initializer->v.baseType == sSTRING)
+                    {
+                      opCode = lbSTRCPY;
+                    }
+                  else
+                    {
+                      opCode = lbSTR2SSTR;
+                    }
+
+                  pas_StandardFunctionCall(opCode);
+                }
+                break;
+
+              case sPOINTER :
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iPointer);
+                pas_GenerateStackReference(opSTS, varPtr);
+                break;
+            }
+        }
+    }
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+void pas_AddInitialValue(varInitializer_t *varInitializer)
+{
+  initializer_t *initializer;
+
+  initializer = pas_AddInitializer(varInitializer->iVarPtr,
+                                   VAR_INITIALIZER);
+  if (initializer != NULL)
+    {
+      /* Remember the file variable info so that we can use it at the
+       * appropriate time.
+       */
+
+      initializer->v.baseType = varInitializer->iBaseType;
+      initializer->v.strLen   = varInitializer->iStrLen;
+      initializer->v.value    = varInitializer->iValue;
+    }
+}
+
+void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
+                            uint16_t fileNumber)
+{
+  initializer_t *initializer;
+
+  initializer = pas_AddInitializer(filePtr, FILE_INITIALIZER);
+  if (initializer != NULL)
+    {
+      /* Remember the file variable info so that we can use it at the
+       * appropriate time.
+       */
+
+      initializer->f.preallocated  = preallocated;
+      initializer->f.fileNumber    = fileNumber;
+    }
+}
+
+void pas_AddStringInitializer(symbol_t *stringPtr)
+{
+  (void)pas_AddInitializer(stringPtr, STRING_INITIALIZER);
+}
+
+void pas_AddRecordObjectInitializer(symbol_t *recordVarPtr,
+                                    symbol_t *recordObjectPtr)
+{
+  initializer_t *initializer;
+
+  initializer = pas_AddInitializer(recordVarPtr, RECORD_OBJECT_INITIALIZER);
+  if (initializer != NULL)
+    {
+      /* Remember the record object too.*/
+
+      initializer->r.recordObjectPtr = recordObjectPtr;
+    }
+}
+
+void pas_Initialization(void)
+{
+  /* Perform basic initialization needed by files and string:
+   *
+   * - Files need to have a file number assigned to them,
+   * - Strings need to have a string buffer assigned to them
+   *
+   * This basic initialization must be done before we attempt to assign
+   * initialization values to variables.
+   */
+
+  pas_BasicInitialization();
+
+  /* Now we can initialize the variable values */
+
+  pas_SetInitialValues();
 }
 
 void pas_Finalization(void)

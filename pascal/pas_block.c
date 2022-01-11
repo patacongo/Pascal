@@ -85,7 +85,7 @@ static void      pas_DeclareLabel          (void);
 static void      pas_DeclareConst          (void);
 static symbol_t *pas_DeclareType           (char *typeName);
 static symbol_t *pas_DeclareSimpleType     (char *typeName);
-static symbol_t *pas_DeclareVar            (void);
+static symbol_t *pas_DeclareVar            (bool *pInitializer);
 static void      pas_ProcedureDeclaration  (void);
 static void      pas_FunctionDeclaration   (void);
 
@@ -102,6 +102,8 @@ static symbol_t *pas_DeclareRecordType     (char *recordName);
 static symbol_t *pas_DeclareField          (symbol_t *recordPtr,
                                             symbol_t *lastField);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
+static void      pas_AddVarInitializer     (symbol_t *varPtr,
+                                            symbol_t *typePtr);
 static void      pas_AddRecordInitializers (symbol_t *varPtr,
                                             symbol_t *typePtr);
 static void      pas_AddArrayInitializers  (symbol_t *varPtr,
@@ -296,19 +298,22 @@ static symbol_t *pas_DeclareSimpleType(char *typeName)
 /****************************************************************************/
 /* Process VAR declaration */
 
-static symbol_t *pas_DeclareVar(void)
+static symbol_t *pas_DeclareVar(bool *pInitializer)
 {
   symbol_t *varPtr;
   symbol_t *typePtr;
   char     *varName;
+  bool      initializer;
 
   TRACE(g_lstFile,"[pas_DeclareVar]");
 
   /* FORM: variable-declaration = identifier-list ':' type-denoter
+   *       { '=' initial-value }
    * FORM: identifier-list = identifier { ',' identifier }
    */
 
-  typePtr  = NULL;
+  typePtr     = NULL;
+  initializer = false;
 
   /* Save the current identifier */
 
@@ -327,7 +332,7 @@ static symbol_t *pas_DeclareVar(void)
 
       getLevelToken();
       if (g_token != tIDENT) error(eIDENT);
-      else typePtr = pas_DeclareVar();
+      else typePtr = pas_DeclareVar(&initializer);
     }
   else
     {
@@ -349,6 +354,16 @@ static symbol_t *pas_DeclareVar(void)
           if (typePtr == NULL)
             {
               error(eINVTYPE);
+            }
+
+          /* Check for an initial value */
+
+          if (g_token == '=')
+            {
+              /* Advance the token to the initial value */
+
+              getToken();
+              initializer = true;
             }
         }
     }
@@ -417,6 +432,13 @@ static symbol_t *pas_DeclareVar(void)
               pas_AddArrayInitializers(varPtr, typePtr);
             }
 
+          /* Check for an initial value */
+
+          if (initializer)
+            {
+              pas_AddVarInitializer(varPtr, typePtr);
+            }
+
           /* If the variable is declared in an interface section at level
            * zero, then it is a candidate to be imported or exported.
            */
@@ -467,6 +489,11 @@ static symbol_t *pas_DeclareVar(void)
 
           g_dStack += g_dwVarSize;
         }
+    }
+
+  if (pInitializer != NULL)
+    {
+      *pInitializer = initializer;
     }
 
   return typePtr;
@@ -2322,6 +2349,122 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
 
 /****************************************************************************/
 
+static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
+{
+  varInitializer_t initializer;
+
+  /* FORM:
+   *   variable-declaration = identifier-list ':' type-denoter
+   *                          { '=' initial-value }
+   *
+   * On entry, the initial-value should be the current token.
+   */
+
+  symbol_t *baseTypePtr = pas_GetBaseTypePointer(typePtr);
+  uint32_t  baseType    = baseTypePtr->sParm.t.tType;
+
+  if (baseType == sSUBRANGE)
+    {
+      baseType          = baseTypePtr->sParm.t.tSubType;
+    }
+
+  /* Set up the initializer */
+
+  initializer.iVarPtr   = varPtr;
+  initializer.iBaseType = baseType;
+  
+  /* Only constant values that match the type are acceptable */
+
+  /* Check for ordinal initializers.  They are basically all treated the same. */
+
+  if (((g_token == tINT_CONST || g_token == tCHAR_CONST) &&
+        baseType == sINT) ||
+      (g_token == tCHAR_CONST && baseType == sCHAR) ||
+      (g_token == tBOOLEAN_CONST && baseType == sBOOLEAN))
+    {
+      initializer.iValue.iOrdinal = g_tknInt;
+    }
+  else if (g_token == sSCALAR_OBJECT && baseType == sSCALAR)
+    {
+      initializer.iValue.iOrdinal =  g_tknPtr->sParm.c.cValue.i;
+    }
+
+  /* Check for real value initializers */
+
+  else if (baseType == sREAL)
+    {
+      if (g_token == tREAL_CONST)
+        {
+          initializer.iValue.iReal = g_tknReal;
+        }
+      else if (g_token == tINT_CONST)
+        {
+          initializer.iValue.iReal = (double)g_tknInt;
+        }
+      else
+        {
+          error(eREALINIT);
+        }
+    }
+
+  /* Check for string initializers */
+
+  else if (baseType == sSTRING || baseType == sSHORTSTRING)
+    {
+      if (g_token == tSTRING_CONST)
+        {
+         /* Add the string to the RO data section of the output
+          * and get the offset to the string location.
+          */
+
+          initializer.iValue.iRoOffset =
+            poffAddRoDataString(g_poffHandle, g_tokenString);
+          initializer.iStrLen          = strlen(g_tokenString);
+        }
+      else if (g_token == sSTRING_CONST)
+        {
+          initializer.iValue.iRoOffset = g_tknPtr->sParm.s.roOffset;
+          initializer.iStrLen          = g_tknPtr->sParm.s.roSize;
+        }
+      else if (g_token == tCHAR_CONST)
+        {
+          char temp[2];
+
+          temp[0] = (char)g_tknInt;
+          temp[1] = '\0';
+          initializer.iValue.iRoOffset =
+            poffAddRoDataString(g_poffHandle, temp);
+          initializer.iStrLen          = 1;
+        }
+      else
+        {
+          error(eSTRINGINIT);
+        }
+    }
+
+  /* Pointers differ in that we care less about the base type, particularly
+   * since this logic only supports setting a pointer to NIL.
+   */
+
+  else if (g_token == tNIL && typePtr->sParm.t.tType == sPOINTER)
+    {
+      initializer.iBaseType       = sPOINTER;
+      initializer.iValue.iPointer = 0;
+    }
+  else
+    {
+      error(eBADINITIALIZER);
+    }
+
+  /* Add to the set of initialzation actions to be performed when the time
+   * is right.
+   */
+
+  pas_AddInitialValue(&initializer);
+}
+
+/****************************************************************************/
+
 static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 {
   symbol_t *recordTypePtr = varPtr->sParm.v.vParent;
@@ -2968,7 +3111,20 @@ void pas_VariableDeclarationGroup(void)
 
   while (g_token == tIDENT)
     {
-      (void)pas_DeclareVar();
+      /* Handle the variable definition */
+
+      bool initializer = false;
+
+      (void)pas_DeclareVar(&initializer);
+
+      /* If an initializer was found, then we need to skip over the initializer */
+
+      if (initializer) getToken();
+
+      /* Then the variable definieion (with or without initializer) should
+       * be terminated with a semi-colon.
+       */
+
       if (g_token != ';') break;
       else getToken();
     }

@@ -1,4 +1,4 @@
-                          AS OF 01/09/22
+                          AS OF 01/11/22
 
 TYPES
 - All basic types INT, BOOLEAN, CHAR, REAL, SCALAR, SUBRANGE, RECORD and SET
@@ -18,6 +18,10 @@ TYPES
   - In RECORD CASE, there is no verification that the type of the tag
     is consistent with a case selector; the check is only if the case selector
     constants are of the same type as the tag type identifier.
+- Variable initializers are supported for most simple type.  The compiler
+  supports initializers of the form:
+    VAR
+      name : type = initial-value
 
 - No range checks on array indices
 - Pointers
@@ -179,9 +183,6 @@ o BUGS / MISSING FUNCTIONALITY
   proc (,,), no error is detected.
 - There are lots of cases where the string stack is not being managed
   correctly (e.g., usesSection()).
-- Implement variable initializers, i.e., support initializers of the form:
-    VAR
-      name : type = initial-value
 
 o IMPROVEMENTS
 - In tokenizer, verify that string stack does not overflow when
