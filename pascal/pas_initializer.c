@@ -448,6 +448,15 @@ static void pas_SetInitialValues(void)
                 }
                 break;
 
+              case sSET :
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iSet[0]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iSet[1]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iSet[2]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iSet[3]);
+                pas_GenerateDataOperation(opPUSH, sSET_SIZE);
+                pas_GenerateStackReference(opSTSM, varPtr);
+                break;
+
               case sPOINTER :
                 pas_GenerateDataOperation(opPUSH, initializer->v.value.iPointer);
                 pas_GenerateStackReference(opSTS, varPtr);

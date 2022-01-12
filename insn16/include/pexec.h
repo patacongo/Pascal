@@ -54,11 +54,6 @@
 #define INPUT_FILE_NUMBER   0
 #define OUTPUT_FILE_NUMBER  1
 
-/* BOOLEAN constant values */
-
-#define PASCAL_TRUE         (-1)
-#define PASCAL_FALSE        (0)
-
 /* Remove the value from the top of the stack */
 
 #define POP(st, dest) \

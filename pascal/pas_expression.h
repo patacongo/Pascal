@@ -141,10 +141,13 @@ typedef enum exprType_e exprType_t;
 
 /* Returned characterization of the constant set by pas_ConstantExpression. */
 
-extern int     g_constantToken;
-extern int32_t g_constantInt;
-extern double  g_constantReal;
-extern char   *g_constantStart;
+extern int      g_constantToken;
+extern int32_t  g_constantInt;
+extern double   g_constantReal;
+extern char    *g_constantStart;
+extern uint32_t g_constantStrOffset;
+extern int      g_constantStrLen;
+extern uint16_t g_constantSet[sSET_WORDS];
 
 /* The abstract types - SETs, RECORDS, etc - require an exact
  * match in type.  This variable points to the symbol table
@@ -167,6 +170,6 @@ exprType_t pas_GetExpressionType(symbol_t *sType);
 exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal);
 exprType_t pas_MapVariable2ExprPtrType(uint16_t varType, bool ordinal);
 symbol_t  *pas_GetBaseTypePointer(symbol_t *typePtr);
-void       pas_ConstantExpression(void);
+void       pas_ConstantExpression(exprType_t findExprType);
 
 #endif /* __PAS_EXPRESSION_H */

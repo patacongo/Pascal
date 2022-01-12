@@ -184,7 +184,7 @@ static void pas_DeclareConst(void)
 
   /* Handle constant expressions */
 
-  pas_ConstantExpression();
+  pas_ConstantExpression(exprUnknown);
 
   /* Add the constant to the symbol table based on the type of
    * the constant found following the '= [ sign ]'
@@ -196,22 +196,20 @@ static void pas_DeclareConst(void)
     case tCHAR_CONST :
     case tBOOLEAN_CONST :
     case sSCALAR_OBJECT :
-      (void)pas_AddConstant(const_name, g_constantToken, &g_constantInt, NULL);
+      pas_AddConstant(const_name, g_constantToken, &g_constantInt, NULL);
       break;
 
     case tREAL_CONST :
-      (void)pas_AddConstant(const_name, g_constantToken, (int32_t*)&g_constantReal, NULL);
+      pas_AddConstant(const_name, g_constantToken, (int32_t*)&g_constantReal, NULL);
       break;
 
     case tSTRING_CONST :
-      {
-        uint32_t offset = poffAddRoDataString(g_poffHandle, g_constantStart);
-        (void)pas_AddStringConstant(const_name, offset, strlen(g_constantStart));
-      }
+      pas_AddStringConstant(const_name, g_constantStrOffset, g_constantStrLen);
       break;
 
     default :
       error(eINVCONST);
+      break;
     }
 }
 
@@ -835,7 +833,7 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
        */
 
       getToken();
-      pas_ConstantExpression();
+      pas_ConstantExpression(exprInteger);
 
       if (g_constantToken != tINT_CONST) error(eINTCONST);
       else if (g_constantInt <= 0) error(eINVCONST);
@@ -2357,107 +2355,131 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
    * On entry, the initial-value should be the current token.
    */
 
-  symbol_t *baseTypePtr = pas_GetBaseTypePointer(typePtr);
-  uint32_t  baseType    = baseTypePtr->sParm.t.tType;
-
-  if (baseType == sSUBRANGE)
-    {
-      baseType          = baseTypePtr->sParm.t.tSubType;
-    }
-
-  /* Set up the initializer */
-
-  initializer.iVarPtr   = varPtr;
-  initializer.iBaseType = baseType;
-  
-  /* Only constant values that match the type are acceptable */
-
-  /* Check for ordinal initializers.  They are basically all treated the same. */
-
-  if (((g_token == tINT_CONST || g_token == tCHAR_CONST) &&
-        baseType == sINT) ||
-      (g_token == tCHAR_CONST && baseType == sCHAR) ||
-      (g_token == tBOOLEAN_CONST && baseType == sBOOLEAN))
-    {
-      initializer.iValue.iOrdinal = g_tknInt;
-    }
-  else if (g_token == sSCALAR_OBJECT && baseType == sSCALAR)
-    {
-      initializer.iValue.iOrdinal =  g_tknPtr->sParm.c.cValue.i;
-    }
-
-  /* Check for real value initializers */
-
-  else if (baseType == sREAL)
-    {
-      if (g_token == tREAL_CONST)
-        {
-          initializer.iValue.iReal = g_tknReal;
-        }
-      else if (g_token == tINT_CONST)
-        {
-          initializer.iValue.iReal = (double)g_tknInt;
-        }
-      else
-        {
-          error(eREALINIT);
-        }
-    }
-
-  /* Check for string initializers */
-
-  else if (baseType == sSTRING || baseType == sSHORTSTRING)
-    {
-      if (g_token == tSTRING_CONST)
-        {
-         /* Add the string to the RO data section of the output
-          * and get the offset to the string location.
-          */
-
-          initializer.iValue.iRoOffset =
-            poffAddRoDataString(g_poffHandle, g_tokenString);
-          initializer.iStrLen          = strlen(g_tokenString);
-        }
-      else if (g_token == sSTRING_CONST)
-        {
-          initializer.iValue.iRoOffset = g_tknPtr->sParm.s.roOffset;
-          initializer.iStrLen          = g_tknPtr->sParm.s.roSize;
-        }
-      else if (g_token == tCHAR_CONST)
-        {
-          char temp[2];
-
-          temp[0] = (char)g_tknInt;
-          temp[1] = '\0';
-          initializer.iValue.iRoOffset =
-            poffAddRoDataString(g_poffHandle, temp);
-          initializer.iStrLen          = 1;
-        }
-      else
-        {
-          error(eSTRINGINIT);
-        }
-    }
-
-  /* Check for SET initializers */
-
-  else if (g_token == '[' && typePtr->sParm.t.tType == sSET)
-    {
-      error(eNOTYET);
-    }
-
   /* Pointers differ in that we care less about the base type, particularly
    * since this logic only supports setting a pointer to NIL.
    */
 
-  else if (g_token == tNIL && typePtr->sParm.t.tType == sPOINTER)
+  if (g_token == tNIL && typePtr->sParm.t.tType == sPOINTER)
     {
+      initializer.iVarPtr         = varPtr;
       initializer.iBaseType       = sPOINTER;
       initializer.iValue.iPointer = 0;
+      getToken();
     }
   else
     {
-      error(eBADINITIALIZER);
+      symbol_t *baseTypePtr = pas_GetBaseTypePointer(typePtr);
+      uint32_t  baseType    = baseTypePtr->sParm.t.tType;
+
+      if (baseType == sSUBRANGE)
+        {
+          baseType          = baseTypePtr->sParm.t.tSubType;
+        }
+
+      /* Set up the initializer */
+
+      initializer.iVarPtr   = varPtr;
+      initializer.iBaseType = baseType;
+
+      /* Only constant values that match the type are acceptable */
+
+      /* Check for ordinal initializers.  They are basically all treated the
+       * same.
+       */
+
+      if (baseType == sINT)
+        {
+          /* Handle a constant integer expression.  A valid result could be
+           * either an integer or a character constant.
+           */
+
+          pas_ConstantExpression(exprInteger);
+          if (g_constantToken != tINT_CONST && g_constantToken != tCHAR_CONST)
+            {
+              error(eBADINITIALIZER);
+            }
+
+          initializer.iValue.iOrdinal = g_constantInt;
+        }
+      else if ((g_token == tCHAR_CONST && baseType == sCHAR) ||
+               (g_token == tBOOLEAN_CONST && baseType == sBOOLEAN))
+        {
+          /* Simple char or boolean initializer.  No expression. */
+
+          initializer.iValue.iOrdinal = g_tknInt;
+          getToken();
+        }
+      else if (g_token == sSCALAR_OBJECT && baseType == sSCALAR)
+        {
+          /* Simple scalar value initializer */
+
+          initializer.iValue.iOrdinal =  g_tknPtr->sParm.c.cValue.i;
+          getToken();
+        }
+
+      /* Check for real value initializers */
+
+      else if (baseType == sREAL)
+        {
+          /* Handle a constant real expression. */
+
+          pas_ConstantExpression(exprReal);
+          if (g_constantToken == tREAL_CONST)
+            {
+              initializer.iValue.iReal = g_constantReal;
+            }
+          else
+            {
+              error(eREALINIT);
+            }
+        }
+
+      /* Check for string initializers */
+
+      else if (baseType == sSTRING || baseType == sSHORTSTRING)
+        {
+          /* Let the common constant expression logic handle this case */
+
+          pas_ConstantExpression(exprString);
+          if (g_constantToken == tSTRING_CONST)
+            {
+             /* Add the string to the RO data section of the output
+              * and get the offset to the string location.
+              */
+
+              initializer.iValue.iRoOffset = g_constantStrOffset;
+              initializer.iStrLen          = g_constantStrLen;
+            }
+          else
+            {
+              error(eSTRINGINIT);
+            }
+        }
+
+      /* Check for SET initializers */
+
+      else if (baseType == sSET)
+        {
+          /* Let the common constant expression logic handle this case */
+
+          pas_ConstantExpression(exprSet);
+          if (g_constantToken == tSET_CONST)
+            {
+              initializer.iValue.iSet[0] = g_constantSet[0];
+              initializer.iValue.iSet[1] = g_constantSet[1];
+              initializer.iValue.iSet[2] = g_constantSet[2];
+              initializer.iValue.iSet[3] = g_constantSet[3];
+            }
+          else
+            {
+              error(eSETINIT);
+            }
+        }
+      else
+        {
+          error(eBADINITIALIZER);
+        }
+
     }
 
   /* Add to the set of initialzation actions to be performed when the time
@@ -3115,18 +3137,12 @@ void pas_VariableDeclarationGroup(void)
 
   while (g_token == tIDENT)
     {
-      /* Handle the variable definition */
+      /* Handle the next variable definition */
 
-      bool initializer = false;
+      (void)pas_DeclareVar(NULL);
 
-      (void)pas_DeclareVar(&initializer);
-
-      /* If an initializer was found, then we need to skip over the initializer */
-
-      if (initializer) getToken();
-
-      /* Then the variable definition (with or without initializer) should
-       * be terminated with a semi-colon.
+      /* The variable definition should be terminated with a semi-colon
+       * if there are more to come.
        */
 
       if (g_token != ';') break;

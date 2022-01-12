@@ -1,11 +1,14 @@
 PROGRAM initializers;
 TYPE
-  stooges = (larry, curly, moe)
+  stooges = (larry, curly, moe);
+  stoogeset = SET OF stooges;
 
 VAR
   intval : INTEGER = 42;
   boolval : BOOLEAN = true;
   stooge : stooges = moe;
+  curlyset : stoogeset = [curly];
+  otherstooges : stoogeset = [larry..moe] - [curly];
   pi : REAL = 3.14159;
   hello : STRING[8] = 'hello';
   pointer : ^INTEGER = NIL

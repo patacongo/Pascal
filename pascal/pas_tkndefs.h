@@ -47,12 +47,13 @@
 #define tBOOLEAN_CONST   0x04
 #define tREAL_CONST      0x05
 #define tSTRING_CONST    0x06
+#define tSET_CONST       0x07
 
-#define tLE              0x07  /* <= */
-#define tGE              0x08  /* >= */
-#define tASSIGN          0x09  /* := */
-#define tSUBRANGE        0x0a  /* .. */
-#define tSYMDIFF         0x0b  /* Symmetric difference '><' */
+#define tLE              0x08  /* <= */
+#define tGE              0x09  /* >= */
+#define tASSIGN          0x0a  /* := */
+#define tSUBRANGE        0x0b  /* .. */
+#define tSYMDIFF         0x0c  /* Symmetric difference '><' */
 
 /* Token Values 0x21-0x2F (except 0x24) are for ASCII character tokens:
  * '!', '"', '#', '$' '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/'

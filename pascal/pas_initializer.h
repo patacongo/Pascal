@@ -45,21 +45,22 @@
 
 union varInitValue_u
 {
-  int16_t  iOrdinal;    /* Integer/char/boolean/scalar value */
-  double   iReal;       /* Real value */
-  uint32_t iRoOffset;   /* Offset to read-only string */
-  uint16_t iPointer;    /* Pointer value (NIL) */
-  uint16_t iAltReal[4]; /* Alternative access to real value */
+  int16_t  iOrdinal;         /* Integer/char/boolean/scalar value */
+  double   iReal;            /* Real value */
+  uint32_t iRoOffset;        /* Offset to read-only string */
+  uint16_t iPointer;         /* Pointer value (NIL) */
+  uint16_t iSet[sSET_WORDS]; /* Set value */
+  uint16_t iAltReal[4];      /* Alternative access to real value */
 };
 
 typedef union varInitValue_u varInitValue_t;
 
 struct varInitializer_s
 {
-  symbol_t      *iVarPtr;   /* Variable to be initialized */
-  uint32_t       iBaseType; /* Base type of the variable */
-  int            iStrLen;   /* Length of string */
-  varInitValue_t iValue;    /* Initial value of the variable */
+  symbol_t      *iVarPtr;    /* Variable to be initialized */
+  uint32_t       iBaseType;  /* Base type of the variable */
+  int            iStrLen;    /* Length of string */
+  varInitValue_t iValue;     /* Initial value of the variable */
 };
 
 typedef struct varInitializer_s varInitializer_t;

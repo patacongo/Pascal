@@ -135,6 +135,11 @@
 #define sSHORTSTRING_DATA_OFFSET  (sINT_SIZE) /* Byte offset to buffer pointer */
 #define sSHORTSTRING_ALLOC_OFFSET (sINT_SIZE + sPTR_SIZE)
 
+/* BOOLEAN constant values */
+
+#define PASCAL_TRUE        (-1)
+#define PASCAL_FALSE        0
+
 /* Range of unsigned character type */
 
 #define MAXCHAR             255

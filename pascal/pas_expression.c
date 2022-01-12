@@ -2657,7 +2657,7 @@ static bool pas_GetSubSet(symbol_t *setTypePtr, bool first)
     {
       exprType_t subset2ExprType;
 
-      /* No, then get the up value of the subrange.  That value will also be
+      /* No, then get the upper value of the subrange.  That value will also be
        * pushed at the top of the stack of pas_Expression() is successful.
        */
 
