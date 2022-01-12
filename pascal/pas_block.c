@@ -184,7 +184,7 @@ static void pas_DeclareConst(void)
 
   /* Handle constant expressions */
 
-  pas_ConstantExpression(exprUnknown);
+  pas_ConstantExpression(exprUnknown, NULL);
 
   /* Add the constant to the symbol table based on the type of
    * the constant found following the '= [ sign ]'
@@ -833,7 +833,7 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
        */
 
       getToken();
-      pas_ConstantExpression(exprInteger);
+      pas_ConstantExpression(exprInteger, typePtr);
 
       if (g_constantToken != tINT_CONST) error(eINTCONST);
       else if (g_constantInt <= 0) error(eINVCONST);
@@ -2393,7 +2393,7 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
            * either an integer or a character constant.
            */
 
-          pas_ConstantExpression(exprInteger);
+          pas_ConstantExpression(exprInteger, typePtr);
           if (g_constantToken != tINT_CONST && g_constantToken != tCHAR_CONST)
             {
               error(eBADINITIALIZER);
@@ -2423,7 +2423,7 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
         {
           /* Handle a constant real expression. */
 
-          pas_ConstantExpression(exprReal);
+          pas_ConstantExpression(exprReal, typePtr);
           if (g_constantToken == tREAL_CONST)
             {
               initializer.iValue.iReal = g_constantReal;
@@ -2440,7 +2440,7 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
         {
           /* Let the common constant expression logic handle this case */
 
-          pas_ConstantExpression(exprString);
+          pas_ConstantExpression(exprString, typePtr);
           if (g_constantToken == tSTRING_CONST)
             {
              /* Add the string to the RO data section of the output
@@ -2462,7 +2462,7 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
         {
           /* Let the common constant expression logic handle this case */
 
-          pas_ConstantExpression(exprSet);
+          pas_ConstantExpression(exprSet, typePtr);
           if (g_constantToken == tSET_CONST)
             {
               initializer.iValue.iSet[0] = g_constantSet[0];

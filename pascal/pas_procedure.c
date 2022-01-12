@@ -1689,7 +1689,7 @@ static uint16_t pas_WriteFieldWidth(void)
       /* A constant, integer field-width with must follow the colon. */
 
       getToken();
-      pas_ConstantExpression(exprInteger);
+      pas_ConstantExpression(exprInteger, NULL);
       if (g_constantToken != tINT_CONST || g_constantInt < 0 ||
           g_constantInt > UINT8_MAX)
         {
@@ -1709,7 +1709,7 @@ static uint16_t pas_WriteFieldWidth(void)
            */
 
           getToken();
-          pas_ConstantExpression(exprInteger);
+          pas_ConstantExpression(exprInteger, NULL);
           if (g_constantToken != tINT_CONST || g_constantInt < 0 ||
               g_constantInt > fieldWidth)
             {

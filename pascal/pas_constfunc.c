@@ -88,7 +88,7 @@ static void pas_ConstantAbsFunc(void)
   /* FORM:  ABS (<simple integer/real expression>) */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprUnknown);
+  pas_ConstantExpression(exprUnknown, NULL);
 
   if (g_constantToken == tINT_CONST)
     {
@@ -121,7 +121,7 @@ static void pas_ConstantOrdFunc(void)
   /* FORM:  ORD (<scalar type>) */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprScalar);
+  pas_ConstantExpression(exprScalar, NULL);
   pas_IsOrdinalConstant();
   pas_CheckRParen();
 }
@@ -135,7 +135,7 @@ static void pas_ConstantPredFunc(void)
   /* FORM:  PRED (<simple integer expression>) */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprInteger);
+  pas_ConstantExpression(exprInteger, NULL);
   pas_IsOrdinalConstant();
   g_constantInt--;
   pas_CheckRParen();
@@ -150,7 +150,7 @@ static void pas_ConstantSqrFunc(void)
   /* FORM:  SQR (<simple integer OR real expression>) */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprUnknown);
+  pas_ConstantExpression(exprUnknown, NULL);
   if (g_constantToken == tINT_CONST)
     {
       g_constantInt *= g_constantInt;
@@ -176,7 +176,7 @@ static void pas_ConstantRealFunc(uint8_t fpOpCode)
   /* FORM:  <function identifier> (<real/integer expression>) */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprUnknown);
+  pas_ConstantExpression(exprUnknown, NULL);
   if (g_constantToken == tINT_CONST)
     {
       g_constantReal = (double)g_constantInt;
@@ -198,7 +198,7 @@ static void pas_ConstantSuccFunc(void)
   /* FORM:  SUCC (<simple integer expression>) */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprAnyOrdinal);
+  pas_ConstantExpression(exprAnyOrdinal, NULL);
   pas_IsOrdinalConstant();
   g_constantInt++;
   pas_CheckRParen();
@@ -213,7 +213,7 @@ static void pas_ConstantOddFunc(void)
   /* FORM:  ODD (<simple integer expression>) */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprInteger);
+  pas_ConstantExpression(exprInteger, NULL);
   pas_IsOrdinalConstant();
   g_constantInt &= 1;
   pas_Expression(exprAnyOrdinal, NULL);
@@ -234,7 +234,7 @@ static void pas_ConstantChrFunc(void)
    * let the returned value exceed the range of type char. */
 
   pas_CheckLParen();
-  pas_ConstantExpression(exprInteger);
+  pas_ConstantExpression(exprInteger, NULL);
   if (g_constantToken == tINT_CONST)
     {
       g_constantToken = tCHAR_CONST;

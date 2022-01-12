@@ -4,7 +4,7 @@ TYPE
   stoogeset = SET OF stooges;
 
 VAR
-  intval : INTEGER = 42;
+  intval : INTEGER = 5 * 8 + 2;
   boolval : BOOLEAN = true;
   stooge : stooges = moe;
   curlyset : stoogeset = [curly];
