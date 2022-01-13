@@ -75,6 +75,9 @@
  *   is to assume a pointer expression rather than a value expression.
  * FACTOR_INDEXED (only)
  * - Load value from an indexed stack address(STSX)
+ * FACTOR_FIELD_OFFSET
+ * - The factor is a field of a RECORD and requires an offset be applied to
+ *   the address of the field in order to access the field.
  * FACTOR_VAR_PARM
  * - Does very little but distinguish if we are working with a pointer or
  *   a VAR parameter.
@@ -84,7 +87,8 @@
 #define FACTOR_PTREXPR       (1 << 1)
 #define FACTOR_INDEXED       (1 << 2)
 #define FACTOR_LOAD_ADDRESS  (1 << 3)
-#define FACTOR_VAR_PARM      (1 << 4)
+#define FACTOR_FIELD_OFFSET  (1 << 4)
+#define FACTOR_VAR_PARM      (1 << 5)
 
 /****************************************************************************
  * Type Definitions

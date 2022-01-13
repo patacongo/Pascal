@@ -310,7 +310,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sINT :
       exprType = pas_AssignExprType(exprInteger, assignFlags);
-      if ((assignFlags & ASSIGN_INDEXED) != 0)
+      if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
@@ -548,7 +548,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         {
           if (g_token == '.') error(ePOINTERTYPE);
 
-          if ((assignFlags & ASSIGN_INDEXED) != 0)
+          if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
             {
               pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
             }
@@ -637,8 +637,11 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                * destination RECORD must be.
                */
 
-              assignFlags &= ~ASSIGN_INDEXED;
-              assignFlags |= ASSIGN_OUTER_INDEXED;
+              if ((assignFlags & ASSIGN_INDEXED) != 0)
+                {
+                  assignFlags &= ~ASSIGN_INDEXED;
+                  assignFlags |= ASSIGN_OUTER_INDEXED;
+                }
 
               /* Recurse to handle the RECORD OBJECT */
 

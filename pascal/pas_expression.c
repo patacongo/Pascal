@@ -88,7 +88,7 @@ static exprType_t pas_Factor(exprType_t findExprType);
 static exprType_t pas_ComplexFactor(void);
 static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
                     exprFlag_t factorFlags);
-static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags);
+static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags);
 static exprType_t pas_PointerFactor(void);
 static exprType_t pas_ComplexPointerFactor(void);
 static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
@@ -969,7 +969,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
 
   /* Check if it has been reduced to a simple factor. */
 
-  factorType = pas_BaseFactor(varPtr, factorFlags);
+  factorType = pas_BaseFactor(varInfo, factorFlags);
   if (factorType != exprUnknown)
     {
       return factorType;
@@ -990,9 +990,14 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
       break;
 
     case sRECORD :
-      /* Check if this is a pointer to a record */
+      /* Check if this is a pointer to a record.  Both pointer
+       * expression and defererence can get set in some situations, for
+       * example, when we are processing a pointer to a RECORD and the
+       * field of the  RECORD is a pointer.
+       */
 
-      if ((factorFlags & FACTOR_PTREXPR) != 0)
+      if ((factorFlags & FACTOR_PTREXPR) != 0 &&
+          (factorFlags & FACTOR_DEREFERENCE) == 0)
         {
           if (g_token == '.') error(ePOINTERTYPE);
 
@@ -1066,6 +1071,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
                    */
 
                   varInfo->fOffset = g_tknPtr->sParm.r.rOffset;
+                  factorFlags     |= FACTOR_FIELD_OFFSET;
                 }
               else
                 {
@@ -1095,14 +1101,56 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
               pas_GenerateSimple(opADD);
               pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateSimple(opLDIM);
+              factorType = exprRecord;
+            }
+          else if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0 &&
+                   (factorFlags & FACTOR_FIELD_OFFSET) != 0)
+            {
+              uint16_t baseType;
+
+              baseTypePtr = pas_GetBaseTypePointer(typePtr);
+              baseType    = baseTypePtr->sParm.t.tType;
+
+              /* Load the value of the RECORD pointer to get the record
+               * offset (opLDS), then add the file offset and load the field.
+               */
+
+              pas_GenerateStackReference(opLDS, varPtr);
+              pas_GenerateDataSize(varInfo->fOffset);
+              pas_GenerateSimple(opADD);
+
+              switch (typePtr->sParm.t.tAllocSize)
+                {
+                  case sCHAR_SIZE :
+                    pas_GenerateSimple(opLDIB);
+                    break;
+
+                  case sINT_SIZE :
+                    pas_GenerateSimple(opLDI);
+                    break;
+
+                  default :
+                    pas_GenerateDataOperation(opPUSH,
+                                              baseTypePtr->sParm.t.tAllocSize);
+                    pas_GenerateSimple(opLDIM);
+                    break;
+                }
+
+              if (typePtr->sParm.t.tType == sPOINTER)
+                {
+                  factorType = pas_MapVariable2ExprPtrType(baseType, false);
+                }
+              else
+                {
+                  factorType = pas_MapVariable2ExprType(baseType, false);
+                }
             }
           else
             {
               pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateStackReference(opLDSM, varPtr);
+              factorType = exprRecord;
             }
-
-          factorType = exprRecord;
         }
       else error(ePERIOD);
       break;
@@ -1352,8 +1400,9 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
 
 /****************************************************************************/
 
-static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
+static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
 {
+  symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
   exprType_t factorType;
 
@@ -1394,6 +1443,13 @@ static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags)
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
+
+              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+                {
+                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+                  pas_GenerateSimple(opADD);
+                }
+
               pas_GenerateSimple(opLDI);
             }
           else if ((factorFlags & FACTOR_PTREXPR) != 0)
@@ -1893,6 +1949,7 @@ static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
               varPtr->sParm.v.vParent = typePtr;
 
               varInfo->fOffset        = g_tknPtr->sParm.r.rOffset;
+              factorFlags            |= FACTOR_FIELD_OFFSET;
 
               getToken();
               factorType = pas_SimplePointerFactor(varInfo, factorFlags);

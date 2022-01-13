@@ -18,8 +18,8 @@ BEGIN
   nodes[1].payload := 1;
   nodes[2].flink   := @nodes[3];
   nodes[2].payload := 2;
-  nodes[2].flink   := NIL;
-  nodes[2].payload := 3;
+  nodes[3].flink   := NIL;
+  nodes[3].payload := 3;
 
   ptr := head;
   WHILE ptr <> NIL DO
