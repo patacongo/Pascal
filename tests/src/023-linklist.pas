@@ -13,13 +13,13 @@ VAR
   ptr   : nodeptr;
 
 BEGIN
-  head            := @node[1];
-  node[1].flink   := @node[2];
-  node[1].payload := 1;
-  node[2].flink   := @node[3];
-  node[2].payload := 2;
-  node[2].flink   := NIL;
-  node[2].payload := 3;
+  head             := @nodes[1];
+  nodes[1].flink   := @nodes[2];
+  nodes[1].payload := 1;
+  nodes[2].flink   := @nodes[3];
+  nodes[2].payload := 2;
+  nodes[2].flink   := NIL;
+  nodes[2].payload := 3;
 
   ptr := head;
   WHILE ptr <> NIL DO

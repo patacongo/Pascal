@@ -125,7 +125,7 @@ static symbol_t *pas_TypeIdentifier        (void);
 static symbol_t *pas_CheckShortString      (symbol_t *typePtr, char *typeName);
 static symbol_t *pas_TypeDenoter           (char *typeName);
 static symbol_t *pas_FileTypeDenoter       (void);
-static bool      pas_NewComplexType        (char *typeName, symbol_t **pTypePtr);
+static symbol_t *pas_NewComplexType        (char *typeName);
 static symbol_t *pas_NewSimpleType         (char *typeName);
 static symbol_t *pas_OrdinalTypeIdentifier (void);
 static symbol_t *pas_GetArrayIndexType     (void);
@@ -134,7 +134,7 @@ static symbol_t *pas_DeclareRecordType     (char *recordName);
 static symbol_t *pas_DeclareField          (symbol_t *recordPtr,
                                             symbol_t *lastField);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
-static void      pas_AddForwardTypeRef     (char *typeName, char *refName);
+static symbol_t *pas_AddForwardTypeRef     (char *typeName, char *refName);
 static void      pas_ResolveForwardTypeRef (void);
 static void      pas_AddVarInitializer     (symbol_t *varPtr,
                                             symbol_t *typePtr);
@@ -266,7 +266,8 @@ static symbol_t *pas_DeclareType(char *typeName)
    * FORM: new-type = new-ordinal-type | new-complex-type
    */
 
-  if (!pas_NewComplexType(typeName, &typePtr))
+  typePtr = pas_NewComplexType(typeName);
+  if (typePtr == NULL)
     {
       /* Check for Simple Types */
 
@@ -937,7 +938,8 @@ static symbol_t *pas_TypeDenoter(char *typeName)
 
   /* Check for new-complex-type */
 
-  if (!pas_NewComplexType(typeName, &typePtr))
+  typePtr = pas_NewComplexType(typeName);
+  if (typePtr == NULL)
     {
       /* Check for new-ordinal-type */
 
@@ -1257,12 +1259,11 @@ static symbol_t *pas_FileTypeDenoter(void)
 
 /****************************************************************************/
 
-static bool pas_NewComplexType(char *typeName, symbol_t **pTypePtr)
+static symbol_t *pas_NewComplexType(char *typeName)
 {
   symbol_t *typePtr = NULL;
   symbol_t *typeIdPtr;
   symbol_t *indexTypePtr;
-  bool handled = false;
 
   TRACE(g_lstFile,"[pas_NewComplexType]");
 
@@ -1301,8 +1302,7 @@ static bool pas_NewComplexType(char *typeName, symbol_t **pTypePtr)
            * NOTE: initializers are not yet supported in this context.
            */
 
-          pas_AddForwardTypeRef(typeName, g_tokenString);
-          handled = true;
+          typePtr = pas_AddForwardTypeRef(typeName, g_tokenString);
 
           getToken();
           if (g_token == ':')
@@ -1566,12 +1566,7 @@ static bool pas_NewComplexType(char *typeName, symbol_t **pTypePtr)
       break;
    }
 
-  if (pTypePtr != NULL)
-    {
-      *pTypePtr = typePtr;
-    }
-
-  return handled ? handled : (typePtr != NULL);
+  return typePtr;
 }
 
 /****************************************************************************/
@@ -2430,12 +2425,14 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
  * supported.
  */
 
-static void pas_AddForwardTypeRef(char *typeName, char *refName)
+static symbol_t *pas_AddForwardTypeRef(char *typeName, char *refName)
 {
-  int typeNameSize = strlen(typeName);
-  int refNameSize = strlen(refName);
-  int containerSize = sizeof(forwardRef_t) + typeNameSize + refNameSize + 2;
-  forwardRef_t *forwardRef = (forwardRef_t *)malloc(containerSize);
+  symbol_t     *typePtr       = NULL;
+  int           typeNameSize  = strlen(typeName);
+  int           refNameSize   = strlen(refName);
+  int           containerSize = sizeof(forwardRef_t) + typeNameSize +
+                                refNameSize + 2;
+  forwardRef_t *forwardRef    = (forwardRef_t *)malloc(containerSize);
 
   if (forwardRef == NULL) error(eNOMEMORY);
   else
@@ -2453,14 +2450,16 @@ static void pas_AddForwardTypeRef(char *typeName, char *refName)
 
       /* Create a placeholder type in the symbol table */
 
-      forwardRef->typePtr = pas_AddTypeDefine(typeName, sPOINTER, sPTR_SIZE,
-                                              NULL);
+      typePtr = pas_AddTypeDefine(typeName, sPOINTER, sPTR_SIZE, NULL);
+      forwardRef->typePtr  = typePtr;
 
       /* Add the container to the list of forward references */
 
       forwardRef->flink    = g_forwardRefs;
       g_forwardRefs        = forwardRef;
     }
+
+  return typePtr;
 }
 
 /****************************************************************************/
@@ -2531,7 +2530,7 @@ static void pas_ResolveForwardTypeRef(void)
                * now-existing type.
                */
 
-              forwardRef->typePtr->sParm.t.tParent = typeIdPtr;
+              candidateRef->typePtr->sParm.t.tParent = typeIdPtr;
             }
 
           /* Discard the container */
@@ -3314,9 +3313,6 @@ void pas_TypeDefinitionGroup(void)
           (void)pas_DeclareType(typeName);
           if (g_token != ';')
             {
-              /* Handle any deferred forward references to type */
-
-              pas_ResolveForwardTypeRef();
               break;
             }
           else
@@ -3324,8 +3320,15 @@ void pas_TypeDefinitionGroup(void)
               getToken();
             }
         }
-      else break;
+      else
+        {
+          break;
+        }
     }
+
+  /* Handle any deferred forward references to type */
+
+  pas_ResolveForwardTypeRef();
 }
 
 /****************************************************************************/

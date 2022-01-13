@@ -91,7 +91,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
 static exprType_t pas_BaseFactor(symbol_t *varPtr, exprFlag_t factorFlags);
 static exprType_t pas_PointerFactor(void);
 static exprType_t pas_ComplexPointerFactor(void);
-static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
+static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
                     exprFlag_t factorFlags);
 static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
                     exprFlag_t factorFlags);
@@ -523,7 +523,7 @@ static exprType_t pas_Term(exprType_t findExprType)
            * 0.5, not 0.
            */
 
-          if ((factor1Type == exprInteger) && (findExprType == exprReal))
+          if (factor1Type == exprInteger && findExprType == exprReal)
             {
               /* However, we will perform this conversin only for the
                * arithmetic operations: tMUL, tDIV/tFDIV, and tMOD.
@@ -879,7 +879,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
       /* Address references */
 
     case '^' :
-      getToken();
+    case tNIL :
       factorType = pas_PointerFactor();
       break;
 
@@ -1008,17 +1008,12 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
           factorType = exprRecordPtr;
         }
 
-      /* Verify that a period separates the RECORD identifier from the */
-      /* record field identifier */
+      /* Verify that a period separates the RECORD identifier from the
+       * record field identifier.
+       */
 
       else if (g_token == '.')
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0 &&
-              (factorFlags & FACTOR_VAR_PARM) == 0)
-            {
-              error(ePOINTERTYPE);
-            }
-
           /* Skip over the period. */
 
           getToken();
@@ -1762,6 +1757,12 @@ static exprType_t pas_PointerFactor(void)
         factorType = pas_PointerFactor();
         break;
 
+      case tNIL :
+        getToken();
+        pas_GenerateDataOperation(opPUSH, 0);
+        factorType = exprAnyPointer;
+        break;
+
       case '('             :
         getToken();
         factorType = pas_PointerFactor();
@@ -1788,7 +1789,7 @@ static exprType_t pas_ComplexPointerFactor(void)
   TRACE(g_lstFile,"[pas_ComplexPointerFactor]");
 
   /* First, make a copy of the symbol table entry because the call to
-   * pas_SimplifyPointerFactor() will modify it.
+   * pas_SimplePointerFactor() will modify it.
    */
 
   varInfo.variable = *g_tknPtr;
@@ -1799,7 +1800,7 @@ static exprType_t pas_ComplexPointerFactor(void)
    * factor (like int, char, etc.)
    */
 
-  return pas_SimplifyPointerFactor(&varInfo, 0);
+  return pas_SimplePointerFactor(&varInfo, 0);
 }
 
 /****************************************************************************/
@@ -1807,14 +1808,14 @@ static exprType_t pas_ComplexPointerFactor(void)
  * factor.
  */
 
-static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
-                                            exprFlag_t factorFlags)
+static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
+                                          exprFlag_t factorFlags)
 {
   symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
   exprType_t factorType;
 
-  TRACE(g_lstFile,"[pas_SimplifyPointerFactor]");
+  TRACE(g_lstFile,"[pas_SimplePointerFactor]");
 
   /* Check if it has been reduced to a simple factor. */
 
@@ -1837,7 +1838,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
     case sSUBRANGE :
       if (g_abstractTypePtr == NULL) g_abstractTypePtr = typePtr;
       varPtr->sKind = typePtr->sParm.t.tSubType;
-      factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
+      factorType = pas_SimplePointerFactor(varInfo, factorFlags);
       break;
 
     case sRECORD :
@@ -1894,7 +1895,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
               varInfo->fOffset        = g_tknPtr->sParm.r.rOffset;
 
               getToken();
-              factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
+              factorType = pas_SimplePointerFactor(varInfo, factorFlags);
             }
         }
       break;
@@ -1961,7 +1962,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
           varPtr->sParm.v.vOffset = tempOffset;
           varPtr->sParm.v.vParent = typePtr;
 
-          factorType = pas_SimplifyPointerFactor(varInfo, factorFlags);
+          factorType = pas_SimplePointerFactor(varInfo, factorFlags);
         }
       break;
 
@@ -1971,7 +1972,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
 
       factorFlags   |= FACTOR_DEREFERENCE;
       varPtr->sKind  = typePtr->sParm.t.tType;
-      factorType     = pas_SimplifyPointerFactor(varInfo, factorFlags);
+      factorType     = pas_SimplePointerFactor(varInfo, factorFlags);
       break;
 
     case sVAR_PARM :
@@ -1993,7 +1994,7 @@ static exprType_t pas_SimplifyPointerFactor(varInfo_t *varInfo,
       /* Then recurse to simplify the VAR paramter */
 
       varPtr->sKind = typePtr->sParm.t.tType;
-      factorType    = pas_SimplifyPointerFactor(varInfo, factorFlags);
+      factorType    = pas_SimplePointerFactor(varInfo, factorFlags);
       break;
 
     case sARRAY :
@@ -2059,7 +2060,7 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
       if (arrayKind == sRECORD)
         {
           factorType =
-            pas_SimplifyPointerFactor(varInfo, factorFlags);
+            pas_SimplePointerFactor(varInfo, factorFlags);
         }
 
       /* Load the indexed base type */
@@ -3174,6 +3175,21 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               simple1Type = exprReal;
             }
 
+          /* Generic points (like NIL) should take the whatver pointer
+           * type is needed.
+           */
+
+          else if ((simple1Type == exprAnyPointer &&
+                    IS_POINTER_EXPRTYPE(simple2Type)))
+            {
+              simple1Type = simple2Type;
+            }
+          else if ((simple2Type == exprAnyPointer &&
+                    IS_POINTER_EXPRTYPE(simple1Type)))
+            {
+              simple2Type = simple1Type;
+            }
+
           /* Otherwise, the two terms must agree in type */
 
           else
@@ -3234,16 +3250,24 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
    *
    *    We will perform automatic conversions to real from integer
    *    if the requested type is a real expression.
+   *
+   * Condition:
+   * 1) NOT Any expression
+   * 2) NOT Matched expression
+   * 3) NOT any ordinal type OR type is NOT ordinal
+   * 4) NOT any string type  OR type is NOT string
+   * 5) NOT looking for string ref OR type is NOT string ref
+   * 6) NOT looking for a pointer type OR type is not any pointer type.
    */
 
-  if (findExprType != exprUnknown &&             /* 1) NOT Any expression */
-      findExprType != simple1Type &&             /* 2) NOT Matched expression */
-      (findExprType != exprAnyOrdinal ||         /* 3) NOT any ordinal type */
-       !pas_IsOrdinalExpression(simple1Type)) && /*    OR type is not ordinal */
-      (findExprType != exprAnyString ||          /* 4) NOT any string type */
-       !pas_IsStringExpression(simple1Type)) &&  /*    OR type is not string */
-      (!pas_IsStringReference(findExprType) ||   /* 5) Not looking for string ref */
-       !pas_IsStringReference(simple1Type)))     /*    OR type is not string ref */
+  if (findExprType != exprUnknown &&
+      findExprType != simple1Type &&
+      (findExprType != exprAnyOrdinal ||
+       !pas_IsOrdinalExpression(simple1Type)) &&
+      (findExprType != exprAnyString ||
+       !pas_IsStringExpression(simple1Type)) &&
+      (!pas_IsStringReference(findExprType) ||
+       !pas_IsStringReference(simple1Type)))
     {
       /* Automatic conversions from INTEGER to REAL will be performed */
 
@@ -3258,6 +3282,16 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       else if (simple1Type == exprEmptySet)
         {
           simple1Type = exprSet;
+        }
+
+      /* The NIL pointer is treated like whatever pointer you the caller
+       * needs.
+       */
+
+      else if (IS_POINTER_EXPRTYPE(findExprType) &&
+               simple1Type == exprAnyPointer)
+        {
+          simple1Type = findExprType;
         }
 
       /* Any other type mismatch is an error */
