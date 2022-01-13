@@ -6,13 +6,12 @@ writing, the following errors are reported when testall.sh is ran:
  1. Several test cases found on the internet failed because they involved the
     use of non-standard Pascal types('filename', 'list', 'word', 'longword) and
     undefined functions, and  procedures (fsplit, addr, length, lowercase,
-    etc.).  These test cases have been removed because there will never
+    etc.).  FreePascal examples, in particular, use a object-base Pacal variant
+    which has compatible differences with this more traditional, procedural
+    pascal.  These test cases have been removed because there will never
     compile.
 
- 2. Forward references to variables before they are defined do not work.  See
-    failure in src/108-pointerrecode.pas.
-
- 3. There are a couple of files with initialization like:
+ 2. There are a couple of files with initialization like:
 
       input = 1;
       output = 2;
@@ -20,19 +19,7 @@ writing, the following errors are reported when testall.sh is ran:
     I am not sure what these mean and have just commented them out for now.
     Assignment of a numeric value to a file is not supported.
 
- 4. Pascal runtime memory is divided into three regions:  String stack, RO
-    data, and the Pascal run-time stack.  The size of the string stack is
-    set with the -t option to prun and 1024 is the default size used by the
-    testone.sh script.  String allocations are large, 256 bytes, and the
-    string stack cleanup is lazy; perhaps only when a procedure/function
-    returns.  As a result, programs with functions that do a lot of string
-    operations need a start larger than the 1024 default.  All of the test
-    files here work OK with a string stack of 1024.
-
-    This problem is largely alleviated by using short strings that do not
-    require such large string stack allocations.
-
- 5. There are some files that have Turbo-Pascal style constructions.  For
+ 3. There are some files that have Turbo-Pascal style constructions.  For
     example, DayIO.pas used BEGIN rather than INITIALIZATION to introduce
     the initializers in a Unit file.  I have done a good faith effort to
     support Turbo-Pascal-isms whereever possible.
@@ -62,32 +49,6 @@ part that creates the (nameless) type could be called from pas_DeclareConst().
 
 ########src/107-quicksort.pas########
 Comples error free but hangs at run-time.  Perhaps it is only waiting on input.
-
-########src/108-pointerrecode.pas########
-Line 0:0004 Error 1e Token 01 (RECDATA)
-
-Line:
-type
-  rptr = ^recdata; <<< HERE
-  recdata = record
-    number : integer;
-    code : string;
-    nextrecord : rptr
-  end;
-
-Error:
-#define eINVTYPE         ((uint16_t) 0x1e)
-
-Token:
-#define tIDENT           0x01
-
-Analysis:
-Fails because recdata is not defined yet and the forward reference is not supported.
-
-########src/109-findwords.pas########
-Line 0:0018 Error 1e Token 01 (list)
-
-Same issue as src/108-pointerrecode.pas
 
 ########src/601-writefile.pas########
 Compiles okay, runs without error, creates the students.dat file.  However

@@ -175,6 +175,23 @@ EXPRESSIONS
 
 - Assumes sizeof(pointer) == sizeof(integer)
 
+RUN TIME STRING MEMORY
+
+- Pascal runtime memory is divided into three regions:  String stack, RO
+  data, and the Pascal run-time stack.  The size of the string stack is
+  set with the -t option to prun and 1024 is the default size used by the
+  testone.sh script.  String allocations are large, perhaps 256 bytes*,
+  and the string stack cleanup is lazy; perhaps only when a procedure/function
+  returns.  As a result, programs with functions that do a lot of string
+  operations may need a start larger than the 1024 default.  All of the
+  test files here work OK with a string stack of 1024.
+
+  This problem is largely alleviated by using short strings that do not
+  require such large string stack allocations.
+
+  * The actual size of the string allocations is controlled by a command
+    option to prun, -a.
+
 TODO LIST
 
 o BUGS / MISSING FUNCTIONALITY

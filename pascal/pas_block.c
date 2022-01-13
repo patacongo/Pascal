@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <inttypes.h>
 
 #include "pas_debug.h"
@@ -61,7 +62,7 @@
 #include "pas_error.h"
 
 /****************************************************************************
- * Private Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* This macro implements a test for:
@@ -76,6 +77,37 @@
         || ((x) == tCHAR_CONST) \
         || ((x) == tREAL_CONST) \
         || ((x) == sSCALAR_OBJECT))
+
+/****************************************************************************
+ * Private Type Definitions
+ ****************************************************************************/
+
+/* Represents one node in a list of for references.  The list is used to
+ * defer the definition of types that depend on a forward reference, like:
+ *
+ *   TYPE
+ *   rptr = ^recdata;
+ *   recdata =
+ *   RECORD
+ *     number     : integer;
+ *     code       : string;
+ *     nextrecord : rptr
+ *   END;
+ *
+ * NOTE: initializers of these forward referenced types are not yet
+ * supported.
+ */
+
+struct forwardRef_s
+{
+  struct forwardRef_s *flink; /* Supports a singly link list */
+  int symStart;               /* Symbol must be defined after this offset */
+  char *typeName;             /* Pointer to new type name */
+  char *refName;              /* Pointer to name of undefined type */
+  symbol_t *typePtr;          /* Pointer to incomple type definition */
+};
+
+typedef struct forwardRef_s forwardRef_t;
 
 /****************************************************************************
  * Private Function Prototypes
@@ -93,7 +125,7 @@ static symbol_t *pas_TypeIdentifier        (void);
 static symbol_t *pas_CheckShortString      (symbol_t *typePtr, char *typeName);
 static symbol_t *pas_TypeDenoter           (char *typeName);
 static symbol_t *pas_FileTypeDenoter       (void);
-static symbol_t *pas_NewComplexType        (char *typeName);
+static bool      pas_NewComplexType        (char *typeName, symbol_t **pTypePtr);
 static symbol_t *pas_NewSimpleType         (char *typeName);
 static symbol_t *pas_OrdinalTypeIdentifier (void);
 static symbol_t *pas_GetArrayIndexType     (void);
@@ -102,6 +134,8 @@ static symbol_t *pas_DeclareRecordType     (char *recordName);
 static symbol_t *pas_DeclareField          (symbol_t *recordPtr,
                                             symbol_t *lastField);
 static symbol_t *pas_DeclareParameter      (bool pointerType);
+static void      pas_AddForwardTypeRef     (char *typeName, char *refName);
+static void      pas_ResolveForwardTypeRef (void);
 static void      pas_AddVarInitializer     (symbol_t *varPtr,
                                             symbol_t *typePtr);
 static void      pas_AddRecordInitializers (symbol_t *varPtr,
@@ -114,8 +148,9 @@ static bool      pas_IntAlignRequired      (symbol_t *typePtr);
  * Private Data
  ****************************************************************************/
 
-static int32_t g_nParms;
-static int32_t g_dwVarSize;
+static int32_t       g_nParms;
+static int32_t       g_dwVarSize;
+static forwardRef_t *g_forwardRefs;
 
 /****************************************************************************
  * Private Functions
@@ -231,8 +266,7 @@ static symbol_t *pas_DeclareType(char *typeName)
    * FORM: new-type = new-ordinal-type | new-complex-type
    */
 
-  typePtr = pas_NewComplexType(typeName);
-  if (typePtr == NULL)
+  if (!pas_NewComplexType(typeName, &typePtr))
     {
       /* Check for Simple Types */
 
@@ -903,8 +937,7 @@ static symbol_t *pas_TypeDenoter(char *typeName)
 
   /* Check for new-complex-type */
 
-  typePtr = pas_NewComplexType(typeName);
-  if (typePtr == NULL)
+  if (!pas_NewComplexType(typeName, &typePtr))
     {
       /* Check for new-ordinal-type */
 
@@ -1224,11 +1257,12 @@ static symbol_t *pas_FileTypeDenoter(void)
 
 /****************************************************************************/
 
-static symbol_t *pas_NewComplexType(char *typeName)
+static bool pas_NewComplexType(char *typeName, symbol_t **pTypePtr)
 {
   symbol_t *typePtr = NULL;
   symbol_t *typeIdPtr;
   symbol_t *indexTypePtr;
+  bool handled = false;
 
   TRACE(g_lstFile,"[pas_NewComplexType]");
 
@@ -1246,9 +1280,40 @@ static symbol_t *pas_NewComplexType(char *typeName)
           typePtr = pas_AddTypeDefine(typeName, sPOINTER, g_dwVarSize,
                                       typeIdPtr);
         }
+      else if (g_token == tIDENT)
+        {
+          /* In general, forward references are not supported.  But there is
+           * one important case.  It is necessary to defer processing the
+           * type in cases where the definition of a pointer type depends on
+           * a forward reference like:
+           *
+           *   TYPE
+           *   rptr = ^recdata;
+           *   recdata =
+           *   RECORD
+           *     number     : integer;
+           *     code       : string;
+           *     nextrecord : rptr
+           *   END;
+           *
+           * FORM:  type-name : ^type-name
+           *
+           * NOTE: initializers are not yet supported in this context.
+           */
+
+          pas_AddForwardTypeRef(typeName, g_tokenString);
+          handled = true;
+
+          getToken();
+          if (g_token == ':')
+            {
+              error(eNOTYET);
+              getToken();
+            }
+        }
       else
         {
-          error(eINVTYPE);
+         error(eINVTYPE);
         }
       break;
 
@@ -1415,7 +1480,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
           /* Declare the SET type */
 
           typePtr = pas_AddTypeDefine(typeName, sSET, sSET_SIZE, typeIdPtr);
-          if (typePtr)
+          if (typePtr != NULL)
             {
               int16_t nObjects;
 
@@ -1468,7 +1533,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
         {
           typePtr = pas_AddTypeDefine(typeName, sFILE, g_dwVarSize,
                                       typeIdPtr);
-          if (typePtr)
+          if (typePtr != NULL)
             {
               typePtr->sParm.t.tSubType = typeIdPtr->sParm.t.tType;
             }
@@ -1487,7 +1552,7 @@ static symbol_t *pas_NewComplexType(char *typeName)
 
       typeIdPtr = pas_AddTypeDefine(typeName, sTEXTFILE, g_dwVarSize,
                                     g_tknPtr);
-      if (typePtr)
+      if (typePtr != NULL)
         {
           typePtr->sParm.t.tSubType = typeIdPtr->sParm.t.tType;
         }
@@ -1501,7 +1566,12 @@ static symbol_t *pas_NewComplexType(char *typeName)
       break;
    }
 
-  return typePtr;
+  if (pTypePtr != NULL)
+    {
+      *pTypePtr = typePtr;
+    }
+
+  return handled ? handled : (typePtr != NULL);
 }
 
 /****************************************************************************/
@@ -2343,6 +2413,135 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
 }
 
 /****************************************************************************/
+/* Add a forward reference to a list of deferred type definitions.  The list
+ * is used to defer the definition of types that depend on a forward
+ * reference, like:
+ *
+ *   TYPE
+ *   rptr = ^recdata;
+ *   recdata =
+ *   RECORD
+ *     number     : integer;
+ *     code       : string;
+ *     nextrecord : rptr
+ *   END;
+ *
+ * NOTE: initializers of these forward referenced types are not yet
+ * supported.
+ */
+
+static void pas_AddForwardTypeRef(char *typeName, char *refName)
+{
+  int typeNameSize = strlen(typeName);
+  int refNameSize = strlen(refName);
+  int containerSize = sizeof(forwardRef_t) + typeNameSize + refNameSize + 2;
+  forwardRef_t *forwardRef = (forwardRef_t *)malloc(containerSize);
+
+  if (forwardRef == NULL) error(eNOMEMORY);
+  else
+    {
+      /* Initialize the forward reference description */
+
+      forwardRef->symStart = g_nSym;
+      forwardRef->typeName = (char *)forwardRef + sizeof(forwardRef_t);
+      forwardRef->refName  = forwardRef->typeName + typeNameSize + 1;
+
+      /* Copy the names into the allocated container */
+
+      strncpy(forwardRef->typeName, typeName, typeNameSize + 1);
+      strncpy(forwardRef->refName, refName, refNameSize + 1);
+
+      /* Create a placeholder type in the symbol table */
+
+      forwardRef->typePtr = pas_AddTypeDefine(typeName, sPOINTER, sPTR_SIZE,
+                                              NULL);
+
+      /* Add the container to the list of forward references */
+
+      forwardRef->flink    = g_forwardRefs;
+      g_forwardRefs        = forwardRef;
+    }
+}
+
+/****************************************************************************/
+/* Resolve forward references to types deferred by pas_AddForwardTypeRef() */
+
+static void pas_ResolveForwardTypeRef(void)
+{
+  while (g_forwardRefs != NULL)
+    {
+      /* Always start at the beginning of the list on each loop */
+
+      forwardRef_t *candidateRef = g_forwardRefs;
+      forwardRef_t *previousRef  = NULL;
+      forwardRef_t *forwardRef;
+      symbol_t     *typeIdPtr;
+
+      /* First check if the type referenced by the candiate does not, itself
+       * reference an undefined type (only look ahead in the list).
+       */
+
+      for (forwardRef  = candidateRef->flink;
+           forwardRef != NULL;
+           previousRef = forwardRef = forwardRef->flink)
+       {
+         if (strcmp(candidateRef->refName, forwardRef->typeName) == 0)
+           {
+             /* Yes.. break out of the loop with forwardRef != NULL */
+
+             break;
+           }
+       }
+
+      /* If the reference type is still undefined, then try the nextrecord
+       * candidate.
+       */
+
+      if (forwardRef != NULL)
+        {
+          previousRef  = candidateRef;
+          candidateRef = candidateRef->flink;
+        }
+      else
+        {
+          /* Remove the candidate from the list */
+
+          if (previousRef == NULL)
+            {
+              g_forwardRefs = candidateRef->flink;
+            }
+          else
+            {
+              previousRef->flink = candidateRef->flink;
+            }
+
+          candidateRef->flink = NULL;
+
+          /* Find the symbol associate with the previously undefined type. */
+
+          typeIdPtr = pas_FindSymbol(candidateRef->refName,
+                                     candidateRef->symStart);
+          if (typeIdPtr == NULL || typeIdPtr->sKind != sTYPE)
+            {
+              error(eINVTYPE);
+            }
+          else
+            {
+              /* Then complete the definition of type as a pointer to this
+               * now-existing type.
+               */
+
+              forwardRef->typePtr->sParm.t.tParent = typeIdPtr;
+            }
+
+          /* Discard the container */
+
+          free(candidateRef);
+        }
+    }
+}
+
+/****************************************************************************/
 
 static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
 {
@@ -3113,9 +3312,17 @@ void pas_TypeDefinitionGroup(void)
           else getToken();
 
           (void)pas_DeclareType(typeName);
-          if (g_token != ';') break;
-          else getToken();
+          if (g_token != ';')
+            {
+              /* Handle any deferred forward references to type */
 
+              pas_ResolveForwardTypeRef();
+              break;
+            }
+          else
+            {
+              getToken();
+            }
         }
       else break;
     }
