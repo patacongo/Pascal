@@ -16,8 +16,8 @@ var
 
 begin
    rewrite(f, sizeof(data));
-   for i:=1 to MAX do
 
+   for i := 1 to MAX do
    begin
       writeln('Enter rainfall data: ');
       readln(data);
@@ -35,11 +35,14 @@ var
 begin
    reset(x);
    sum:= 0.0;
-   while not eof(x) do
 
+   while not eof(x) do
    begin
       read(x, d);
-      sum := sum + d;
+      if not eof(x) then
+      begin
+        sum := sum + d;
+      end
    end;
 
    average := sum/MAX;

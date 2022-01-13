@@ -104,17 +104,6 @@ use the string allocation setting to insure a consistent, known maximum string l
   VAR
     text_message : string[22];
 
-########src/604-addfiledata.pas########
-########src/605-subprogram.pas########
-
-Both of these examples compile fine and appear to run, but give the wrong
-final answer:
-
-Average Rainfall:  3.23500072
-
-This comes from:
- 47    writeln('Average Rainfall: ', average:7:2);
-
 ########sinecos.pas########
 ########unit-cosine.pas########
 ########unit-sine.pas########

@@ -8,7 +8,7 @@ VAR
   boolval : BOOLEAN = true;
   stooge : stooges = moe;
   curlyset : stoogeset = [curly];
-  otherstooges : stoogeset = [larry..moe] - [curly];
+  otherstooges : stoogeset = [larry..moe] >< [curly];
   pi : REAL = 3.14159;
   hello : STRING[8] = 'hello';
   pointer : ^INTEGER = NIL
@@ -20,6 +20,8 @@ BEGIN
   ELSE
     WRITELN('boolval is FALSE');
 
+  WRITELN('CARD(curlyset) = ', CARD(curlyset));
+  WRITELN('CARD(otherstooges) = ', CARD(otherstooges));
   WRITELN('pi = ', pi:7:3);
   WRITELN('hello = "', hello, '"');
 END.
