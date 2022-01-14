@@ -223,9 +223,11 @@ o IMPROVEMENTS
 - All RO strings should be represented as short strings when converted to
   Pascal strings
 - Should check for duplicate strings in the RO string area.
-- new() and dispose() would be nice, but tricky since the P-code
+- new() and dispose() are required, but tricky since the P-code
   interpreter runs in an isolated sandbox (i.e, malloc() does not make
-  sense).  We would probably need a heap area in the sandbox.
+  sense) an unusual memory configuration where the run strictly controls
+  access to memory regions.  We would probably need a heap area in the
+  sandbox.
 
 o ISSUES
 - Revisit procedure call logic in pexec.c & pdbg.c.  First stack parameter

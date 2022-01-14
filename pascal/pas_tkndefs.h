@@ -205,42 +205,42 @@
 
 /* Standard Procedures 0x81-0xbf */
 
-#define txGET            0x80
-#define txHALT           0x81
-#define txNEW            0x82
-#define txPACK           0x83
-#define txPAGE           0x84
-#define txPUT            0x85
-#define txUNPACK         0x86
+#define txDISPOSE        0x80
+#define txGET            0x81
+#define txHALT           0x82
+#define txNEW            0x83
+#define txPACK           0x84
+#define txPAGE           0x85
+#define txPUT            0x86
+#define txUNPACK         0x87
 
 /* File I/O */
 
-#define txEOF            0x87
-#define txASSIGNFILE     0x88
-#define txRESET          0x89
-#define txREWRITE        0x8a
-#define txAPPEND         0x8b
-#define txCLOSEFILE      0x8c
-#define txREAD           0x8d
-#define txREADLN         0x8e
-#define txWRITE          0x8f
+#define txEOF            0x88
+#define txASSIGNFILE     0x89
+#define txRESET          0x8a
+#define txREWRITE        0x8b
+#define txAPPEND         0x8c
+#define txCLOSEFILE      0x8d
+#define txREAD           0x8e
+#define txREADLN         0x8f
 
-#define txWRITELN        0x90
+#define txWRITE          0x90
+#define txWRITELN        0x91
 
 /* SET operators */
 
-#define txINCLUDE        0x91
-#define txEXCLUDE        0x92
-#define txCARD           0x93
+#define txINCLUDE        0x92
+#define txEXCLUDE        0x93
+#define txCARD           0x94
 
 /* Built-in, compile-time operations */
 
-#define txSIZEOF         0x94
-#define txLENGTH         0x95
+#define txSIZEOF         0x95
+#define txLENGTH         0x96
 
 /* "Less than standard" Procedures 0xc0-0xff */
 
 #define txVAL            0xc0
 
 #endif /* __PTDEFS_H */
-

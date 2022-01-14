@@ -171,6 +171,7 @@ void pas_StandardProcedure(void)
 
         /* Not implemented */
 
+        case txDISPOSE :
         case txGET :
         case txNEW :
         case txPACK :
