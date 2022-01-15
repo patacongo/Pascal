@@ -99,7 +99,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
                     exprFlag_t factorFlags);
 static exprType_t pas_FunctionDesignator(void);
 static exprType_t pas_FactorExprType(exprType_t baseExprType,
-                                     uint8_t assignFlags);
+                                     uint8_t factorFlags);
 static void       pas_SetAbstractType(symbol_t *sType);
 static exprType_t pas_GetSetFactor(void);
 static bool       pas_GetSubSet(symbol_t *setTypePtr, bool first);
@@ -1097,7 +1097,8 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
           if (factorFlags == (FACTOR_INDEXED | FACTOR_DEREFERENCE |
                               FACTOR_VAR_PARM))
             {
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* The VAR parameter address is already on the stack */
+
               pas_GenerateSimple(opADD);
               pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateSimple(opLDIM);
@@ -1111,11 +1112,11 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
               baseTypePtr = pas_GetBaseTypePointer(typePtr);
               baseType    = baseTypePtr->sParm.t.tType;
 
-              /* Load the value of the RECORD pointer to get the record
-               * offset (opLDS), then add the file offset and load the field.
+              /* The RECORD pointer should already be on the stack.  Now we
+               * need to add the field offset to the RECORD address and load
+               * the field.
                */
 
-              pas_GenerateStackReference(opLDS, varPtr);
               pas_GenerateDataSize(varInfo->fOffset);
               pas_GenerateSimple(opADD);
 
@@ -1152,7 +1153,10 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
               factorType = exprRecord;
             }
         }
-      else error(ePERIOD);
+      else
+        {
+          error(ePERIOD);
+        }
       break;
 
     case sRECORD_OBJECT :
@@ -1236,7 +1240,33 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
 
       if (g_token == '^')
         {
+          /* In a sequence of record pointers like head^.link^.link, we must
+           * explicitly load the first 'head' pointer variable.
+           */
+
+          if ((factorFlags & FACTOR_DEREFERENCE) == 0)
+            {
+              /* Load the address value of the pointer onto the stack now */
+
+              pas_GenerateStackReference(opLDS, varPtr);
+            }
+          else
+            {
+              /* Load the value pointed at by the pointer value previously
+               * obtained with opLDS.
+               */
+
+              pas_GenerateSimple(opLDI);
+            }
+
+          /* Skip over the '^' */
+
           getToken();
+
+          /* Indicate that we are dereferencing a pointer and that the pointer
+           * value is on the stack
+           */
+
           factorFlags |= FACTOR_DEREFERENCE;
         }
       else
@@ -1274,8 +1304,16 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
           error(eVARPARMTYPE);
         }
 
+      /* Load the address provided by the VAR parameter now */
+
+      if ((factorFlags & FACTOR_DEREFERENCE) == 0)
+        {
+          pas_GenerateStackReference(opLDS, varPtr);
+        }
+
       factorFlags  |= (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
                        FACTOR_VAR_PARM);
+
       varPtr->sKind = typePtr->sParm.t.tType;
       factorType    = pas_SimpleFactor(varInfo, factorFlags);
       break;
@@ -1344,8 +1382,6 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
            *    TOS+1 = Size of array (bytes)
            */
 
-          pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.vSize);
-
           /* This could be either a simple packed array of char, or it
            * could a packed array of char field of a RECORD.
            */
@@ -1354,7 +1390,9 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
             {
               uint16_t fieldOffset;
 
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* The pointer for VAR parm address should already be on the
+               * stack.  We need only to add the file offset.
+               */
 
               fieldOffset = varInfo->fOffset;
               if (fieldOffset != 0)
@@ -1368,6 +1406,13 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
               varPtr->sParm.v.vOffset += varInfo->fOffset;
               pas_GenerateStackReference(opLAS, varPtr);
             }
+
+          /* Push the size and exchange the stack values to get them into
+           * the expected order.
+           */
+
+          pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.vSize);
+          pas_GenerateSimple(opXCHG);
 
           pas_StandardFunctionCall(lbBSTR2STR);
           factorType = exprString;
@@ -1442,8 +1487,6 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
-
               if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
                 {
                   pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
@@ -1494,7 +1537,16 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* The address of pointer we are de-referencing should already
+               * be on the stack.
+               */
+
+              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+                {
+                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+                  pas_GenerateSimple(opADD);
+                }
+
               pas_GenerateSimple(opLDIB);
             }
           else if ((factorFlags & FACTOR_PTREXPR) != 0)
@@ -1536,7 +1588,16 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* The address of pointer we are de-referencing should already
+               * be on the stack.
+               */
+
+              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+                {
+                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+                  pas_GenerateSimple(opADD);
+                }
+
               pas_GenerateSimple(opLDI);
             }
           else
@@ -1612,7 +1673,16 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
 
            if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* The address of pointer we are de-referencing should already
+               * be on the stack.
+               */
+
+              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+                {
+                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+                  pas_GenerateSimple(opADD);
+                }
+
               pas_GenerateDataSize(varPtr->sParm.v.vSize);
               pas_GenerateSimple(opLDIM);
             }
@@ -1664,7 +1734,16 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* The address of pointer we are de-referencing should already
+               * be on the stack.
+               */
+
+              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+                {
+                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+                  pas_GenerateSimple(opADD);
+                }
+
               pas_GenerateSimple(opLDI);
             }
           else
@@ -1702,7 +1781,16 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* The address of pointer we are de-referencing should already
+               * be on the stack.
+               */
+
+              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+                {
+                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+                  pas_GenerateSimple(opADD);
+                }
+
               pas_GenerateSimple(opLDI);
             }
           else
@@ -2508,9 +2596,9 @@ static exprType_t pas_FunctionDesignator(void)
 /****************************************************************************/
 
 static exprType_t pas_FactorExprType(exprType_t baseExprType,
-                                     uint8_t assignFlags)
+                                     uint8_t factorFlags)
 {
-  return ((assignFlags & FACTOR_PTREXPR) == 0) ? baseExprType :
+  return ((factorFlags & FACTOR_PTREXPR) == 0) ? baseExprType :
           MK_POINTER_EXPRTYPE(baseExprType);
 }
 

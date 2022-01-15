@@ -310,6 +310,9 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sINT :
       exprType = pas_AssignExprType(exprInteger, assignFlags);
+
+      /* Check for indexed variants */
+
       if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
@@ -331,15 +334,21 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTSX, exprType, varPtr, typePtr);
             }
         }
+
+      /* Not indexed */
+
       else
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
-              pas_GenerateStackReference(opLDS, varPtr);
+              /* Address of pointer is on the stack */
+
               pas_Assignment(opSTI, exprType, varPtr, typePtr);
             }
           else
             {
+              /* Use the variable address */
+
               pas_Assignment(opSTS, exprType, varPtr, typePtr);
             }
         }
@@ -542,7 +551,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        * OR:   <record pointer identifier> := <pointer expression>
        */
 
-      /* Check if this is a pointer to a record */
+      /* Check if we are assigning as address to a pointer to a record */
 
       if ((assignFlags & ASSIGN_ADDRESS) != 0)
         {
@@ -552,35 +561,32 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
             {
               pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
             }
+          else if ((assignFlags & (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM)) != 0)
+            {
+              pas_Assignment(opSTI, exprRecordPtr, varPtr, typePtr);
+            }
           else
             {
               pas_Assignment(opSTS, exprRecordPtr, varPtr, typePtr);
             }
         }
-      else if ((assignFlags & ASSIGN_DEREFERENCE) != 0 &&
-               (assignFlags & ASSIGN_VAR_PARM) == 0)
-        {
-          error(ePOINTERTYPE);
-        }
 
-      /* Check if a period separates the RECORD identifier from the
-       * record field identifier
+      /* We are either assigning a value to a field of the record variable
+       * or, perhaps, we are de-referencing a pointer to a RECORD (we can
+       * distinguish these cases by settings in the assignFlags).  In
+       * either case, a RECORD field selector should follow.
+       *
+       * Check if a period separates the RECORD from the record field
+       * selector.
        */
 
       else if (g_token == '.')
         {
-          symbol_t *nextPtr;
           symbol_t *baseTypePtr;
 
           /* Get a pointer to the underlying base type symbol */
 
-          nextPtr         = typePtr;
-          baseTypePtr     = typePtr;
-          while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-            {
-              baseTypePtr = nextPtr;
-              nextPtr     = baseTypePtr->sParm.t.tParent;
-            }
+          baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
           /* Skip over the period */
 
@@ -613,9 +619,11 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
               varPtr->sParm.v.vSize   = g_tknPtr->sParm.r.rSize;
 
-              /* Special case:  The record is a VAR parameter. */
+              /* Special case:  The record is a de-referenced pointer or a
+               * VAR parameter.
+               */
 
-              if ((assignFlags & ASSIGN_VAR_PARM) != 0)
+              if ((assignFlags & (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM)) != 0)
                 {
                   /* Add the offset to the record field to the RECORD address
                    * that should already be on the stack.
@@ -756,8 +764,28 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
       if (g_token == '^') /* value assignment? */
         {
-          /* Dereferencing a pointer and assign a value to the target
-           * address of the pointer.
+          /* In a sequence of record pointers like head^.link^.link, we must
+           * explicitly load the first 'head' pointer variable.
+           */
+
+          if ((assignFlags & ASSIGN_DEREFERENCE) == 0)
+            {
+              /* Load the address value of the pointer onto the stack now */
+
+              pas_GenerateStackReference(opLDS, varPtr);
+            }
+          else
+            {
+              /* Load the value pointed at by the pointer value previously
+               * obtained with opLDS.
+               */
+
+              pas_GenerateSimple(opLDI);
+            }
+
+          /* Indicate that we are dereferencing a pointer.  This will cause
+           * the RValue to be assigned to the target address of the pointer
+           * that we just pushed onto the stack.
            */
 
           getToken();
@@ -801,6 +829,16 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        */
 
       if (assignFlags != 0) error(eVARPARMTYPE);
+
+      /* Load the address provided by the VAR parameter now */
+
+      if ((assignFlags & ASSIGN_DEREFERENCE) == 0)
+        {
+          pas_GenerateStackReference(opLDS, varPtr);
+        }
+
+      /* Set up to save the RValue to the VAR parmeter address */
+
       assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_STORE_INDEXED |
                       ASSIGN_VAR_PARM);
 
@@ -1860,6 +1898,7 @@ static void pas_CaseStatement(void)
 }
 
 /***********************************************************************/
+
 static void pas_ForStatement(void)
 {
    symbol_t *varPtr;

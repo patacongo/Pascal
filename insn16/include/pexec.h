@@ -201,7 +201,7 @@ struct pexec_s
   paddr_t rop;        /* Read-only data pointer */
   paddr_t pc;         /* Program counter */
 
-  /* Info needed to perform a simulated reset.  Memory orgainization:
+  /* Info needed to perform a simulated reset.  Memory organization:
    *
    *  0                : String stack
    *  strsize          : RO-only data

@@ -7,7 +7,7 @@ NameString =
   end;
 
 var
-  Names : array[1..3] of NameString;
+   Names : array[1..3] of NameString;
 
 procedure printName( var name : NameString );
 begin
