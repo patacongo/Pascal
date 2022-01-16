@@ -148,8 +148,8 @@ static const struct optab_s g_sNoArgOpTable[64] =
   /* 0x29 */ { "DUPH ", SIMPLE },
   /* 0x2a */ { "PUSHS", SIMPLE },
   /* 0x2b */ { "POPS",  SIMPLE },
-  /* 0x2c */ { invOp,   SIMPLE },
-  /* 0x2d */ { invOp,   SIMPLE },
+  /* 0x2c */ { "PUSHH", SIMPLE },
+  /* 0x2d */ { "POPH",  SIMPLE },
   /* 0x2e */ { invOp,   SIMPLE },
   /* 0x2f */ { "RET  ", SIMPLE },
 

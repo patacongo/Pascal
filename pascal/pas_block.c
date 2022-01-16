@@ -3033,6 +3033,10 @@ void pas_Block(int32_t preAllocatedDStack)
 
   pas_InvalidateCurrentStackLevel();
 
+  /* Push the heap pointer */
+
+  pas_GenerateSimple(opPUSHH);
+
   /* Allocate data stack */
 
   if (g_dStack)
@@ -3059,6 +3063,10 @@ void pas_Block(int32_t preAllocatedDStack)
     {
       pas_GenerateDataOperation(opINDS, -(int32_t)g_dStack);
     }
+
+  /* Pop the heap pointer */
+
+  pas_GenerateSimple(opPOPH);
 
   /* Generate finalizers */
 

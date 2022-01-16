@@ -100,17 +100,17 @@
  * xx10 1001  DUPH       ---            LDXH uoffs     LDSXH lvl,offs
  * xx10 1010  XCHG       ---            LDXB uoffs     LDSXB lvl,offs
  * xx10 1011  XCHGH      ---            LDXM uoffs     LDSXM lvl,offs
- * xx10 1100  PUSHS      ---            STX uoffs      STSX lvl,offs
- * xx10 1101  POPS       ---            STXH uoffs     STSXH lvl,offs
+ * xx10 1100  ---        ---            STX uoffs      STSX lvl,offs
+ * xx10 1101  ---        ---            STXH uoffs     STSXH lvl,offs
  * xx10 1110  ---        ---            STXB uoffs     STSXB lvl,offs
  * xx10 1111  RET        ---            STXM uoffs     STSXM lvl,offs
  *
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS lvl,offs
  * xx11 0001  ---        SETOP sop      LAC dlbl       ---
- * xx11 0010  ---        ---            ---            ---
- * xx11 0011  ---        ---            ---            ---
- * xx11 0100  ---        PUSHB n        PUSH nn        ---
- * xx11 0101  ---        ---            INDS nn        ---
+ * xx11 0010  PUSHS      ---            ---            ---
+ * xx11 0011  POPS       ---            ---            ---
+ * xx11 0100  PUSHH      PUSHB n        PUSH nn        ---
+ * xx11 0101  POPH       ---            INDS nn        ---
  * xx11 0110  ---        ---            ---            ---
  * xx11 0111  ---        ---            ---            ---
  * xx11 1000  ---        ---            LAX uoffs      LASX lvl,offs
@@ -210,10 +210,8 @@
 #define oDUPH  (0x29)   /* (One 16-bit stack argument) */
 #define oXCHG  (0x2a)   /* (Two 32-bit stack arguments) */
 #define oXCHGH (0x2b)   /* (Two 16-bit stack arguments) */
-#define oPUSHS (0x2c)   /* No arguments */
-#define oPOPS  (0x2d)   /* (One 16-bit stack argument) */
 
-/* 0x2e -- unassigned */
+/* 02c - 0x2e -- unassigned */
 
 /* Program control (No stack arguments)
  * Behavior:
@@ -225,7 +223,16 @@
 
 #define oRET   (0x2f)
 
-/* 0x30 - 0x3e -- unassigned */
+/* 0x30 - 0x31 -- unassigned */
+
+/* Push/pop special registers */
+
+#define oPUSHS (0x32)   /* No arguments */
+#define oPOPS  (0x33)   /* (One 16-bit stack argument) */
+#define oPUSHH (0x34)   /* No arguments */
+#define oPOPH  (0x35)   /* (One 16-bit stack argument) */
+
+/* 0x36 - 0x3e -- unassigned */
 
 /* System Functions (No stack arguments) */
 

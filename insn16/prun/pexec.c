@@ -410,6 +410,14 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       POP(st, st->csp);
       break;
 
+    case oPUSHH :
+      PUSH(st, st->hsp);
+      break;
+
+    case oPOPH :
+      POP(st, st->hsp);
+      break;
+
       /* Store (Two stack arguments) */
 
     case oSTIH  :
@@ -1107,12 +1115,16 @@ FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
 {
   struct pexec_s *st;
   paddr_t stacksize;
+  paddr_t adjusted_strsize;
   paddr_t adjusted_rosize;
+  paddr_t adjusted_stksize;
+  paddr_t adjusted_hpsize;
+  paddr_t adjusted_stralloc;
 
   /* Allocate the p-machine state stucture */
 
   st = (struct pexec_s *)malloc(sizeof(struct pexec_s));
-  if (!st)
+  if (st == NULL)
     {
       return NULL;
     }
@@ -1122,15 +1134,21 @@ FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
   st->ispace = attr->ispace;
   st->maxpc  = attr->maxpc;
 
-  /* Align size of read-only data to 16-bit boundary. */
+  /* Align sizes of memory regions to 16-bit boundaries. */
 
-  adjusted_rosize = (attr->rosize + 1) & ~1;
+  adjusted_strsize  = (attr->strsize + 1) & ~1;
+  adjusted_rosize   = (attr->rosize  + 1) & ~1;
+  adjusted_stksize  = (attr->stksize + 1) & ~1;
+  adjusted_hpsize   = (attr->hpsize  + 1) & ~1;
+
+  adjusted_stralloc = (attr->stralloc  + 1) & ~1;
 
   /* Allocate the pascal stack.  Organization is string stack, then
-   * constant data, then "normal" pascal stack.
+   * constant data, then "normal" pascal stack, ending with the heap area.
    */
 
-  stacksize    = attr->varsize + adjusted_rosize + attr->strsize;
+  stacksize    = adjusted_strsize + adjusted_rosize + adjusted_stksize +
+                 adjusted_hpsize;
   st->dstack.b = (uint8_t *)malloc(stacksize);
   if (!st->dstack.b)
     {
@@ -1140,18 +1158,21 @@ FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
 
   /* Copy the rodata into the stack */
 
-  if (attr->rodata && attr->rosize)
+  if (attr->rodata != NULL && attr->rosize > 0)
     {
       memcpy(&st->dstack.b[attr->strsize], attr->rodata, attr->rosize);
     }
 
   /* Set up info needed to perform a simulated reset */
 
-  st->stralloc  = attr->stralloc;
-  st->strsize   = attr->strsize;
+  st->strsize   = adjusted_strsize;
   st->rosize    = adjusted_rosize;
-  st->entry     = attr->entry;
+  st->stksize   = adjusted_stksize;
+  st->hpsize    = adjusted_hpsize;
   st->stacksize = stacksize;
+
+  st->stralloc  = adjusted_stralloc;
+  st->entry     = attr->entry;
 
   /* Then perform a simulated reset */
 
@@ -1230,10 +1251,18 @@ void pexec_Reset(struct pexec_s *st)
 {
   int dndx;
 
-  /* Setup the bottom of the "normal" pascal stack */
+  /* Setup the bottom of the "normal" pascal stack.  Memory organization:
+   *
+   *  0                                   : String stack
+   *  strsize                             : RO-only data
+   *  strsize + rosize                    : "Normal" Pascal stack
+   *  strsize + rosize + stksize          : Heap stack
+   *  strsize + rosize + stksize + hpsize : "Normal" Pascal stack
+  */
 
   st->rop   = st->strsize;
-  st->spb   = st->strsize + st->rosize;
+  st->spb   = st->rop + st->rosize;
+  st->hsp   = st->spb + st->stksize;
 
   /* Initialize the emulated P-Machine registers */
 

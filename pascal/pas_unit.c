@@ -451,79 +451,79 @@ static void pas_InterfaceSection(void)
 
 static void pas_ExportedProcedureHeading(void)
 {
-   uint16_t  procLabel = ++g_label;
-   char     *saveChSp;
-   symbol_t *procPtr;
-   int       i;
+  uint16_t  procLabel = ++g_label;
+  char     *saveChSp;
+  symbol_t *procPtr;
+  int       i;
 
-   TRACE(g_lstFile,"[pas_ExportedProcedureHeading]");
+  TRACE(g_lstFile,"[pas_ExportedProcedureHeading]");
 
-   /* FORM: procedure-heading =
-    *       'procedure' identifier [ formal-parameter-list ]
-    * FORM: procedure-identifier = identifier
-    *
-    * On entry, g_token refers to token AFTER the 'procedure' reserved
-    * word.
-    */
+  /* FORM: procedure-heading =
+   *       'procedure' identifier [ formal-parameter-list ]
+   * FORM: procedure-identifier = identifier
+   *
+   * On entry, g_token refers to token AFTER the 'procedure' reserved
+   * word.
+   */
 
-   /* Process the procedure-heading */
+  /* Process the procedure-heading */
 
-   if (g_token != tIDENT)
-     {
-       error (eIDENT);
-       return;
-     } /* endif */
+  if (g_token != tIDENT)
+    {
+      error (eIDENT);
+      return;
+    }
 
-   procPtr = pas_AddProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
+  procPtr = pas_AddProcedure(g_tokenString, sPROC, procLabel, 0, NULL);
 
-   /* Mark the procedure as external */
+  /* Mark the procedure as external */
 
-   procPtr->sParm.p.pFlags |= SPROC_EXTERNAL;
+  procPtr->sParm.p.pFlags |= SPROC_EXTERNAL;
 
-   /* Save the string stack pointer so that we can release all
-    * formal parameter strings later.  Then get the next token.
-    */
+  /* Save the string stack pointer so that we can release all
+   * formal parameter strings later.  Then get the next token.
+   */
 
-   saveChSp = g_stringSP;
-   getToken();
+  saveChSp = g_stringSP;
+  getToken();
 
-   /* NOTE:  The level associated with the PROCEDURE symbol is the level
-    * At which the procedure was declared.  Everything declare within the
-    * PROCEDURE is at the next level
-    */
+  /* NOTE:  The level associated with the PROCEDURE symbol is the level
+   * At which the procedure was declared.  Everything declare within the
+   * PROCEDURE is at the next level
+   */
 
-   g_level++;
+  g_level++;
 
-   /* Process parameter list */
+  /* Process parameter list */
 
-   (void)pas_FormalParameterList(procPtr);
+  (void)pas_FormalParameterList(procPtr);
 
-   if (g_token !=  ';') error (eSEMICOLON);
-   else getToken();
+  if (g_token !=  ';') error (eSEMICOLON);
+  else getToken();
 
-   /* If we are compiling a program or unit that "imports" the
-    * procedure then generate the appropriate symbol table entries
-    * in the output file to support relocation when the external
-    * procedure is called.
-    */
+  /* If we are compiling a program or unit that "imports" the
+   * procedure then generate the appropriate symbol table entries
+   * in the output file to support relocation when the external
+   * procedure is called.
+   */
 
-   if (g_includeIndex > 0)
-     {
-       pas_GenerateProcImport(procPtr);
-     }
+  if (g_includeIndex > 0)
+    {
+      pas_GenerateProcImport(procPtr);
+    }
 
-   /* Destroy formal parameter names */
+  /* Destroy formal parameter names */
 
-   for (i = 1; i <= procPtr->sParm.p.pNParms; i++)
-     {
-       procPtr[i].sName = NULL;
-     }
+  for (i = 1; i <= procPtr->sParm.p.pNParms; i++)
+    {
+      procPtr[i].sName = NULL;
+    }
 
-   g_stringSP = saveChSp;
+  g_stringSP = saveChSp;
 
-   /* Drop the level back to where it was */
+  /* Drop the level back to where it was */
 
-   g_level--;
+  g_level--;
 }
 
 /***************************************************************/
@@ -531,112 +531,112 @@ static void pas_ExportedProcedureHeading(void)
 
 static void pas_ExportedFunctionHeading(void)
 {
-   uint16_t  funcLabel = ++g_label;
-   int16_t   parameterOffset;
-   char     *saveChSp;
-   symbol_t *funcPtr;
-   int       i;
+  uint16_t  funcLabel = ++g_label;
+  int16_t   parameterOffset;
+  char     *saveChSp;
+  symbol_t *funcPtr;
+  int       i;
 
-   TRACE(g_lstFile,"[pas_ExportedFunctionHeading]");
+  TRACE(g_lstFile,"[pas_ExportedFunctionHeading]");
 
-   /* FORM: function-declaration =
-    *       function-heading ';' directive |
-    *       function-heading ';' function-block
-    * FORM: function-heading =
-    *       'function' function-identifier [ formal-parameter-list ]
-    *       ':' result-type
-    *
-    * On entry token should lrefer to the function-identifier.
-    */
+  /* FORM: function-declaration =
+   *       function-heading ';' directive |
+   *       function-heading ';' function-block
+   * FORM: function-heading =
+   *       'function' function-identifier [ formal-parameter-list ]
+   *       ':' result-type
+   *
+   * On entry token should lrefer to the function-identifier.
+   */
 
-   /* Verify function-identifier */
+  /* Verify function-identifier */
 
-   if (g_token != tIDENT)
-     {
-       error (eIDENT);
-       return;
-     } /* endif */
+  if (g_token != tIDENT)
+    {
+      error (eIDENT);
+      return;
+    }
 
-   funcPtr = pas_AddProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
+  funcPtr = pas_AddProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
 
-   /* Mark the procedure as external */
+  /* Mark the procedure as external */
 
-   funcPtr->sParm.p.pFlags |= SPROC_EXTERNAL;
+  funcPtr->sParm.p.pFlags |= SPROC_EXTERNAL;
 
-   /* NOTE:  The level associated with the FUNCTION symbol is the level
-    * At which the procedure was declared.  Everything declare within the
-    * PROCEDURE is at the next level
-    */
+  /* NOTE:  The level associated with the FUNCTION symbol is the level
+   * At which the procedure was declared.  Everything declare within the
+   * PROCEDURE is at the next level
+   */
 
-   g_level++;
+  g_level++;
 
-   /* Save the string stack pointer so that we can release all
-    * formal parameter strings later.  Then get the next token.
-    */
+  /* Save the string stack pointer so that we can release all
+   * formal parameter strings later.  Then get the next token.
+   */
 
-   saveChSp = g_stringSP;
-   getToken();
+  saveChSp = g_stringSP;
+  getToken();
 
-   /* Process parameter list */
+  /* Process parameter list */
 
-   parameterOffset = pas_FormalParameterList(funcPtr);
+  parameterOffset = pas_FormalParameterList(funcPtr);
 
-   /* Verify that the parameter list is followed by a colon */
+  /* Verify that the parameter list is followed by a colon */
 
-   if (g_token !=  ':') error (eCOLON);
-   else getToken();
+  if (g_token !=  ':') error (eCOLON);
+  else getToken();
 
-   /* Get function type, return value type/size and offset to return value */
+  /* Get function type, return value type/size and offset to return value */
 
-   if (g_token == sTYPE)
-     {
-       /* The offset to the return value is the offset to the last
-        * parameter minus the size of the return value (aligned to
-        * multiples of size of INTEGER).
-        */
+  if (g_token == sTYPE)
+    {
+      /* The offset to the return value is the offset to the last
+       * parameter minus the size of the return value (aligned to
+       * multiples of size of INTEGER).
+       */
 
-       parameterOffset        -= g_tknPtr->sParm.t.tAllocSize;
-       parameterOffset         = INT_ALIGNUP(parameterOffset);
+      parameterOffset        -= g_tknPtr->sParm.t.tAllocSize;
+      parameterOffset         = INT_ALIGNUP(parameterOffset);
 
-       /* Save the TYPE for the function */
+      /* Save the TYPE for the function */
 
-       funcPtr->sParm.p.pParent = g_tknPtr;
+      funcPtr->sParm.p.pParent = g_tknPtr;
 
-       /* Skip over the result-type token */
+      /* Skip over the result-type token */
 
-       getToken();
-     }
-   else
-     {
-       error(eINVTYPE);
-     }
+      getToken();
+    }
+  else
+    {
+      error(eINVTYPE);
+    }
 
-   /* Verify the final semicolon */
+  /* Verify the final semicolon */
 
-   if (g_token !=  ';') error (eSEMICOLON);
-   else getToken();
+  if (g_token !=  ';') error (eSEMICOLON);
+  else getToken();
 
-   /* If we are compiling a program or unit that "imports" the
-    * function then generate the appropriate symbol table entries
-    * in the output file to support relocation when the external
-    * function is called.
-    */
+  /* If we are compiling a program or unit that "imports" the
+   * function then generate the appropriate symbol table entries
+   * in the output file to support relocation when the external
+   * function is called.
+   */
 
-   if (g_includeIndex > 0)
-     {
-       pas_GenerateProcImport(funcPtr);
-     }
+  if (g_includeIndex > 0)
+    {
+      pas_GenerateProcImport(funcPtr);
+    }
 
-   /* Destroy formal parameter names and the function return value name */
+  /* Destroy formal parameter names and the function return value name */
 
-   for (i = 1; i <= funcPtr->sParm.p.pNParms; i++)
-     {
-       funcPtr[i].sName = ((char *) NULL);
-     }
+  for (i = 1; i <= funcPtr->sParm.p.pNParms; i++)
+    {
+      funcPtr[i].sName = ((char *) NULL);
+    }
 
-   g_stringSP = saveChSp;
+  g_stringSP = saveChSp;
 
-   /* Restore the original level */
+  /* Restore the original level */
 
-   g_level--;
+  g_level--;
 }

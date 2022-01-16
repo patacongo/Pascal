@@ -161,12 +161,18 @@ struct pexec_attr_s
 
   /* Allocate for variable storage */
 
-  paddr_t      stralloc; /* Size of string buffer allocation */
-  paddr_t      varsize;  /* Variable storage size */
   paddr_t      strsize;  /* String storage size */
+  paddr_t      stksize;  /* Pascal stack size */
+  paddr_t      hpsize;   /* Heap storage size */
+
+  /* String allocation configuration */
+
+  paddr_t      stralloc; /* Size of string buffer allocation */
 };
 
-/* This structure defines the current state of the p-code interpreter */
+/* This structure defines the current state of the p-code interpreter.  It
+ * includes the simulated CPU registers and memory map information.
+ */
 
 struct pexec_s
 {
@@ -197,22 +203,28 @@ struct pexec_s
   paddr_t spb;        /* Pascal stack base */
   paddr_t sp;         /* Pascal stack pointer */
   paddr_t csp;        /* Character stack pointer */
+  paddr_t hsp;        /* Heap stack pointer */
   paddr_t fp;         /* Base of the current frame */
   paddr_t rop;        /* Read-only data pointer */
   paddr_t pc;         /* Program counter */
 
   /* Info needed to perform a simulated reset.  Memory organization:
    *
-   *  0                : String stack
-   *  strsize          : RO-only data
-   *  strsize + rosize : "Normal" Pascal stack
+   *  0                                   : String stack
+   *  strsize                             : RO-only data
+   *  strsize + rosize                    : "Normal" Pascal stack
+   *  strsize + rosize + stksize          : Heap stack
+   *  strsize + rosize + stksize + hpsize : "Normal" Pascal stack
    */
 
-  paddr_t stralloc;   /* String buffer allocation size */
   paddr_t strsize;    /* String stack size */
   paddr_t rosize;     /* Read-only stack size */
+  paddr_t stksize;    /* Pascal stack size */
+  paddr_t hpsize;     /* Heap stack size */
+  paddr_t stacksize;  /* Total memory allocation */
+
   paddr_t entry;      /* Entry point */
-  paddr_t stacksize;  /* (debug only) */
+  paddr_t stralloc;   /* String buffer allocation size */
 };
 
 /****************************************************************************
@@ -228,7 +240,8 @@ extern "C"
 #endif
 
 FAR struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
-                               paddr_t varsize, paddr_t strsize);
+                               paddr_t strsize, paddr_t stksize,
+                               paddr_t hpsize);
 FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr);
 int pexec_Execute(FAR struct pexec_s *st);
 void pexec_Reset(struct pexec_s *st);

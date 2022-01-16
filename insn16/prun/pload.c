@@ -53,7 +53,8 @@
  ****************************************************************************/
 
 FAR struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
-                               paddr_t varsize, paddr_t strsize)
+                               paddr_t strsize, paddr_t stksize,
+                               paddr_t hpsize)
 {
   struct pexec_attr_s attr;
   struct pexec_s *st;
@@ -103,9 +104,11 @@ FAR struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
 
   /* Initialize the attribute structure */
 
-  attr.stralloc = stralloc;
-  attr.varsize  = varsize;
   attr.strsize  = strsize;
+  attr.stksize  = stksize;
+  attr.hpsize   = hpsize;
+
+  attr.stralloc = stralloc;
 
   /* Extract the program entry point from the pascal executable */
 

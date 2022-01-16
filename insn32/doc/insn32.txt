@@ -75,8 +75,8 @@ xr10 1000  DUP        LDSX  offs4
 xr10 1001  ---        LDSXH offs2
 xr10 1010  PUSHS      LDSXB offs
 xr10 1011  POPS       LDSXM offs4
-xr10 1100  ---        STSX  offs4
-xr10 1101  ---        STSXH offs2
+xr10 1100  PUSHH      STSX  offs4
+xr10 1101  POPH       STSXH offs2
 xr10 1110  ---        STSXB offs
 xr10 1111  RET        STSXM offs
 

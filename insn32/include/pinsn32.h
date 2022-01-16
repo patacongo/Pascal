@@ -122,8 +122,8 @@
  * xr10 1001  ---        LDSXH offs2
  * xr10 1010  PUSHS      LDSXB offs
  * xr10 1011  POPS       LDSXM offs4
- * xr10 1100  ---        STSX  offs4
- * xr10 1101  ---        STSXH offs2
+ * xr10 1100  PUSHH      STSX  offs4
+ * xr10 1101  POPH       STSXH offs2
  * xr10 1110  ---        STSXB offs
  * xr10 1111  RET        STSXM offs
  *
@@ -240,24 +240,26 @@
 
 /* Load Immediate */
 
-#define oLDI   (0x20)	/* (One 32-bit stack argument) */
-#define oLDIH  (0x21)	/* (One 32-bit stack argument) */
-#define oLDIB  (0x22)	/* (One 32-bit stack argument) */
-#define oLDIM  (0x23)	/* (Two 32-bit stack argument) */
+#define oLDI   (0x20)  /* (One 32-bit stack argument) */
+#define oLDIH  (0x21)  /* (One 32-bit stack argument) */
+#define oLDIB  (0x22)  /* (One 32-bit stack argument) */
+#define oLDIM  (0x23)  /* (Two 32-bit stack argument) */
 
 /* Store Immediate */
 
-#define oSTI   (0x24)	/* (Two 32-bit stack argument) */
-#define oSTIH  (0x25)	/* (Two 32-bit stack argument) */
-#define oSTIB  (0x26)	/* (Two 32-bit stack argument) */
-#define oSTIM  (0x27)	/* (Two+n 32-bit stack argument) */
+#define oSTI   (0x24)  /* (Two 32-bit stack argument) */
+#define oSTIH  (0x25)  /* (Two 32-bit stack argument) */
+#define oSTIB  (0x26)  /* (Two 32-bit stack argument) */
+#define oSTIM  (0x27)  /* (Two+n 32-bit stack argument) */
 
 /* Data stack */
 
-#define oDUP   (0x28)	/* (One 32-bit stack argument) */
-#define oDUPH  (0x29)	/* (One 32-bit stack argument) */
+#define oDUP   (0x28)  /* (One 32-bit stack argument) */
+#define oDUPH  (0x29)  /* (One 32-bit stack argument) */
 #define oPUSHS (0x2a)  /* No stack arguments */
-#define oPOPS  (0x2b)	/* (One 32-bit stack argument) */
+#define oPOPS  (0x2b)  /* (One 32-bit stack argument) */
+#define oPUSHH (0x2c)  /* No stack arguments */
+#define oPOPH  (0x2d)  /* (One 32-bit stack argument) */
 
 /* Program control (No stack arguments)
  * Behavior:

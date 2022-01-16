@@ -63,6 +63,7 @@
 #define MIN_STACK_SIZE       1024
 #define DEFAULT_STACK_SIZE   4096
 #define DEFAULT_STKSTR_SIZE     0
+#define DEFAULT_HPSTK_SIZE      0
 
 /****************************************************************************
  * Private Constant Data
@@ -73,6 +74,7 @@ static const struct option long_options[] =
   {"alloc",  1, NULL, 'a'},
   {"stack",  1, NULL, 's'},
   {"string", 1, NULL, 't'},
+  {"new",    1, NULL, 'n'},
   {"debug",  0, NULL, 'd'},
   {"help",   0, NULL, 'h'},
   {NULL,     0, NULL, 0}
@@ -83,9 +85,10 @@ static const struct option long_options[] =
  ****************************************************************************/
 
 static const char  *g_pofffilename;
-static int32_t      g_strallocsize = STRING_BUFFER_SIZE;
-static int32_t      g_varstacksize = DEFAULT_STACK_SIZE;
 static int32_t      g_strstacksize = DEFAULT_STKSTR_SIZE;
+static int32_t      g_passtacksize = DEFAULT_STACK_SIZE;
+static int32_t      g_hpstacksize  = DEFAULT_HPSTK_SIZE;
+static int32_t      g_strallocsize = STRING_BUFFER_SIZE;
 static int          g_debug        = 0;
 
 /****************************************************************************
@@ -112,11 +115,16 @@ static void prun_showusage(const char *progname)
   fprintf(stderr, "    Memory in bytes to allocate for the pascal program\n");
   fprintf(stderr, "    stack in bytes (minimum is %d; default is %d bytes)\n",
           MIN_STACK_SIZE, DEFAULT_STACK_SIZE);
-  fprintf(stderr, "  -t <stack-size>\n");
+  fprintf(stderr, "  -t <string-storage-size>\n");
   fprintf(stderr, "  --string <string-storage-size>\n");
   fprintf(stderr, "    Memory in bytes to allocate for the pascal program\n");
   fprintf(stderr, "    string storage in bytes (default is %d bytes)\n",
           DEFAULT_STKSTR_SIZE);
+  fprintf(stderr, "  -n <heap-size>\n");
+  fprintf(stderr, "  --new <heap-size>\n");
+  fprintf(stderr, "    Memory in bytes to allocate for the pascal program\n");
+  fprintf(stderr, "    head use for new() (default is %d bytes)\n",
+          DEFAULT_HPSTK_SIZE);
   fprintf(stderr, "  -d\n");
   fprintf(stderr, "  --debug\n");
   fprintf(stderr, "    Enable PCode program debugger\n");
@@ -149,7 +157,7 @@ static void prun_parseargs(int argc, char **argv)
 
   do
     {
-      c = getopt_long(argc, argv, "a:t:s:dh",
+      c = getopt_long(argc, argv, "a:t:s:n:dh",
                       long_options, &option_index);
       if (c != -1)
         {
@@ -166,6 +174,17 @@ static void prun_parseargs(int argc, char **argv)
               g_strallocsize = (alloc + 1) & ~1;
               break;
 
+            case 'n' :
+              size = atoi(optarg);
+              if (size < 0)
+                {
+                  fprintf(stderr, "ERROR: Invalid heap size\n");
+                  prun_showusage(argv[0]);
+                }
+
+              g_hpstacksize = ((size + 1) & ~1);
+              break;
+
             case 's' :
               size = atoi(optarg);
               if (size < MIN_STACK_SIZE)
@@ -174,7 +193,7 @@ static void prun_parseargs(int argc, char **argv)
                   prun_showusage(argv[0]);
                 }
 
-              g_varstacksize = (size + 3) & ~3;
+              g_passtacksize = (size + 3) & ~3;
               break;
 
             case 't' :
@@ -268,9 +287,9 @@ int main(int argc, char *argv[], char *envp[])
 
   /* Initialize the P-machine and load the POFF file */
 
-  st = pexec_Load(fileName, g_strallocsize, g_varstacksize,
-                  g_strstacksize);
-  if (!st)
+  st = pexec_Load(fileName, g_strallocsize, g_strstacksize, g_passtacksize,
+                  g_hpstacksize);
+  if (st == NULL)
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);
       exit(1);
