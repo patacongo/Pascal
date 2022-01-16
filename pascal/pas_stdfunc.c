@@ -67,6 +67,7 @@
 
 /* Standard Pascal Functions */
 
+static exprType_t pas_NewFunc(void);     /* Memory allocator */
 static exprType_t pas_AbsFunc(void);     /* Integer absolute value */
 static exprType_t pas_PredFunc(void);
 static void       pas_OrdFunc(void);     /* Convert scalar to integer */
@@ -88,6 +89,67 @@ static exprType_t pas_GetEnvFunc (void); /* Get environment string value */
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+/****************************************************************************/
+/* Memory allocator */
+
+static exprType_t pas_NewFunc(void)
+{
+  exprType_t exprType = exprUnknown;
+
+  /* FORM:  'new' '(' type-identifer ')' */
+
+  TRACE(g_lstFile,"[pas_NewFunc]");
+
+  pas_CheckLParen();
+
+  /* Check for type-identifier */
+
+  if (g_token == sTYPE)
+    {
+      symbol_t *baseTypePtr;
+      symbol_t *typePtr;
+
+      typePtr = g_tknPtr;
+      getToken();
+
+      /* Allocate memory for an object the size of an allocated instance of
+       * this type.
+       */
+
+      pas_GenerateDataOperation(opPUSH, typePtr->sParm.t.tAllocSize);
+
+      /* If we just allocate a string, shortstring, or file type, then we
+       * have to initialize the allocated instance.
+       *
+       * REVISIT:  Leak warning:  We would also have to releases these
+       * resources when we dispose of the memory.  Worse.. what if we
+       * we allocate a record that has file or string field.  What a mess!
+       */
+
+      /* For now just refuse to leak in the simplest cases. */
+
+      baseTypePtr = pas_GetBaseTypePointer(typePtr);
+      if (baseTypePtr->sParm.t.tType == sSTRING ||
+          baseTypePtr->sParm.t.tType == sSHORTSTRING ||
+          baseTypePtr->sParm.t.tType == sFILE ||
+          baseTypePtr->sParm.t.tType == sTEXTFILE)
+        {
+          error(eNOTYET);
+        }
+      else
+        {
+          pas_StandardFunctionCall(lbNEW);
+        }
+
+      exprType = pas_MapVariable2ExprPtrType(baseTypePtr->sParm.t.tType, false);
+    }
+
+   pas_CheckRParen();
+   return exprType;
+}
+
+/****************************************************************************/
 
 static exprType_t pas_AbsFunc(void)
 {
@@ -446,7 +508,14 @@ exprType_t pas_StandardFunction(void)
 
       switch (g_tknSubType)
         {
+           /* Memory alloctor */
+
+        case txNEW :
+          funcType = pas_NewFunc();
+          break;
+
           /* Functions which return the same type as their argument */
+
         case txABS :
           funcType = pas_AbsFunc();
           break;

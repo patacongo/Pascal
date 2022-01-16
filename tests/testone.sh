@@ -59,6 +59,7 @@ function show_usage ()
     echo "OPTIONS:"
     echo "  -a <stralloc>: Select string buffer allocation size"
     echo "  -t <strstksz>: Select string stack size"
+    echo "  -n <heapsize>: Select heap size"
     echo "  -h:            Show this text"
     exit 1
 }
@@ -117,7 +118,7 @@ function test_program ()
     echo "Don't know how to run REGM programs yet"
     else
     echo "Using string stack size = ${STRSTKSZ}"
-    PRUNOPTS="-t ${STRSTKSZ} -a ${STKALLOC}"
+    PRUNOPTS="-t ${STRSTKSZ} -a ${STKALLOC} -n ${HEAPSIZE}"
 
     if [ ! -f src/${PASBASENAME}.pex ]; then
         echo "No p-code executable"
@@ -136,6 +137,7 @@ function test_program ()
 
 STKALLOC=128
 STRSTKSZ=1024
+HEAPSIZE=256
 PASFILENAME=
 
 while [ -n "$1" ]; do
@@ -146,6 +148,10 @@ while [ -n "$1" ]; do
         ;;
     -t )
         STRSTKSZ=$2
+        shift
+        ;;
+    -n )
+        HEAPSIZE=$2
         shift
         ;;
     -h )

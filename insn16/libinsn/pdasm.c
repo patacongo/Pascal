@@ -470,15 +470,15 @@ static const char *sName[MAX_SETOP] =
 static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "HALT",       "GETENV",     "STRCPY",     "STRCPYX",
-/* 0x04 */ "SSTRCPY",    "SSTRCPYX",   "SSTR2STR",   "SSTR2STRX",
-/* 0x08 */ "STR2SSTR",   "STR2SSTRX",  "CSTR2STR",   "CSTR2STRX",
-/* 0x0c */ "CSTR2SSTR",  "CSTR2SSTRX", "BSTR2STR",   "STR2BSTR",
-/* 0x10 */ "STR2BSTRX",  "VAL",        "STRINIT",    "SSTRINIT",
-/* 0x14 */ "STRTMP",     "STRDUP",     "SSTRDUP",    "MKSTKC",
-/* 0x18 */ "STRCAT",     "SSTRCAT",    "SSTRCATSTR", "STRCATSSTR",
-/* 0x1c */ "STRCATC",    "lbSSTRCATC", "STRCMP",     "SSTRCMP",
-/* 0x20 */ "SSTRCMPSTR", "STRCMPSSTR"
+/* 0x00 */ "HALT",       "NEW",        "GETENV",     "STRCPY",
+/* 0x04 */ "STRCPYX",    "SSTRCPY",    "SSTRCPYX",   "SSTR2STR",
+/* 0x08 */ "SSTR2STRX",  "STR2SSTR",   "STR2SSTRX",  "CSTR2STR",
+/* 0x0c */ "CSTR2STRX",  "CSTR2SSTR",  "CSTR2SSTRX", "BSTR2STR",
+/* 0x10 */ "STR2BSTR",   "STR2BSTRX",  "VAL",        "STRINIT",
+/* 0x14 */ "SSTRINIT",   "STRTMP",     "STRDUP",     "SSTRDUP",
+/* 0x18 */ "MKSTKC",     "STRCAT",     "SSTRCAT",    "SSTRCATSTR",
+/* 0x1c */ "STRCATSSTR", "STRCATC",    "lbSSTRCATC", "STRCMP",
+/* 0x20 */ "SSTRCMP",    "SSTRCMPSTR", "STRCMPSSTR"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";

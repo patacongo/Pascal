@@ -56,6 +56,8 @@
  * Private Function Prototypes
  ****************************************************************************/
 
+static int      pexec_new(struct pexec_s *st, uint16_t size,
+                          uint16_t *result);
 static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen);
 static int      pas_strinit(struct pexec_s *st, uint16_t strVarAddr,
                             uint16_t strAllocSize);
@@ -79,6 +81,26 @@ static int      pas_strcatc(struct pexec_s *st, char srcChar,
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+/****************************************************************************
+ * Name: pexec_new
+ ****************************************************************************/
+
+static int pexec_new(struct pexec_s *st, uint16_t size, uint16_t *result)
+{
+  uint16_t adjusted_size = (size + 1) & ~1;
+
+  /* Make sure that there is space on the heap */
+
+  if (st->hsp + adjusted_size >= st->hpb + st->hpsize)
+    {
+      return eNOMEMORY;
+    }
+
+  *result  = st->hsp;
+  st->hsp += adjusted_size;
+  return eNOERROR;
+}
 
 /****************************************************************************
  * Name: pexec_mkcstring
@@ -400,10 +422,42 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
   switch (subfunc)
     {
-      /* Halt processing */
+      /* Halt processing
+       *
+       *   procedure halt;
+       *
+       * ON INPUT:
+       *   Takes no inputs
+       * ON RETURN:
+       *   Does not return
+       */
 
     case lbHALT:
       errorCode = eEXIT;
+      break;
+
+      /* Heap allocation:
+       *
+       *   function new(size : integer) : integer;
+       *
+       * ON INPUT:
+       *   TOS(0) - Size of the heap region to allocate
+       *
+       * ON RETURN:
+       *   TOS(0) - The allocated heap region
+       */
+
+    case lbNEW :
+      {
+        uint16_t *result;
+
+        size   = TOS(st, 0);  /* Size of allocation */
+        result = &TOS(st, 0); /* Pointer to result */
+
+        /* Allocate the memory */
+
+        errorCode = pexec_new(st, size, result);
+      }
       break;
 
       /* Get the value of an environment string

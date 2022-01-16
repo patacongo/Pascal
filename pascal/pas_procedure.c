@@ -112,6 +112,7 @@ static void     pas_WriteProcCommon(bool text,      /* WRITE[LN] common logic */
 static void     pas_WriteText(void);                /* WRITE text file */
 static uint16_t pas_WriteFieldWidth(void);          /* Get text file write field-width. */
 static void     pas_WriteBinary(uint16_t fileSize); /* WRITE binary file */
+static void     pas_Dispose(void);                  /* Free memory */
 
 static uint16_t pas_GenVarFileNumber(symbol_t *varPtr,
                   uint16_t *pFileSize,
@@ -169,11 +170,13 @@ void pas_StandardProcedure(void)
           pas_FileProc(xWRITE_PAGE);
           break;
 
+        case txDISPOSE :
+          pas_Dispose();
+          break;
+
         /* Not implemented */
 
-        case txDISPOSE :
         case txGET :
-        case txNEW :
         case txPACK :
         case txPUT :
         case txUNPACK :
@@ -1800,6 +1803,26 @@ static void pas_WriteBinary(uint16_t fileSize)
     }
 
   getToken();
+}
+
+/****************************************************************************/
+/* Free memory */
+
+static void pas_Dispose(void)
+{
+  /* Doesn't need to do anything currently other than parsing the statement */
+
+  /* FORM:  'dispose' '(' pointer-value ')' */
+
+  getToken();
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* Skip over the pointer to memory to be freed */
+
+  getToken();
+  if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
+  else getToken();
 }
 
 /****************************************************************************/

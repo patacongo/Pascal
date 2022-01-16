@@ -1262,13 +1262,14 @@ void pexec_Reset(struct pexec_s *st)
 
   st->rop   = st->strsize;
   st->spb   = st->rop + st->rosize;
-  st->hsp   = st->spb + st->stksize;
+  st->hpb   = st->spb + st->stksize;
 
   /* Initialize the emulated P-Machine registers */
 
   st->csp   = 0;
   st->sp    = st->spb + 2 * BPERI;
   st->fp    = st->spb + BPERI;
+  st->hsp   = st->hpb;
   st->pc    = st->entry;
 
   /* Initialize the P-Machine stack */

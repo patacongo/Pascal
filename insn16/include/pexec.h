@@ -191,18 +191,21 @@ struct pexec_s
   /* These are the emulated P-Machine registers:
    *
    * spb: Base of the stack
-   * sp: The Pascal stack pointer
+   * sp:  The Pascal stack pointer
    * csp: The current top of the stack used to manage string
-   *     storage
-   * fp: Base Register of the current stack frame.  Holds the address
-   *     of the base of the stack frame of the current block.
+   *      storage
+   * hpb: Base of the heap
+   * hsp: Heap stack pointer
+   * fp:  Base Register of the current stack frame.  Holds the address
+   *      of the base of the stack frame of the current block.
    * fop: Pointer to section containing read-only data
-   * pc: Holds the current p-code location
+   * pc:  Holds the current p-code location
    */
 
   paddr_t spb;        /* Pascal stack base */
   paddr_t sp;         /* Pascal stack pointer */
   paddr_t csp;        /* Character stack pointer */
+  paddr_t hpb;        /* Base of the heap */
   paddr_t hsp;        /* Heap stack pointer */
   paddr_t fp;         /* Base of the current frame */
   paddr_t rop;        /* Read-only data pointer */

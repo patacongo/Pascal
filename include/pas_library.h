@@ -43,7 +43,9 @@
  */
 
 /* Halt processing.
+ *
  *   procedure halt;
+ *
  * ON INPUT:
  *   Takes no inputs
  * ON RETURN:
@@ -51,6 +53,19 @@
  */
 
 #define lbHALT          (0x0000)
+
+/* Heap allocation:
+ *
+ *   function new(size : integer) : integer;
+ *
+ * ON INPUT:
+ *   TOS(0) - Size of the heap region to create
+ *
+ * ON RETURN:
+ *   TOS(0) - The allocated heap region
+ */
+
+#define lbNEW           (0x0001)
 
 /* Get an environment string.
  *   function getent(name : string) : cstring;
@@ -61,7 +76,7 @@
  *   TOS(0,1) = 32-bit absolute address of string
  */
 
-#define lbGETENV        (0x0001)
+#define lbGETENV        (0x0002)
 
 /* Copy pascal string to a pascal string
  *
@@ -79,8 +94,8 @@
  * ON RETURN: actual parameters released.
  */
 
-#define lbSTRCPY        (0x0002)
-#define lbSTRCPYX       (0x0003)
+#define lbSTRCPY        (0x0003)
+#define lbSTRCPYX       (0x0004)
 
 /* Copy a pascal short string to a pascal short string.  Stack
  * on entry must be:
@@ -95,8 +110,8 @@
  *   TOS(4)=Dest short string variable address offset
  */
 
-#define lbSSTRCPY       (0x0004)
-#define lbSSTRCPYX      (0x0005)
+#define lbSSTRCPY       (0x0005)
+#define lbSSTRCPYX      (0x0006)
 
 /* Copy a pascal short string to a standard string.  Stack on entry must be:
  *
@@ -110,8 +125,8 @@
  *   TOS(4)=Dest standard string variable address offset
  */
 
-#define lbSSTR2STR      (0x0006)
-#define lbSSTR2STRX     (0x0007)
+#define lbSSTR2STR      (0x0007)
+#define lbSSTR2STRX     (0x0008)
 
 /* Copy a pascal standard string to a short string.  Stack on entry must be:
  *
@@ -124,8 +139,8 @@
  *   TOS(3)=Dest short string variable address offset
  */
 
-#define lbSTR2SSTR      (0x0008)
-#define lbSTR2SSTRX     (0x0009)
+#define lbSTR2SSTR      (0x0009)
+#define lbSTR2SSTRX     (0x000a)
 
 /* Copy C string to a pascal standard string.  Stack on entry must be:
  *
@@ -142,8 +157,8 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbCSTR2STR      (0x000a)
-#define lbCSTR2STRX     (0x000b)
+#define lbCSTR2STR      (0x000b)
+#define lbCSTR2STRX     (0x000c)
 
 /* Copy C string to a pascal short string.  Stack on entry must be:
  *
@@ -160,8 +175,8 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbCSTR2SSTR     (0x000c)
-#define lbCSTR2SSTRX    (0x000d)
+#define lbCSTR2SSTR     (0x000d)
+#define lbCSTR2SSTRX    (0x000e)
 
 /* Copy binary file character array to a pascal string.  Used when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as a factor in an RVALUE.
@@ -176,7 +191,7 @@
  *   TOS(1) = String size
  */
 
-#define lbBSTR2STR      (0x000e)
+#define lbBSTR2STR      (0x000f)
 
 /* Copy a pascal string into a binary file character array.  Use when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as the LVALUE in an assignment.
@@ -193,7 +208,7 @@
  *   All inputs consumbed
  */
 
-#define lbSTR2BSTR      (0x000f)
+#define lbSTR2BSTR      (0x0010)
 
 /* Copy a pascal string into a binary file character array.  Use when a non-
  * indexed PACKED ARRAY[] OF CHAR appears within an array element (using as
@@ -212,7 +227,7 @@
  *   All inputs consumbed
  */
 
-#define lbSTR2BSTRX     (0x0010)
+#define lbSTR2BSTRX     (0x0011)
 
 /* Convert a string to a numeric value
  *
@@ -241,7 +256,7 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x0011)
+#define lbVAL           (0x0012)
 
 /* Initialize a new string variable. Create a string buffer.  This is called
  * only at entrance into a new Pascal block.
@@ -253,7 +268,7 @@
  * ON RETURN
  */
 
-#define lbSTRINIT       (0x0012)
+#define lbSTRINIT       (0x0013)
 
 /* Initialize a new short string variable. Create a string buffer.  This is
  * called only at entrance into a new Pascal block.
@@ -268,7 +283,7 @@
  * ON RETURN
  */
 
-#define lbSSTRINIT      (0x0013)
+#define lbSSTRINIT      (0x0014)
 
 /* Initialize a temporary string variable on the stack. This is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
@@ -283,7 +298,7 @@
  *   TOS(1) = String size (zero)
  */
 
-#define lbSTRTMP        (0x0014)
+#define lbSTRTMP        (0x0015)
 
 /* Replace a standard string with a duplicate string residing in allocated
  * string stack.
@@ -298,7 +313,7 @@
  *   TOS(1) = length of new standard string
  */
 
-#define lbSTRDUP        (0x0015)
+#define lbSTRDUP        (0x0016)
 
 /* Replace a short string with a duplicate string residing in allocated
  * string stack.
@@ -315,7 +330,7 @@
  *   TOS(2) = length of new short string
  */
 
-#define lbSSTRDUP       (0x0016)
+#define lbSSTRDUP       (0x0017)
 
 /* Replace a character with a string residing in allocated string stack.
  *   function mkstkc(c : char) : string;
@@ -326,7 +341,7 @@
  *   TOS(1) = length of new string
  */
 
-#define lbMKSTKC        (0x0017)
+#define lbMKSTKC        (0x0018)
 
 /* Concatenate a standard string to the end of a standard string.
  *
@@ -342,7 +357,7 @@
  *   TOS(1) = new length of dest standard string2
  */
 
-#define lbSTRCAT        (0x0018)
+#define lbSTRCAT        (0x0019)
 
 /* Concatenate a short string to the end of a short string.
  *
@@ -361,7 +376,7 @@
  *   TOS(2) = new length of dest short string2
  */
 
-#define lbSSTRCAT       (0x0019)
+#define lbSSTRCAT       (0x001a)
 
 /* Concatenate a standard string to the end of a short string.
  *
@@ -379,7 +394,7 @@
  *   TOS(2) = new length of dest short string1
  */
 
-#define lbSSTRCATSTR    (0x001a)
+#define lbSSTRCATSTR    (0x001b)
 
 /* Concatenate a short string to the end of a standard string.
  *
@@ -396,7 +411,7 @@
  *   TOS(1) = new length of dest standard string1
  */
 
-#define lbSTRCATSSTR    (0x001b)
+#define lbSTRCATSSTR    (0x001c)
 
 /* Concatenate a character to the end of a standard string.
  *
@@ -411,7 +426,7 @@
  *   TOS(1) = new length of standard string
  */
 
-#define lbSTRCATC       (0x001c)
+#define lbSTRCATC       (0x001d)
 
 /* Concatenate a character to the end of a short string.
  *
@@ -428,7 +443,7 @@
  *   TOS(2) = new length of short string
  */
 
-#define lbSSTRCATC      (0x001d)
+#define lbSSTRCATC      (0x001e)
 
 /* Compare two pascal standard strings
  *
@@ -443,7 +458,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x001e)
+#define lbSTRCMP        (0x001f)
 
 /* Compare two pascal short strings
  *
@@ -460,7 +475,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMP       (0x001f)
+#define lbSSTRCMP       (0x0020)
 
 /* Compare a pascal short string to a pascal standard string
  *
@@ -476,7 +491,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMPSTR    (0x0020)
+#define lbSSTRCMPSTR    (0x0021)
 
 /* Compare a pascal standard string to a pascal short string
  *
@@ -492,8 +507,8 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMPSSTR    (0x0021)
+#define lbSTRCMPSSTR    (0x0022)
 
-#define MAX_LBOP        (0x0022)
+#define MAX_LBOP        (0x0023)
 
 #endif /* __PAS_LIBRARY_H */
