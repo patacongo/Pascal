@@ -50,6 +50,33 @@ part that creates the (nameless) type could be called from pas_DeclareConst().
 ########src/107-quicksort.pas########
 Comples error free but hangs at run-time.  Perhaps it is only waiting on input.
 
+########src/115-pointerrecord.pas########
+Line 0:0030 Error 2b Token b1
+
+Line:
+ 30    new( insertptr );
+
+Error:
+235 #define eNOTYET          ((uint16_t) 0x2b)
+
+Token:
+174 #define tSTDPROC         0xb1
+
+Analysis:
+I have not yet implemented new() and dispose().
+
+########src/116-findwords.pas########
+Line 0:0061 Error 2b Token b1
+
+Line:
+ 61          dispose( templ )                  { free current list        }
+
+Error:
+235 #define eNOTYET          ((uint16_t) 0x2b)
+
+Analysis:
+I have not yet implemented new() and dispose().
+
 ########src/601-writefile.pas########
 Compiles okay, runs without error, creates the students.dat file.  However
 the content of the file is garbage.

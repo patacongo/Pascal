@@ -208,8 +208,8 @@
 
 #define oDUP   (0x28)   /* (One 32-bit stack argument */
 #define oDUPH  (0x29)   /* (One 16-bit stack argument) */
-#define oXCHG  (0x2a)   /* No arguments */
-#define oXCHGH (0x2b)   /* No arguments */
+#define oXCHG  (0x2a)   /* (Two 32-bit stack arguments) */
+#define oXCHGH (0x2b)   /* (Two 16-bit stack arguments) */
 #define oPUSHS (0x2c)   /* No arguments */
 #define oPOPS  (0x2d)   /* (One 16-bit stack argument) */
 

@@ -2,7 +2,7 @@
  * popt_constants.h
  * External Declarations associated with PCOPT.C
  *
- *   Copyright (C) 200-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 200-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PCOPT_H
-#define __PCOPT_H
+#ifndef __POPT_CONSTANTS_H
+#define __POPT_CONSTANTS_H
 
 /***************************************************************************
  * Included Files
@@ -47,7 +47,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern int16_t unaryOptimize(void);
-extern int16_t binaryOptimize(void);
+extern int16_t popt_UnaryOptimize(void);
+extern int16_t popt_BinaryOptimize(void);
 
-#endif /* __PCOPT_H */
+#endif /* __POPT_CONSTANTS_H */

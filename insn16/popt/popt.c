@@ -49,7 +49,7 @@
 
 #include "pas_insn.h"
 #include "popt.h"
-#include "psopt.h"
+#include "popt_strings.h"
 #include "popt_local.h"
 #include "popt_finalize.h"
 
@@ -183,7 +183,7 @@ static void pass1(void)
 
   /* Clean up garbage left from the wasteful string stack logic */
 
-  stringStackOptimize(poffHandle, poffProgHandle);
+  popt_StringStackOptimize(poffHandle, poffProgHandle);
 
   /* Replace the original program data with the new program data */
 

@@ -1,5 +1,5 @@
 /**********************************************************************
- *  psopt.c
+ *  popt_strings.c
  *  String Stack Optimizaitons
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
@@ -59,7 +59,7 @@
 #include "pas_library.h"
 
 #include "popt.h"
-#include "psopt.h"
+#include "popt_strings.h"
 
 /**********************************************************************
  * Definitions
@@ -353,8 +353,8 @@ static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
  * Public Functions
  **********************************************************************/
 
-void stringStackOptimize(poffHandle_t poffHandle,
-                         poffProgHandle_t poffProgHandle)
+void popt_StringStackOptimize(poffHandle_t poffHandle,
+                              poffProgHandle_t poffProgHandle)
 {
   int i;
 

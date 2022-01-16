@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PJOPT_H
-#define __PJOPT_H
+#ifndef __POPT_BRANCH_H
+#define __POPT_BRANCH_H
 
 /***************************************************************************
  * Included Files
@@ -47,6 +47,6 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-int16_t BranchOptimize(void);
+int16_t popt_BranchOptimize(void);
 
-#endif /* __PJOPT_H */
+#endif /* __POPT_BRANCH_H */

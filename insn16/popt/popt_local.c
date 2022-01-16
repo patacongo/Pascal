@@ -78,79 +78,6 @@ int16_t   end_out = 0;                  /* 1 = oEND pcode has been output */
 static poffHandle_t     myPoffHandle;         /* Handle to POFF object */
 static poffProgHandle_t myPoffProgHandle;/* Handle to temporary POFF object */
 
-/**********************************************************************
- * Public Functions
- **********************************************************************/
-
-/***********************************************************************/
-
-void localOptimization(poffHandle_t poffHandle,
-                       poffProgHandle_t poffProgHandle)
-{
-  int16_t nchanges;
-
-  TRACE(stderr, "[pass2]");
-
-  /* Save the handles for use by other, private functions */
-
-  myPoffHandle     = poffHandle;
-  myPoffProgHandle = poffProgHandle;
-
-  /* Initialization */
-
-  initPTable();
-
-  /* Outer loop traverse the file op-code by op-code until the oEND P-Code
-   * has been output.  NOTE:  it is assumed throughout that oEND is the
-   * final P-Code in the program data section.
-   */
-
-  while (!(end_out))
-    {
-      /* The inner loop optimizes the buffered P-Codes until no further
-       * changes can be made.  Then the outer loop will advance the buffer
-       * by one P-Code
-       */
-
-      do
-        {
-          nchanges  = unaryOptimize ();
-          nchanges += binaryOptimize();
-          nchanges += BranchOptimize();
-          nchanges += LoadOptimize();
-          nchanges += StoreOptimize();
-        } while (nchanges);
-
-      putPCodeFromTable();
-    }
-}
-
-/***********************************************************************/
-
-void deletePcode(int16_t delIndex)
-{
-  TRACE(stderr, "[deletePcode]");
-
-  pptr[delIndex]->op   = oNOP;
-  pptr[delIndex]->arg1 = 0;
-  pptr[delIndex]->arg2 = 0;
-  setupPointer();
-}
-
-/**********************************************************************/
-
-void deletePcodePair(int16_t delIndex1, int16_t delIndex2)
-{
-  TRACE(stderr, "[deletePcodePair]");
-
-  pptr[delIndex1]->op   = oNOP;
-  pptr[delIndex1]->arg1 = 0;
-  pptr[delIndex1]->arg2 = 0;
-  pptr[delIndex2]->op   = oNOP;
-  pptr[delIndex2]->arg1 = 0;
-  pptr[delIndex2]->arg2 = 0;
-  setupPointer();
-}
 
 /**********************************************************************
  * Private Functions
@@ -199,6 +126,7 @@ static void putPCodeFromTable(void)
       insn_GetOpCode(myPoffHandle, &ptable[WINDOW-1]);
 
     } while (ptable[0].op == oNOP);
+
   setupPointer();
 }
 
@@ -211,7 +139,9 @@ static void setupPointer(void)
   TRACE(stderr, "[setupPointer]");
 
   for (pindex = 0; pindex < WINDOW; pindex++)
-    pptr[pindex] = (opType_t *) NULL;
+    {
+      pptr[pindex] = (opType_t *) NULL;
+    }
 
   nops = 0;
   for (pindex = 0; pindex < WINDOW; pindex++)
@@ -295,7 +225,102 @@ static void initPTable(void)
     {
       insn_GetOpCode(myPoffHandle, &ptable[i]);
     }
+
   setupPointer();
 }
 
+/**********************************************************************
+ * Public Functions
+ **********************************************************************/
+
 /***********************************************************************/
+
+void localOptimization(poffHandle_t poffHandle,
+                       poffProgHandle_t poffProgHandle)
+{
+  int16_t nchanges;
+
+  TRACE(stderr, "[pass2]");
+
+  /* Save the handles for use by other, private functions */
+
+  myPoffHandle     = poffHandle;
+  myPoffProgHandle = poffProgHandle;
+
+  /* Initialization */
+
+  initPTable();
+
+  /* Outer loop traverse the file op-code by op-code until the oEND P-Code
+   * has been output.  NOTE:  it is assumed throughout that oEND is the
+   * final P-Code in the program data section.
+   */
+
+  while (!(end_out))
+    {
+      /* The inner loop optimizes the buffered P-Codes until no further
+       * changes can be made.  Then the outer loop will advance the buffer
+       * by one P-Code
+       */
+
+      do
+        {
+          nchanges  = popt_UnaryOptimize ();
+          nchanges += popt_BinaryOptimize();
+          nchanges += popt_BranchOptimize();
+          nchanges += popt_LoadOptimize();
+          nchanges += popt_StoreOptimize();
+          nchanges += popt_ExchangeOptimize();
+        } while (nchanges);
+
+      putPCodeFromTable();
+    }
+}
+
+/***********************************************************************/
+
+void deletePcode(int16_t delIndex)
+{
+  TRACE(stderr, "[deletePcode]");
+
+  pptr[delIndex]->op   = oNOP;
+  pptr[delIndex]->arg1 = 0;
+  pptr[delIndex]->arg2 = 0;
+  setupPointer();
+}
+
+/**********************************************************************/
+
+void deletePcodePair(int16_t delIndex1, int16_t delIndex2)
+{
+  TRACE(stderr, "[deletePcodePair]");
+
+  pptr[delIndex1]->op   = oNOP;
+  pptr[delIndex1]->arg1 = 0;
+  pptr[delIndex1]->arg2 = 0;
+  pptr[delIndex2]->op   = oNOP;
+  pptr[delIndex2]->arg1 = 0;
+  pptr[delIndex2]->arg2 = 0;
+  setupPointer();
+}
+
+/**********************************************************************/
+
+void swapPcodePair(int16_t swapIndex1, int16_t swapIndex2)
+{
+  opType_t opCode;
+
+  opCode.op              = pptr[swapIndex2]->op;
+  opCode.arg1            = pptr[swapIndex2]->arg1;
+  opCode.arg2            = pptr[swapIndex2]->arg2;
+
+  pptr[swapIndex2]->op   = pptr[swapIndex1]->op;
+  pptr[swapIndex2]->arg1 = pptr[swapIndex1]->arg1;
+  pptr[swapIndex2]->arg2 = pptr[swapIndex1]->arg2;
+
+  pptr[swapIndex1]->op   = opCode.op;
+  pptr[swapIndex1]->arg1 = opCode.arg1;
+  pptr[swapIndex1]->arg2 = opCode.arg2;
+
+  setupPointer();  /* Shouldn't be necessary */
+}

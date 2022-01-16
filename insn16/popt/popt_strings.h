@@ -1,6 +1,6 @@
 /***************************************************************************
- * psopt.h
- * External Declarations associated with psopt.c
+ * popt_strings.h
+ * External Declarations associated with popt_strings.c
  *
  *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PSOPT_H
-#define __PSOPT_H
+#ifndef __POPT_STRINGS_H
+#define __POPT_STRINGS_H
 
 /***************************************************************************
  * Included Files
@@ -47,8 +47,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void stringStackOptimize(poffHandle_t poffHandle,
-				poffProgHandle_t poffProgHandle);
+void popt_StringStackOptimize(poffHandle_t poffHandle,
+                              poffProgHandle_t poffProgHandle);
 
-#endif /* __PSOPT_H */
-
+#endif /* __POPT_STRINGS_H */

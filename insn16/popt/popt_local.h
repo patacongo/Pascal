@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __POLOCAL_H
-#define __POLOCAL_H
+#ifndef __POPT_LOCAL_H
+#define __POPT_LOCAL_H
 
 /***************************************************************************
 * Included Files
@@ -53,16 +53,7 @@
 #define WINDOW             10           /* size of optimization window */
 
 /***************************************************************************
-* Public Function Prototypes
-****************************************************************************/
-
-extern void localOptimization(poffHandle_t poffHandle,
-                              poffProgHandle_t poffProgHandle);
-extern void deletePcode      (int16_t delIndex);
-extern void deletePcodePair  (int16_t delIndex1, int16_t delIndex2);
-
-/***************************************************************************
- * Public Datas
+ * Public Data
  ****************************************************************************/
 
 extern opType_t  ptable[WINDOW];       /* Pcode Table */
@@ -70,5 +61,15 @@ extern opType_t *pptr[WINDOW];         /* Valid Pcode Pointers */
 
 extern int16_t   nops;                 /* No. Valid Pcode Pointers */
 extern int16_t   end_out;              /* 1 = oEND pcode has been output */
+
+/***************************************************************************
+* Public Function Prototypes
+****************************************************************************/
+
+void localOptimization(poffHandle_t poffHandle,
+                       poffProgHandle_t poffProgHandle);
+void deletePcode      (int16_t delIndex);
+void deletePcodePair  (int16_t delIndex1, int16_t delIndex2);
+void swapPcodePair    (int16_t swapIndex1, int16_t swapIndex2);
 
 #endif /* __PLOCAL_H */

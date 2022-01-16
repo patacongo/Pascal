@@ -51,12 +51,12 @@
 
 /**********************************************************************/
 
-int16_t BranchOptimize (void)
+int16_t popt_BranchOptimize (void)
 {
   int16_t nchanges = 0;
   register int16_t i;
 
-  TRACE(stderr, "[BranchOptimize]");
+  TRACE(stderr, "[popt_BranchOptimize]");
 
   /* At least two pcodes are need to perform branch optimizations */
 
@@ -444,7 +444,7 @@ int16_t BranchOptimize (void)
     } /* end while */
   return (nchanges);
 
-} /* end BranchOptimize */
+} /* end popt_BranchOptimize */
 
 /**********************************************************************/
 

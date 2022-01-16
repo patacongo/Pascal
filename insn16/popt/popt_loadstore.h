@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PLOPT_H
-#define __PLOPT_H
+#ifndef __POPT_LOADSTORE_H
+#define __POPT_LOADSTORE_H
 
 /***************************************************************************
  * Included Files
@@ -47,8 +47,9 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern int16_t LoadOptimize ( void );
-extern int16_t StoreOptimize ( void );
+int16_t popt_LoadOptimize(void);
+int16_t popt_StoreOptimize(void);
+int16_t popt_ExchangeOptimize(void);
 
-#endif /* __PLOPT_H */
+#endif /* __POPT_LOADSTORE_H */
 

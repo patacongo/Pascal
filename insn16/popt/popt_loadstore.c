@@ -1,4 +1,4 @@
-/**********************************************************************
+/****************************************************************************
  * popt_loadstore.c
  * Load/Store Optimizations
  *
@@ -32,13 +32,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "pas_debug.h"
@@ -49,15 +50,39 @@
 #include "popt_local.h"
 #include "popt_loadstore.h"
 
-/**********************************************************************/
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
 
-int16_t LoadOptimize(void)
+/****************************************************************************/
+/* Check if the opcode at this index:  (1) pushs some data on the stack and
+ * (2) does not depend on prior stack content.
+ */
+
+static inline bool popt_CheckDataOperation(int16_t index)
+{
+  return (pptr[index]->op == oPUSHB || pptr[index]->op == oPUSH ||
+          pptr[index]->op == oLD    || pptr[index]->op == oLDH  ||
+          pptr[index]->op == oLDB   ||
+          pptr[index]->op == oLDS   || pptr[index]->op == oLDSH ||
+          pptr[index]->op == oLDSB  ||
+          pptr[index]->op == oLA    || pptr[index]->op == oLAS  ||
+          pptr[index]->op == oLAC);
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+
+int16_t popt_LoadOptimize(void)
 {
   uint16_t val;
   int16_t  nchanges = 0;
   register int16_t i;
 
-  TRACE(stderr, "[LoadOptimize]");
+  TRACE(stderr, "[popt_LoadOptimize]");
 
   /* At least two pcodes are need to perform Load optimizations */
 
@@ -69,13 +94,13 @@ int16_t LoadOptimize(void)
           /* Eliminate duplicate loads */
 
         case oLDSH   :
-          if ((pptr[i+1]->op   == oLDSH) &&
-              (pptr[i+1]->arg1 == pptr[i]->arg1) &&
-              (pptr[i+1]->arg2 == pptr[i]->arg2))
+          if ((pptr[i + 1]->op   == oLDSH) &&
+              (pptr[i + 1]->arg1 == pptr[i]->arg1) &&
+              (pptr[i + 1]->arg2 == pptr[i]->arg2))
             {
-              pptr[i+1]->op   = oDUPH;
-              pptr[i+1]->arg1 = 0;
-              pptr[i+1]->arg2 = 0;
+              pptr[i + 1]->op   = oDUPH;
+              pptr[i + 1]->arg1 = 0;
+              pptr[i + 1]->arg2 = 0;
               nchanges++;
               i += 2;
             }
@@ -102,31 +127,31 @@ int16_t LoadOptimize(void)
            * unindexed form.
            */
 
-          if (pptr[i+1]->op == oLDSXH)
+          if (pptr[i + 1]->op == oLDSXH)
             {
-              pptr[i+1]->op = oLDSH;
-              pptr[i+1]->arg2 += val;
+              pptr[i + 1]->op    = oLDSH;
+              pptr[i + 1]->arg2 += val;
               deletePcode (i);
               nchanges++;
             }
-          else if (pptr[i+1]->op == oLASX)
+          else if (pptr[i + 1]->op == oLASX)
             {
-              pptr[i+1]->op = oLAS;
-              pptr[i+1]->arg2 += val;
+              pptr[i + 1]->op    = oLAS;
+              pptr[i + 1]->arg2 += val;
               deletePcode (i);
               nchanges++;
             }
-          else if (pptr[i+1]->op == oLDSXB)
+          else if (pptr[i + 1]->op == oLDSXB)
             {
-              pptr[i+1]->op = oLDSB;
-              pptr[i+1]->arg2 += val;
+              pptr[i + 1]->op    = oLDSB;
+              pptr[i + 1]->arg2 += val;
               deletePcode (i);
               nchanges++;
             }
-          else if (pptr[i+1]->op == oLDSXM)
+          else if (pptr[i + 1]->op == oLDSXM)
             {
-              pptr[i+1]->op = oLDSM;
-              pptr[i+1]->arg2 += val;
+              pptr[i + 1]->op    = oLDSM;
+              pptr[i + 1]->arg2 += val;
               deletePcode (i);
               nchanges++;
             }
@@ -152,16 +177,16 @@ int16_t LoadOptimize(void)
   return nchanges;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
-int16_t StoreOptimize (void)
+int16_t popt_StoreOptimize (void)
 {
   int16_t  nchanges = 0;
   register int16_t i;
 
-  TRACE(stderr, "[StoreOptimize]");
+  TRACE(stderr, "[popt_StoreOptimize]");
 
-  /* At least two pcodes are need to perform the following Store
+  /* At least two pcodes are needed to perform the following Store
    * optimizations.
    */
 
@@ -173,14 +198,14 @@ int16_t StoreOptimize (void)
           /* Eliminate store followed by load */
 
         case oSTSH :
-          if ((pptr[i+1]->op   == oLDSH) &&
-              (pptr[i+1]->arg1 == pptr[i]->arg1) &&
-              (pptr[i+1]->arg2 == pptr[i]->arg2))
+          if ((pptr[i + 1]->op   == oLDSH) &&
+              (pptr[i + 1]->arg1 == pptr[i]->arg1) &&
+              (pptr[i + 1]->arg2 == pptr[i]->arg2))
             {
-              pptr[i+1]->op = oSTSH;
-              pptr[i]->op   = oDUPH;
-              pptr[i]->arg1 = 0;
-              pptr[i]->arg2 = 0;
+              pptr[i + 1]->op = oSTSH;
+              pptr[i]->op     = oDUPH;
+              pptr[i]->arg1   = 0;
+              pptr[i]->arg2   = 0;
               nchanges++;
               i += 2;
             }
@@ -200,17 +225,17 @@ int16_t StoreOptimize (void)
 
           if (i < nops-2)
             {
-              if (pptr[i+2]->op == oSTSXH)
+              if (pptr[i + 2]->op == oSTSXH)
                 {
-                  pptr[i+2]->op = oSTSH;
-                  pptr[i+2]->arg2 += pptr[i]->arg2;
+                  pptr[i + 2]->op    = oSTSH;
+                  pptr[i + 2]->arg2 += pptr[i]->arg2;
                   deletePcode (i);
                   nchanges++;
                 }
-              else if (pptr[i+2]->op == oSTSXB)
+              else if (pptr[i + 2]->op == oSTSXB)
                 {
-                  pptr[i+2]->op = oSTSB;
-                  pptr[i+2]->arg2 += pptr[i]->arg2;
+                  pptr[i + 2]->op    = oSTSB;
+                  pptr[i + 2]->arg2 += pptr[i]->arg2;
                   deletePcode (i);
                   nchanges++;
                 }
@@ -228,10 +253,10 @@ int16_t StoreOptimize (void)
         case oPUSHB :
           if (i < nops-2)
             {
-              if (pptr[i+2]->op == oSTSXB)
+              if (pptr[i + 2]->op == oSTSXB)
                 {
-                  pptr[i+2]->op = oSTSB;
-                  pptr[i+2]->arg2 += pptr[i]->arg2;
+                  pptr[i + 2]->op    = oSTSB;
+                  pptr[i + 2]->arg2 += pptr[i]->arg2;
                   deletePcode (i);
                   nchanges++;
                 }
@@ -246,6 +271,47 @@ int16_t StoreOptimize (void)
             }
           break;
 
+        default :
+          i++;
+          break;
+        }
+    }
+
+  return nchanges;
+}
+
+int16_t popt_ExchangeOptimize(void)
+{
+  int16_t  nchanges = 0;
+  register int16_t i;
+
+  TRACE(stderr, "[popt_ExchangeOptimize]");
+
+  /* At least three pcodes are needed to perform the following Store
+   * optimizations.
+   */
+
+  i = 2;
+  while (i < nops)
+    {
+      /* Search for an exchange instruction */
+
+      switch (pptr[i]->op)
+        {
+        case oXCHGH :  /* (Two 16-bit stack arguments) */
+          if (popt_CheckDataOperation(i - 1) &&
+              popt_CheckDataOperation(i - 2))
+            {
+              swapPcodePair(i - 1, i - 2);
+              deletePcode(i);
+            }
+          else
+            {
+              i++;
+            }
+          break;
+
+        case oXCHG :   /* (Two 32-bit stack arguments) */
         default :
           i++;
           break;

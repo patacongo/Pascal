@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PFOPT_H
-#define __PFOPT_H
+#ifndef __POPT_FINALIZE_H
+#define __POPT_FINALIZE_H
 
 /***************************************************************************
  * Included Files
@@ -47,8 +47,8 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-extern void optFinalize(poffHandle_t poffHandle,
-			poffProgHandle_t poffProgHandle);
+void optFinalize(poffHandle_t poffHandle,
+                 poffProgHandle_t poffProgHandle);
 
-#endif /* __PFOPT_H */
+#endif /* __POPT_FINALIZE_H */
 

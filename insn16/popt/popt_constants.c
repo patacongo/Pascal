@@ -52,13 +52,13 @@
 
 /**********************************************************************/
 
-int16_t unaryOptimize(void)
+int16_t popt_UnaryOptimize(void)
 {
   int16_t nchanges = 0;
   register uint16_t temp;
   register int16_t i;
 
-  TRACE(stderr, "[unaryOptimize]");
+  TRACE(stderr, "[popt_UnaryOptimize]");
 
   /* At least two pcodes are need to perform unary optimizations */
 
@@ -595,13 +595,13 @@ int16_t unaryOptimize(void)
 
 /**********************************************************************/
 
-int16_t binaryOptimize(void)
+int16_t popt_BinaryOptimize(void)
 {
   int16_t nchanges = 0;
   register int16_t stmp16;
   register int16_t i;
 
-  TRACE(stderr, "[binaryOptimize]");
+  TRACE(stderr, "[popt_BinaryOptimize]");
 
   /* At least two pcodes are needed to perform the following binary
    * operator optimizations.
