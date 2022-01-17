@@ -1,4 +1,4 @@
-program PointerRecordExample( input, output );
+program PointerRecordExample(input, output);
 
 type
   rptr = ^recdata;
@@ -20,18 +20,18 @@ begin
  while exitflag = false do
  begin
   writeln('Enter in a digit [-1 to end]');
-  readln( digitcode );
+  readln(digitcode);
   if digitcode = -1 then
    exitflag := true
   else
   begin
    writeln('Enter in a small text string');
-   readln( textstring );
-   new( insertptr );
+   readln(textstring);
+   new(insertptr);
    if insertptr = nil then
    begin
     writeln('1: unable to allocate storage space');
-    exit
+    halt
    end;
    if first = true then begin
     startrecord := insertptr;
@@ -46,13 +46,13 @@ begin
    insertptr^.code := textstring;
    insertptr^.nextrecord := nil
   end
-        end;
-        while startrecord <> nil do
-        begin
-      listrecord := startrecord;
-             writeln( startrecord^.number );
-      writeln( startrecord^.code );
-      startrecord := startrecord^.nextrecord;
-      dispose( listrecord )
+ end;
+ while startrecord <> nil do
+ begin
+  listrecord := startrecord;
+  writeln(startrecord^.number);
+  writeln(startrecord^.code);
+  startrecord := startrecord^.nextrecord;
+  dispose(listrecord)
  end
 end.

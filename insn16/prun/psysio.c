@@ -140,22 +140,42 @@ static uint8_t g_ioLine[LINE_SIZE + 1];
 
 static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr)
 {
-  unsigned int value = 0;
+  long int value = 0;
+  bool negative = false;
 
-  while (isspace(*ioPtr)) ioPtr++;
-  while ((*ioPtr >= '0') && (*ioPtr <= '9'))
+  /* Skip over leading spaces */
+
+  while (isspace(*ioPtr))
     {
-      value = 10 * value
-        + (sstack_t)(*ioPtr)
-        - (sstack_t)'0';
+      ioPtr++;
+    }
+
+  /* Check for a sign */
+
+  if (*ioPtr == '+' || *ioPtr == '-')
+    {
+      negative = (*ioPtr == '-');
+      ioPtr++;
+    }
+
+
+  while (*ioPtr >= '0' && *ioPtr <= '9')
+    {
+      value = 10 * value + (sstack_t)(*ioPtr) - (sstack_t)'0';
       ioPtr++;
 
-      if (value > UINT16_MAX)
+      if (value > INT16_MAX)
         {
           /* errorCode = eINTEGEROVERFLOW; */
-          value = UINT16_MAX;
+
+          value = negative ? INT16_MAX : INT16_MAX + 1;
           break;
         }
+    }
+
+  if (negative)
+    {
+      value = -value;
     }
 
   return (ustack_t)value;

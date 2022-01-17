@@ -65,22 +65,21 @@ begin
    end;
 
    { return to OS }
-   halt( exitcode )
+   halt
 end;
 
 { check to see if word already in list, 1=found, 0=not present }
 function checkforword( word : string ) : integer;
 var ptr : wordptr;
 begin
-   ptr := head;                     { start at first word in list }
+   ptr := head;                     { start at first word in list      }
    while ptr <> nil do
    begin
-      if  ptr^.word = word then    { found the word?                  }
-         checkforword := TRUE;     { yes, return found                }
-
-ptr := ptr^.nextword        { else cycle to next word in list  }
+      if ptr^.word = word then      { found the word?                  }
+         checkforword := TRUE;      { yes, return found                }
+      ptr := ptr^.nextword          { else cycle to next word in list  }
    end;
-    checkforword := FALSE           { word has not been found in list  }
+   checkforword := FALSE            { word has not been found in list  }
 end;
 
 { enter word and occurrence into list }

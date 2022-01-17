@@ -113,7 +113,8 @@ static void     pas_WriteProcCommon(bool text,      /* WRITE[LN] common logic */
 static void     pas_WriteText(void);                /* WRITE text file */
 static uint16_t pas_WriteFieldWidth(void);          /* Get text file write field-width. */
 static void     pas_WriteBinary(uint16_t fileSize); /* WRITE binary file */
-static void     pas_Dispose(void);                  /* Free memory */
+static void     pas_NewProc(void);                  /* Memory allocator */
+static void     pas_DisposeProc(void);              /* Free memory */
 
 static uint16_t pas_GenVarFileNumber(symbol_t *varPtr,
                   uint16_t *pFileSize,
@@ -123,6 +124,11 @@ static uint16_t pas_GenVarFileNumber(symbol_t *varPtr,
 
 static void     pas_ValProc(void);                  /* VAL procedure */
 
+/* Misc. helper functions */
+
+static void     pas_InitializeNewRecord(symbol_t *typePtr);
+static void     pas_InitializeNewArray(symbol_t *typePtr);
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -131,429 +137,9 @@ static void     pas_ValProc(void);                  /* VAL procedure */
 
 static symbol_t valSymbol[4];
 
-/****************************************************************************/
-
-void pas_PrimeStandardProcedures(void)
-{
-  /* procedure val(const S : string; var V; var Code : word);  */
-
-  valSymbol[0].sParm.p.pNParms = 3;
-  valSymbol[1].sKind           = sSTRING;
-  valSymbol[1].sParm.p.pParent = g_parentString;
-  valSymbol[2].sKind           = sVAR_PARM;
-  valSymbol[2].sParm.p.pParent = g_parentInteger;
-  valSymbol[3].sKind           = sVAR_PARM;
-  valSymbol[3].sParm.p.pParent = g_parentInteger;
-}
-
-/***********************************************************************/
-
-void pas_StandardProcedure(void)
-{
-  TRACE(g_lstFile, "[pas_StandardProcedure]");
-
-  /* Is the token a procedure? */
-
-  if (g_token == tSTDPROC)
-    {
-      /* Yes, process it procedure according to the extended token type */
-
-      switch (g_tknSubType)
-        {
-          /* Standard Procedures & Functions */
-
-        case txHALT :
-          getToken();
-          pas_HaltProc();
-          break;
-
-        case txPAGE :
-          pas_FileProc(xWRITE_PAGE);
-          break;
-
-        case txDISPOSE :
-          pas_Dispose();
-          break;
-
-        /* Not implemented */
-
-        case txGET :
-        case txPACK :
-        case txPUT :
-        case txUNPACK :
-          error(eNOTYET);
-          getToken();
-          break;
-
-          /* less-than-standard procedures */
-
-        case txVAL :
-          pas_ValProc();
-          break;
-
-        /* File I/O */
-
-        case txASSIGNFILE :
-          pas_AssignFileProc();
-          break;
-
-        case txREAD :
-          pas_ReadProc();
-          break;
-
-        case txREADLN :
-          pas_ReadlnProc();
-          break;
-
-        case txRESET  :
-          pas_OpenFileProc(xRESET, xRESETR);
-          break;
-
-        case txREWRITE :
-          pas_OpenFileProc(xREWRITE, xREWRITER);
-          break;
-
-        case txAPPEND :
-          pas_FileProc(xAPPEND);
-          break;
-
-        case txCLOSEFILE :
-          pas_FileProc(xCLOSEFILE);
-          break;
-
-        case txWRITE :
-          pas_WriteProc();
-          break;
-
-        case txWRITELN :
-          pas_WritelnProc();
-          break;
-
-          /* Its not a recognized procedure */
-
-        default :
-          error(eINVALIDPROC);
-          break;
-        }
-    }
-}
-
-/***********************************************************************/
-
-uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
-                                symbol_t *defaultFilePtr)
-{
-  /* If the token is not a symbol table related token, then abort returning
-   * the default.  For example, suppose the first argument is a constant
-   * string.
-   */
-
-  if (g_tknPtr != NULL)
-    {
-      /* Make a write-able copy of the variable symbol table entry */
-
-      symbol_t varCopy = *g_tknPtr;
-
-      /* Then work with the write-able copy */
-
-      return pas_SimplifyFileNumber(&varCopy, 0, pFileSize, defaultFilePtr);
-    }
-  else
-    {
-      return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
-    }
-}
-
-/***********************************************************************/
-
-int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
-{
-  symbol_t *baseTypePtr;
-
-  /* These sizes must agree with the sizes used in
-   * pas_ActualParameterList() below.
-   */
-
-  baseTypePtr = pas_GetBaseTypePointer(procPtr[parmNo].sParm.v.vParent);
-  switch (baseTypePtr->sParm.t.tType)
-    {
-    case sINT :
-    case sSUBRANGE :
-    case sSCALAR :
-      return sINT_SIZE;
-
-    case sCHAR :
-      return sCHAR_SIZE;
-
-    case sBOOLEAN :
-      return sBOOLEAN_SIZE;
-
-    case sREAL :
-      return sREAL_SIZE;
-
-    case sSET :
-      return sSET_SIZE;
-
-    case sSTRING :
-      return sSTRING_SIZE;
-
-    case sSHORTSTRING :
-      return sSHORTSTRING_SIZE;
-
-    case sARRAY :
-    case sRECORD :
-      return baseTypePtr->sParm.t.tAllocSize;
-
-    case sFILE :
-    case sTEXTFILE :
-      return sINT_SIZE;
-
-    case sVAR_PARM :
-      return sPTR_SIZE;
-
-    default:
-      error(eINVPARMTYPE);
-      return sINT_SIZE;
-    }
-}
-
-/***********************************************************************/
-
-int pas_ActualParameterList(symbol_t *procPtr)
-{
-  symbol_t *typePtr;
-  exprType_t exprType;
-  bool lparen = false;
-  int parmIndex = 0;
-  int size = 0;
-
-  TRACE(g_lstFile,"[pas_ActualParameterList]");
-
-  /* Processes the (optional) actual-parameter-list associated with
-   * a function or procedure call:
-   *
-   * FORM: procedure-method-statement =
-   *       procedure-method-specifier [ actual-parameter-list ]
-   * FORM: function-designator = function-identifier [ actual-parameter-list ]
-   *
-   *
-   * On entry, 'g_token' refers to the token just AFTER the procedure
-   * function identifier.
-   *
-   * FORM: actual-parameter-list =
-   *       '(' actual-parameter { ',' actual-parameter } ')'
-   * FORM: actual-parameter =
-   *       expression | variable-access |
-   *       procedure-identifier | function-identifier
-   */
-
-  if (g_token == '(')
-    {
-      lparen = true;
-      getToken();
-    }
-
-  /* If this procedure requires parameters, get them and make sure that
-   * they match in type and number
-   */
-
-  if (procPtr->sParm.p.pNParms)
-    {
-      /* If it requires parameters, then the actual-parameter-list must
-       * be present and must begin with '('
-       */
-
-      if (!lparen) error (eLPAREN);
-
-      /* Loop to process the expected number of parameters.  The formal
-       * argument descriptions follow the procedure/function description
-       * as an array of variable declarations. (These sizes below must
-       * agree with pas_ActualParameterSize() above);
-       */
-
-      for (parmIndex = 1;
-           parmIndex <= procPtr->sParm.p.pNParms;
-           parmIndex++)
-        {
-          typePtr = procPtr[parmIndex].sParm.v.vParent;
-          switch (procPtr[parmIndex].sKind)
-            {
-            case sINT :
-              pas_Expression(exprInteger, typePtr);
-              size += sINT_SIZE;
-              break;
-
-            case sCHAR :
-              pas_Expression(exprChar, typePtr);
-              size += sCHAR_SIZE;
-              break;
-
-            case sREAL :
-              pas_Expression(exprReal, typePtr);
-              size += sREAL_SIZE;
-              break;
-
-            case sSTRING :
-              pas_Expression(exprString, typePtr);
-              size += sSTRING_SIZE;
-              break;
-
-            case sSHORTSTRING :
-              pas_Expression(exprShortString, typePtr);
-              size += sSHORTSTRING_SIZE;
-              break;
-
-            case sSUBRANGE :
-              pas_Expression(exprInteger, typePtr);
-              size += sINT_SIZE;
-              break;
-
-            case sSCALAR :
-              pas_Expression(exprScalar, typePtr);
-              size += sINT_SIZE;
-              break;
-
-            case sSET :
-              pas_Expression(exprSet, typePtr);
-              size += sSET_SIZE;
-              break;
-
-            case sARRAY :
-              {
-                symbol_t *arrayType;
-                uint16_t arrayKind;
-
-                /* Get the base type of the array */
-
-                arrayType = pas_GetBaseTypePointer(typePtr);
-                arrayKind = arrayType->sKind;
-
-                /* REVISIT:  For subranges, we use the base type of
-                 * the subrange.
-                 */
-
-                if (arrayKind == sSUBRANGE)
-                  {
-                    arrayKind = arrayType->sParm.t.tSubType;
-                  }
-
-                /* Then get the expression type associated with the
-                 * base type
-                 */
-
-                exprType = pas_MapVariable2ExprType(arrayKind, false);
-                pas_Expression(exprType, typePtr);
-                size += typePtr->sParm.t.tAllocSize;
-              }
-              break;
-
-            case sRECORD :
-              pas_Expression(exprRecord, typePtr);
-              size += typePtr->sParm.t.tAllocSize;
-              break;
-
-            case sVAR_PARM :
-              if (typePtr)
-                {
-                  exprType_t varExprType;
-                  uint16_t   varType = typePtr->sParm.t.tType;
-
-                  switch (varType)
-                    {
-                    /* Simple ordinal types */
-
-                    case sINT :
-                    case sSUBRANGE :
-                    case sCHAR :
-                    case sBOOLEAN :
-                    case sSCALAR :
-                    case sSCALAR_OBJECT :
-                      varExprType = pas_MapVariable2ExprPtrType(varType, true);
-                      pas_VarParameter(varExprType, typePtr);
-                      size += sPTR_SIZE;
-                      break;
-
-                    /* Simple non-ordinal types */
-
-                    case sSET :
-                    case sREAL :
-                    case sSTRING :
-                    case sSHORTSTRING :
-                    case sRECORD :
-                    case sRECORD_OBJECT :
-                    case sFILE :
-                    case sTEXTFILE :
-                      varExprType = pas_MapVariable2ExprPtrType(varType, false);
-                      pas_VarParameter(varExprType, typePtr);
-                      size += sPTR_SIZE;
-                      break;
-
-                    /* Not so simple types that require a little more effort */
-
-                    case sARRAY :
-                      {
-                        symbol_t *arrayType;
-                        uint16_t arrayKind;
-
-                        /* Get the base type of the array */
-
-                        arrayType = pas_GetBaseTypePointer(typePtr);
-                        arrayKind = arrayType->sKind;
-
-                        /* REVISIT:  For subranges, we use the base type of
-                         * the subrange.
-                         */
-
-                        if (arrayKind == sSUBRANGE)
-                          {
-                            arrayKind = arrayType->sParm.t.tSubType;
-                          }
-
-                        /* Then get the expression type associated with the
-                         * base type
-                         */
-
-                        exprType = pas_MapVariable2ExprPtrType(arrayKind, false);
-                        pas_VarParameter(exprType, typePtr);
-                        size += sPTR_SIZE;
-                      }
-                      break;
-
-                    case sPOINTER :
-                      error(eNOTYET);
-                      break;
-
-                    default :
-                      error(eVARPARMTYPE);
-                      break;
-                    }
-                }
-              else
-                {
-                  error(eVARPARMTYPE);
-                }
-              break;
-
-            default :
-              error (eVARPARMTYPE);
-            }
-
-          if (parmIndex < procPtr->sParm.p.pNParms)
-            {
-              if (g_token != ',') error (eCOMMA);
-              else getToken();
-            }
-        }
-    }
-
-  if (lparen == true)
-    {
-      if (g_token != ')') error (eRPAREN);
-      else getToken();
-    }
-
-  return size;
-}
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
 
 /***********************************************************************/
 
@@ -568,6 +154,7 @@ static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 
   switch (varPtr->sKind)
     {
+      case sPOINTER :
       case sVAR_PARM :
         {
           return pas_GenVarFileNumber(varPtr, pFileSize, defaultFilePtr);
@@ -606,21 +193,13 @@ static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
             {
               symbol_t *fieldPtr = g_tknPtr;
               symbol_t *baseTypePtr;
-              symbol_t *nextPtr;
 
               /* Verify that the field selector resolves to a
                * file type.
                */
 
-              nextPtr         = fieldPtr->sParm.r.rParent;
-              baseTypePtr     = nextPtr;
-              while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-                {
-                  baseTypePtr = nextPtr;
-                  nextPtr     = baseTypePtr->sParm.t.tParent;
-                }
-
-              fileType        = baseTypePtr->sParm.t.tType;
+              baseTypePtr = pas_GetBaseTypePointer(fieldPtr->sParm.r.rParent);
+              fileType    = baseTypePtr->sParm.t.tType;
 
               if (fileType != sFILE && fileType != sTEXTFILE)
                 {
@@ -656,7 +235,6 @@ static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
       case sARRAY :
         {
           symbol_t *typePtr;
-          symbol_t *nextPtr;
           symbol_t *baseTypePtr;
 
           fileFlags |= FACTOR_INDEXED;
@@ -679,13 +257,7 @@ static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 
           /* Get a pointer to the underlying base type symbol */
 
-          nextPtr         = typePtr;
-          baseTypePtr     = typePtr;
-          while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-            {
-              baseTypePtr = nextPtr;
-              nextPtr     = baseTypePtr->sParm.t.tParent;
-            }
+          baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
 #ifdef CONFIG_PAS_FILERECORD
           if (baseTypePtr->sParm.t.tType == sRECORD)
@@ -742,13 +314,8 @@ static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
         }
         break;
 
-      /* Check for other exotic forms that have not yet been implemented */
-
-      case sPOINTER :
-      case sTYPE :
-        error(eNOTYET);  /* Fall-through to the default case */
-
-      /* Not a file-type variable.  Use the default file number (which we
+      /* Not a file-type variable (or it is a more exotic form that is
+       * not yet implemented).  Use the default file number (which we
        * assume to be of type sTEXTFILE)
        */
 
@@ -1807,9 +1374,95 @@ static void pas_WriteBinary(uint16_t fileSize)
 }
 
 /****************************************************************************/
+/* Memory allocator */
+
+static void pas_NewProc(void)
+{
+  /* FORM:  'dispose' '(' pointer-value ')' */
+
+  TRACE(g_lstFile,"[pas_NewProc]");
+
+  getToken();
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* Check for pointer (or VAR parm) variable */
+
+  if (g_token == sPOINTER || g_token == sVAR_PARM)
+    {
+      symbol_t *baseTypePtr;
+      symbol_t *varPtr;
+      symbol_t *typePtr;
+      uint16_t  varType;
+
+      varPtr = g_tknPtr;
+      getToken();
+
+      /* Allocate memory for an object the size of an allocated instance of
+       * this type.  A pointer to the allocated memory will lie at the top of
+       * the stack at run-time.
+       */
+
+      typePtr = varPtr->sParm.v.vParent;
+      pas_GenerateDataOperation(opPUSH, typePtr->sParm.t.tAllocSize);
+      pas_StandardFunctionCall(lbNEW);
+
+      /* Save this into the pointer variable */
+
+      pas_GenerateStackReference(opSTS, varPtr);
+
+      /* If we just allocated a string, shortstring, or file type, then we
+       * have to initialize the allocated instance.
+       */
+
+      baseTypePtr = pas_GetBaseTypePointer(typePtr);
+      varType     = baseTypePtr->sParm.t.tType;
+
+      /* If we just created a string variable, then set up and initializer
+       * for the string; memory for the string buffer must be set up at run
+       * time.
+       */
+
+      if (varType == sSTRING || varType == sSHORTSTRING)
+        {
+          pas_InitializeNewString(baseTypePtr);
+        }
+
+      /* Handle files similarly */
+
+      else if (varType == sFILE || varType == sTEXTFILE)
+        {
+          pas_InitializeNewFile(baseTypePtr);
+        }
+
+      /* A more complex case:  We just created a RECORD variable that may
+       * contain string or file fields that need to be initialized.
+       */
+
+      else if (varType == sRECORD)
+        {
+          pas_InitializeNewRecord(baseTypePtr);
+        }
+
+      /* Or an array that may contain variables that need initialization.
+       * (OR an array or records with fields that are arrays that ... and
+       * all need to be initialized).
+       */
+
+      else if (typePtr->sParm.t.tType == sARRAY)
+        {
+          pas_InitializeNewArray(typePtr);
+        }
+    }
+
+  if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
+  else getToken();
+}
+
+/****************************************************************************/
 /* Free memory */
 
-static void pas_Dispose(void)
+static void pas_DisposeProc(void)
 {
   exprType_t exprType;
   symbol_t *varPtr;
@@ -1995,4 +1648,657 @@ static void pas_ValProc(void)  /* VAL procedure */
    */
 
   pas_StandardFunctionCall(lbVAL);
+}
+
+/****************************************************************************/
+
+static void pas_InitializeNewRecord(symbol_t *typePtr)
+{
+  /* Verify that this is a RECORD type */
+
+  if (typePtr == NULL ||
+      typePtr->sKind != sTYPE ||
+      typePtr->sParm.t.tType != sRECORD)
+    {
+      error(eRECORDTYPE);
+    }
+
+  /* Looks like a good RECORD type.  On entry, a pointer to the RECORD to
+   * be initialized will be at the top of the stack.
+   */
+
+  else
+    {
+      symbol_t *recordObjectPtr;
+      int nObjects = typePtr->sParm.t.tMaxValue;
+      int objectIndex;
+
+      /* The parent is the RECORD type.  That is followed by the
+       * RECORD OBJECT symbols.  The number of following RECORD
+       * OBJECT symbols is given by the maxValue field of the
+       * RECORD type entry.
+       *
+       * RECORD OBJECTS may not be contiguous but may be interspersed
+       * with spurious (un-named) type symbols.  The first RECORD
+       * OBJECT symbol is, however, guaranteed to immediately follow
+       * the RECORD type.
+       */
+
+      for (objectIndex = 1, recordObjectPtr = &typePtr[1];
+           objectIndex <= nObjects && recordObjectPtr != NULL;
+           objectIndex++, recordObjectPtr = recordObjectPtr->sParm.r.rNext)
+        {
+          symbol_t *parentTypePtr;
+
+          if (recordObjectPtr->sKind != sRECORD_OBJECT)
+            {
+              /* The symbol table must be corrupted */
+
+              error(eHUH);
+            }
+
+          /* If this field is a string, then set up to initialize it.
+           * At run-time, a pointer to the allocated RECORD will be
+           * at the top of the stack.
+           */
+
+          parentTypePtr = recordObjectPtr->sParm.r.rParent;
+
+          if (parentTypePtr == NULL || parentTypePtr->sKind != sTYPE)
+            {
+              error(eHUH);
+            }
+          else if (parentTypePtr->sParm.t.tType == sSTRING ||
+                   parentTypePtr->sParm.t.tType == sSHORTSTRING)
+            {
+              /* Get the address of the string field to be initialized at the
+               * top of the stack.
+               */
+
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewString(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+          else if (parentTypePtr->sParm.t.tType == sFILE ||
+                   parentTypePtr->sParm.t.tType == sTEXTFILE)
+            {
+              /* Get the address of the file field to be initialized at the
+               * top of the stack.
+               */
+
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewFile(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+          else if (parentTypePtr->sParm.t.tType == sRECORD)
+            {
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewRecord(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+          else if (parentTypePtr->sParm.t.tType == sARRAY)
+            {
+              /* Get the address of the array field to be initialized at the
+               * top of the stack.
+               */
+
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewArray(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+        }
+    }
+}
+
+/****************************************************************************/
+
+static void pas_InitializeNewArray(symbol_t *typePtr)
+{
+  /* On entry, a pointer to the ARRAY to be initialized will be at the top
+   * of the stack.
+   */
+
+  symbol_t *baseTypePtr;
+
+  /* Some sanity checks */
+
+  if (typePtr->sKind           != sTYPE  ||
+      typePtr->sParm.t.tType   != sARRAY ||
+      typePtr->sParm.t.tParent == NULL   ||
+      typePtr->sParm.t.tIndex  == NULL)
+    {
+      error(eHUH);  /* Should never happen */
+    }
+
+  /* We are only interested if the parent type is a FILE, STRING, or abort
+   * RECORD that may contain file or string fields.
+   */
+
+  /* Get a pointer to the underlying base type symbol */
+
+  baseTypePtr = pas_GetBaseTypePointer(typePtr);
+
+  if (baseTypePtr->sParm.t.tType == sFILE        ||
+      baseTypePtr->sParm.t.tType == sTEXTFILE    ||
+      baseTypePtr->sParm.t.tType == sSTRING      ||
+      baseTypePtr->sParm.t.tType == sSHORTSTRING ||
+      baseTypePtr->sParm.t.tType == sRECORD      ||
+      baseTypePtr->sParm.t.tType == sARRAY)
+    {
+      symbol_t *indexPtr;
+      int       nElements;
+      int       index;
+
+      /* The index should be a SUBRANGE or SCALAR type */
+
+      indexPtr = typePtr->sParm.t.tIndex;
+      if (indexPtr->sKind != sTYPE ||
+          (indexPtr->sParm.t.tType != sSUBRANGE &&
+           indexPtr->sParm.t.tType != sSCALAR))
+        {
+          error(eHUH);  /* Should not happen */
+        }
+
+      /* Now loop for each element of the array */
+
+      nElements = (int)indexPtr->sParm.t.tMaxValue -
+                  (int)indexPtr->sParm.t.tMinValue + 1;
+
+      for (index = 0; index < nElements; index++)
+        {
+          /* The address of the beginning of the array is at the TOP of the
+           * stack.  Duplicate it and offset it for the index and element
+           * size.
+           */
+
+          pas_GenerateSimple(opDUP);
+          if (index > 0)
+            {
+              pas_GenerateDataOperation(opPUSH,
+                                        baseTypePtr->sParm.t.tAllocSize);
+              if (index > 1)
+                {
+                  pas_GenerateDataOperation(opPUSH, index);
+                  pas_GenerateSimple(opMUL);
+                }
+              else
+                {
+                  pas_GenerateSimple(opADD);
+                }
+            }
+
+          /* Generate the initializer */
+
+          switch (baseTypePtr->sParm.t.tType)
+            {
+              case sFILE :
+              case sTEXTFILE :
+                pas_InitializeNewFile(baseTypePtr);
+                break;
+
+              case sSTRING :
+              case sSHORTSTRING :
+                pas_InitializeNewString(baseTypePtr);
+                break;
+
+              case sRECORD :
+                pas_InitializeNewRecord(baseTypePtr);
+                break;
+
+              case sARRAY :
+                pas_InitializeNewArray(baseTypePtr);
+                break;
+
+              default:
+                error(eHUH);
+                break;
+            }
+        }
+    }
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+
+void pas_PrimeStandardProcedures(void)
+{
+  /* procedure val(const S : string; var V; var Code : word);  */
+
+  valSymbol[0].sParm.p.pNParms = 3;
+  valSymbol[1].sKind           = sSTRING;
+  valSymbol[1].sParm.p.pParent = g_parentString;
+  valSymbol[2].sKind           = sVAR_PARM;
+  valSymbol[2].sParm.p.pParent = g_parentInteger;
+  valSymbol[3].sKind           = sVAR_PARM;
+  valSymbol[3].sParm.p.pParent = g_parentInteger;
+}
+
+/***********************************************************************/
+
+void pas_StandardProcedure(void)
+{
+  TRACE(g_lstFile, "[pas_StandardProcedure]");
+
+  /* Is the token a procedure? */
+
+  if (g_token == tSTDPROC)
+    {
+      /* Yes, process it procedure according to the extended token type */
+
+      switch (g_tknSubType)
+        {
+          /* Standard Procedures & Functions */
+
+        case txHALT :
+          getToken();
+          pas_HaltProc();
+          break;
+
+        case txPAGE :
+          pas_FileProc(xWRITE_PAGE);
+          break;
+
+           /* Memory alloctor */
+
+        case txNEW :
+          pas_NewProc();
+          break;
+
+        case txDISPOSE :
+          pas_DisposeProc();
+          break;
+
+        /* Not implemented */
+
+        case txGET :
+        case txPACK :
+        case txPUT :
+        case txUNPACK :
+          error(eNOTYET);
+          getToken();
+          break;
+
+          /* less-than-standard procedures */
+
+        case txVAL :
+          pas_ValProc();
+          break;
+
+        /* File I/O */
+
+        case txASSIGNFILE :
+          pas_AssignFileProc();
+          break;
+
+        case txREAD :
+          pas_ReadProc();
+          break;
+
+        case txREADLN :
+          pas_ReadlnProc();
+          break;
+
+        case txRESET  :
+          pas_OpenFileProc(xRESET, xRESETR);
+          break;
+
+        case txREWRITE :
+          pas_OpenFileProc(xREWRITE, xREWRITER);
+          break;
+
+        case txAPPEND :
+          pas_FileProc(xAPPEND);
+          break;
+
+        case txCLOSEFILE :
+          pas_FileProc(xCLOSEFILE);
+          break;
+
+        case txWRITE :
+          pas_WriteProc();
+          break;
+
+        case txWRITELN :
+          pas_WritelnProc();
+          break;
+
+          /* Its not a recognized procedure */
+
+        default :
+          error(eINVALIDPROC);
+          break;
+        }
+    }
+}
+
+/***********************************************************************/
+
+uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
+                                symbol_t *defaultFilePtr)
+{
+  /* If the token is not a symbol table related token, then abort returning
+   * the default.  For example, suppose the first argument is a constant
+   * string.
+   */
+
+  if (g_tknPtr != NULL)
+    {
+      /* Make a write-able copy of the variable symbol table entry */
+
+      symbol_t varCopy = *g_tknPtr;
+
+      /* Then work with the write-able copy */
+
+      return pas_SimplifyFileNumber(&varCopy, 0, pFileSize, defaultFilePtr);
+    }
+  else
+    {
+      return pas_DefaultFileNumber(defaultFilePtr, pFileSize);
+    }
+}
+
+/***********************************************************************/
+
+int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
+{
+  symbol_t *baseTypePtr;
+
+  /* These sizes must agree with the sizes used in
+   * pas_ActualParameterList() below.
+   */
+
+  baseTypePtr = pas_GetBaseTypePointer(procPtr[parmNo].sParm.v.vParent);
+  switch (baseTypePtr->sParm.t.tType)
+    {
+    case sINT :
+    case sSUBRANGE :
+    case sSCALAR :
+      return sINT_SIZE;
+
+    case sCHAR :
+      return sCHAR_SIZE;
+
+    case sBOOLEAN :
+      return sBOOLEAN_SIZE;
+
+    case sREAL :
+      return sREAL_SIZE;
+
+    case sSET :
+      return sSET_SIZE;
+
+    case sSTRING :
+      return sSTRING_SIZE;
+
+    case sSHORTSTRING :
+      return sSHORTSTRING_SIZE;
+
+    case sARRAY :
+    case sRECORD :
+      return baseTypePtr->sParm.t.tAllocSize;
+
+    case sFILE :
+    case sTEXTFILE :
+      return sINT_SIZE;
+
+    case sVAR_PARM :
+      return sPTR_SIZE;
+
+    default:
+      error(eINVPARMTYPE);
+      return sINT_SIZE;
+    }
+}
+
+/***********************************************************************/
+
+int pas_ActualParameterList(symbol_t *procPtr)
+{
+  symbol_t *typePtr;
+  exprType_t exprType;
+  bool lparen = false;
+  int parmIndex = 0;
+  int size = 0;
+
+  TRACE(g_lstFile,"[pas_ActualParameterList]");
+
+  /* Processes the (optional) actual-parameter-list associated with
+   * a function or procedure call:
+   *
+   * FORM: procedure-method-statement =
+   *       procedure-method-specifier [ actual-parameter-list ]
+   * FORM: function-designator = function-identifier [ actual-parameter-list ]
+   *
+   *
+   * On entry, 'g_token' refers to the token just AFTER the procedure
+   * function identifier.
+   *
+   * FORM: actual-parameter-list =
+   *       '(' actual-parameter { ',' actual-parameter } ')'
+   * FORM: actual-parameter =
+   *       expression | variable-access |
+   *       procedure-identifier | function-identifier
+   */
+
+  if (g_token == '(')
+    {
+      lparen = true;
+      getToken();
+    }
+
+  /* If this procedure requires parameters, get them and make sure that
+   * they match in type and number
+   */
+
+  if (procPtr->sParm.p.pNParms)
+    {
+      /* If it requires parameters, then the actual-parameter-list must
+       * be present and must begin with '('
+       */
+
+      if (!lparen) error (eLPAREN);
+
+      /* Loop to process the expected number of parameters.  The formal
+       * argument descriptions follow the procedure/function description
+       * as an array of variable declarations. (These sizes below must
+       * agree with pas_ActualParameterSize() above);
+       */
+
+      for (parmIndex = 1;
+           parmIndex <= procPtr->sParm.p.pNParms;
+           parmIndex++)
+        {
+          typePtr = procPtr[parmIndex].sParm.v.vParent;
+          switch (procPtr[parmIndex].sKind)
+            {
+            case sINT :
+              pas_Expression(exprInteger, typePtr);
+              size += sINT_SIZE;
+              break;
+
+            case sCHAR :
+              pas_Expression(exprChar, typePtr);
+              size += sCHAR_SIZE;
+              break;
+
+            case sREAL :
+              pas_Expression(exprReal, typePtr);
+              size += sREAL_SIZE;
+              break;
+
+            case sSTRING :
+              pas_Expression(exprString, typePtr);
+              size += sSTRING_SIZE;
+              break;
+
+            case sSHORTSTRING :
+              pas_Expression(exprShortString, typePtr);
+              size += sSHORTSTRING_SIZE;
+              break;
+
+            case sSUBRANGE :
+              pas_Expression(exprInteger, typePtr);
+              size += sINT_SIZE;
+              break;
+
+            case sSCALAR :
+              pas_Expression(exprScalar, typePtr);
+              size += sINT_SIZE;
+              break;
+
+            case sSET :
+              pas_Expression(exprSet, typePtr);
+              size += sSET_SIZE;
+              break;
+
+            case sARRAY :
+              {
+                symbol_t *arrayType;
+                uint16_t arrayKind;
+
+                /* Get the base type of the array */
+
+                arrayType = pas_GetBaseTypePointer(typePtr);
+                arrayKind = arrayType->sKind;
+
+                /* REVISIT:  For subranges, we use the base type of
+                 * the subrange.
+                 */
+
+                if (arrayKind == sSUBRANGE)
+                  {
+                    arrayKind = arrayType->sParm.t.tSubType;
+                  }
+
+                /* Then get the expression type associated with the
+                 * base type
+                 */
+
+                exprType = pas_MapVariable2ExprType(arrayKind, false);
+                pas_Expression(exprType, typePtr);
+                size += typePtr->sParm.t.tAllocSize;
+              }
+              break;
+
+            case sRECORD :
+              pas_Expression(exprRecord, typePtr);
+              size += typePtr->sParm.t.tAllocSize;
+              break;
+
+            case sVAR_PARM :
+              if (typePtr)
+                {
+                  exprType_t varExprType;
+                  uint16_t   varType = typePtr->sParm.t.tType;
+
+                  switch (varType)
+                    {
+                    /* Simple ordinal types */
+
+                    case sINT :
+                    case sSUBRANGE :
+                    case sCHAR :
+                    case sBOOLEAN :
+                    case sSCALAR :
+                    case sSCALAR_OBJECT :
+                      varExprType = pas_MapVariable2ExprPtrType(varType, true);
+                      pas_VarParameter(varExprType, typePtr);
+                      size += sPTR_SIZE;
+                      break;
+
+                    /* Simple non-ordinal types */
+
+                    case sSET :
+                    case sREAL :
+                    case sSTRING :
+                    case sSHORTSTRING :
+                    case sRECORD :
+                    case sRECORD_OBJECT :
+                    case sFILE :
+                    case sTEXTFILE :
+                      varExprType = pas_MapVariable2ExprPtrType(varType, false);
+                      pas_VarParameter(varExprType, typePtr);
+                      size += sPTR_SIZE;
+                      break;
+
+                    /* Not so simple types that require a little more effort */
+
+                    case sARRAY :
+                      {
+                        symbol_t *arrayType;
+                        uint16_t arrayKind;
+
+                        /* Get the base type of the array */
+
+                        arrayType = pas_GetBaseTypePointer(typePtr);
+                        arrayKind = arrayType->sKind;
+
+                        /* REVISIT:  For subranges, we use the base type of
+                         * the subrange.
+                         */
+
+                        if (arrayKind == sSUBRANGE)
+                          {
+                            arrayKind = arrayType->sParm.t.tSubType;
+                          }
+
+                        /* Then get the expression type associated with the
+                         * base type
+                         */
+
+                        exprType = pas_MapVariable2ExprPtrType(arrayKind, false);
+                        pas_VarParameter(exprType, typePtr);
+                        size += sPTR_SIZE;
+                      }
+                      break;
+
+                    case sPOINTER :
+                      error(eNOTYET);
+                      break;
+
+                    default :
+                      error(eVARPARMTYPE);
+                      break;
+                    }
+                }
+              else
+                {
+                  error(eVARPARMTYPE);
+                }
+              break;
+
+            default :
+              error (eVARPARMTYPE);
+            }
+
+          if (parmIndex < procPtr->sParm.p.pNParms)
+            {
+              if (g_token != ',') error (eCOMMA);
+              else getToken();
+            }
+        }
+    }
+
+  if (lparen == true)
+    {
+      if (g_token != ')') error (eRPAREN);
+      else getToken();
+    }
+
+  return size;
 }

@@ -16,15 +16,15 @@ VAR
   next  : nodeptr;
 
 BEGIN
-  curr          := new(node);
-  next          := new(node);
+  new(curr);
+  new(next);
 
   head          := curr;
   curr^.flink   := next;
   curr^.payload := 1;
 
   curr          := next;
-  next          := new(node);
+  new(next);
 
   curr^.flink   := next;
   curr^.payload := 2;
