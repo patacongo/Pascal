@@ -165,6 +165,7 @@
  * eBADPC               Program Counter is out-of-range
  * eBADSP               Stack reference is out-of-range
  * eSTRSTKOVERFLOW      String stack overflow
+ * eNEWFAILED           new() failed to allocate memory
  * eILLEGALOPCODE       Non-executable instruction found
  * eEXIT                oEND P-Code encountered
  * eBADSYSIOFUNC        Illegal SYSIO sub-function
@@ -307,17 +308,18 @@
 /* RUN TIME ERRORS */
 
 #define eBADPC           ((uint16_t) 0x90)
-#define eBADSP           ((uint16_t) 0x91)
-#define eSTRSTKOVERFLOW  ((uint16_t) 0x92)
-#define eILLEGALOPCODE   ((uint16_t) 0x93)
-#define eEXIT            ((uint16_t) 0x94)
-#define eBADSYSIOFUNC    ((uint16_t) 0x95)
-#define eBADSYSLIBCALL   ((uint16_t) 0x96)
-#define eBADFPOPCODE     ((uint16_t) 0x97)
-#define eBADSETOPCODE    ((uint16_t) 0x98)
-#define eINTEGEROVERFLOW ((uint16_t) 0x99)
-#define eVALUERANGE      ((uint16_t) 0x9a)
-#define eFAILEDLIBCALL   ((uint16_t) 0x9b)
+#define eILLEGALOPCODE   ((uint16_t) 0x91)
+#define eBADSP           ((uint16_t) 0x92)
+#define eSTRSTKOVERFLOW  ((uint16_t) 0x93)
+#define eNEWFAILED       ((uint16_t) 0x94)
+#define eEXIT            ((uint16_t) 0x95)
+#define eBADSYSIOFUNC    ((uint16_t) 0x96)
+#define eBADSYSLIBCALL   ((uint16_t) 0x97)
+#define eBADFPOPCODE     ((uint16_t) 0x98)
+#define eBADSETOPCODE    ((uint16_t) 0x99)
+#define eINTEGEROVERFLOW ((uint16_t) 0x9a)
+#define eVALUERANGE      ((uint16_t) 0x9b)
+#define eFAILEDLIBCALL   ((uint16_t) 0x9c)
 
 #define eBADFILE         ((uint16_t) 0xa0)
 #define eFILENOTINUSE    ((uint16_t) 0xa1)

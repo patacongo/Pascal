@@ -669,8 +669,8 @@ void pas_Finalization(void)
 }
 
 /****************************************************************************/
-/* Finalize a file type created with dispose().  That happens AFTER the
- * before pas_Finalization() when dispose is called.
+/* Finalize a file type created with dispose().  That happens BEFORE
+ * pas_Finalization() when DISPOSE() is called.
  */
 
 void pas_FinalizeNewFile(symbol_t *varPtr)

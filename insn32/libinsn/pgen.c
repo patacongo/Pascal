@@ -110,11 +110,9 @@ static const uint8_t opmap[NUM_OPCODES] =
   oSTIB,   /* opSTIB */
   oSTIM,   /* opSTIM */
   oDUP,    /* opDUP */
-  oRET,    /* opRET */
   oPUSHS,  /* opPUSHS */
   oPOPS,   /* opPOPS */
-  oPUSHH,  /* opPUSHH */
-  oPOPH,   /* opPOPH */
+  oRET,    /* opRET */
   oEND,    /* opEND */
   oFLOAT,  /* opFLOAT */
   oSETOP,  /* opSETOP */

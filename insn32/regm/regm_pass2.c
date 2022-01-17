@@ -259,8 +259,8 @@ static const struct regm_opmap_s vrgOpMap1[64] =
     /* 0x17: */         {0,       0,   0,   regm_IllegalPCode},
     /* 0x2a: oPUSHS */  {0,       0,   CSP, regm_PushSpecial},
     /* 0x2b: oPOPS */   {0,       0,   CSP, regm_PopSpecial},
-    /* 0x2c: oPUSHS */  {0,       0,   HSP, regm_PushSpecial},
-    /* 0x2d: oPOPS */   {0,       0,   HSP, regm_PopSpecial},
+    /* 0x2c: */         {0,       0,   0,   regm_IllegalPCode},
+    /* 0x2d: */         {0,       0,   0,   regm_IllegalPCode},
     /* 0x2e: */         {0,       0,   0,   regm_IllegalPCode},
     /* 0x2f: oRET */    {0,       0,   0,   regm_Return},
 
@@ -379,7 +379,8 @@ static const struct regm_builtin_s g_rgSysIoBuiltIns[MAX_XOP] =
 
 static const struct regm_builtin_s g_rgLibCallBuiltIns[MAX_LBOP] =
 {
-  /* 0x00 */ libHALT_INIT,              lbGETENV_INIT,
+  /* 0x00 */ lbHALT_INIT,               lbNEW_INIT,
+  /* 0x02 */ lbDISPOSE_INIT,
   /* 0x02 */ lbSTRCPY_INIT,             lbSTRCPYX_INIT,
   /* 0x04 */ lbSSTRCPY_INIT,            lbSSTRCPYX_INIT,
   /* 0x06 */ lbSSTR2STR_INIT,           lbSSTR2STRX_INIT,

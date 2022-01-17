@@ -1811,26 +1811,45 @@ static void pas_WriteBinary(uint16_t fileSize)
 
 static void pas_Dispose(void)
 {
+  exprType_t exprType;
+  symbol_t *varPtr;
+
   /* FORM:  'dispose' '(' pointer-value ')' */
 
   getToken();
   if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
   else getToken();
 
-  /* Doesn't need to do anything currently other freeing allocated file
-   * numbers.
-   */
+  /* The argument should be a pointer or perhaps a VAR parameter */
 
-  if (g_token == sFILE || g_token == sTEXTFILE)
+  varPtr   = g_tknPtr;
+  exprType = pas_Expression(exprAnyPointer, NULL);
+  if (!IS_POINTER_EXPRTYPE(exprType))
     {
-      /* Generate logic to free the file number */
+      error(ePOINTERTYPE);
+    }
+  else
+    {
+      symbol_t *baseTypePtr = pas_GetBaseTypePointer(varPtr->sParm.v.vParent);
+      uint16_t baseType     = baseTypePtr->sParm.t.tType;
 
-      pas_FinalizeNewFile(g_tknPtr);
+      /* Free allocated file numbers. */
+
+      if (baseType == sFILE || baseType == sTEXTFILE)
+        {
+          /* Generate logic to free the file number */
+
+          pas_FinalizeNewFile(varPtr);
+        }
+
+      /* Free the allocated memory. pas_Expression() left the pointer value
+       * at the top of the stack.  We need only issue the library call to
+       * free it.
+       */
+
+      pas_StandardFunctionCall(lbDISPOSE);
     }
 
-  /* Skip over the pointer to memory to be freed */
-
-  getToken();
   if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
   else getToken();
 }

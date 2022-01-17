@@ -42,7 +42,7 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* 32-bit op-code bit definitions
@@ -122,8 +122,8 @@
  * xr10 1001  ---        LDSXH offs2
  * xr10 1010  PUSHS      LDSXB offs
  * xr10 1011  POPS       LDSXM offs4
- * xr10 1100  PUSHH      STSX  offs4
- * xr10 1101  POPH       STSXH offs2
+ * xr10 1100  ---        STSX  offs4
+ * xr10 1101  ---        STSXH offs2
  * xr10 1110  ---        STSXB offs
  * xr10 1111  RET        STSXM offs
  *
@@ -258,8 +258,6 @@
 #define oDUPH  (0x29)  /* (One 32-bit stack argument) */
 #define oPUSHS (0x2a)  /* No stack arguments */
 #define oPOPS  (0x2b)  /* (One 32-bit stack argument) */
-#define oPUSHH (0x2c)  /* No stack arguments */
-#define oPOPH  (0x2d)  /* (One 32-bit stack argument) */
 
 /* Program control (No stack arguments)
  * Behavior:

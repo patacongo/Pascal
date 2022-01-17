@@ -78,7 +78,7 @@ enum pcode_e
 
   /* Data stack */
 
-  opDUP, opXCHG,
+  opDUP, opXCHG, opPUSHS, opPOPS,
 
   /* Program control (No stack arguments)
    * Behavior:
@@ -89,10 +89,6 @@ enum pcode_e
    */
 
   opRET,
-
-  /* Push/pop special registers */
-
-  opPUSHS, opPOPS, opPUSHH, opPOPH,
 
   /* System Functions (No stack arguments) */
 

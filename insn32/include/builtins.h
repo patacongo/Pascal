@@ -183,6 +183,16 @@
 #define lbHALT_INIT \
     { "_lbhalt", 0, 0, { 0 }}
 
+/* Memory allocation:  function _lbnew(size : integer) : integer; */
+
+#define lbNEW_INIT \
+    { "_lbnew", 1, 1, { sINT_SIZE }}
+
+/* Memory free:  proc3dure _lbdispose(VAR variable : integer); */
+
+#define lbDISPOSE_INIT \
+    { "_lbdispose", 0, 1, { sPTR_SIZE }}
+
 /* string _lbgetenv(string *name); */
 
 #define lbGETENV_INIT \

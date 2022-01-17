@@ -148,8 +148,8 @@ static const struct optab_s g_sNoArgOpTable[64] =
   /* 0x29 */ { "DUPH ", SIMPLE },
   /* 0x2a */ { "PUSHS", SIMPLE },
   /* 0x2b */ { "POPS",  SIMPLE },
-  /* 0x2c */ { "PUSHH", SIMPLE },
-  /* 0x2d */ { "POPH",  SIMPLE },
+  /* 0x2c */ { invOp,   SIMPLE },
+  /* 0x2d */ { invOp,   SIMPLE },
   /* 0x2e */ { invOp,   SIMPLE },
   /* 0x2f */ { "RET  ", SIMPLE },
 
@@ -339,15 +339,15 @@ static const char *sName[MAX_SETOP] =
 static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "HALT",       "NEW",        "GETENV",     "STRCPY",
-/* 0x04 */ "STRCPYX",    "SSTRCPY",    "SSTRCPYX",   "SSTR2STR",
-/* 0x08 */ "SSTR2STRX",  "STR2SSTR",   "STR2SSTRX",  "CSTR2STR",
-/* 0x0c */ "CSTR2STRX",  "CSTR2SSTR",  "CSTR2SSTRX", "BSTR2STR",
-/* 0x10 */ "STR2BSTR",   "STR2BSTRX",  "VAL",        "STRINIT",
-/* 0x14 */ "SSTRINIT",   "STRTMP",     "STRDUP",     "SSTRDUP",
-/* 0x18 */ "MKSTKC",     "STRCAT",     "SSTRCAT",    "SSTRCATSTR",
-/* 0x1c */ "STRCATSSTR", "STRCATC",    "lbSSTRCATC", "STRCMP",
-/* 0x20 */ "SSTRCMP",    "SSTRCMPSTR", "STRCMPSSTR"
+/* 0x00 */ "HALT",       "NEW",        "DISPOSE",    "GETENV",
+/* 0x04 */ "STRCPY",     "STRCPYX",    "SSTRCPY",    "SSTRCPYX",
+/* 0x08 */ "SSTR2STR",   "SSTR2STRX",  "STR2SSTR",   "STR2SSTRX",
+/* 0x0c */ "CSTR2STR",   "CSTR2STRX",  "CSTR2SSTR",  "CSTR2SSTRX",
+/* 0x10 */ "BSTR2STR",   "STR2BSTR",   "STR2BSTRX",  "VAL",
+/* 0x14 */ "STRINIT",    "SSTRINIT",   "STRTMP",     "STRDUP",
+/* 0x18 */ "SSTRDUP",    "MKSTKC",     "STRCAT",     "SSTRCAT",
+/* 0x1c */ "SSTRCATSTR", "STRCATSSTR", "STRCATC",    "lbSSTRCATC",
+/* 0x20 */ "STRCMP",     "SSTRCMP",    "SSTRCMPSTR", "STRCMPSSTR"
 };
 
 #define MAX_FOP 16

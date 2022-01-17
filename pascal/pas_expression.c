@@ -3411,6 +3411,8 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
        !pas_IsOrdinalExpression(simple1Type)) &&
       (findExprType != exprAnyString ||
        !pas_IsStringExpression(simple1Type)) &&
+      (findExprType != exprAnyPointer ||
+       !IS_POINTER_EXPRTYPE(simple1Type)) &&
       (!pas_IsStringReference(findExprType) ||
        !pas_IsStringReference(simple1Type)))
     {

@@ -57,6 +57,7 @@
 #include "psysio.h"
 #include "psetops.h"
 #include "plib.h"
+#include "pmmgr.h"
 #include "pexec.h"
 
 #ifdef CONFIG_HAVE_LIBM
@@ -408,14 +409,6 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
 
     case oPOPS :
       POP(st, st->csp);
-      break;
-
-    case oPUSHH :
-      PUSH(st, st->hsp);
-      break;
-
-    case oPOPH :
-      POP(st, st->hsp);
       break;
 
       /* Store (Two stack arguments) */
@@ -1278,6 +1271,10 @@ void pexec_Reset(struct pexec_s *st)
   st->dstack.i[dndx]   =  0;
   st->dstack.i[dndx+1] =  0;
   st->dstack.i[dndx+2] = -1;
+
+  /* [Re]-initialize the memory manager */
+
+  pexec_InitializeHeap(st);
 
   /* [Re]-initialize the file I/O logic */
 

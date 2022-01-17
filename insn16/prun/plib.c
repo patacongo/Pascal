@@ -50,14 +50,13 @@
 #include "pas_errcodes.h"
 
 #include "pexec.h"
+#include "pmmgr.h"
 #include "plib.h"
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static int      pexec_new(struct pexec_s *st, uint16_t size,
-                          uint16_t *result);
 static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen);
 static int      pas_strinit(struct pexec_s *st, uint16_t strVarAddr,
                             uint16_t strAllocSize);
@@ -81,26 +80,6 @@ static int      pas_strcatc(struct pexec_s *st, char srcChar,
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-
-/****************************************************************************
- * Name: pexec_new
- ****************************************************************************/
-
-static int pexec_new(struct pexec_s *st, uint16_t size, uint16_t *result)
-{
-  uint16_t adjusted_size = (size + 1) & ~1;
-
-  /* Make sure that there is space on the heap */
-
-  if (st->hsp + adjusted_size >= st->hpb + st->hpsize)
-    {
-      return eNOMEMORY;
-    }
-
-  *result  = st->hsp;
-  st->hsp += adjusted_size;
-  return eNOERROR;
-}
 
 /****************************************************************************
  * Name: pexec_mkcstring
@@ -448,16 +427,30 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbNEW :
-      {
-        uint16_t *result;
+      POP(st, size);  /* Size of allocation */
 
-        size   = TOS(st, 0);  /* Size of allocation */
-        result = &TOS(st, 0); /* Pointer to result */
+      /* Allocate the memory */
 
-        /* Allocate the memory */
+      errorCode = pexec_New(st, size);
+      break;
 
-        errorCode = pexec_new(st, size, result);
-      }
+      /* Dispose of a previous heap allocation:
+       *
+       *   procedure despose(VAR alloc : integer);
+       *
+       * ON INPUT:
+       *   TOS(0) - Address of the heap region to dispose of
+       *
+       * ON RETURN:
+       *   No value is returned
+       */
+
+    case lbDISPOSE :
+      POP(st, addr1);  /* Address of allocation to be freed */
+
+      /* Free the memory */
+
+      errorCode = pexec_Dispose(st, addr1);
       break;
 
       /* Get the value of an environment string
