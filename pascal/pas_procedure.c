@@ -54,6 +54,7 @@
 #include "pas_main.h"
 #include "pas_expression.h"
 #include "pas_procedure.h"
+#include "pas_initializer.h"
 #include "pas_codegen.h"     /* for pas_Generate*() */
 #include "pas_token.h"
 #include "pas_symtable.h"    /* For parent symbol references */
@@ -1810,13 +1811,22 @@ static void pas_WriteBinary(uint16_t fileSize)
 
 static void pas_Dispose(void)
 {
-  /* Doesn't need to do anything currently other than parsing the statement */
-
   /* FORM:  'dispose' '(' pointer-value ')' */
 
   getToken();
   if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
   else getToken();
+
+  /* Doesn't need to do anything currently other freeing allocated file
+   * numbers.
+   */
+
+  if (g_token == sFILE || g_token == sTEXTFILE)
+    {
+      /* Generate logic to free the file number */
+
+      pas_FinalizeNewFile(g_tknPtr);
+    }
 
   /* Skip over the pointer to memory to be freed */
 

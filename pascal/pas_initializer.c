@@ -52,6 +52,7 @@
 #include "pas_library.h"
 #include "pas_errcodes.h"
 
+#include "pas_main.h"
 #include "pas_error.h"
 #include "pas_codegen.h"
 #include "pas_expression.h"
@@ -150,6 +151,8 @@ int g_levelInitializerOffset = 0;  /* Index to initializers for this level */
  * Private Functions
  ****************************************************************************/
 
+/****************************************************************************/
+
 static initializer_t *pas_AddInitializer(symbol_t *varPtr,
                                          initializerType_t kind)
 {
@@ -173,6 +176,7 @@ static initializer_t *pas_AddInitializer(symbol_t *varPtr,
   return initializer;
 }
 
+/****************************************************************************/
 /* Perform basic initialization needed by files and string:
  *
  * - Files need to have a file number assigned to them,
@@ -371,6 +375,8 @@ static void pas_BasicInitialization(void)
     }
 }
 
+/****************************************************************************/
+
 static void pas_SetInitialValues(void)
 {
   int index;
@@ -474,6 +480,8 @@ static void pas_SetInitialValues(void)
  * Public Functions
  ****************************************************************************/
 
+/****************************************************************************/
+
 void pas_AddInitialValue(varInitializer_t *varInitializer)
 {
   initializer_t *initializer;
@@ -492,6 +500,8 @@ void pas_AddInitialValue(varInitializer_t *varInitializer)
     }
 }
 
+/****************************************************************************/
+
 void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
                             uint16_t fileNumber)
 {
@@ -509,10 +519,14 @@ void pas_AddFileInitializer(symbol_t *filePtr, bool preallocated,
     }
 }
 
+/****************************************************************************/
+
 void pas_AddStringInitializer(symbol_t *stringPtr)
 {
   (void)pas_AddInitializer(stringPtr, STRING_INITIALIZER);
 }
+
+/****************************************************************************/
 
 void pas_AddRecordObjectInitializer(symbol_t *recordVarPtr,
                                     symbol_t *recordObjectPtr)
@@ -527,6 +541,8 @@ void pas_AddRecordObjectInitializer(symbol_t *recordVarPtr,
       initializer->r.recordObjectPtr = recordObjectPtr;
     }
 }
+
+/****************************************************************************/
 
 void pas_Initialization(void)
 {
@@ -545,6 +561,66 @@ void pas_Initialization(void)
 
   pas_SetInitialValues();
 }
+
+/****************************************************************************/
+/* Initialize a new string type created with new().  That happens AFTER the
+ * normal initialization of pas_Initialization().  Note that no special
+ * finalization is required for strings since POPS will be generated
+ * automatically.
+ */
+
+void pas_InitializeNewString(symbol_t *typePtr)
+{
+  symbol_t *baseTypePtr;
+
+  /* At run-time, the address of the allocated string variable will be at
+   * the top of the stack.
+   */
+
+  baseTypePtr = pas_GetBaseTypePointer(typePtr);
+  if (baseTypePtr->sParm.t.tType == sSTRING)
+    {
+      /* Initialize the string */
+
+      pas_StandardFunctionCall(lbSTRINIT);
+    }
+  else if (baseTypePtr->sParm.t.tType == sSHORTSTRING)
+    {
+      /* Get TOS = Size of the short string's string memory allocation. */
+
+      pas_GenerateDataOperation(opPUSH, baseTypePtr->sParm.t.tMaxValue);
+
+      /* Correct the order of the stack variables so that we have:
+       *
+       *   TOS(0) = Address of short string variable
+       *   TOS(1) = Short string memory allocation.
+       */
+
+      pas_GenerateSimple(opXCHG);
+
+      /* Initialize the short string */
+
+      pas_StandardFunctionCall(lbSSTRINIT);
+    }
+}
+
+/****************************************************************************/
+/* Initialize a new file type created with new().  That happens AFTER the
+ * normal initialization of pas_Initialization().
+ */
+
+void pas_InitializeNewFile(symbol_t *typePtr)
+{
+  /* At run-time, the address of the allocated file variable will be at
+   * the top of the stack.
+   */
+
+  pas_GenerateStackReference(opLDS, g_tknPtr);
+  pas_GenerateIoOperation(xALLOCFILE);
+  pas_GenerateSimple(opSTI);
+}
+
+/****************************************************************************/
 
 void pas_Finalization(void)
 {
@@ -591,3 +667,15 @@ void pas_Finalization(void)
       pas_GenerateSimple(opPOPS);
     }
 }
+
+/****************************************************************************/
+/* Finalize a file type created with dispose().  That happens AFTER the
+ * before pas_Finalization() when dispose is called.
+ */
+
+void pas_FinalizeNewFile(symbol_t *varPtr)
+{
+  pas_GenerateStackReference(opLDS, varPtr);
+  pas_GenerateIoOperation(xFREEFILE);
+}
+

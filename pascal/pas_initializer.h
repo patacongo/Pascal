@@ -83,6 +83,9 @@ void pas_AddStringInitializer(symbol_t *stringPtr);
 void pas_AddRecordObjectInitializer(symbol_t *recordVarPtr,
        symbol_t *recordObjectPtr);
 void pas_Initialization(void);
+void pas_InitializeNewString(symbol_t *typePtr);
+void pas_InitializeNewFile(symbol_t *typePtr);
 void pas_Finalization(void);
+void pas_FinalizeNewFile(symbol_t *varPtr);
 
 #endif /* __PAS_INITIIALIZER_H */

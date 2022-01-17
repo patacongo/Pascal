@@ -53,9 +53,10 @@
 #include "pas_main.h"
 #include "pas_expression.h"
 #include "pas_procedure.h"
-#include "pas_function.h" /* for pas_StandardFunction() */
-#include "pas_setops.h"   /* Set operation codes */
-#include "pas_codegen.h"  /* for pas_Generate*() */
+#include "pas_initializer.h" /* for finalizer functions */
+#include "pas_function.h"    /* for pas_StandardFunction() */
+#include "pas_setops.h"      /* Set operation codes */
+#include "pas_codegen.h"     /* for pas_Generate*() */
 #include "pas_token.h"
 #include "pas_symtable.h"
 #include "pas_insn.h"
@@ -86,6 +87,11 @@ static void       pas_CardFunc(void);
 
 static exprType_t pas_GetEnvFunc (void); /* Get environment string value */
 
+/* Misc. helper functions */
+
+static void       pas_InitializeNewRecord(symbol_t *typePtr);
+static void       pas_InitializeNewArray(symbol_t *typePtr);
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -109,40 +115,63 @@ static exprType_t pas_NewFunc(void)
     {
       symbol_t *baseTypePtr;
       symbol_t *typePtr;
+      uint16_t  varType;
 
       typePtr = g_tknPtr;
       getToken();
 
       /* Allocate memory for an object the size of an allocated instance of
-       * this type.
+       * this type.  A pointer to the allocated memory will lie at the top of
+       * the stack at run-time.
        */
 
       pas_GenerateDataOperation(opPUSH, typePtr->sParm.t.tAllocSize);
+      pas_StandardFunctionCall(lbNEW);
 
       /* If we just allocate a string, shortstring, or file type, then we
        * have to initialize the allocated instance.
-       *
-       * REVISIT:  Leak warning:  We would also have to releases these
-       * resources when we dispose of the memory.  Worse.. what if we
-       * we allocate a record that has file or string field.  What a mess!
        */
 
-      /* For now just refuse to leak in the simplest cases. */
-
       baseTypePtr = pas_GetBaseTypePointer(typePtr);
-      if (baseTypePtr->sParm.t.tType == sSTRING ||
-          baseTypePtr->sParm.t.tType == sSHORTSTRING ||
-          baseTypePtr->sParm.t.tType == sFILE ||
-          baseTypePtr->sParm.t.tType == sTEXTFILE)
+      varType     = baseTypePtr->sParm.t.tType;
+
+      /* If we just created a string variable, then set up and initializer
+       * for the string; memory for the string buffer must be set up at run
+       * time.
+       */
+
+      if (varType == sSTRING || varType == sSHORTSTRING)
         {
-          error(eNOTYET);
-        }
-      else
-        {
-          pas_StandardFunctionCall(lbNEW);
+          pas_InitializeNewString(typePtr);
         }
 
-      exprType = pas_MapVariable2ExprPtrType(baseTypePtr->sParm.t.tType, false);
+      /* Handle files similarly */
+
+      else if (varType == sFILE || varType == sTEXTFILE)
+        {
+          pas_InitializeNewFile(typePtr);
+        }
+
+      /* A more complex case:  We just created a RECORD variable that may
+       * contain string or file fields that need to be initialized.
+       */
+
+      else if (varType == sRECORD)
+        {
+          pas_InitializeNewRecord(typePtr);
+        }
+
+      /* Or an array that may contain variables that need initialization.
+       * (OR an array or records with fields that are arrays that ... and
+       * all need to be initialized).
+       */
+
+      else if (varType == sARRAY)
+        {
+          pas_InitializeNewArray(typePtr);
+        }
+
+      exprType = pas_MapVariable2ExprPtrType(varType, false);
     }
 
    pas_CheckRParen();
@@ -481,6 +510,225 @@ static exprType_t pas_GetEnvFunc(void)
   pas_StandardFunctionCall(lbGETENV);
   pas_CheckRParen();
   return exprCString;
+}
+
+/****************************************************************************/
+
+static void pas_InitializeNewRecord(symbol_t *typePtr)
+{
+  /* Verify that this is a RECORD type */
+
+  if (typePtr == NULL ||
+      typePtr->sKind != sTYPE ||
+      typePtr->sParm.t.tType != sRECORD)
+    {
+      error(eRECORDTYPE);
+    }
+
+  /* Looks like a good RECORD type.  On entry, a pointer to the RECORD to
+   * be initialized will be at the top of the stack.
+   */
+
+  else
+    {
+      symbol_t *recordObjectPtr;
+      int nObjects = typePtr->sParm.t.tMaxValue;
+      int objectIndex;
+
+      /* The parent is the RECORD type.  That is followed by the
+       * RECORD OBJECT symbols.  The number of following RECORD
+       * OBJECT symbols is given by the maxValue field of the
+       * RECORD type entry.
+       *
+       * RECORD OBJECTS may not be contiguous but may be interspersed
+       * with spurious (un-named) type symbols.  The first RECORD
+       * OBJECT symbol is, however, guaranteed to immediately follow
+       * the RECORD type.
+       */
+
+      for (objectIndex = 1, recordObjectPtr = &typePtr[1];
+           objectIndex <= nObjects && recordObjectPtr != NULL;
+           objectIndex++, recordObjectPtr = recordObjectPtr->sParm.r.rNext)
+        {
+          symbol_t *parentTypePtr;
+
+          if (recordObjectPtr->sKind != sRECORD_OBJECT)
+            {
+              /* The symbol table must be corrupted */
+
+              error(eHUH);
+            }
+
+          /* If this field is a string, then set up to initialize it.
+           * At run-time, a pointer to the allocated RECORD will be
+           * at the top of the stack.
+           */
+
+          parentTypePtr = recordObjectPtr->sParm.r.rParent;
+
+          if (parentTypePtr == NULL || parentTypePtr->sKind != sTYPE)
+            {
+              error(eHUH);
+            }
+          else if (parentTypePtr->sParm.t.tType == sSTRING ||
+                   parentTypePtr->sParm.t.tType == sSHORTSTRING)
+            {
+              /* Get the address of the string field to be initialized at the
+               * top of the stack.
+               */
+
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewString(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+          else if (parentTypePtr->sParm.t.tType == sFILE ||
+                   parentTypePtr->sParm.t.tType == sTEXTFILE)
+            {
+              /* Get the address of the file field to be initialized at the
+               * top of the stack.
+               */
+
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewFile(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+          else if (parentTypePtr->sParm.t.tType == sRECORD)
+            {
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewRecord(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+          else if (parentTypePtr->sParm.t.tType == sARRAY)
+            {
+              /* Get the address of the array field to be initialized at the
+               * top of the stack.
+               */
+
+              pas_GenerateSimple(opDUP);
+              pas_GenerateDataOperation(opPUSH,
+                                        recordObjectPtr->sParm.r.rOffset);
+              pas_GenerateSimple(opADD);
+              pas_InitializeNewArray(parentTypePtr);
+              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+            }
+        }
+    }
+}
+
+/****************************************************************************/
+
+static void pas_InitializeNewArray(symbol_t *typePtr)
+{
+  /* On entry, a pointer to the ARRAY to be initialized will be at the top
+   * of the stack.
+   */
+
+  symbol_t *baseTypePtr;
+
+  /* Some sanity checks */
+
+  if (typePtr->sKind           != sTYPE  ||
+      typePtr->sParm.t.tType   != sARRAY ||
+      typePtr->sParm.t.tParent == NULL   ||
+      typePtr->sParm.t.tIndex  == NULL)
+    {
+      error(eHUH);  /* Should never happen */
+    }
+
+  /* We are only interested if the parent type is a FILE, STRING, or abort
+   * RECORD that may contain file or string fields.
+   */
+
+  /* Get a pointer to the underlying base type symbol */
+
+  baseTypePtr = pas_GetBaseTypePointer(typePtr);
+
+  if (baseTypePtr->sParm.t.tType == sFILE        ||
+      baseTypePtr->sParm.t.tType == sTEXTFILE    ||
+      baseTypePtr->sParm.t.tType == sSTRING      ||
+      baseTypePtr->sParm.t.tType == sSHORTSTRING ||
+      baseTypePtr->sParm.t.tType == sRECORD      ||
+      baseTypePtr->sParm.t.tType == sARRAY)
+    {
+      symbol_t *indexPtr;
+      int       nElements;
+      int       index;
+
+      /* The index should be a SUBRANGE or SCALAR type */
+
+      indexPtr = typePtr->sParm.t.tIndex;
+      if (indexPtr->sKind != sTYPE ||
+          (indexPtr->sParm.t.tType != sSUBRANGE &&
+           indexPtr->sParm.t.tType != sSCALAR))
+        {
+          error(eHUH);  /* Should not happen */
+        }
+
+      /* Now loop for each element of the array */
+
+      nElements = (int)indexPtr->sParm.t.tMaxValue -
+                  (int)indexPtr->sParm.t.tMinValue + 1;
+
+      for (index = 0; index < nElements; index++)
+        {
+          /* The address of the beginning of the array is at the TOP of the
+           * stack.  Duplicate it and offset it for the index and element
+           * size.
+           */
+
+          pas_GenerateSimple(opDUP);
+          if (index > 0)
+            {
+              pas_GenerateDataOperation(opPUSH,
+                                        baseTypePtr->sParm.t.tAllocSize);
+              if (index > 1)
+                {
+                  pas_GenerateDataOperation(opPUSH, index);
+                  pas_GenerateSimple(opMUL);
+                }
+              else
+                {
+                  pas_GenerateSimple(opADD);
+                }
+            }
+
+          /* Generate the initializer */
+
+          switch (baseTypePtr->sParm.t.tType)
+            {
+              case sFILE :
+              case sTEXTFILE :
+                pas_InitializeNewFile(baseTypePtr);
+                break;
+
+              case sSTRING :
+              case sSHORTSTRING :
+                pas_InitializeNewString(baseTypePtr);
+                break;
+
+              case sRECORD :
+                pas_InitializeNewRecord(baseTypePtr);
+                break;
+
+              case sARRAY :
+                pas_InitializeNewArray(baseTypePtr);
+                break;
+
+              default:
+                error(eHUH);
+                break;
+            }
+        }
+    }
 }
 
 /****************************************************************************

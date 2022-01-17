@@ -2732,9 +2732,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
               error(eHUH);
             }
 
-          /* If this field is a string, then set up to initialize
-           * it.
-           */
+          /* If this field is a string, then set up to initialize it.  */
 
           parentTypePtr = recordObjectPtr->sParm.r.rParent;
 
@@ -2779,7 +2777,6 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
 static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 {
-  symbol_t *nextPtr;
   symbol_t *baseTypePtr;
 
   /* Some sanity checks */
@@ -2798,14 +2795,7 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
   /* Get a pointer to the underlying base type symbol */
 
-  nextPtr         = typePtr->sParm.t.tParent;
-  baseTypePtr     = nextPtr;
-
-  while (nextPtr != NULL && nextPtr->sKind == sTYPE)
-    {
-      baseTypePtr = nextPtr;
-      nextPtr     = baseTypePtr->sParm.t.tParent;
-    }
+  baseTypePtr = pas_GetBaseTypePointer(typePtr);
 
   if (baseTypePtr->sParm.t.tType == sFILE        ||
       baseTypePtr->sParm.t.tType == sTEXTFILE    ||
