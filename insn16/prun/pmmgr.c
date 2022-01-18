@@ -152,7 +152,8 @@ static void pexec_AddChunkToFreeList(struct pexec_s *st,
         }
       else
         {
-          nextFreeChunk = (freeChunk_t *)ATSTACK(st, freeChunk->next);
+          uint16_t nextAddr = st->hpb + freeChunk->address + freeChunk->next;
+          nextFreeChunk     = (freeChunk_t *)ATSTACK(st, nextAddr);
         }
 
       /* Set up for the next time through the loop */
@@ -184,21 +185,30 @@ static void pexec_RemoveChunkFromFreeList(struct pexec_s *st,
 {
   /* Check if this is the first chunk in the list */
 
-  if (freeChunk->chunk.back == 0)
+  if (freeChunk->prev == 0)
     {
-      g_freeChunks =
-        (freeChunk_t *)ATSTACK(st, freeChunk->next);
-      g_freeChunks->prev = 0;
+      if (freeChunk->next == 0)
+        {
+          /* This is the only chunk in the free list */
+
+          g_freeChunks       = NULL;
+        }
+      else
+        {
+          uint16_t nextAddr  = st->hpb + freeChunk->address + freeChunk->next;
+          g_freeChunks       = (freeChunk_t *)ATSTACK(st, nextAddr);
+          g_freeChunks->prev = 0;
+        }
     }
   else
     {
-      freeChunk_t *prevChunk =
-        (freeChunk_t *)ATSTACK(st, freeChunk->prev);
-      freeChunk_t *nextChunk =
-        (freeChunk_t *)ATSTACK(st, freeChunk->next);
+      uint16_t     prevAddr  = st->hpb + freeChunk->address - freeChunk->prev;
+      uint16_t     nextAddr  = st->hpb + freeChunk->address + freeChunk->next;
+      freeChunk_t *prevChunk = (freeChunk_t *)ATSTACK(st, prevAddr);
+      freeChunk_t *nextChunk = (freeChunk_t *)ATSTACK(st, nextAddr);
 
-      prevChunk->next = freeChunk->next;
-      nextChunk->prev = prevChunk->address;
+      prevChunk->next        = freeChunk->next;
+      nextChunk->prev        = prevChunk->address;
     }
 }
 
@@ -212,8 +222,9 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
 
   if (newChunk->chunk.back != 0)
     {
-      freeChunk_t *prevChunk =
-        (freeChunk_t *)ATSTACK(st, newChunk->chunk.back);
+      uint16_t     backAddr  = st->hpb + newChunk->address -
+                               newChunk->chunk.back;
+      freeChunk_t *prevChunk = (freeChunk_t *)ATSTACK(st, backAddr);
 
       /* Is the previous chunk inUse? */
 
@@ -240,8 +251,9 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
 
   if (newChunk->chunk.forward != 0)
     {
-      freeChunk_t *nextChunk =
-        (freeChunk_t *)ATSTACK(st, newChunk->chunk.forward);
+      uint16_t     fwdAddr   = st->hpb + newChunk->address +
+                               newChunk->chunk.forward;
+      freeChunk_t *nextChunk = (freeChunk_t *)ATSTACK(st, fwdAddr);
 
       /* Is the next chunk inUse? */
 
@@ -299,8 +311,8 @@ void pexec_InitializeHeap(struct pexec_s *st)
   initialChunk                 = (freeChunk_t *)ATSTACK(st, heapStart);
   memset(initialChunk, 0, sizeof(freeChunk_t));
   initialChunk->chunk.forward  = heapSize;
-  initialChunk->next           = heapEnd - HEAP_ALLOC_UNIT;
-  initialChunk->address        = heapStart;
+  initialChunk->next           = 0;
+  initialChunk->address        = heapStart - st->hpb;
 
   g_inUseChunks                = NULL;
   g_freeChunks                 = initialChunk;
@@ -336,7 +348,8 @@ int pexec_New(struct pexec_s *st, uint16_t size)
         }
       else
         {
-          nextChunk = (freeChunk_t *)ATSTACK(st, freeChunk->next);
+          uint16_t nextAddr = st->hpb + freeChunk->address + freeChunk->next;
+          nextChunk = (freeChunk_t *)ATSTACK(st, nextAddr);
         }
 
       /* Is it big enough to provide the requested allocation? */
@@ -349,18 +362,28 @@ int pexec_New(struct pexec_s *st, uint16_t size)
            * not need the whole thing.
            */
 
+          freeChunk->chunk.inUse       = 1;
+
           if (chunkSize > size + sizeof(freeChunk_t))
             {
-              freeChunk_t *subChunk =
-                (freeChunk_t *)ATSTACK(st, freeChunk->address + size);
+              freeChunk_t *subChunk    =
+                (freeChunk_t *)ATSTACK(st, st->hpb + freeChunk->address + size);
 
-              subChunk->chunk.forward  = freeChunk->chunk.forward -
-                                             size;
+              subChunk->chunk.forward  = freeChunk->chunk.forward - size;
               subChunk->chunk.inUse    = 0;
               subChunk->chunk.pad1     = 0;
               subChunk->chunk.back     = size;
               subChunk->chunk.pad2     = 0;
-              subChunk->next           = freeChunk->next - size;
+
+              if (freeChunk->next != 0)
+                {
+                  subChunk->next       = freeChunk->next - size;
+                }
+              else
+                {
+                  subChunk->next       = 0;
+                }
+
               subChunk->address        = freeChunk->address + size;
 
               freeChunk->chunk.forward = size;
@@ -370,11 +393,9 @@ int pexec_New(struct pexec_s *st, uint16_t size)
               pexec_DisposeChunk(st, subChunk);
             }
 
-          freeChunk->chunk.inUse = 1;
-
           /* Return the address of the allocated memory */
 
-          PUSH(st, freeChunk->address + sizeof(memChunk_t));
+          PUSH(st, st->hpb + freeChunk->address + sizeof(memChunk_t));
           return eNOERROR;
         }
 
@@ -395,7 +416,7 @@ int pexec_Dispose(struct pexec_s *st, uint16_t address)
 {
   freeChunk_t *freeChunk;
 
-  freeChunk = (freeChunk_t *)ATSTACK(st, address - sizeof(memChunk_t));
+  freeChunk = (freeChunk_t *)ATSTACK(st, st->hpb + address - sizeof(memChunk_t));
   pexec_DisposeChunk(st, freeChunk);
   return eNOERROR;
 }

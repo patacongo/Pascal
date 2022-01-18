@@ -51,30 +51,22 @@ part that creates the (nameless) type could be called from pas_DeclareConst().
 Comples error free but hangs at run-time.  Perhaps it is only waiting on input.
 
 ########src/115-pointerrecord.pas########
-Line 0:0030 Error 09 Token b0
-
-Line:
- 30    new( insertptr );
-
-Error:
-199 #define eEND             ((uint16_t) 0x09)
-
-Token:
-173 #define tSTDFUNC         0xb0
-
-Analysis:
-new() and dispose() are a work in progress.
+Compiles but hands at run-time
 
 ########src/116-findwords.pas########
-Line 0:0068 Error 09 Token 28
+Line 0:0078 Error 5c Token 4b
 
 Line:
-68    halt( exitcode )
+ 78       if ptr^.word = word then      { found the word?                  }
 
 Error:
-199 #define eEND             ((uint16_t) 0x09)
+#define eRECORDOBJECT    ((uint16_t) 0x5c)
+
+Token:
+#define sSTRING          0x4b
 
 Analysis:
+Probably due to a namespace issue:  The field 'word' is confused with the variable 'word'
 
 ########src/601-writefile.pas########
 Compiles okay, runs without error, creates the students.dat file.  However
@@ -98,22 +90,7 @@ use the string allocation setting to insure a consistent, known maximum string l
 ########sinecos.pex########
 NOW:
 ---
-sinecos.pex Loaded
-Enter radians   : cos(0.707107)=0.707107
-sin(0.707107)=0.000000
-Runtime error 0xa9 -- Execution Stopped
-
-Analysis:
-The error occurs in the main block in the statement:
-
-   19    writeln('sin(', x, ')**2 + cos(', x, ')**2=', myone)
-
-It fails because the OUPUT file number has been clobbered.  It was correctly
-initialzed to 1 when the program started but was clobbered and overwritten
-with zero by the procedure checkvars called at line 18 before this.
-
-However, I suspect a linking problem and checkvars may not in fact be the
-problem.
+Does not generate any output
 
 BEFORE:
 ------
