@@ -319,7 +319,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
             {
               if ((assignFlags & ASSIGN_STORE_INDEXED) != 0)
                 {
-                  pas_GenerateStackReference(opLDS, varPtr);
+                  /* The pointer value and the index value both on the stack */
+
                   pas_GenerateSimple(opADD);
                 }
               else
