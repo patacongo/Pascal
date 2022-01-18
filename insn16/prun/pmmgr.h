@@ -48,7 +48,7 @@
  ***************************************************************************/
 
 void pexec_InitializeHeap(struct pexec_s *st);
-int pexec_New(struct pexec_s *st, uint16_t size);
-int pexec_Dispose(struct pexec_s *st, uint16_t address);
+int  pexec_New(struct pexec_s *st, uint16_t size);
+int  pexec_Dispose(struct pexec_s *st, uint16_t address);
 
 #endif /* __PMMGR_H */
