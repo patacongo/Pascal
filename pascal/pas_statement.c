@@ -1325,14 +1325,6 @@ static void pas_LabelStatement(void)
 
        pas_GenerateDataOperation(opLABEL, labelPtr->sParm.l.lLabel);
        labelPtr->sParm.l.lUnDefined = false;
-
-       /* We have to assume that we got here via a goto statement.
-        * We don't have logic in place to track changes to the level
-        * stack pointer (LSP) register, so we have no choice but to
-        * invalidate that register now.
-        */
-
-       pas_InvalidateCurrentStackLevel();
      }
 
    /* Skip over the label integer */
@@ -1368,12 +1360,7 @@ static void pas_ProcStatement(void)
 
   size = pas_ActualParameterList(procPtr);
 
-  /* Generate procedure call and stack adjustment (if required)
-   * Upon return from the procedure, the level stack pointer (LSP)
-   * may also be invalid.  However, we rely on level level logic in
-   * pas_codegen.c to manage this case (as well as the function call
-   * case).
-   */
+  /* Generate procedure call and stack adjustment. */
 
   pas_GenerateProcedureCall(procPtr);
   if (size)
@@ -1388,8 +1375,6 @@ static void pas_IfStatement(void)
 {
   uint16_t else_label  = ++g_label;
   uint16_t endif_label = else_label;
-  int32_t thenLSP;
-  int32_t elseLSP;
 
   TRACE(g_lstFile,"[pas_IfStatement]");
 
@@ -1419,22 +1404,9 @@ static void pas_IfStatement(void)
 
       pas_GenerateDataOperation(opJEQUZ, else_label);
 
-      /* Save the value of the Level Stack Pointer (LSP) here.  This will be
-       * the value of the LSP at the ENDIF label if there is no ELSE <statement>
-       * presentl.  We will compare the elseLSP to the thenLSP at that point.
-       */
-
-      elseLSP = pas_GetCurrentStackLevel();
-
       /* Parse the <statment> following the THEN token */
 
       pas_Statement();
-
-      /* Save the LSP after generating the THEN <statement>.  We will compare the
-       * elseLSP to the thenLSP below.
-       */
-
-      thenLSP = pas_GetCurrentStackLevel();
 
       /* Check for optional ELSE <statement> */
 
@@ -1466,12 +1438,6 @@ static void pas_IfStatement(void)
            */
 
           pas_Statement();
-
-          /* Save the LSP after generating the ELSE <statement>.  We will
-           * compare elseLSP to the thenLSP below.
-           */
-
-          elseLSP = pas_GetCurrentStackLevel();
         }
 
       /* Generate the ENDIF label here.  Note that if no ELSE <statement>
@@ -1479,17 +1445,6 @@ static void pas_IfStatement(void)
        */
 
       pas_GenerateDataOperation(opLABEL, endif_label);
-
-      /* We can get to this location through two of three pathes:  (1) through the
-       * THEN <statement>, (2) from the IF <expression> if no ELSE <statement>
-       * is present, or (3) from the ELSE <statement>.  If the LSP is different
-       * through these two pathes, then we will have to invalidate it.
-       */
-
-      if (thenLSP != elseLSP)
-        {
-          pas_InvalidateCurrentStackLevel();
-        }
     }
 }
 
@@ -1518,42 +1473,37 @@ void pas_CompoundStatement(void)
 
 void pas_RepeatStatement ()
 {
-   uint16_t rpt_label = ++g_label;
+  uint16_t rpt_label = ++g_label;
 
-   TRACE(g_lstFile,"[pas_RepeatStatement]");
+  TRACE(g_lstFile,"[pas_RepeatStatement]");
 
-   /* REPEAT <statement[;statement[statement...]]> UNTIL <expression> */
+  /* REPEAT <statement[;statement[statement...]]> UNTIL <expression> */
 
-   /* Generate top of loop label */
+  /* Generate top of loop label */
 
-   pas_GenerateDataOperation(opLABEL, rpt_label);
-   do
-     {
-       getToken();
+  pas_GenerateDataOperation(opLABEL, rpt_label);
+  do
+    {
+      getToken();
 
-       /* Process <statement> */
+      /* Process <statement> */
 
-       pas_Statement();
-     }
-   while (g_token == ';');
+      pas_Statement();
+    }
+  while (g_token == ';');
 
-   /* Verify UNTIL follows */
+  /* Verify UNTIL follows */
 
-   if (g_token !=  tUNTIL) error (eUNTIL);
-   else getToken();
+  if (g_token !=  tUNTIL) error (eUNTIL);
+  else getToken();
 
-   /* Generate UNTIL <expression> */
+ /* Generate UNTIL <expression> */
 
-   pas_Expression(exprBoolean, NULL);
+  pas_Expression(exprBoolean, NULL);
 
-   /* Generate conditional branch to the top of loop */
+  /* Generate conditional branch to the top of loop */
 
-   pas_GenerateDataOperation(opJEQUZ, rpt_label);
-
-   /* NOTE:  The current LSP setting will be correct after the repeat
-    * loop because we fall through from the bottom of the loop after
-    * executing the body at least once.
-    */
+  pas_GenerateDataOperation(opJEQUZ, rpt_label);
 }
 
 /***********************************************************************/
@@ -1562,9 +1512,6 @@ static void pas_WhileStatement(void)
 {
    uint16_t while_label    = ++g_label;  /* Top of loop label */
    uint16_t endwhile_label = ++g_label;  /* End of loop label */
-   uint32_t nLspChanges;
-   int32_t  topOfLoopLSP;
-   bool     bCheckLSP      = false;
 
    TRACE(g_lstFile,"[pas_WhileStatement]");
 
@@ -1580,34 +1527,11 @@ static void pas_WhileStatement(void)
 
    /* Evaluate the WHILE <expression> */
 
-   nLspChanges = pas_GetNStackLevelChanges();
    pas_Expression(exprBoolean, NULL);
 
    /* Generate a conditional jump to the end of the loop */
 
    pas_GenerateDataOperation(opJEQUZ, endwhile_label);
-
-   /* Save the level stack pointer (LSP) at the top of the
-    * loop.  When first executed, this value will depend on
-    * logic prior to the loop or on values set in the
-    * WHILE <expression>.  On subsequent loops, this value
-    * may be determined by logic within the loop body or
-    * have to restore this value when the loop terminates.
-    */
-
-   topOfLoopLSP =  pas_GetCurrentStackLevel();
-
-   /* Does the WHILE <expression> logic set the LSP? */
-
-   if (nLspChanges == pas_GetNStackLevelChanges())
-     {
-       /* Yes, then the value set in the WHILE <expression>
-        * is the one that will be in effect at the end_while
-        * label.
-        */
-
-       bCheckLSP = true;
-     }
 
    /* Verify that the DO token follows the expression */
 
@@ -1625,90 +1549,15 @@ static void pas_WhileStatement(void)
    /* Set the bottom of loop label */
 
    pas_GenerateDataOperation(opLABEL, endwhile_label);
-
-   /* We always get here from the check at the top of the loop.
-    * Normally this will be from the branch from the bottom of
-    * the loop to the top of the loop.  Then from the conditional
-    * branch at the top of the loop to here.
-    *
-    * But, we need to allow for the special case when the body
-    * of the while loop never executed.  The flag bCheckLSP is
-    * set true if the conditional expression evaluation does not
-    * set the LSP.  In the case, the current LSP will be either
-    * the LSP at the top of the loop (if he body was never executed)
-    * or the current LSP (the body executes at least once).
-    */
-
-   if (bCheckLSP)
-     {
-       if (topOfLoopLSP != pas_GetCurrentStackLevel())
-         {
-           /* In thise case, there is uncertainty in the value of the
-            * LSP and we must invalidate it.  It will be reset to the
-            * correct the next time that a level stack reference is
-            * performed.
-            */
-
-           pas_InvalidateCurrentStackLevel();
-         }
-     }
-   else
-     {
-       /* Otherwise, make sure that the code generation logic knows
-        * the correct value of the LSP at this point.
-        */
-
-       pas_SetCurrentStackLevel(topOfLoopLSP);
-     }
 }
 
 /***********************************************************************/
-/* This is helper function for pas_CaseStatement */
-
-static bool pas_CheckInvalidateLSP(int32_t *pTerminalLSP)
-{
-  /* Check the LSP after evaluating the case <statement>. */
-
-  int32_t caseLSP = pas_GetCurrentStackLevel();
-  if (caseLSP < 0)
-    {
-      /* If the LSP is invalid after any case <statement>, then it could
-       * be invalid at the end_case label as well.
-       */
-
-      return true;
-    }
-  else if (*pTerminalLSP < 0)
-    {
-      /* The value of the LSP at the end_case label has not
-       * yet been determined.  It must be the value at the
-       * end of this case <statement> (or else it is invalid)
-       */
-
-      *pTerminalLSP = caseLSP;
-    }
-  else if (*pTerminalLSP != caseLSP)
-    {
-      /* The value of the LSP at the end of this case <statement> is
-       * different from the value of the LSP at the end of some other
-       * case <statement>.  The value of the LSP at the end_case label
-       * will be indeterminate and must be invalidated.
-       */
-
-      return true;
-    }
-  /* So far so good */
-
-  return false;
-}
 
 static void pas_CaseStatement(void)
 {
    uint16_t this_case;
-   uint16_t next_case      = ++g_label;
-   uint16_t end_case       = ++g_label;
-   int32_t  terminalLSP    = -1;
-   bool     bInvalidateLSP = false;
+   uint16_t next_case  = ++g_label;
+   uint16_t end_case   = ++g_label;
 
    TRACE(g_lstFile,"[pas_CaseStatement]");
 
@@ -1747,18 +1596,6 @@ static void pas_CaseStatement(void)
            /* Evaluate ELSE statement */
 
            pas_Statement();
-
-           /* Check the LSP after evaluating the ELSE <statement>. */
-
-           if (pas_CheckInvalidateLSP(&terminalLSP))
-             {
-               /* The LSP will be invalid at the end case label.  Set
-                * a flag so that we can handle invalidation of the LSP when
-                * we get to the end case label.
-                */
-
-               bInvalidateLSP = true;
-             }
 
            /* Verify that END follows the ELSE <statement> */
 
@@ -1849,18 +1686,6 @@ static void pas_CaseStatement(void)
            /* Jump to exit CASE */
 
            pas_GenerateDataOperation(opJMP, end_case);
-
-           /* Check the LSP after evaluating the case <statement>. */
-
-           if (pas_CheckInvalidateLSP(&terminalLSP))
-             {
-               /* If the LSP will be invalid at the end case label.  Set
-                * a flag so that we can handle invalidation of the LSP when
-                * we get to the end case label.
-                */
-
-               bInvalidateLSP = true;
-             }
          }
 
        /* Check if there are more statements.  If not, verify END present */
@@ -1885,17 +1710,6 @@ static void pas_CaseStatement(void)
 
    pas_GenerateDataOperation(opLABEL, end_case);
    pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-
-   /* We may have gotten to this point from many different case <statements>.
-    * The flag bInvalidateLSP will be set if the LSP is not the same for
-    * each of these pathes.  Invalidating the LSP will force it to be reloaded
-    * when the next level stack access is done.
-    */
-
-   if (bInvalidateLSP)
-     {
-       pas_InvalidateCurrentStackLevel();
-     }
 }
 
 /***********************************************************************/
@@ -1907,7 +1721,6 @@ static void pas_ForStatement(void)
    uint16_t endForLabel = ++g_label;
    uint16_t jmpOp;
    uint16_t modOp;
-   int32_t topOfLoopLSP;
 
    TRACE(g_lstFile,"[pas_ForStatement]");
 
@@ -1994,14 +1807,6 @@ static void pas_ForStatement(void)
        pas_GenerateStackReference(opLDS, varPtr);
        pas_GenerateDataOperation(jmpOp, endForLabel);
 
-       /* Save the level stack pointer (LSP) at the top of the FOR
-        * loop.  When first executed, this value will depend on
-        * logic prior to the loop body. On subsequent loops, this
-        * value may be determined by logic within the loop body.
-        */
-
-       topOfLoopLSP = pas_GetCurrentStackLevel();
-
        /* Evaluate the for statement <statement> */
 
        pas_Statement();
@@ -2022,29 +1827,6 @@ static void pas_ForStatement(void)
 
        pas_GenerateDataOperation(opLABEL, endForLabel);
        pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-
-       /* We always get here from the check at the top of the loop.
-        * Normally this will be from the branch from the bottom of
-        * the loop to the top of the loop.  Then from the conditional
-        * branch at the top of the loop to here.
-        *
-        * But, we need to allow for the special case when the body
-        * of the for loop never executed.  In this case, the LSP at
-        * the first time into the loop may differ from the LSP at
-        * subsequent times into the loop.  If this is the case, then
-        * will will have to invalidate the LSP.
-        */
-
-       if (topOfLoopLSP != pas_GetCurrentStackLevel())
-         {
-           /* In thise case, there is uncertainty in the value of the
-            * LSP and we must invalidate it.  It will be reset to the
-            * correct the next time that a level stack reference is
-            * performed.
-            */
-
-           pas_InvalidateCurrentStackLevel();
-         }
      }
 }
 

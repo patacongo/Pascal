@@ -82,7 +82,6 @@
 #define sBOOLEAN_SIZE       sINT_SIZE
 #define sREAL_SIZE          8
 #define sPTR_SIZE           sINT_SIZE
-#define sRETURN_SIZE       (3 * sPTR_SIZE)
 
 #define sSET_SIZE           8
 #define sSET_WORDS         (sSET_SIZE / sINT_SIZE)

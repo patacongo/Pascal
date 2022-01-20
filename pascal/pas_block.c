@@ -3016,13 +3016,6 @@ void pas_Block(int32_t preAllocatedDStack)
 
   pas_GenerateDataOperation(opLABEL, (int32_t)beginLabel);
 
-  /* Since we don't know for certain how we got here, invalidate
-   * the level stack pointer (LSP).  This is, of course, only
-   * meaningful on architectures that implement an LSP.
-   */
-
-  pas_InvalidateCurrentStackLevel();
-
   /* Allocate data stack */
 
   if (g_dStack)
@@ -3431,7 +3424,7 @@ int16_t pas_FormalParameterList(symbol_t *procPtr)
 
   /* Now, calculate the parameter offsets from the size of each parameter */
 
-  parameterOffset = -sRETURN_SIZE;
+  parameterOffset = 0;
   for (i = g_nParms; i > 0; i--)
     {
       /* The offset to the next parameter is the offset to the previous

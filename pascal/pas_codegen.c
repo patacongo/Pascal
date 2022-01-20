@@ -69,17 +69,6 @@
 #define LEVEL_DEFINED(l)  ((int32_t)(l) >= 0)
 #define PCODE_VALID(p)    ((int32_t)(p) >= 0)
 
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-static int32_t  g_currentStackLevelReference  = UNDEFINED_LEVEL;
-static uint32_t g_nStackLevelReferenceChanges = 0;
-
 /***********************************************************************
  * Private Function Prototypes
  ***********************************************************************/
@@ -148,78 +137,9 @@ pas_GetLevel0Opcode(enum pcode_e eOpCode)
     }
 }
 
-/***********************************************************************/
-/* A new static nesting level has been encountered.  Check if we need
- * to reset the level stack pointer (LSP) register (assuming that the
- * architecutre has one).
- */
-
-static void
-pas_SetLevelStackPointer(uint32_t dwLevel)
-{
-  if (dwLevel != g_currentStackLevelReference)
-    {
-      /* Set the level stack pointer (LSP) register */
-
-      insn_SetStackLevel(dwLevel);
-
-      /* Remember the setting so that we do not reset the LSP until
-       * the level changes (or it is invalidated).
-       */
-
-      g_currentStackLevelReference = dwLevel;
-      g_nStackLevelReferenceChanges++;
-    }
-}
-
 /***********************************************************************
  * Public Functions
  ***********************************************************************/
-
-/***********************************************************************/
-/* Return the current setting of the level stack pointer (LSP) register
- * -- assuming that the underlying architecure may have one.
- */
-
-int32_t pas_GetCurrentStackLevel(void)
-{
-  return g_currentStackLevelReference;
-}
-
-/***********************************************************************/
-/* Invalidate the current stack level register setting.  This will cause
- * us to reset the LSP when the next stack level reference is encountered.
- */
-
-void pas_InvalidateCurrentStackLevel(void)
-{
-  g_currentStackLevelReference = UNDEFINED_LEVEL;
-  g_nStackLevelReferenceChanges++;
-}
-
-/***********************************************************************/
-/* Set the stack level pointer to known value.  This is done when in
- * while and for loop processing.  The value of the LSP will be that
- * as sampled at the top of the lop not necessarily the value at the
- * bottom of the loop.
- */
-
-void pas_SetCurrentStackLevel(int32_t dwLsp)
-{
-  g_currentStackLevelReference = dwLsp;
-  g_nStackLevelReferenceChanges++;
-}
-
-/***********************************************************************/
-/* Get the number of changes made to the level stack pointer.  This is
- * useful by compiler logic to determine if the stack level pointer was
- * ever changed by any logic path.
- */
-
-uint32_t pas_GetNStackLevelChanges(void)
-{
-  return g_nStackLevelReferenceChanges;
-}
 
 /***********************************************************************/
 /* Generate the most simple of all P-codes */
@@ -305,19 +225,7 @@ void pas_GenerateLevelReference(enum pcode_e eOpCode, uint16_t wLevel,
         }
     }
 
-  /* We get here if the reference is at some static nesting level
-   * other that zero OR if there is no special PCode to reference
-   * data at static nesting level 0 for this operation.
-   *
-   * Check if we have to change the level stack pointer (LSP) register
-   * (assuming that the architecture has one).
-   */
-
-  pas_SetLevelStackPointer(wLevel);
-
-  /* Then generate the opcode passing the level in the event that the
-   * architecture does not have an LSP.
-   */
+  /* Then generate the opcode passing. */
 
   insn_GenerateLevelReference(eOpCode, wLevel, dwOffset);
 }
@@ -343,19 +251,8 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *varPtr)
         }
     }
 
-  /* We get here if the reference is at some static nesting level
-   * other that zero OR if there is no special PCode to reference
-   * data at static nesting level 0 for this operation.
-   *
-   * Check if we have to change the level stack pointer (LSP) register
-   * (assuming that the architecture has one).
-   */
-
-  pas_SetLevelStackPointer(varPtr->sLevel);
-
   /* Generate the P-Code at the defined offset and with the specified
-   * static level offset (in case that the architecture does not have
-   * an LSP)
+   * static level offset.
    */
 
   insn_GenerateLevelReference(eOpCode, (g_level - varPtr->sLevel),
@@ -369,19 +266,18 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *varPtr)
 
 void pas_GenerateProcedureCall(symbol_t *pProc)
 {
-  /* sLevel is the level at which the procedure was declared.  We need
-   * to set the SLP to this value prior to the call (on some architectures
-   * where the SLP is pushed onto the stack by the procedure
-   * call).
+  /* NOTE:  The level associated with the PROCEDURE symbol, sLevel, is the
+   * level At which the procedure was declared.  Everything declare within
+   * the PROCEDURE is at the next level
    */
 
-  pas_SetLevelStackPointer(pProc->sLevel);
+  uint16_t level = pProc->sLevel + 1;
 
   /* Then generate the procedure call (passing the level again for those
-   * architectures that do not support the SLP.
+   * architectures that do not support the SLP).
    */
 
-  insn_GenerateProcedureCall(pProc->sLevel, pProc->sParm.p.pLabel);
+  insn_GenerateProcedureCall(level, pProc->sParm.p.pLabel);
 
   /* If the variable is undefined, also generate a relocation
    * record.
@@ -397,12 +293,6 @@ void pas_GenerateProcedureCall(symbol_t *pProc)
                               0);
     }
 #endif
-
-  /* Any logic after the procedure/function call return must assume
-   * that the last level reference is unknown.
-   */
-
-  pas_InvalidateCurrentStackLevel();
 }
 
 /***********************************************************************/

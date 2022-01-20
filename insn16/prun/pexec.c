@@ -65,29 +65,158 @@
 #endif
 
 /****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+/* Size of frame info at the beginning of each frame:
+ *
+ *        |  Base Address  | + 3 * BPERI
+ *        +----------------+
+ *        |  Nesting Level | + 2 * BPERI
+ *        +----------------+
+ *        | Return Address | + BPERI
+ *        +----------------+
+ *  FP -> |  Previous FP   | 0
+ *        +----------------+
+ */
+
+/* Offsets relative to the frame pointer */
+
+#define _FPTR   (0)
+#define _FRET   (BPERI)
+#define _FLEVEL (2 * BPERI)
+
+#define _FBASE  (3 * BPERI)
+#define _FSIZE  (3 * BPERI)
+
+/****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static ustack_t pexec_getbaseaddress(struct pexec_s *st, level_t leveloffset);
+static int      pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel);
+static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t levelOffset,
+                                     int32_t stackOffset);
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_getbaseaddress
+ * Name: pexec_NewBaseAddress
  *
  * Description:
- *   This function binds the base address corresponding to a given level
- *   offset.
+ *   This function builds a new frame at the top of the stack as parr of the
+ *   procedure call logic.
  *
  ****************************************************************************/
 
-static ustack_t pexec_getbaseaddress(struct pexec_s *st, level_t leveloffset)
+static int pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel)
 {
-  /* Start with the base register of the current frame */
+  uint16_t *current;
+  uint16_t *previous;
+  uint16_t findLevel;
+  uint16_t frameAddr;
+  uint16_t prevLevel;
+  uint16_t newFP;
 
-  ustack_t baseAddress = st->fp;
+  /* The nesting level should be some value greater than zero */
+
+  if (nestingLevel == 0)
+    {
+      return eNESTINGLEVEL;
+    }
+
+  /* We need to find the preceding nesting level */
+
+  findLevel = nestingLevel - 1;
+
+  /* Search back through the frames to find the correct frame for this static
+   * nesting level.  Normally this will be the previous frame, but we need
+   * to allow for support of recursion which forces us to search further back.
+   */
+
+  /* At this pointer st->fp refers to the calling frame. */
+
+  frameAddr = st->fp - _FPTR;
+
+  for (; ; )
+    {
+      previous  = &st->dstack.i[BTOISTACK(frameAddr)];
+      prevLevel = previous[BTOISTACK(_FLEVEL)] & 0xff;
+
+      /* Protection against garbage (Stack corruption?) */
+
+      if (prevLevel > UINT8_MAX)
+        {
+          return eNESTINGLEVEL;
+        }
+
+      /* It would be an error if we went all the zero to level 0 and never
+       * found the frame we are looking for.
+       */
+
+      else if (findLevel != 0 && prevLevel == 0)
+        {
+          return eNESTINGLEVEL;
+        }
+
+      /* Set up for the next time through the loop */
+
+      if (findLevel == prevLevel)
+        {
+          break;
+        }
+
+      frameAddr = previous[BTOISTACK(_FPTR)] - _FPTR;
+    }
+
+  /* Set up the new FRAME info.
+   *
+   *        |  Base Address  | + 3 * BPERI
+   *        +----------------+
+   *      lsp  |  Nesting Level | + 2 * BPERI
+   *        +----------------+
+   *        | Return Address | + BPERI
+   *        +----------------+
+   *  FP -> |  Previous FP   | 0
+   *        +----------------+
+   *  SP -> |  Caller TOS    |
+   */
+
+  st->sp                      += BPERI;
+  current                      = &st->dstack.i[BTOISTACK(st->sp)];
+  newFP                        = st->sp + _FPTR;
+  st->sp                      += _FSIZE - BPERI;
+
+  current[BTOISTACK(_FPTR)]    = st->fp;
+  current[BTOISTACK(_FRET)]    = st->pc + 4;
+  current[BTOISTACK(_FLEVEL)]  = st->lsp << 8 | nestingLevel;
+
+  st->lsp                      = nestingLevel;
+  st->fp                       = newFP;
+  return eNOERROR;
+}
+
+/****************************************************************************
+ * Name: pexec_GetBaseAddress
+ *
+ * Description:
+ *   This function binds the base address corresponding to a given level
+ *   offset.  This establishes a static link that is used to access data
+ *   in outer layers.
+ *
+ *   The static link is set on each procedure call.  It is accessed on load
+ *   and store instructions as an offset from the current static nesting
+ *   level.
+ *
+ ****************************************************************************/
+
+static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t leveloffset,
+                                     int32_t stackOffset)
+ {
+   /* Start with the base register of the current frame */
+
+  ustack_t frameBase = st->fp;
 
   /* Search backware "leveloffset" frames until the correct frame is
    * found
@@ -95,15 +224,27 @@ static ustack_t pexec_getbaseaddress(struct pexec_s *st, level_t leveloffset)
 
    while (leveloffset > 0)
      {
-       baseAddress = st->dstack.i[BTOISTACK(baseAddress)];
+       frameBase = st->dstack.i[BTOISTACK(frameBase)];
        leveloffset--;
      }
 
-   /* Offset that value by two words (one for the st->fp and one for the
-    * return value
+   /* Offset that value to get the address of the stack region of interest.
+    * There are two disjoint regions:
+    *
+    *   1. At offset _FBASE 'above' the frame info.  Positive variable
+    *      offsets lie in this region.
+    *   2. 'Below" the frame is a return value areg of size sRETURN_SIZE
+    *      and then actual parameter values are below this.  Negative
+    *      stack offsets refer to this region.
     */
 
-   return baseAddress + 2 * BPERI;
+   frameBase += stackOffset;
+   if (stackOffset >= 0)
+     {
+       frameBase += _FBASE;
+     }
+
+   return frameBase;
 }
 
 /****************************************************************************
@@ -353,7 +494,6 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       break;
 
     case oLDIM :
- /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1); /* Size */
       POP(st, uparm2); /* Stack offset */
       while (uparm1 > 0)
@@ -426,10 +566,9 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       break;
 
     case oSTIM :
- /* FIX ME --> Need to handle the unaligned case */
-      POP(st, uparm1);                /* Size in bytes */
-      uparm3 = uparm1;            /* Save for stack discard */
-      sparm = ROUNDBTOI(uparm1); /* Size in words */
+      POP(st, uparm1);               /* Size in bytes */
+      uparm3 = uparm1;               /* Save for stack discard */
+      sparm = ROUNDBTOI(uparm1);     /* Size in words */
       uparm2 = TOS(st, sparm);       /* Stack offset */
       sparm--;
       while (uparm1 > 0)
@@ -460,9 +599,22 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       break;
 
     case oRET   :
+      /*
+       *        +----------------+
+       * TOS -> |  Nesting Level | + 2 * BPERI
+       *        +----------------+
+       *        | Return Address | + BPERI
+       *        +----------------+
+       *  FP -> |  Previous FP   | 0
+       *        +----------------+
+       *        |   Caller TOS   |
+       */
+
+      POP(st, uparm1);
+      st->lsp = uparm1 >> 8;
+
       POP(st, st->pc);
       POP(st, st->fp);
-      DISCARD(st, 1);
       return eNOERROR;
 
       /* System Functions (No stack arguments) */
@@ -515,6 +667,7 @@ static inline int pexec16(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8)
       ret = eILLEGALOPCODE;
       break;
     }
+
   return ret;
 }
 
@@ -526,7 +679,8 @@ static inline int pexec16(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8)
  *
  ****************************************************************************/
 
-static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16)
+static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
+                          uint16_t imm16)
 {
   sstack_t sparm1;
   sstack_t sparm2;
@@ -667,7 +821,6 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       break;
 
     case oLDM :
- /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
       uparm2 = st->spb + imm16;
       while (uparm1 > 0)
@@ -710,8 +863,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       break;
 
     case oSTM :
- /* FIX ME --> Need to handle the unaligned case */
-      POP(st, uparm1);                /* Size */
+      POP(st, uparm1);            /* Size */
       uparm3 = uparm1;            /* Save for stack discard */
       uparm2 = st->spb + imm16;
       sparm1 = ROUNDBTOI(uparm1) - 1;
@@ -754,7 +906,6 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       break;
 
     case oLDXM  :
- /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
       POP(st, uparm2);
       uparm2 += st->spb + imm16;
@@ -792,10 +943,9 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode, uint16_t imm16
       break;
 
     case oSTXM :
-/* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);                /* Size */
-      uparm3 = uparm1;            /* Save for stack discard */
-      sparm1 = ROUNDBTOI(uparm1); /* Size in 16-bit words */
+      uparm3 = uparm1;                /* Save for stack discard */
+      sparm1 = ROUNDBTOI(uparm1);     /* Size in 16-bit words */
       uparm2 = TOS(st, sparm1);       /* index */
       sparm1--;
       uparm2 += st->spb + imm16;
@@ -897,26 +1047,27 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
   switch (opcode)
     {
       /* Load:  imm8 = level; imm16 = signed frame offset (no stack arguments) */
+
+
     case oLDS :
-      uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETSTACK(st, uparm1));
       PUSH(st, GETSTACK(st, uparm1 + BPERI));
       break;
 
     case oLDSH :
-      uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETSTACK(st, uparm1));
       break;
 
     case oLDSB :
-      uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETBSTACK(st, uparm1));
       break;
 
     case oLDSM :
- /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
-      uparm2 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm2 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       while (uparm1 > 0)
         {
           if (uparm1 >= BPERI)
@@ -937,22 +1088,21 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       /* Load & store: imm8 = level; imm16 = signed frame offset (One stack argument) */
 
     case oSTSH   :
-      uparm1  = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm1  = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       POP(st, uparm2);
       PUTSTACK(st, uparm2, uparm1);
       break;
 
     case oSTSB  :
-      uparm1  = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm1  = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       POP(st, uparm2);
       PUTBSTACK(st, uparm2, uparm1);
       break;
 
     case oSTSM :
- /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);            /* Size */
       uparm3 = uparm1;            /* Save for stack discard */
-      uparm2 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm2 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       sparm = ROUNDBTOI(uparm1) - 1;
       while (uparm1 > 0)
         {
@@ -977,26 +1127,25 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       break;
 
     case oLDSX  :
-      uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
+      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16) + TOS(st, 0));
       TOS(st, 0) = GETSTACK(st, uparm1);
       PUSH(st, GETSTACK(st, uparm1 + BPERI));
       break;
 
     case oLDSXH  :
-      uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
+      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16) + TOS(st, 0));
       TOS(st, 0) = GETSTACK(st, uparm1);
       break;
 
     case oLDSXB :
-      uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
+      uparm1 = pexec_GetBaseAddress(st, imm8,  signExtend16(imm16) + TOS(st, 0));
       TOS(st, 0) = GETBSTACK(st, uparm1);
       break;
 
     case oLDSXM  :
- /* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);
       POP(st, uparm2);
-      uparm2 += pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm2 += pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       while (uparm1 > 0)
         {
           if (uparm1 >= BPERI)
@@ -1019,25 +1168,24 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
     case oSTSXH  :
       POP(st, uparm1);
       POP(st, uparm2);
-      uparm2 += pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm2 += pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUTSTACK(st, uparm1,uparm2);
       break;
 
     case oSTSXB :
       POP(st, uparm1);
       POP(st, uparm2);
-      uparm2 += pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm2 += pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUTBSTACK(st, uparm1, uparm2);
       break;
 
     case oSTSXM :
-/* FIX ME --> Need to handle the unaligned case */
       POP(st, uparm1);            /* Size */
       uparm3 = uparm1;            /* Save for stack discard */
       sparm = ROUNDBTOI(uparm1);  /* Size in 16-bit words */
       uparm2 = TOS(st, sparm);    /* index */
       sparm--;
-      uparm2 += pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm2 += pexec_GetBaseAddress(st, imm8,  signExtend16(imm16));
       while (uparm1 > 0)
         {
           if (uparm1 >= BPERI)
@@ -1061,26 +1209,23 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       break;
 
     case oLAS  :
-      uparm1 = pexec_getbaseaddress(st, imm8) + signExtend16(imm16);
+      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, uparm1);
       break;
 
     case oLASX :
-      TOS(st, 0) = pexec_getbaseaddress(st, imm8) + signExtend16(imm16) + TOS(st, 0);
+      TOS(st, 0) = pexec_GetBaseAddress(st, imm8,
+                                        signExtend16(imm16) + TOS(st, 0));
       break;
 
-      /* Program Control:  imm8 = level; imm16 = unsigned label (No
-       * stack arguments)
+      /* Program Control:  imm8 = level; imm16 = unsigned label (No stack
+       * arguments)
        */
 
     case oPCAL  :
-      PUSH(st, pexec_getbaseaddress(st, imm8));
-      PUSH(st, st->fp);
-      uparm1 = st->sp;
-      PUSH(st, st->pc + 4);
-      st->fp = uparm1;
+      ret    = pexec_ProcedureCall(st, imm8);
       st->pc = (paddr_t)imm16;
-      return eNOERROR;
+      return ret;
 
       /* Pseudo-operations:  (No stack arguments)
        * For LINE:    imm8 = file number; imm16 = line number
@@ -1244,7 +1389,7 @@ void pexec_Reset(struct pexec_s *st)
 {
   int dndx;
 
-  /* Setup the bottom of the "normal" pascal stack.  Memory organization:
+  /* Set up the memory map.  Memory organization will be:
    *
    *  0                                   : String stack
    *  strsize                             : RO-only data
@@ -1260,17 +1405,30 @@ void pexec_Reset(struct pexec_s *st)
   /* Initialize the emulated P-Machine registers */
 
   st->csp   = 0;
-  st->sp    = st->spb + 2 * BPERI;
-  st->fp    = st->spb + BPERI;
+  st->sp    = st->spb + _FBASE;
+  st->fp    = st->spb + _FPTR;
   st->hsp   = st->hpb;
   st->pc    = st->entry;
+  st->lsp   = 0;
 
-  /* Initialize the P-Machine stack */
+  /* Initialize the P-Machine stack
+   *
+   *         |  Base Address  | + 3 * BPERI
+   *         +----------------+
+   *         |  Nesting Level | + 2 * BPERI
+   *         +----------------+
+   *         | Return Address | + BPERI
+   *         +----------------+
+   *  FP  -> |  Previous FP   | 0
+   *         +----------------+
+   */
 
-  dndx                 = BTOISTACK(st->spb);
-  st->dstack.i[dndx]   =  0;
-  st->dstack.i[dndx+1] =  0;
-  st->dstack.i[dndx+2] = -1;
+  dndx                   = BTOISTACK(st->spb);
+  st->dstack.i[dndx + 0] = 0;      /* FP */
+  st->dstack.i[dndx + 1] = -1;     /* Return address */
+  st->dstack.i[dndx + 2] = 0;      /* Nesting Level */
+
+  st->spb               += _FSIZE;
 
   /* [Re]-initialize the memory manager */
 

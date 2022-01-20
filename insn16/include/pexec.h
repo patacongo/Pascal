@@ -210,6 +210,7 @@ struct pexec_s
   paddr_t fp;         /* Base of the current frame */
   paddr_t rop;        /* Read-only data pointer */
   paddr_t pc;         /* Program counter */
+  paddr_t lsp;        /* Static nesting level */
 
   /* Info needed to perform a simulated reset.  Memory organization:
    *

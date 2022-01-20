@@ -62,7 +62,7 @@
  * xx00 0101  NOT        ---            ---            ---
  * xx00 0110  ADD        ---            ---            ---
  * xx00 0111  SUB        ---            ---            ---
- * xx00 1000  MUL        ---            ---            PCAL l,ilbl
+ * xx00 1000  MUL        ---            ---            PCAL lvl,ilbl
  * xx00 1001  DIV        ---            ---            ---
  * xx00 1010  MOD        ---            ---            ---
  * xx00 1011  SLL        ---            ---            ---
@@ -88,24 +88,24 @@
  * xx01 1110  ---        ---            ---            ---
  * xx01 1111  ---        ---            ---            ---
  *
- * xx10 0000  LDI        ---            LD uoffs       LDS lvl,offs
- * xx10 0001  LDIH       ---            LDH uoffs      LDSH lvl,offs
- * xx10 0010  LDIB       ---            LDB uoffs      LDSB lvl,offs
- * xx10 0011  LDIM       ---            LDM uoffs      LDSM lvl,offs
- * xx10 0100  STI        ---            ST uoffs       STS lvl,offs
- * xx10 0101  STIH       ---            STH uoffs      STSH lvl,offs
- * xx10 0110  STIB       ---            STB uoffs      STSB lvl,offs
- * xx10 0111  STIM       ---            STM uoffs      STSM lvl,offs
- * xx10 1000  DUP        ---            LDX uoffs      LDSX lvl,offs
- * xx10 1001  DUPH       ---            LDXH uoffs     LDSXH lvl,offs
- * xx10 1010  XCHG       ---            LDXB uoffs     LDSXB lvl,offs
- * xx10 1011  XCHGH      ---            LDXM uoffs     LDSXM lvl,offs
- * xx10 1100  PUSHS      ---            STX uoffs      STSX lvl,offs
- * xx10 1101  POPS       ---            STXH uoffs     STSXH lvl,offs
- * xx10 1110  ---        ---            STXB uoffs     STSXB lvl,offs
- * xx10 1111  RET        ---            STXM uoffs     STSXM lvl,offs
+ * xx10 0000  LDI        ---            LD uoffs       LDS loff,offs
+ * xx10 0001  LDIH       ---            LDH uoffs      LDSH loff,offs
+ * xx10 0010  LDIB       ---            LDB uoffs      LDSB loff,offs
+ * xx10 0011  LDIM       ---            LDM uoffs      LDSM loff,offs
+ * xx10 0100  STI        ---            ST uoffs       STS loff,offs
+ * xx10 0101  STIH       ---            STH uoffs      STSH loff,offs
+ * xx10 0110  STIB       ---            STB uoffs      STSB loff,offs
+ * xx10 0111  STIM       ---            STM uoffs      STSM loff,offs
+ * xx10 1000  DUP        ---            LDX uoffs      LDSX loff,offs
+ * xx10 1001  DUPH       ---            LDXH uoffs     LDSXH loff,offs
+ * xx10 1010  XCHG       ---            LDXB uoffs     LDSXB loff,offs
+ * xx10 1011  XCHGH      ---            LDXM uoffs     LDSXM loff,offs
+ * xx10 1100  PUSHS      ---            STX uoffs      STSX loff,offs
+ * xx10 1101  POPS       ---            STXH uoffs     STSXH loff,offs
+ * xx10 1110  ---        ---            STXB uoffs     STSXB loff,offs
+ * xx10 1111  RET        ---            STXM uoffs     STSXM loff,offs
  *
- * xx11 0000  ---        FLOAT fop      LA uoffs       LAS lvl,offs
+ * xx11 0000  ---        FLOAT fop      LA uoffs       LAS loff,offs
  * xx11 0001  ---        SETOP sop      LAC dlbl       ---
  * xx11 0010  ---        ---            ---            ---
  * xx11 0011  ---        ---            ---            ---
@@ -113,7 +113,7 @@
  * xx11 0101  ---        ---            INDS nn        ---
  * xx11 0110  ---        ---            ---            ---
  * xx11 0111  ---        ---            ---            ---
- * xx11 1000  ---        ---            LAX uoffs      LASX lvl,offs
+ * xx11 1000  ---        ---            LAX uoffs      LASX loff,offs
  * xx11 1001  ---        ---            LIB lop        ---
  * xx11 1010  ---        ---            SYSIO iop      ---
  * xx11 1011  ---        ---            ---            ---
@@ -124,7 +124,7 @@
  *
  * KEY:
  *   n     = 8-bit value (unsigned)
- *   lvl   = 8-bit static nesting level offset (unsigned)
+ *   loff  = 8-bit static nesting level offset (unsigned)
  *   vt    = 8-bit type code (unsigned)
  *   nn    = 16-bit value (signed)
  *   fop   = 8-bit floating point operation

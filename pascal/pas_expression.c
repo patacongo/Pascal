@@ -1087,8 +1087,9 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
             }
         }
 
-      /* A RECORD name may be a valid factor -- as the input */
-      /* parameter of a function or in an assignment */
+      /* A RECORD name may be a valid factor -- as the input parameter of a
+       * function or in an assignmenti.
+       */
 
       else if (g_abstractTypePtr == typePtr)
         {

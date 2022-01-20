@@ -355,7 +355,7 @@ void
 insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level, int32_t offset)
 {
   /* Note that level is ignored.  We used the level set by the
-   * preceding call to insn_SetStackLevel().
+   * preceding call to insn_SetStaticNestingLevel().
    */
 
   insn32_Generate(opcode, (uint32_t)offset);
@@ -385,7 +385,7 @@ insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber)
 /***********************************************************************/
 
 void
-insn_SetStackLevel(uint32_t level)
+insn_SetStaticNestingLevel(uint32_t level)
 {
   insn32_GenerateDataOperation(oSLSP, level);
 }

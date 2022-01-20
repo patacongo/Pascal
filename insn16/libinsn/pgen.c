@@ -307,11 +307,3 @@ insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber)
 {
   insn16_Generate(opLINE, includeNumber, lineNumber);
 }
-
-/***********************************************************************/
-
-void
-insn_SetStackLevel(uint32_t level)
-{
-  /* Do nothing */
-}

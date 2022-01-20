@@ -12,22 +12,22 @@ PROGRAM recursion;
       BEGIN
         level2 := value;
         WRITELN('nest2: ', level0, ', ', level1, ', ', level2);
-        if (value <= 3) THEN
+        if (value <= 2) THEN
           nest2(value + 1)
       END;
 
     BEGIN
       level1 := value;
       WRITELN('nest1: ', level0, ', ', level1);
-      nest2(0);
-      if (value <= 3) THEN
+      nest2(1);
+      if (value <= 2) THEN
         nest1(value + 1)
     END;
 
   BEGIN
-    FOR level0 := 0 TO 3 DO
+    FOR level0 := 1 TO 3 DO
     BEGIN
       WRITELN('nest0: ', level0);
-      nest1(0);
+      nest1(1);
     END
   END.

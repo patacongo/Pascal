@@ -60,7 +60,7 @@ void insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level,
                                  int32_t offset);
 void insn_GenerateProcedureCall(uint16_t level, int32_t offset);
 void insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber);
-void insn_SetStackLevel(uint32_t level);
+void insn_SetStaticNestingLevel(uint32_t level);
 
 /* Opcode relocation */
 

@@ -319,7 +319,8 @@
 #define eBADSETOPCODE    ((uint16_t) 0x99)
 #define eINTEGEROVERFLOW ((uint16_t) 0x9a)
 #define eVALUERANGE      ((uint16_t) 0x9b)
-#define eFAILEDLIBCALL   ((uint16_t) 0x9c)
+#define eNESTINGLEVEL    ((uint16_t) 0x9c)
+#define eFAILEDLIBCALL   ((uint16_t) 0x9d)
 
 #define eBADFILE         ((uint16_t) 0xa0)
 #define eFILENOTINUSE    ((uint16_t) 0xa1)

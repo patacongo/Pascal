@@ -48,11 +48,6 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-int32_t  pas_GetCurrentStackLevel(void);
-void     pas_InvalidateCurrentStackLevel(void);
-void     pas_SetCurrentStackLevel(int32_t dwLsp);
-uint32_t pas_GetNStackLevelChanges(void);
-
 void     pas_GenerateSimple(enum pcode_e eOpCode);
 void     pas_GenerateDataOperation(enum pcode_e eOpCode, int32_t dwData);
 void     pas_GenerateDataSize(int32_t dwDataSize);
