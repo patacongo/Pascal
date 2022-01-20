@@ -102,10 +102,10 @@ static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t levelOffset,
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_NewBaseAddress
+ * Name: pexec_ProcedureCall
  *
  * Description:
- *   This function builds a new frame at the top of the stack as parr of the
+ *   This function builds a new frame at the top of the stack as part of the
  *   procedure call logic.
  *
  ****************************************************************************/
@@ -188,7 +188,7 @@ static int pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel)
   newFP                        = st->sp + _FPTR;
   st->sp                      += _FSIZE - BPERI;
 
-  current[BTOISTACK(_FPTR)]    = st->fp;
+  current[BTOISTACK(_FPTR)]    = frameAddr;
   current[BTOISTACK(_FRET)]    = st->pc + 4;
   current[BTOISTACK(_FLEVEL)]  = st->lsp << 8 | nestingLevel;
 

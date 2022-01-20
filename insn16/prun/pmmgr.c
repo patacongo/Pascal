@@ -339,30 +339,35 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
 
 void pexec_InitializeHeap(struct pexec_s *st)
 {
-  uint16_t     heapStart = HEAP_ALIGNUP(st->hpb);
-  uint16_t     heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpsize);
-  uint16_t     heapSize;
-  memChunk_t  *terminus;
-  freeChunk_t *initialChunk;
+  /* We can't use the memory manager if no heap was specified */
 
-  terminus                     = (memChunk_t *)
-                                 ATSTACK(st, heapEnd - HEAP_ALLOC_UNIT);
-  memset(terminus, 0, sizeof(memChunk_t));
-  terminus->forward            = 0;
-  terminus->address            = heapEnd - st->hpb - HEAP_ALLOC_UNIT;
-  terminus->inUse              = 1;
+  if (st->hpsize > 2 * HEAP_ALLOC_UNIT)
+    {
+      uint16_t     heapStart = HEAP_ALIGNUP(st->hpb);
+      uint16_t     heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpsize);
+      uint16_t     heapSize;
+      memChunk_t  *terminus;
+      freeChunk_t *initialChunk;
 
-  heapSize                     = heapEnd - heapStart - HEAP_ALLOC_UNIT;
-  terminus->back               = heapSize;
+      terminus                     = (memChunk_t *)
+                                     ATSTACK(st, heapEnd - HEAP_ALLOC_UNIT);
+      memset(terminus, 0, sizeof(memChunk_t));
+      terminus->forward            = 0;
+      terminus->address            = heapEnd - st->hpb - HEAP_ALLOC_UNIT;
+      terminus->inUse              = 1;
 
-  initialChunk                 = (freeChunk_t *)ATSTACK(st, heapStart);
-  memset(initialChunk, 0, sizeof(freeChunk_t));
-  initialChunk->chunk.forward  = heapSize;
-  initialChunk->chunk.address  = heapStart - st->hpb;
-  initialChunk->next           = 0;
+      heapSize                     = heapEnd - heapStart - HEAP_ALLOC_UNIT;
+      terminus->back               = heapSize;
 
-  g_inUseChunks                = NULL;
-  g_freeChunks                 = initialChunk;
+      initialChunk                 = (freeChunk_t *)ATSTACK(st, heapStart);
+      memset(initialChunk, 0, sizeof(freeChunk_t));
+      initialChunk->chunk.forward  = heapSize;
+      initialChunk->chunk.address  = heapStart - st->hpb;
+      initialChunk->next           = 0;
+
+      g_inUseChunks                = NULL;
+      g_freeChunks                 = initialChunk;
+    }
 }
 
 /****************************************************************************/
