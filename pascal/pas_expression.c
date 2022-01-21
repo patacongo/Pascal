@@ -168,10 +168,13 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
 
   for (; ; )
     {
-      /* Check for binary operator */
+      /* Check for binary operator at this level of precedence:
+       *
+       *   +, -, or, xor, ><
+       */
 
-      if (g_token == '+' || g_token == '-' ||
-          g_token == tOR || g_token == tSYMDIFF)
+      if (g_token == '+'  || g_token == '-' || g_token == tOR ||
+          g_token == tXOR || g_token == tSYMDIFF)
         {
           operation = g_token;
         }
@@ -412,6 +415,22 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
             }
           break;
 
+        case tXOR :
+          /* Integer/boolean 'XOR' */
+
+          if (term1Type == exprInteger || term1Type == exprBoolean)
+            {
+              pas_GenerateSimple(opXOR);
+            }
+
+          /* Otherwise, the 'OR' operation is not permitted */
+
+          else
+            {
+              error(eTERMTYPE);
+            }
+          break;
+
         case tSYMDIFF :
           /* Set symmetric difference */
 
@@ -455,7 +474,10 @@ static exprType_t pas_Term(exprType_t findExprType)
   factor1Type = pas_Factor(findExprType);
   for (; ; )
     {
-      /* Check for binary operator */
+      /* Check for binary operator at this level of precedence:
+       *
+       *   *, /, div, mod, and, shl, shr, as, <<, >>
+       */
 
       if (g_token == tMUL  || g_token == tDIV  || g_token == tFDIV ||
           g_token == tMOD  || g_token == tAND  || g_token == tSHL  ||
@@ -984,7 +1006,11 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
   switch (varPtr->sKind)
     {
     case sSUBRANGE :
-      if (g_abstractTypePtr == NULL) g_abstractTypePtr = typePtr;
+      if (g_abstractTypePtr == NULL)
+        {
+          g_abstractTypePtr = typePtr;
+        }
+
       varPtr->sKind = typePtr->sParm.t.tSubType;
       factorType    = pas_SimpleFactor(varInfo, factorFlags);
       break;
@@ -1046,6 +1072,15 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
               varPtr->sKind           = typePtr->sParm.t.tType;
               varPtr->sParm.v.vParent = typePtr;
 
+              /* If there is no abstract type pointer, then set it now to
+               * force any subsequent RECORD references to match.
+               */
+
+              if (g_abstractTypePtr == NULL)
+                {
+                  g_abstractTypePtr   = typePtr;
+                }
+
               /* Adjust the variable size and offset.  Add the RECORD offset
                * to the RECORD data stack offset to get the data stack
                * offset to the record object; Change the size to match the
@@ -1088,7 +1123,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
         }
 
       /* A RECORD name may be a valid factor -- as the input parameter of a
-       * function or in an assignmenti.
+       * function or in an assignment.
        */
 
       else if (g_abstractTypePtr == typePtr)

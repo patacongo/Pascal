@@ -185,6 +185,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"WITH",           tWITH,           txNONE},       /* (1) */
   {"WRITE",          tSTDPROC,        txWRITE},      /* (3) */
   {"WRITELN",        tSTDPROC,        txWRITELN},    /* (3) */
+  {"XOR",            tXOR,            txNONE},       /* (1) */
   {NULL,             0,               txNONE}        /* List terminator */
 };
 

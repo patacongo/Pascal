@@ -53,6 +53,7 @@
 #include "pas_main.h"
 #include "pas_statement.h"
 #include "pas_procedure.h"
+#include "pas_function.h"   /* For pas_StandardFunctionOfConstant() */
 #include "pas_expression.h"
 #include "pas_codegen.h"
 #include "pas_token.h"
@@ -93,7 +94,7 @@
 #define ASSIGN_OUTER_INDEXED (1 << 4)
 #define ASSIGN_VAR_PARM      (1 << 5)
 
-#define isConstant(x) \
+#define IS_CONSTANT(x) \
         (  ((x) == tINT_CONST) \
         || ((x) == tBOOLEAN_CONST) \
         || ((x) == tCHAR_CONST) \
@@ -1555,161 +1556,184 @@ static void pas_WhileStatement(void)
 
 static void pas_CaseStatement(void)
 {
-   uint16_t this_case;
-   uint16_t next_case  = ++g_label;
-   uint16_t end_case   = ++g_label;
+  uint16_t this_case;
+  uint16_t next_case  = ++g_label;
+  uint16_t end_case   = ++g_label;
 
-   TRACE(g_lstFile,"[pas_CaseStatement]");
+  TRACE(g_lstFile,"[pas_CaseStatement]");
 
-   /* Process "CASE <expression> OF" */
+  /* Process "CASE <expression> OF" */
 
-   /* Skip over the CASE token */
+  /* Skip over the CASE token */
 
-   getToken();
+  getToken();
 
-   /* Evaluate the CASE <expression> */
+  /* Evaluate the CASE <expression> */
 
-   pas_Expression(exprAnyOrdinal, NULL);
+  pas_Expression(exprAnyOrdinal, NULL);
 
-   /* Verify that CASE <expression> is followed with the OF token */
+  /* Verify that CASE <expression> is followed with the OF token */
 
-   if (g_token !=  tOF) error (eOF);
-   else getToken();
+  if (g_token !=  tOF) error (eOF);
+  else getToken();
 
-   /* Loop to process each case until END encountered */
+  /* Loop to process each case until END encountered */
 
-   for (;;)
-     {
-       this_case = next_case;
-       next_case = ++g_label;
+  for (; ; )
+    {
+      this_case = next_case;
+      next_case = ++g_label;
 
-       /* Process NON-STANDARD ELSE <statement> END */
+      /* Process optional ELSE <statement> END */
 
-       if (g_token == tELSE)
-         {
-           getToken();
+      if (g_token == tELSE)
+        {
+          getToken();
 
-           /* Set ELSE statement label */
+          /* Set ELSE statement label */
 
-           pas_GenerateDataOperation(opLABEL, this_case);
+          pas_GenerateDataOperation(opLABEL, this_case);
 
-           /* Evaluate ELSE statement */
+          /* Evaluate ELSE statement */
 
-           pas_Statement();
+          pas_Statement();
 
-           /* Verify that END follows the ELSE <statement> */
+          /* Allow ELSE statement to be followed with NULL statement. */
 
-           if (g_token != tEND) error(eEND);
-           else getToken();
+          if (g_token == ';') getToken();
 
-           /* Terminate FOR loop */
+          /* Verify that END follows the ELSE <statement> */
 
-           break;
-         }
+          if (g_token != tEND) error(eEND);
+          else getToken();
 
-       /* Process "<constant>[,<constant>[,...]] : <statement>"
-        * NOTE:  We accept any kind of constant for the case selector; there
-        * really should be some check to assure that the constant is of the
-        * same type as the expression!
-        */
+          /* Terminate FOR loop */
 
-       else
-         {
-           /* Loop for each <constant> in the case list */
+          break;
+        }
 
-           for(;;)
-             {
-               /* Verify that we have a constant */
+      /* Process "<constant>[,<constant>[,...]] : <statement>"
+       * NOTE:  We accept any kind of constant for the case selector; there
+       * really should be some check to assure that the constant is of the
+       * same type as the expression!
+       */
 
-               if (!isConstant(g_token))
-                 {
-                   error(eINTCONST);
-                   break;
-                 }
+      else
+        {
+          /* Loop for each <constant> in the case list */
 
-               /* Generate a comparison of the CASE expression and the constant.
-                *
-                * First duplicate the value to be compared (from the CASE <expression>)
-                * and push the comparison value (from the <constant>:)
-                */
+          for (; ; )
+            {
+              /* Generate a comparison of the CASE expression and the constant.
+               *
+               * First duplicate the value to be compared (from the CASE <expression>)
+               * then push the comparison value (from the <constant>:)
+               */
 
-               pas_GenerateSimple(opDUP);
-               pas_GenerateDataOperation(opPUSH, g_tknInt);
+              pas_GenerateSimple(opDUP);
 
-               /* The kind of comparison we generate depends on if we have to
-                * jump over other case selector comparsions to the statement
-                * or if we can just fall through to the statement
-                */
+              /* Verify that we have a constant.  This could be  literal constant,
+               * defined constant, or perhaps a standard function operating on
+               * a constant.
+               */
 
-               /* Skip over the constant */
+              if (IS_CONSTANT(g_token))
+                {
+                  /* It is a literal constant value */
 
-               getToken();
+                  pas_GenerateDataOperation(opPUSH, g_tknInt);
 
-               /* If there are multiple constants, they will be separated with
-                * commas.
-                */
+                  /* Skip over the constant */
 
-               if (g_token == ',')
-                 {
-                   /* Generate jump to <statement> */
+                  getToken();
+                }
+              else if (g_token == tSTDFUNC)
+                {
+                  /* Check if it is a constant standard function.  If not,
+                   * pas_StandardFunctionOfConstant will handle the error.
+                   * REVISIT:  Won't that cause us to hang here in an
+                   * infinite loop?
+                   */
 
-                   pas_GenerateDataOperation(opJEQUZ, this_case);
+                  pas_StandardFunctionOfConstant();
+                  pas_GenerateDataOperation(opPUSH, g_constantInt);
+                }
+              else
+                {
+                  error(eINTCONST);
+                  break;
+                }
 
-                   /* Skip over comma */
+              /* The kind of comparison we generate depends on if we have to
+               * jump over other case selector comparsions to the statement
+               * or if we can just fall through to the statement
+               */
 
-                   getToken();
-                 }
-               else
-                 {
-                   /* else jump to the next case */
+              /* If there are multiple constants, they will be separated with
+               * commas.
+               */
 
-                   pas_GenerateDataOperation(opJNEQZ, next_case);
-                   break;
-                 }
-             }
+              if (g_token == ',')
+                {
+                  /* Generate jump to <statement> */
 
-           /* Then process ... : <statement> */
+                  pas_GenerateDataOperation(opJEQUZ, this_case);
 
-           /* Verify colon presence */
+                  /* Skip over comma */
 
-           if (g_token != ':') error(eCOLON);
-           else getToken();
+                  getToken();
+                }
+              else
+                {
+                  /* else jump to the next case */
 
-           /* Set CASE label */
+                  pas_GenerateDataOperation(opJNEQZ, next_case);
+                  break;
+                }
+            }
 
-           pas_GenerateDataOperation(opLABEL, this_case);
+          /* Then process ... : <statement> */
 
-           /* Evaluate <statement> */
+          /* Verify colon presence */
 
-           pas_Statement();
+          if (g_token != ':') error(eCOLON);
+          else getToken();
 
-           /* Jump to exit CASE */
+          /* Set CASE label */
 
-           pas_GenerateDataOperation(opJMP, end_case);
-         }
+          pas_GenerateDataOperation(opLABEL, this_case);
 
-       /* Check if there are more statements.  If not, verify END present */
+          /* Evaluate <statement> */
 
-       if (g_token == ';')
-         {
-           getToken();
-         }
-       else if (g_token == tEND)
-         {
-           getToken();
-           break;
-         }
-       else
-         {
-           error (eEND);
-           break;
-         }
-     }
+          pas_Statement();
 
-   /* Generate ENDCASE label and Pop CASE <expression> from stack */
+          /* Jump to exit CASE */
 
-   pas_GenerateDataOperation(opLABEL, end_case);
-   pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+          pas_GenerateDataOperation(opJMP, end_case);
+        }
+
+      /* Check if there are more statements.  If not, verify END present */
+
+      if (g_token == ';')
+        {
+          getToken();
+        }
+      else if (g_token == tEND)
+        {
+          getToken();
+          break;
+        }
+      else
+        {
+          error (eEND);
+          break;
+        }
+    }
+
+  /* Generate ENDCASE label and Pop CASE <expression> from stack */
+
+  pas_GenerateDataOperation(opLABEL, end_case);
+  pas_GenerateDataOperation(opINDS, -sINT_SIZE);
 }
 
 /***********************************************************************/

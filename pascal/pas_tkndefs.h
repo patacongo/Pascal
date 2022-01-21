@@ -60,7 +60,7 @@
  */
 
 #define tNE              ('#')  /* Or '<>' */
-#define SQUOTE           0x27
+#define SQUOTE           0x27   /* Not a token returned by get_token */
 #define tMUL             ('*')
 #define tFDIV            ('/')
 
@@ -146,23 +146,24 @@
 #define tNOT             0x97
 #define tOF              0x98
 #define tOR              0x99
-#define tPACKED          0x9a
-#define tPROCEDURE       0x9b
-#define tPROGRAM         0x9c
-#define tRECORD          0x9d
-#define tREPEAT          0x9e
-#define tSET             0x9f
-#define tSHL             0xa0
-#define tSHR             0xa1
-#define tTHEN            0xa2
-#define tTO              0xa3
-#define tTYPE            0xa4
-#define tUNIT            0xa5 /* Extended pascal */
-#define tUNTIL           0xa6
-#define tUSES            0xa7 /* Extended pascal */
-#define tVAR             0xa8
-#define tWHILE           0xa9
-#define tWITH            0xaa
+#define tXOR             0x9a
+#define tPACKED          0x9b
+#define tPROCEDURE       0x9c
+#define tPROGRAM         0x9d
+#define tRECORD          0x9e
+#define tREPEAT          0x9f
+#define tSET             0xa0
+#define tSHL             0xa1
+#define tSHR             0xa2
+#define tTHEN            0xa3
+#define tTO              0xa4
+#define tTYPE            0xa5
+#define tUNIT            0xa6 /* Extended pascal */
+#define tUNTIL           0xa7
+#define tUSES            0xa8 /* Extended pascal */
+#define tVAR             0xa9
+#define tWHILE           0xb0
+#define tWITH            0xb1
 
 /* The following codes indicate that the token is a built-in procedure
  * or function recognized by the compiler.  An additional code will be
@@ -170,9 +171,9 @@
  * procedure or function applies.
  */
 
-#define tSTDFUNC         0xb0
-#define tSTDPROC         0xb1
-#define tBUILTIN         0xb2
+#define tSTDFUNC         0xc0
+#define tSTDPROC         0xc1
+#define tBUILTIN         0xc2
 
 /***********************************************************************/
 

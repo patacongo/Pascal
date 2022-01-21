@@ -58,7 +58,7 @@ enum pcode_e
 
   /* Arithmetic & logical (Two stack arguments) */
 
-  opADD, opSUB, opMUL, opDIV, opMOD, opSLL, opSRL, opSRA, opOR, opAND,
+  opADD, opSUB, opMUL, opDIV, opMOD, opSLL, opSRL, opSRA, opOR, opXOR, opAND,
 
   /* Comparisons (One stack argument) */
 

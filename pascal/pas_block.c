@@ -71,7 +71,7 @@
  *       'nil'
  */
 
-#define isConstant(x) \
+#define IS_CONSTANT(x) \
         (  ((x) == tINT_CONST) \
         || ((x) == tBOOLEAN_CONST) \
         || ((x) == tCHAR_CONST) \
@@ -2093,7 +2093,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
            * Note that subrange case-specifiers are not yet supported.
            */
 
-          if (!isConstant(g_token))
+          if (!IS_CONSTANT(g_token))
             {
               error(eINVCONST);
               break;
@@ -2109,7 +2109,7 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
               getToken();
               if (g_token == ',') getToken();
             }
-          while (isConstant(g_token));
+          while (IS_CONSTANT(g_token));
 
           /* Make sure a colon separates case-constant-list from the
            * field-list

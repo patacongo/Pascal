@@ -84,6 +84,7 @@ static const uint16_t opmap[NUM_OPCODES] =
   oSRL,    /* opSRL */
   oSRA,    /* opSRA */
   oOR,     /* opOR */
+  oNOP,    /* opXOR -- not yet implemented */
   oAND,    /* opAND */
   oEQUZ,   /* opEQUZ */
   oNEQZ,   /* opNEQZ */
