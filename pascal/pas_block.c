@@ -3036,17 +3036,17 @@ void pas_Block(int32_t preAllocatedDStack)
   g_levelInitializerOffset = g_nInitializer;
   pas_CompoundStatement();
 
+  /* Generate finalizers while still inside the stack frame.  */
+
+  g_levelInitializerOffset = saveInitializerOffset;
+  pas_Finalization();
+
   /* Release the allocated data stack */
 
   if (g_dStack)
     {
       pas_GenerateDataOperation(opINDS, -(int32_t)g_dStack);
     }
-
-  /* Generate finalizers */
-
-  g_levelInitializerOffset = saveInitializerOffset;
-  pas_Finalization();
 
   /* Make sure all declared labels were defined in the block */
 
