@@ -87,9 +87,9 @@ int main(int argc, char *argv[], char *envp[])
 
   if (argc < 2)
     {
-      printf("Filename Required\n");
+      fprintf(stderr, "ERROR: Filename Required\n");
       exit (1);
-    } /* end if */
+    }
 
   /* Read the POFF file into memory */
 
@@ -135,25 +135,26 @@ static void readPoffFile(const char *filename)
   (void)extension(filename, "o1", objname, 1);
   if (!(objFile = fopen(objname, "rb")))
     {
-      printf("Error Opening %s\n", objname);
+      fprintf(stderr, "ERROR: Error Opening %s\n", objname);
       exit(1);
-    } /* end if */
+    }
 
   /* Get a handle to a POFF input object */
 
   poffHandle = poffCreateHandle();
   if (!poffHandle)
     {
-      printf("Could not get POFF handle\n");
+      fprintf(stderr, "ERROR: Could not get POFF handle\n");
       exit(1);
-    } /* end if */
+    }
 
   /* Read the POFF file into memory */
 
   errcode = poffReadFile(poffHandle, objFile);
   if (errcode != 0)
     {
-      printf("Could not read POFF file, errcode=0x%02x\n", errcode);
+      fprintf(stderr, "ERROR: Could not read POFF file, errcode=0x%02x\n",
+              errcode);
       exit(1);
     }
 
@@ -177,9 +178,9 @@ static void pass1(void)
   poffProgHandle = poffCreateProgHandle();
   if (!poffProgHandle)
     {
-      printf("Could not get POFF handle\n");
+      fprintf(stderr, "ERROR: Could not get POFF handle\n");
       exit(1);
-    } /* end if */
+    }
 
   /* Clean up garbage left from the wasteful string stack logic */
 
@@ -209,9 +210,9 @@ static void pass2(void)
   poffProgHandle = poffCreateProgHandle();
   if (!poffProgHandle)
     {
-      printf("Could not get POFF handle\n");
+      fprintf(stderr, "ERROR: Could not get POFF handle\n");
       exit(1);
-    } /* end if */
+    }
 
   /* Perform Local Optimizatin Initialization */
 
@@ -240,9 +241,9 @@ static void pass3 (void)
   poffProgHandle = poffCreateProgHandle();
   if (!poffProgHandle)
     {
-      printf("Could not get POFF handle\n");
+      fprintf(stderr, "ERROR: Could not get POFF handle\n");
       exit(1);
-    } /* end if */
+    }
 
   /* Finalize program section, create relocation and line number
    * sections.
@@ -269,9 +270,9 @@ static void writePoffFile(const char *filename)
   (void)extension(filename, "o", optname, 1);
   if (!(optFile = fopen(optname, "wb")))
     {
-      printf("Error Opening %s\n", optname);
+      fprintf(stderr, "ERROR: Error Opening %s\n", optname);
       exit(1);
-    } /* end if */
+    }
 
   /* Then write the new POFF file */
 

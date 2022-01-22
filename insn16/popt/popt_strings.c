@@ -47,8 +47,10 @@
  **********************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include "pas_debug.h"
@@ -59,41 +61,66 @@
 #include "pas_library.h"
 
 #include "popt.h"
+#include "pas_error.h"
 #include "popt_strings.h"
 
 /**********************************************************************
- * Definitions
+ * Pre-processor Definitions
  **********************************************************************/
 
 #define PBUFFER_SIZE 1024
 #define NPBUFFERS       8
 
+#ifdef CONFIG_POPT_DEBUG
+#  define popt_DebugMessage(fmt, ...)
+#    do { printf(fmt, ##__VA_ARGS__); while (0)
+#else
+#  define popt_DebugMessage(fmt, ...)
+#endif
+
 /**********************************************************************
  * Private Data
  **********************************************************************/
 
-static uint8_t *pbuffer[NPBUFFERS];
-static int      nbytes_in_pbuffer[NPBUFFERS];
-static int      current_level = -1;
-static int      inch;
+static uint8_t *g_pBuffer[NPBUFFERS];
+static int      g_nBytesInBuffer[NPBUFFERS];
+static int      g_currentLevel = -1;
+static int      g_inCh;
+
+#ifdef CONFIG_POPT_DEBUG
+static int      g_offset; // REMOVE ME
+#endif
 
 /**********************************************************************
  * Private Function Prototypes
  **********************************************************************/
 
-static inline void putbuf(int c, poffProgHandle_t poffProgHandle);
-static inline void flushc(int c, poffProgHandle_t poffProgHandle);
-static inline void flushbuf(poffProgHandle_t poffProgHandle);
-static void dopush(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle);
-static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle);
+static int  popt_GetByte(poffHandle_t poffHandle);
+static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle);
+static void popt_PutOpCode(poffHandle_t poffHandle,
+                           poffProgHandle_t poffProgHandle);
+static void popt_FlushC(int c, poffProgHandle_t poffProgHandle);
+static void popt_FlushBuffer(poffProgHandle_t poffProgHandle);
+static void popt_DoPush(poffHandle_t poffHandle,
+                        poffProgHandle_t poffProgHandle);
+static void popt_DoPop(poffHandle_t poffHandle,
+                       poffProgHandle_t poffProgHandle);
 
 /**********************************************************************
  * Private Inline Functions
  **********************************************************************/
 
-static inline void putbuf(int c, poffProgHandle_t poffProgHandle)
+static int popt_GetByte(poffHandle_t poffHandle)
 {
-  int dlvl = current_level;
+#ifdef CONFIG_POPT_DEBUG
+  g_offset++;
+#endif
+  return poffGetProgByte(poffHandle);
+}
+
+static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle)
+{
+  int dlvl = g_currentLevel;
 
   if (dlvl < 0)
     {
@@ -107,26 +134,72 @@ static inline void putbuf(int c, poffProgHandle_t poffProgHandle)
        * nesting level.
        */
 
-      int idx                 = nbytes_in_pbuffer[dlvl];
-      uint8_t *dest             = pbuffer[dlvl] + idx;
-      *dest                   = c;
-      nbytes_in_pbuffer[dlvl] = idx + 1;
+      int idx                   = g_nBytesInBuffer[dlvl];
+      uint8_t *dest;
+
+      if (idx >= 1024)
+        {
+          fatal(eBUFTOOSMALL);
+        }
+      else
+        {
+          dest                   = g_pBuffer[dlvl] + idx;
+          *dest                  = c;
+          g_nBytesInBuffer[dlvl] = idx + 1;
+        }
     }
 }
 
-static inline void flushc(int c, poffProgHandle_t poffProgHandle)
+static void popt_PutOpCode(poffHandle_t poffHandle,
+                           poffProgHandle_t poffProgHandle)
 {
-  if (current_level > 0)
+  int opCode;
+
+  /* Put the opCode in the buffer */
+
+  popt_PutBuffer(g_inCh, poffProgHandle);
+
+  /* Get the next byte from the input stream */
+
+  opCode = g_inCh;
+  g_inCh = popt_GetByte(poffHandle);
+
+  /* Check for an 8-bit argument */
+
+  if ((opCode & o8) != 0)
+    {
+      /* Buffer the 8-bit argument */
+
+      popt_PutBuffer(g_inCh, poffProgHandle);
+      g_inCh = popt_GetByte(poffHandle);
+    }
+
+  /* Check for a 16-bit argument */
+
+  if ((opCode & o16) != 0)
+    {
+      /* Buffer the 16-bit argument */
+
+      popt_PutBuffer(g_inCh, poffProgHandle);
+      g_inCh = popt_GetByte(poffHandle);
+      popt_PutBuffer(g_inCh, poffProgHandle);
+      g_inCh = popt_GetByte(poffHandle);
+    }
+}
+
+static void popt_FlushC(int c, poffProgHandle_t poffProgHandle)
+{
+  if (g_currentLevel > 0)
     {
       /* Nested PUSHS encountered. Write byte into buffer associated
        * with the previous nesting level.
        */
 
-      int dlvl                = current_level - 1;
-      int idx                 = nbytes_in_pbuffer[dlvl];
-      uint8_t *dest             = pbuffer[dlvl] + idx;
-      *dest                   = c;
-      nbytes_in_pbuffer[dlvl] = idx + 1;
+      int dlvl               = g_currentLevel - 1;
+      int idx                = g_nBytesInBuffer[dlvl];
+      uint8_t *dest          = g_pBuffer[dlvl] + idx;
+      *dest                  = c;
+      g_nBytesInBuffer[dlvl] = idx + 1;
     }
   else
     {
@@ -138,25 +211,25 @@ static inline void flushc(int c, poffProgHandle_t poffProgHandle)
     }
 }
 
-static inline void flushbuf(poffProgHandle_t poffProgHandle)
+static void popt_FlushBuffer(poffProgHandle_t poffProgHandle)
 {
   uint16_t errCode;
-  int slvl = current_level;
+  int slvl = g_currentLevel;
 
-  if (nbytes_in_pbuffer[slvl] > 0)
+  if (g_nBytesInBuffer[slvl] > 0)
     {
-      if (current_level > 0)
+      if (g_currentLevel > 0)
         {
           /* Nested PUSHS encountered. Flush buffer into buffer associated
            * with the previous nesting level.
            */
 
-          int dlvl    = slvl - 1;
-          uint8_t *src  = pbuffer[slvl];
-          uint8_t *dest = pbuffer[dlvl] + nbytes_in_pbuffer[dlvl];
+          int dlvl      = slvl - 1;
+          uint8_t *src  = g_pBuffer[slvl];
+          uint8_t *dest = g_pBuffer[dlvl] + g_nBytesInBuffer[dlvl];
 
-          memcpy(dest, src, nbytes_in_pbuffer[slvl]);
-          nbytes_in_pbuffer[dlvl] += nbytes_in_pbuffer[slvl];
+          memcpy(dest, src, g_nBytesInBuffer[slvl]);
+          g_nBytesInBuffer[dlvl] += g_nBytesInBuffer[slvl];
         }
       else
         {
@@ -164,187 +237,218 @@ static inline void flushbuf(poffProgHandle_t poffProgHandle)
            * buffer
            */
 
-          errCode = poffWriteTmpProgBytes(pbuffer[0], nbytes_in_pbuffer[0],
+          errCode = poffWriteTmpProgBytes(g_pBuffer[0], g_nBytesInBuffer[0],
                                           poffProgHandle);
 
           if (errCode != eNOERROR)
             {
-              printf("Error writing to file: %d\n", errCode);
+              fprintf(stderr, "ERROR: Error writing to file: %d\n", errCode);
               exit(1);
             }
         }
     }
-  nbytes_in_pbuffer[slvl] = 0;
+
+  g_nBytesInBuffer[slvl] = 0;
 }
 
 /**********************************************************************
  * Private Functions
  **********************************************************************/
 
-static void dopush(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
+static void popt_DoPush(poffHandle_t poffHandle,
+                        poffProgHandle_t poffProgHandle)
 {
-  int opcode;
-
-  while (inch != EOF)
+  while (g_inCh != EOF)
     {
-      /* Search for a PUSHS opcode */
+      /* Search for a PUSHS opCode */
 
-      if (inch != oPUSHS)
+      if (g_inCh != oPUSHS)
         {
           /* Its not PUSHS, just echo to the output file/buffer */
 
-          putbuf(inch, poffProgHandle);
-
-          /* Get the next byte from the input stream */
-
-          opcode = inch;
-          inch = poffGetProgByte(poffHandle);
-
-          /* Check for an 8-bit argument */
-
-          if ((opcode & o8) != 0)
-            {
-              /* Echo the 8-bit argument */
-
-              putbuf(inch, poffProgHandle);
-              inch = poffGetProgByte(poffHandle);
-            }
-
-          /* Check for a 16-bit argument */
-
-          if ((opcode & o16) != 0)
-            {
-              /* Echo the 16-bit argument */
-
-              putbuf(inch, poffProgHandle);
-              inch = poffGetProgByte(poffHandle);
-              putbuf(inch, poffProgHandle);
-              inch = poffGetProgByte(poffHandle);
-            }
+          popt_PutOpCode(poffHandle, poffProgHandle);
         }
       else
         {
-          /* We have found PUSHS.  No search for the next occurrence
-           * of either and instruction that increments the string
-           * stack or for the matching POPS
+          /* We have found PUSHS.  Now search for the next occurrence of
+           * either an instruction that increments the string stack or for
+           * the matching POPS
            */
 
-          current_level++;
-          dopop(poffHandle, poffProgHandle);
-          current_level--;
+          g_currentLevel++;
+          if (g_currentLevel >= NPBUFFERS)
+            {
+              fatal(eBUFTOOSMALL);
+            }
+
+          /* Skip over the PUSHS and look for the POPS. */
+
+          g_inCh = popt_GetByte(poffHandle);
+          popt_DoPop(poffHandle, poffProgHandle);
+          g_currentLevel--;
         }
     }
 }
 
-static void dopop(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
+static void popt_DoPop(poffHandle_t poffHandle,
+                       poffProgHandle_t poffProgHandle)
 {
-  int opcode;
-  int arg16;
-  int arg16a;
-  int arg16b;
+#ifdef CONFIG_POPT_DEBUG
+  int pushOffset = g_offset - 2;
+#endif
+  bool keepPop = false;
 
-  /* We have found PUSHS.  No search for the next occurrence
-   * of either and instruction that increments the string
-   * stack or for the matching POPS
+  /* We have found PUSHS.  Now search for the next occurrence of either an
+   * instruction that increments the string stack or for the matching POPS
    */
 
-  /* Skip over the PUSHS for now */
-
-  inch = poffGetProgByte(poffHandle);
-
-  while (inch != EOF)
+  popt_DebugMessage("Consider PUSH at %04x, level %d\n",
+                     pushOffset, g_currentLevel);
+  while (g_inCh != EOF)
     {
-      /* Did we encounter another PUSHS? */
-
-      if (inch == oPUSHS)
+      switch (g_inCh)
         {
-          /* Yes... recurse to handle it */
+          /* Did we encounter another PUSHS? */
 
-          current_level++;
-          dopop(poffHandle, poffProgHandle);
-          current_level--;
-        }
-
-      else if (inch == oPOPS)
-        {
-          /* Flush the buffered data without the PUSHS */
-
-          flushbuf(poffProgHandle);
-
-          /* And discard the matching POPS */
-
-          inch = poffGetProgByte(poffHandle);
-          break;
-        }
-      else if (inch == oLIB)
-        {
-          /* Get the 16-bit argument */
-
-          putbuf(inch, poffProgHandle);
-          arg16a = poffGetProgByte(poffHandle);
-          putbuf(arg16a, poffProgHandle);
-          arg16b = poffGetProgByte(poffHandle);
-          putbuf(arg16b, poffProgHandle);
-          arg16  = (arg16a << 8) | arg16b;
-          inch   = poffGetProgByte(poffHandle);
-
-          /* Is it LIB STRINIT? STRDUP? or other string library functions
-           * that we should not optimize?  These functions all allocate new
-           * memory from the string stack.
-           */
-
-          if (arg16 == lbSTRINIT  ||
-              arg16 == lbSSTRINIT ||
-              arg16 == lbSTRTMP   ||
-              arg16 == lbSTRDUP   ||
-              arg16 == lbSSTRDUP  ||
-              arg16 == lbMKSTKC   ||
-              arg16 == lbBSTR2STR)
+          case oPUSHS :
             {
-              /* Flush the buffered data with the PUSHS */
+              /* Yes... recurse to handle it */
 
-              flushc(oPUSHS, poffProgHandle);
-              flushbuf(poffProgHandle);
+              g_currentLevel++;
+              if (g_currentLevel >= NPBUFFERS)
+                {
+                  fatal(eBUFTOOSMALL);
+                }
 
-              /* And break out of the loop to search for
-               * the next PUSHS
+              /* Skip over the PUSH and look for the matching POPS */
+
+              g_inCh = popt_GetByte(poffHandle);
+              popt_DoPop(poffHandle, poffProgHandle);
+              g_currentLevel--;
+            }
+            break;
+
+          case oPOPS :
+            {
+              if (keepPop)
+                {
+                  popt_DebugMessage("  Keep PUSH at %04x and POPS at %04x, "
+                                    "level %d\n",
+                                    pushOffset, g_offset - 2, g_currentLevel);
+
+                  /* Copy the POPS to the buffer */
+
+                  popt_PutOpCode(poffHandle, poffProgHandle);
+
+                  /* Flush the buffered data with the PUSHS */
+
+                  popt_FlushC(oPUSHS, poffProgHandle);
+                  popt_FlushBuffer(poffProgHandle);
+                }
+              else
+                {
+                  /* Flush the buffered data without the PUSHS */
+
+                  popt_DebugMessage("  Drop PUSH at %04x and POPS at %04x, "
+                                    "level %d\n",
+                                    pushOffset, g_offset - 2, g_currentLevel);
+                  popt_FlushBuffer(poffProgHandle);
+
+                  /* And discard the matching POPS */
+
+                  g_inCh = popt_GetByte(poffHandle);
+                }
+            }
+            return;
+
+          case oLIB :
+            {
+              int arg16;
+              int arg16a;
+              int arg16b;
+
+              /* Get the 16-bit argument */
+
+              popt_PutBuffer(g_inCh, poffProgHandle);
+              arg16a = popt_GetByte(poffHandle);
+              popt_PutBuffer(arg16a, poffProgHandle);
+              arg16b = popt_GetByte(poffHandle);
+              popt_PutBuffer(arg16b, poffProgHandle);
+              arg16  = (arg16a << 8) | arg16b;
+              g_inCh = popt_GetByte(poffHandle);
+
+              /* Is it LIB STRINIT? STRDUP? or other string library functions
+               * that we should not optimize?  These functions all allocate
+               * new memory from the string stack.
                */
 
-              break;
+              if (arg16 == lbSTRINIT  ||
+                  arg16 == lbSSTRINIT ||
+                  arg16 == lbSTRTMP   ||
+                  arg16 == lbSTRDUP   ||
+                  arg16 == lbSSTRDUP  ||
+                  arg16 == lbMKSTKC   ||
+                  arg16 == lbBSTR2STR)
+                {
+                  popt_DebugMessage("  Keep PUSH at %04x, level %d\n",
+                                    pushOffset, g_currentLevel);
+                  /* Put the instruction in the buffer and remind ourselves
+                   * to keep both the PUSHS and the POPS when we find the
+                   * matching POPS.
+                   */
+
+                  popt_PutOpCode(poffHandle, poffProgHandle);
+                  keepPop = true;
+                }
             }
-        }
-      else
-        {
-          /* Something else.  Put it in the buffer */
+            break;
 
-          putbuf(inch, poffProgHandle);
+#if 1         /* REVISIT: Increases code size dramatically */
+              /* If we encounter a label or a jump between the PUSHS and the
+               * POPS, then keep both.  Labels are known to happen in loops
+               * where the top-of-loop label is after the PUSHS but the
+               * matching POPS may be much later in the file.
+               */
 
-          /* Get the next byte from the input stream */
-
-          opcode = inch;
-          inch = poffGetProgByte(poffHandle);
-
-          /* Check for an 8-bit argument */
-
-          if ((opcode & o8) != 0)
+          case oJMP   : /* Unconditional */
+          case oJEQUZ : /* Unary comparisons with zero */
+          case oJNEQZ :
+          case oJLTZ  :
+          case oJGTEZ :
+          case oJGTZ  :
+          case oJLTEZ :
+          case oJEQU  : /* Binary comparisons */
+          case oJNEQ  :
+          case oJLT   :
+          case oJGTE  :
+          case oJGT   :
+          case oJLTE  :
+          case oLABEL : /* Label */
             {
-              /* Buffer the 8-bit argument */
+              popt_DebugMessage("  Keep PUSH at %04x, level %d\n",
+                                pushOffset, g_currentLevel);
 
-              putbuf(inch, poffProgHandle);
-              inch = poffGetProgByte(poffHandle);
+              /* Put the instruction in the buffer and remind ourselves
+               * to keep both the PUSHS and the POPS when we find the
+               * matching POPS.
+               */
+
+              popt_PutOpCode(poffHandle, poffProgHandle);
+              keepPop = true;
             }
+            break;
+#endif
 
-          /* Check for a 16-bit argument */
+          case EOF:
+            break;
 
-          if ((opcode & o16) != 0)
+          default:
             {
-              /* Buffer the 16-bit argument */
+              /* Something else.  Put it in the buffer */
 
-              putbuf(inch, poffProgHandle);
-              inch = poffGetProgByte(poffHandle);
-              putbuf(inch, poffProgHandle);
-              inch = poffGetProgByte(poffHandle);
+              popt_PutOpCode(poffHandle, poffProgHandle);
             }
+            break;
         }
     }
 }
@@ -362,33 +466,33 @@ void popt_StringStackOptimize(poffHandle_t poffHandle,
 
   for (i = 0; i < NPBUFFERS; i++)
     {
-      pbuffer[i] = (uint8_t*)malloc(PBUFFER_SIZE);
-      if (pbuffer[i] == NULL)
+      g_pBuffer[i] = (uint8_t*)malloc(PBUFFER_SIZE);
+      if (g_pBuffer[i] == NULL)
         {
-          printf("Failed to allocate pcode buffer\n");
-          exit(1);
+          fatal(eNOMEMORY);
         }
-      nbytes_in_pbuffer[i] = 0;
+
+      g_nBytesInBuffer[i] = 0;
     }
 
   /* Prime the search logic */
 
-  inch = poffGetProgByte(poffHandle);
-  current_level = -1;
+  g_inCh = popt_GetByte(poffHandle);
+  g_currentLevel = -1;
 
   /* And parse the input file to the output file, removing unnecessary string
    * stack operations.
    */
 
-  dopush(poffHandle, poffProgHandle);
+  popt_DoPush(poffHandle, poffProgHandle);
 
   /* Release the buffers */
 
   for (i = 0; i < NPBUFFERS; i++)
     {
-      free(pbuffer[i]);
-      pbuffer[i] = NULL;
-      nbytes_in_pbuffer[i] = 0;
+      free(g_pBuffer[i]);
+      g_pBuffer[i]        = NULL;
+      g_nBytesInBuffer[i] = 0;
     }
 }
 

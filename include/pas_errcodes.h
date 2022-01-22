@@ -293,45 +293,49 @@
 #define eUNITNAME        ((uint16_t) 0x60)
 #define eARGIGNORED      ((uint16_t) 0x61)
 
+/* ERRORS REPOORTED BY THE OPTIMIZER */
+
+#define eBUFTOOSMALL     ((uint16_t) 0x70)
+
 /* LINK TIME ERRORS */
 
-#define eUNDEFINEDSYMBOL ((uint16_t) 0x70)
-#define eMULTIDEFSYMBOL  ((uint16_t) 0x71)
+#define eUNDEFINEDSYMBOL ((uint16_t) 0x80)
+#define eMULTIDEFSYMBOL  ((uint16_t) 0x81)
 
 /* ERRORS WHICH MAY OCCUR AT EITHER COMPILATION OR RUNTIME */
 
-#define eNOMEMORY        ((uint16_t) 0x80)
-#define ePOFFREADERROR   ((uint16_t) 0x81)
-#define ePOFFBADFORMAT   ((uint16_t) 0x82)
-#define eRCVDSIGNAL      ((uint16_t) 0x83)
+#define eNOMEMORY        ((uint16_t) 0x90)
+#define ePOFFREADERROR   ((uint16_t) 0x91)
+#define ePOFFBADFORMAT   ((uint16_t) 0x92)
+#define eRCVDSIGNAL      ((uint16_t) 0x93)
 
 /* RUN TIME ERRORS */
 
-#define eBADPC           ((uint16_t) 0x90)
-#define eILLEGALOPCODE   ((uint16_t) 0x91)
-#define eBADSP           ((uint16_t) 0x92)
-#define eSTRSTKOVERFLOW  ((uint16_t) 0x93)
-#define eNEWFAILED       ((uint16_t) 0x94)
-#define eEXIT            ((uint16_t) 0x95)
-#define eBADSYSIOFUNC    ((uint16_t) 0x96)
-#define eBADSYSLIBCALL   ((uint16_t) 0x97)
-#define eBADFPOPCODE     ((uint16_t) 0x98)
-#define eBADSETOPCODE    ((uint16_t) 0x99)
-#define eINTEGEROVERFLOW ((uint16_t) 0x9a)
-#define eVALUERANGE      ((uint16_t) 0x9b)
-#define eNESTINGLEVEL    ((uint16_t) 0x9c)
-#define eFAILEDLIBCALL   ((uint16_t) 0x9d)
+#define eBADPC           ((uint16_t) 0xa0)
+#define eILLEGALOPCODE   ((uint16_t) 0xa1)
+#define eBADSP           ((uint16_t) 0xa2)
+#define eSTRSTKOVERFLOW  ((uint16_t) 0xa3)
+#define eNEWFAILED       ((uint16_t) 0xa4)
+#define eEXIT            ((uint16_t) 0xa5)
+#define eBADSYSIOFUNC    ((uint16_t) 0xa6)
+#define eBADSYSLIBCALL   ((uint16_t) 0xa7)
+#define eBADFPOPCODE     ((uint16_t) 0xa8)
+#define eBADSETOPCODE    ((uint16_t) 0xa9)
+#define eINTEGEROVERFLOW ((uint16_t) 0xaa)
+#define eVALUERANGE      ((uint16_t) 0xab)
+#define eNESTINGLEVEL    ((uint16_t) 0xac)
+#define eFAILEDLIBCALL   ((uint16_t) 0xad)
 
-#define eBADFILE         ((uint16_t) 0xa0)
-#define eFILENOTINUSE    ((uint16_t) 0xa1)
-#define eTOOMANYFILES    ((uint16_t) 0xa2)
-#define eFILENOTOPEN     ((uint16_t) 0xa3)
-#define eFILEALREADYOPEN ((uint16_t) 0xa4)
-#define eBADOPENMODE     ((uint16_t) 0xa5)
-#define eOPENFAILED      ((uint16_t) 0xa6)
-#define eNOTOPENFORREAD  ((uint16_t) 0xa7)
-#define eREADFAILED      ((uint16_t) 0xa8)
-#define eNOTOPENFORWRITE ((uint16_t) 0xa9)
-#define eWRITEFAILED     ((uint16_t) 0xaa)
+#define eBADFILE         ((uint16_t) 0xb0)
+#define eFILENOTINUSE    ((uint16_t) 0xb1)
+#define eTOOMANYFILES    ((uint16_t) 0xb2)
+#define eFILENOTOPEN     ((uint16_t) 0xb3)
+#define eFILEALREADYOPEN ((uint16_t) 0xb4)
+#define eBADOPENMODE     ((uint16_t) 0xb5)
+#define eOPENFAILED      ((uint16_t) 0xb6)
+#define eNOTOPENFORREAD  ((uint16_t) 0xb7)
+#define eREADFAILED      ((uint16_t) 0xb8)
+#define eNOTOPENFORWRITE ((uint16_t) 0xb9)
+#define eWRITEFAILED     ((uint16_t) 0xba)
 
 #endif /* __PAS_ERRCODES_H */

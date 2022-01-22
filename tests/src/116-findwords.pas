@@ -40,12 +40,12 @@ var
 procedure myexit(exitcode : integer);
 var
    word_ptr, tempw : wordptr;
-    line_ptr, templ : listptr;
+   line_ptr, templ : listptr;
 begin
- { close input file }
- close(fin);
+   { close input file }
+   close(fin);
 
-    { free any allocated memory }
+   { free any allocated memory }
    writeln('Deallocating memory:');
    word_ptr := head;
    while word_ptr <> nil do
@@ -95,6 +95,7 @@ begin
           writeln('Error allocating word node for new word: ', addword);
           myexit(1)
        end;
+
        { add newnode to the list, update tail pointer }
        if thisisfirstword = TRUE then
        begin
@@ -103,10 +104,12 @@ begin
          thisisfirstword := FALSE;
          head^.prevword := nil
        end;
+
        newword^.nextword := nil;    { node is signified as last in list }
        newword^.prevword := tail;   { link back to previous node in list }
        tail^.nextword := newword;   { tail updated to last node in list }
        tail := newword;
+
        { allocate storage for the word including end of string NULL }
        tail^.word := addword;
 
