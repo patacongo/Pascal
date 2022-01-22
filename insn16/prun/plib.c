@@ -253,6 +253,7 @@ static int pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
 
   /* Check if there is space on the string stack for the new string buffer. */
 
+
   if (st->csp + st->stralloc >= st->spb)
     {
       errorCode = eSTRSTKOVERFLOW;
@@ -499,6 +500,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCPY :
+
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest string variable  */
@@ -525,6 +527,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCPYX :
+
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest string variable  */
@@ -620,6 +623,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSSTR2STR :
+
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest standard string variable  */
@@ -645,6 +649,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSSTR2STRX :
+
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest standard string variable  */
@@ -930,6 +935,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbVAL :
+
       /* Get the string information */
 
       size = TOS(st, 2);                           /* Number of bytes in string */
@@ -969,6 +975,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRINIT :
+
       /* Get input parameters */
 
       POP(st, addr1);  /* Address of dest string variable */
@@ -992,6 +999,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSSTRINIT :
+
       /* Get input parameters */
 
       POP(st, addr1);  /* Address of dest string variable */
@@ -1062,6 +1070,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRDUP :
+
       /* Get the parameters from the stack (leaving the string reference
        * in place.
        */
@@ -1169,6 +1178,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCAT :
+
       /* Get the parameters from the stack (leaving the dest string info in
        * place).
        */
@@ -1200,6 +1210,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSSTRCAT :
+
       /* Get the parameters from the stack (leaving the dest string info in
        * place).
        */
@@ -1231,6 +1242,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSSTRCATSTR :
+
       /* Get the parameters from the stack (leaving the dest string info in
        * place).
        */
@@ -1260,6 +1272,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCATSSTR :
+
       /* Get the parameters from the stack (leaving the dest string info in
        * place).
        */
@@ -1287,6 +1300,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCATC :
+
       /* Get the parameters from the stack (leaving the string reference
        * in place.
        */
@@ -1313,6 +1327,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        */
 
     case lbSSTRCATC :
+
       /* Get the parameters from the stack (leaving the string reference
        * in place.
        */

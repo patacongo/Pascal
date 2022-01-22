@@ -68,7 +68,15 @@
  * Pre-processor Definitions
  **********************************************************************/
 
-#define PBUFFER_SIZE 1024
+/* PBUFFER_SIZE:  The size in bytes of one allocated buffer.  This
+ * determines the largest span of instructions between a PUSHS and abort
+ * POPS instruction.
+ *
+ * NPBUFFERS:  The number of buffers to allocate.  This determines the
+ * number of nested PUSHS/POPS pairs that can be handled.
+ */
+
+#define PBUFFER_SIZE 4096
 #define NPBUFFERS       8
 
 #ifdef CONFIG_POPT_DEBUG
@@ -135,15 +143,15 @@ static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle)
        */
 
       int idx                   = g_nBytesInBuffer[dlvl];
-      uint8_t *dest;
 
-      if (idx >= 1024)
+      if (idx >= PBUFFER_SIZE)
         {
           fatal(eBUFTOOSMALL);
         }
       else
         {
-          dest                   = g_pBuffer[dlvl] + idx;
+          uint8_t *dest          = g_pBuffer[dlvl] + idx;
+
           *dest                  = c;
           g_nBytesInBuffer[dlvl] = idx + 1;
         }
@@ -197,9 +205,18 @@ static void popt_FlushC(int c, poffProgHandle_t poffProgHandle)
 
       int dlvl               = g_currentLevel - 1;
       int idx                = g_nBytesInBuffer[dlvl];
-      uint8_t *dest          = g_pBuffer[dlvl] + idx;
-      *dest                  = c;
-      g_nBytesInBuffer[dlvl] = idx + 1;
+
+      if (idx >= PBUFFER_SIZE)
+        {
+          fatal(eBUFTOOSMALL);
+        }
+      else
+        {
+          uint8_t *dest          = g_pBuffer[dlvl] + idx;
+
+          *dest                  = c;
+          g_nBytesInBuffer[dlvl] = idx + 1;
+        }
     }
   else
     {
@@ -224,12 +241,20 @@ static void popt_FlushBuffer(poffProgHandle_t poffProgHandle)
            * with the previous nesting level.
            */
 
-          int dlvl      = slvl - 1;
-          uint8_t *src  = g_pBuffer[slvl];
-          uint8_t *dest = g_pBuffer[dlvl] + g_nBytesInBuffer[dlvl];
+          int dlvl = slvl - 1;
 
-          memcpy(dest, src, g_nBytesInBuffer[slvl]);
-          g_nBytesInBuffer[dlvl] += g_nBytesInBuffer[slvl];
+          if (g_nBytesInBuffer[dlvl] + g_nBytesInBuffer[slvl] >= PBUFFER_SIZE)
+            {
+              fatal(eBUFTOOSMALL);
+            }
+          else
+            {
+              uint8_t *src  = g_pBuffer[slvl];
+              uint8_t *dest = g_pBuffer[dlvl] + g_nBytesInBuffer[dlvl];
+
+              memcpy(dest, src, g_nBytesInBuffer[slvl]);
+              g_nBytesInBuffer[dlvl] += g_nBytesInBuffer[slvl];
+            }
         }
       else
         {
@@ -296,6 +321,13 @@ static void popt_DoPop(poffHandle_t poffHandle,
 #ifdef CONFIG_POPT_DEBUG
   int pushOffset = g_offset - 2;
 #endif
+
+  /* REVISIT:  KeepOp is set true if we decide to keep the PUSHS/POPS.  If
+   * keepOp is set, we still continue buffering data until the matching POPS
+   * is found.  This requires substantial sizes for PBUFFER_SIZE (like 4096
+   * vs. 1024).
+   */
+
   bool keepPop = false;
 
   /* We have found PUSHS.  Now search for the next occurrence of either an
@@ -403,7 +435,8 @@ static void popt_DoPop(poffHandle_t poffHandle,
             }
             break;
 
-#if 1         /* REVISIT: Increases code size dramatically */
+#if 1         /* REVISIT: Increases code size dramatically. */
+
               /* If we encounter a label or a jump between the PUSHS and the
                * POPS, then keep both.  Labels are known to happen in loops
                * where the top-of-loop label is after the PUSHS but the
@@ -440,6 +473,9 @@ static void popt_DoPop(poffHandle_t poffHandle,
 #endif
 
           case EOF:
+            /* What?  No matching POPS? */
+
+            fatal(eHUH);
             break;
 
           default:
