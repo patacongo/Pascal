@@ -163,8 +163,6 @@ echo "#define __CONFIG_H 1" >>${installdir}/pcode/include/config.h
 echo "" >>${installdir}/pcode/include/config.h
 echo "#undef  CONFIG_DEBUG" >>${installdir}/pcode/include/config.h
 echo "#undef  CONFIG_TRACE" >>${installdir}/pcode/include/config.h
-echo "#define CONFIG_INSN16 1" >>${installdir}/pcode/include/config.h
-echo "#undef  CONFIG_INSN32" >>${installdir}/pcode/include/config.h
 echo "" >>${installdir}/pcode/include/config.h
 echo "#endif /* __CONFIG_H */" >>${installdir}/pcode/include/config.h
 

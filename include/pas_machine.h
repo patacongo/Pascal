@@ -54,29 +54,20 @@
 #define FNAME_SIZE          40           /* Max size file name */
 #define LINE_SIZE           256          /* Max size of input line buffer */
 
-/* Target P-Machine Data Storage Sizes */
+/* Target P-Machine Data Storage Sizes.  Currently assumes 16-bit machine */
 
-#ifdef CONFIG_INSN16
-#  define sINT_SIZE         2
-#  define MAXINT            32767
-#  define MININT           -32768
-#  define BITS_IN_INTEGER   16
-#  define MAXUINT           0xffff
-#  define MINUINT           0
-#endif
-
-#ifdef CONFIG_INSN32
-#  define sINT_SIZE         4
-#  define MAXINT            2147483647
-#  define MININT           -2147483648
-#  define BITS_IN_INTEGER   32
-#  define MAXUINT           0xffffffff
-#  define MINUINT           0
-#endif
+#define sINT_SIZE           2
+#define MAXINT              32767
+#define MININT             -32768
+#define BITS_IN_INTEGER     16
+#define MAXUINT             0xffff
+#define MINUINT             0
 
 #define INT_ALIGNUP(n)      (((n) + sINT_SIZE - 1) & ~(sINT_SIZE - 1))
 #define INT_ALIGNDOWN(n)    ((n) & ~sINT_SIZE)
 #define INT_ISALIGNED(n)    (((n) & (sINT_SIZE - 1)) == 0)
+
+/* Sizes of Pascal types */
 
 #define sCHAR_SIZE          1
 #define sBOOLEAN_SIZE       sINT_SIZE
@@ -148,24 +139,14 @@
  * Public Structure/Types
  ***********************************************************************/
 
-/* Representation of one P-Code */
+/* Representation of one P-Code.  Depends on INSN */
 
-#ifdef CONFIG_INSN16
 struct opType_s
 {
   uint8_t  op;
   uint8_t  arg1;
   uint16_t arg2;
 };
-#endif
-
-#ifdef CONFIG_INSN32
-struct opType_s
-{
-  uint8_t  op;
-  uint32_t arg;
-};
-#endif
 
 typedef struct opType_s opType_t;
 

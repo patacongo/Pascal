@@ -12,16 +12,14 @@ include $(PASCAL)/Make.defs
 
 INCDIR			= $(PASCAL)/include
 LIBDIR			= $(PASCAL)/lib
-BINDIR-$(CONFIG_INSN16)	= $(PASCAL)/bin16
-BINDIR-$(CONFIG_INSN32)	= $(PASCAL)/bin32
+BINDIR			= $(PASCAL)/bin16
 LIBPOFFDIR		= $(PASCAL)/libpoff
 LIBPASDIR		= $(PASCAL)/libpas
 PASDIR			= $(PASCAL)/pascal
 PLINKDIR		= $(PASCAL)/plink
 TESTDIR			= $(PASCAL)/tests
-INSN-$(CONFIG_INSN16)	= $(PASCAL)/insn16
-INSN-$(CONFIG_INSN32)	= $(PASCAL)/insn32
-LIBINSNDIR		= $(INSN-y)/libinsn
+INSNDIR			= $(PASCAL)/insn16
+LIBINSNDIR		= $(INSNDIR)/libinsn
 
 # ----------------------------------------------------------------------
 # Objects and targets
@@ -55,40 +53,40 @@ $(LIBDIR)/libinsn.a: $(LIBDIR) config.h
 
 libinsn.a: $(LIBDIR)/libinsn.a
 
-$(BINDIR-y):
-	mkdir $(BINDIR-y)
+$(BINDIR):
+	mkdir $(BINDIR)
 
-$(BINDIR-y)/pascal: $(BINDIR-y) config.h $(LIBS)
+$(BINDIR)/pascal: $(BINDIR) config.h $(LIBS)
 	@$(MAKE) -C $(PASDIR)
 
-pascal: $(BINDIR-y)/pascal
+pascal: $(BINDIR)/pascal
 
-$(BINDIR-y)/popt: $(BINDIR-y) config.h $(LIBS)
-	@$(MAKE) -C $(INSN-y) popt
+$(BINDIR)/popt: $(BINDIR) config.h $(LIBS)
+	@$(MAKE) -C $(INSNDIR) popt
 
-popt: $(BINDIR-y)/popt
+popt: $(BINDIR)/popt
 
-$(BINDIR-y)/regm: $(BINDIR-y) config.h $(LIBS)
+$(BINDIR)/regm: $(BINDIR) config.h $(LIBS)
 ifeq ($(CONFIG_REGM),y)
-	@$(MAKE) -C $(INSN-y) regm
+	@$(MAKE) -C $(INSNDIR) regm
 endif
 
-regm: $(BINDIR-y)/regm
+regm: $(BINDIR)/regm
 
-$(BINDIR-y)/plink: $(BINDIR-y) config.h $(LIBS)
+$(BINDIR)/plink: $(BINDIR) config.h $(LIBS)
 	@$(MAKE) -C $(PLINKDIR)
 
-plink: $(BINDIR-y)/plink
+plink: $(BINDIR)/plink
 
-$(BINDIR-y)/prun: $(BINDIR-y) config.h $(LIBS)
-	@$(MAKE) -C $(INSN-y) prun
+$(BINDIR)/prun: $(BINDIR) config.h $(LIBS)
+	@$(MAKE) -C $(INSNDIR) prun
 
-prun: $(BINDIR-y)/prun
+prun: $(BINDIR)/prun
 
-$(BINDIR-y)/plist: $(BINDIR-y) config.h $(LIBS)
-	@$(MAKE) -C $(INSN-y) plist
+$(BINDIR)/plist: $(BINDIR) config.h $(LIBS)
+	@$(MAKE) -C $(INSNDIR) plist
 
-plist: $(BINDIR-y)/plist
+plist: $(BINDIR)/plist
 
 clean:
 	$(RM) -f core *~
@@ -99,7 +97,7 @@ clean:
 	$(MAKE) -C $(LIBPASDIR) clean
 	$(MAKE) -C $(PASDIR) clean
 	$(MAKE) -C $(PLINKDIR) clean
-	$(MAKE) -C $(INSN-y) clean
+	$(MAKE) -C $(INSNDIR) clean
 	find . -name \*~ -exec rm -f {} \;
 	find tests -name "*.err" -exec rm -f {} \;
 	find tests -name "*.lst" -exec rm -f {} \;

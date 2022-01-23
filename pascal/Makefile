@@ -1,7 +1,7 @@
 ############################################################################
 # pascal/Makefile
 #
-#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,8 +43,7 @@ include $(PASCAL)/Make.defs
 
 INCDIR   = $(PASCAL)/include
 LIBDIR   = $(PASCAL)/lib
-BINDIR-$(CONFIG_INSN16) = $(PASCAL)/bin16
-BINDIR-$(CONFIG_INSN32) = $(PASCAL)/bin32
+BINDIR   = $(PASCAL)/bin16
 
 #
 # Objects and targets
@@ -84,10 +83,10 @@ check_libs:
 		exit 1 ; \
 	fi
 
-$(BINDIR-y)/pascal: check_libs $(DEPS) $(OBJS)
+$(BINDIR)/pascal: check_libs $(DEPS) $(OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
 
-pascal: $(BINDIR-y)/pascal
+pascal: $(BINDIR)/pascal
 
 clean:
 	$(RM) pascal *.o *.d core *~

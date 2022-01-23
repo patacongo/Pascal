@@ -2,7 +2,7 @@
 ############################################################################
 # tests/testmulti.sh
 #
-#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,7 @@
 
 source ../.config
 
-if [ "${CONFIG_INSN16}" == "y" ]; then
-    BINDIR=../../bin16
-fi
-if [ "${CONFIG_INSN32}" == "y" ]; then
-    BINDIR=../../bin32
-fi
-
-
+BINDIR=../../bin16
 PASCAL=${BINDIR}/pascal
 POPT=${BINDIR}/popt
 PLINK=${BINDIR}/plink

@@ -1,7 +1,7 @@
 ############################################################################
 # Make.config.h
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,8 +43,7 @@ include $(PASCAL)/Make.defs
 INCDIR   = $(PASCAL)/include
 CONFIGH  = $(INCDIR)/config.h
 
-CONFIGS  = CONFIG_DEBUG CONFIG_TRACE CONFIG_INSN16 CONFIG_INSN32
-CONFIGS += CONFIG_REGM CONFIG_HAVE_LIBM
+CONFIGS  = CONFIG_DEBUG CONFIG_TRACE CONFIG_HAVE_LIBM
 
 # ----------------------------------------------------------------------
 # Objects and targets

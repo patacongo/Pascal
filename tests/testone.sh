@@ -2,7 +2,7 @@
 ############################################################################
 # testone.sh
 #
-#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,16 +37,9 @@
 
 source ../.config
 
-if [ "${CONFIG_INSN16}" == "y" ]; then
-    BINDIR=bin16
-fi
-if [ "${CONFIG_INSN32}" == "y" ]; then
-    BINDIR=bin32
-fi
-
+BINDIR=bin16
 PASCAL=../${BINDIR}/pascal
 POPT=../${BINDIR}/popt
-REGM=../${BINDIR}/regm
 PLINK=../${BINDIR}/plink
 PRUN=../${BINDIR}/prun
 
@@ -97,15 +90,9 @@ function compile_source ()
         echo "Compilation failed"
     else
 
-        if [ "${CONFIG_REGM}" == "y" ]; then
-        POPTOPTS=-r
-        ${POPT} ${POPTOPTS} src/${PASBASENAME}.o1 2>&1
-        ${REGM} src/${PASBASENAME}.o1 2>&1
-        else
         POPTOPTS=
         ${POPT} ${POPTOPTS} src/${PASBASENAME}.o1 2>&1
         ${PLINK} src/${PASBASENAME}.o src/${PASBASENAME}.pex 2>&1
-        fi
     fi
     fi
 }
@@ -114,9 +101,6 @@ function compile_source ()
 
 function test_program ()
 {
-    if [ "${CONFIG_REGM}" == "y" ]; then
-    echo "Don't know how to run REGM programs yet"
-    else
     echo "Using string stack size = ${STRSTKSZ}"
     PRUNOPTS="-t ${STRSTKSZ} -a ${STKALLOC} -n ${HEAPSIZE}"
 
@@ -128,7 +112,6 @@ function test_program ()
         else
         ${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1
         fi
-    fi
     fi
 }
 

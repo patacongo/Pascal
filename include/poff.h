@@ -94,14 +94,10 @@
 #define FHA_REGM_INSN16      MK_FH_ARCH(FHAC_REGM,FHAW_INSN16)
 #define FHA_REGM_INSN32      MK_FH_ARCH(FHAC_REGM,FHAW_INSN32)
 
-#ifdef CONFIG_INSN16
-# define FHA_PCODE           FHA_PCODE_INSN16
-# define FHA_REGM            FHA_REGM_INSN16
-#endif
-#ifdef CONFIG_INSN32
-# define FHA_PCODE           FHA_PCODE_INSN32
-# define FHA_REGM            FHA_REGM_INSN16
-#endif
+/* For the selected INSN (Only INSN16 currently supported) */
+
+#define FHA_PCODE            FHA_PCODE_INSN16
+#define FHA_REGM             FHA_REGM_INSN16
 
 /* Definitions for sh_type */
 
