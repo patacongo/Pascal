@@ -497,6 +497,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(1) = pointer to source string buffer
        *   TOS(2) = length of source string
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
     case lbSTRCPY :
@@ -506,6 +509,19 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       POP(st, addr1);  /* Address of dest string variable  */
       POP(st, addr2);  /* Address of source string buffer */
       POP(st, size);   /* Length of valid source data */
+
+      /* And perform the string copy */
+
+      pas_strcpy(st, addr2, size, addr1, st->stralloc, 0);
+      break;
+
+    case lbSTRCPY2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr2);  /* Address of source string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, addr1);  /* Address of dest string variable  */
 
       /* And perform the string copy */
 
@@ -524,6 +540,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(2) = Length of source string
        *   TOS(3) = Dest string variable address offset
        * ON RETURN: actual parameters released.
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
     case lbSTRCPYX :
@@ -540,6 +559,20 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
       break;
 
+    case lbSTRCPYX2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr2);  /* Address of source string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, offset); /* Offset from dest string address */
+      POP(st, addr1);  /* Address of dest string variable  */
+
+      /* And perform the string copy */
+
+      pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
+      break;
+
       /* Copy pascal short string to a pascal short string
        *
        * ON INPUT:
@@ -548,30 +581,30 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(2) = Pointer to source short string buffer
        *   TOS(3) = Length of source short string
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
+    case lbSSTRCPY2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      DISCARD(st, 1);  /* Source short string buffer allocation */
+      POP(st, addr2);  /* Address of source short string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, addr1);  /* Address of dest short string variable  */
+      goto sstrcpy_common;
+
     case lbSSTRCPY :
-      {
-        uint16_t *strPtr;
-        uint16_t  strAlloc;
 
-        /* "Pop" in the input parameters from the stack */
+      /* "Pop" in the input parameters from the stack */
 
-        POP(st, addr1);  /* Address of dest short string variable  */
-        DISCARD(st, 1);  /* Source short string buffer allocation */
-        POP(st, addr2);  /* Address of source short string buffer */
-        POP(st, size);   /* Length of valid source data */
-
-        /* Get the allocation size of the short string destination */
-
-        strPtr = (uint16_t *)&st->dstack.b[addr1];
-        strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
-
-        /* And perform the string copy */
-
-        pas_strcpy(st, addr2, size, addr1, strAlloc, 0);
-      }
-      break;
+      POP(st, addr1);  /* Address of dest short string variable  */
+      DISCARD(st, 1);  /* Source short string buffer allocation */
+      POP(st, addr2);  /* Address of source short string buffer */
+      POP(st, size);   /* Length of valid source data */
+      goto sstrcpy_common;
 
       /* Copy pascal short string to a element of a pascal short string
        * array
@@ -583,34 +616,32 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(3) = Length of source short string
        *   TOS(4) = Dest short string variable address offset
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
+    case lbSSTRCPYX2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      DISCARD(st, 1);  /* Source short string buffer allocation */
+      POP(st, addr2);  /* Address of source short string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, offset); /* Offset from dest string address */
+      POP(st, addr1);  /* Address of dest short string variable  */
+      goto sstrcpyx_common;
+
     case lbSSTRCPYX :
-      {
-        uint16_t *strPtr;
-        uint16_t  strAlloc;
 
-        /* "Pop" in the input parameters from the stack */
+      /* "Pop" in the input parameters from the stack */
 
-        POP(st, addr1);  /* Address of dest short string variable  */
-        DISCARD(st, 1);  /* Source short string buffer allocation */
-        POP(st, addr2);  /* Address of source short string buffer */
-        POP(st, size);   /* Length of valid source data */
-        POP(st, offset); /* Offset from dest string address */
-
-        /* Get the allocation size of the short string destination.
-         * REVISIT:  This is wrong.  We need to apply the indexing before
-         * accing the dest short string array entry.
-         */
-
-        strPtr = (uint16_t *)&st->dstack.b[addr1];
-        strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
-
-        /* And perform the string copy */
-
-        pas_strcpy(st, addr2, size, addr1, strAlloc, offset);
-      }
-      break;
+      POP(st, addr1);  /* Address of dest short string variable  */
+      DISCARD(st, 1);  /* Source short string buffer allocation */
+      POP(st, addr2);  /* Address of source short string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, offset); /* Offset from dest string address */
+      goto sstrcpyx_common;
 
       /* Copy pascal short string to a pascal standard string
        *
@@ -620,6 +651,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(2) = Pointer to source short string buffer
        *   TOS(3) = Length of source short string
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
     case lbSSTR2STR :
@@ -636,6 +670,20 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       pas_strcpy(st, addr2, size, addr1, st->stralloc, 0);
       break;
 
+    case lbSSTR2STR2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      DISCARD(st, 1);  /* Short string buffer size */
+      POP(st, addr2);  /* Address of source short string buffer */
+      POP(st, size);   /* Length of valid short string source data */
+      POP(st, addr1);  /* Address of dest standard string variable  */
+
+      /* And perform the string copy */
+
+      pas_strcpy(st, addr2, size, addr1, st->stralloc, 0);
+      break;
+
       /* Copy pascal short string to an element of a pascal standard string
        * array
        *
@@ -646,6 +694,9 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(3) = Length of source short string
        *   TOS(4) = Dest standard string variable address offset
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
     case lbSSTR2STRX :
@@ -663,6 +714,21 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
       break;
 
+    case lbSSTR2STRX2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      DISCARD(st, 1);  /* Short string buffer size */
+      POP(st, addr2);  /* Address of source short string buffer */
+      POP(st, size);   /* Length of valid short string source data */
+      POP(st, offset); /* Offset from dest string address */
+      POP(st, addr1);  /* Address of dest standard string variable  */
+
+      /* And perform the string copy */
+
+      pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
+      break;
+
       /* Copy pascal standard string to a pascal short string
        *
        * ON INPUT:
@@ -670,22 +736,36 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(1) = Pointer to source standard string buffer
        *   TOS(2) = Length of source standard string
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
+    case lbSTR2SSTR2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr2);  /* Address of source standard string buffer */
+      POP(st, size);   /* Length of source standard string */
+      POP(st, addr1);  /* Address of dest short string variable  */
+      goto sstrcpy_common;
+
     case lbSTR2SSTR :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr1);  /* Address of dest short string variable  */
+      POP(st, addr2);  /* Address of source standard string buffer */
+      POP(st, size);   /* Length of source standard string */
+
+    sstrcpy_common :
       {
         uint16_t *strPtr;
         uint16_t  strAlloc;
 
-        /* "Pop" in the input parameters from the stack */
-
-        POP(st, addr1);  /* Address of dest short string variable  */
-        POP(st, addr2);  /* Address of source standard string buffer */
-        POP(st, size);   /* Length of source standard string */
-
         /* Get the allocation size of the short string destination */
 
-        strPtr   = (uint16_t *)&st->dstack.b[addr1];
+        strPtr = (uint16_t *)&st->dstack.b[addr1];
         strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
 
         /* And perform the string copy */
@@ -703,19 +783,34 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(2) = Length of source standard string
        *   TOS(3) = Dest short string variable address offset
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
+    case lbSTR2SSTRX2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr2);  /* Address of source standard string buffer */
+      POP(st, size);   /* Length of source standard string */
+      POP(st, offset); /* Dest short string variable address offset */
+      POP(st, addr1);  /* Address of dest short string variable  */
+      goto sstrcpyx_common;
+
     case lbSTR2SSTRX :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, addr1);  /* Address of dest short string variable  */
+      POP(st, addr2);  /* Address of source standard string buffer */
+      POP(st, size);   /* Length of source standard string */
+      POP(st, offset); /* Dest short string variable address offset */
+
+    sstrcpyx_common :
       {
         uint16_t *strPtr;
         uint16_t  strAlloc;
-
-        /* "Pop" in the input parameters from the stack */
-
-        POP(st, addr1);  /* Address of dest short string variable  */
-        POP(st, addr2);  /* Address of source standard string buffer */
-        POP(st, size);   /* Length of source standard string */
-        POP(st, offset); /* Dest short string variable address offset */
 
         /* Get the allocation size of the short string destination.
          * REVISIT:  This is wrong.  We need to apply the indexing before
@@ -738,7 +833,19 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(1) = MS 16-bits of 32-bit C string pointer
        *   TOS(2) = LS 16-bits of 32-bit C string pointer
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
+
+    case lbCSTR2STR2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
+      POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
+      POP(st, addr1);  /* addr of dest standard string */
+      goto cstr2str_common;
 
     case lbCSTR2STR :
 
@@ -747,6 +854,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       POP(st, addr1);  /* addr of dest standard string */
       POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
       POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
+
+    cstr2str_common :
 
       /* Get the source string pointer */
 
@@ -758,17 +867,30 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       pas_Cstr2str(st, src, addr1, 0);
       break;
 
-    /* Copy pascal string to a element of a pascal string array
-     *
-     *   procedure strcpy(src : string; var dest : string; offset : integer)
-     *
-     * ON INPUT:
-     *   TOS(0) = Address of dest string variable
-     *   TOS(1) = Pointer to source string buffer
-     *   TOS(2) = Length of source string
-     *   TOS(3) = Dest string variable address offset
-     * ON RETURN: actual parameters released.
-     */
+      /* Copy pascal string to a element of a pascal string array
+       *
+       *   procedure strcpy(src : string; var dest : string; offset : integer)
+       *
+       * ON INPUT:
+       *   TOS(0) = Address of dest string variable
+       *   TOS(1) = Pointer to source string buffer
+       *   TOS(2) = Length of source string
+       *   TOS(3) = Dest string variable address offset
+       * ON RETURN: actual parameters released.
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
+       */
+
+    case lbCSTR2STRX2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
+      POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
+      POP(st, offset); /* Offset from dest string address */
+      POP(st, addr1);  /* Addr of dest string header */
+      goto cstr2strx_common;
 
     case lbCSTR2STRX :
 
@@ -778,6 +900,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       POP(st, uparm1); /* MS 16-bits of 32-bit C string pointer */
       POP(st, uparm2); /* LS 16-bits of 32-bit C string pointer */
       POP(st, offset); /* Offset from dest string address */
+
+    cstr2strx_common :
 
       /* Get the source string pointer */
 
@@ -796,9 +920,13 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(1) = MS 16-bits of 32-bit C string pointer
        *   TOS(2) = LS 16-bits of 32-bit C string pointer
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
     case lbCSTR2SSTR :
+    case lbCSTR2SSTR2 :
       errorCode = eNOTYET;
       break;
 
@@ -810,9 +938,13 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
        *   TOS(2) = LS 16-bits of 32-bit C string pointer
        *   TOS(3) = Dest short string variable address offset
        * ON RETURN (input consumed):
+       *
+       * NOTE:  The alternate version is equivalent but has the dest
+       * address and source string reversed.
        */
 
     case lbCSTR2SSTRX :
+    case lbCSTR2SSTRX2 :
       errorCode = eNOTYET;
       break;
 

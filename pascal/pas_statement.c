@@ -62,7 +62,7 @@
 #include "pas_error.h"
 
 /****************************************************************************
- * Private Definitions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 /* Assignment flags.  These options apply primarily for complex assignments
@@ -85,6 +85,8 @@
  * ASSIGN_VAR_PARM
  * - Does very little but distinguish if we are working with a pointer or
  *   a VAR parameter.
+ * ASSIGN_LVALUE_ADDR
+ * - LValue address was pushed on stack BEFORE RValue expression.
  */
 
 #define ASSIGN_DEREFERENCE   (1 << 0)
@@ -93,6 +95,7 @@
 #define ASSIGN_STORE_INDEXED (1 << 3)
 #define ASSIGN_OUTER_INDEXED (1 << 4)
 #define ASSIGN_VAR_PARM      (1 << 5)
+#define ASSIGN_LVALUE_ADDR   (1 << 6)
 
 #define IS_CONSTANT(x) \
         (  ((x) == tINT_CONST) \
@@ -100,6 +103,10 @@
         || ((x) == tCHAR_CONST) \
         || ((x) == tREAL_CONST) \
         || ((x) == sSCALAR_OBJECT))
+
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
 
 /****************************************************************************
  * Private Function Prototypes
@@ -113,6 +120,8 @@ static void       pas_SimpleAssignment (symbol_t *varPtr,
 static void       pas_Assignment       (uint16_t storeOp,
                                         exprType_t assignType,
                                         symbol_t *varPtr, symbol_t *typePtr);
+static void       pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
+                                        uint8_t assignFlags);
 static void       pas_StringAssignment (symbol_t *varPtr, symbol_t *typePtr,
                                         uint8_t assignFlags);
 static void       pas_LargeAssignment  (uint16_t storeOp,
@@ -764,64 +773,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        * OR:   <pointer identifier> := <pointer expression>
        */
 
-      if (g_token == '^') /* value assignment? */
-        {
-          /* In a sequence of record pointers like head^.link^.link, we must
-           * explicitly load the first 'head' pointer variable.
-           */
-
-          if ((assignFlags & ASSIGN_DEREFERENCE) == 0)
-            {
-              /* Load the address value of the pointer onto the stack now */
-
-              pas_GenerateStackReference(opLDS, varPtr);
-            }
-          else
-            {
-              /* Load the value pointed at by the pointer value previously
-               * obtained with opLDS.
-               */
-
-              pas_GenerateSimple(opLDI);
-            }
-
-          /* Indicate that we are dereferencing a pointer.  This will cause
-           * the RValue to be assigned to the target address of the pointer
-           * that we just pushed onto the stack.
-           */
-
-          getToken();
-          assignFlags |= ASSIGN_DEREFERENCE;
-        }
-      else
-        {
-          /* Pointer assignment.  Assign an address to a pointer. */
-
-          assignFlags |= ASSIGN_ADDRESS;
-        }
-
-      /* If the parent type is itself a typed pointer, then get the
-       * pointed-at type.
-       */
-
-      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.tType == sPOINTER)
-        {
-          symbol_t *baseTypePtr = typePtr->sParm.t.tParent;
-
-          varPtr->sKind = baseTypePtr->sParm.t.tType;
-
-          /* REVISIT:  What if the type is a pointer to a pointer? */
-
-           if (varPtr->sKind == sPOINTER) fatal(eNOTYET);
-        }
-      else
-        {
-          /* Get the kind of parent type */
-
-          varPtr->sKind = typePtr->sParm.t.tType;
-        }
-
-      pas_SimpleAssignment(varPtr, assignFlags);
+      pas_PointerAssignment(varPtr, typePtr, assignFlags);
       break;
 
     case sVAR_PARM :
@@ -947,6 +899,82 @@ static void pas_Assignment(uint16_t storeOp, exprType_t assignType,
 }
 
 /***********************************************************************/
+/* Process the assignment to a pointer, either the pointer address or
+ * the value of the dereferenced pointer.
+ */
+
+static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
+                                  uint8_t assignFlags)
+{
+  /* FORM: <pointer identifier>^ := <expression>
+   * OR:   <pointer identifier> := <pointer expression>
+   */
+
+  /* Are we de-referencing the pointer to assign a value to the pointed-at
+   * object?  Or are we assigning an address to the pointer variable.
+   */
+
+  if (g_token == '^') /* value assignment? */
+    {
+      /* In a sequence of record pointers like head^.link^.link, we must
+       * explicitly load the first 'head' pointer variable.
+       */
+
+      if ((assignFlags & ASSIGN_DEREFERENCE) == 0)
+        {
+          /* Load the address value of the pointer onto the stack now */
+
+          pas_GenerateStackReference(opLDS, varPtr);
+        }
+      else
+        {
+          /* Load the value pointed at by the pointer value previously
+           * obtained with opLDS.
+           */
+
+          pas_GenerateSimple(opLDI);
+        }
+
+      /* Indicate that we are dereferencing a pointer.  This will cause
+       * the RValue to be assigned to the target address of the pointer
+       * that we just pushed onto the stack.
+       */
+
+      getToken();
+      assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_LVALUE_ADDR);
+    }
+  else
+    {
+      /* Pointer assignment.  Assign an address to a pointer. */
+
+      assignFlags |= ASSIGN_ADDRESS;
+    }
+
+  /* If the parent type is itself a typed pointer, then get the pointed-at
+   * type.
+   */
+
+  if (typePtr->sParm.t.tType == sPOINTER)
+    {
+      symbol_t *baseTypePtr = typePtr->sParm.t.tParent;
+
+      varPtr->sKind = baseTypePtr->sParm.t.tType;
+
+      /* REVISIT:  What if the type is a pointer to a pointer? */
+
+       if (varPtr->sKind == sPOINTER) fatal(eNOTYET);
+    }
+  else
+    {
+      /* Get the kind of parent type */
+
+      varPtr->sKind = typePtr->sParm.t.tType;
+    }
+
+  pas_SimpleAssignment(varPtr, assignFlags);
+}
+
+/***********************************************************************/
 /* Process the assignment to a variable length string record, either
  * type sSTRING or sSHORTSTRING.
  */
@@ -957,6 +985,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
   exprType_t rValueExprType;
   uint16_t   lValueType;
   uint16_t   libOpcode;
+  bool       destFirst = false;
 
   TRACE(g_lstFile,"[pas_StringAssignment]");
 
@@ -976,19 +1005,31 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
   rValueExprType = pas_Expression(exprAnyString, typePtr);
   lValueType     = varPtr->sKind;
 
-  /* Place the address of the destination string structure instance on the
-   * stack.  In the normal case, this means taking the address of the
-   * dest string variable (opLAS).  But in the case of a VAR parameter or
-   * a pointer, then we need, instead, to load the value of the pointer.
+  /* Is the address of the LValue already on the stack?  This is usually
+   * the case for complex assignments involving pointer and record LValues.
    */
 
-  if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
+  if ((assignFlags & ASSIGN_LVALUE_ADDR) == 0)
     {
-      pas_GenerateStackReference(opLDS, varPtr);
-    }
-  else
-    {
-      pas_GenerateStackReference(opLAS, varPtr);
+      /* No..Place the address of the destination string structure instance
+       * on the stack.  In the normal case, this means taking the address of
+       * the dest string variable (opLAS).  But in the case of a VAR
+       * parameter or a pointer, then we need, instead, to load the value of
+       * the pointer.
+       */
+
+      if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
+        {
+          pas_GenerateStackReference(opLDS, varPtr);
+        }
+      else
+        {
+          pas_GenerateStackReference(opLAS, varPtr);
+        }
+
+      /* Remember that the TOS is the source */
+
+      destFirst = true;
     }
 
   /* This is an assignment to a allocated Pascal string --
@@ -1019,11 +1060,11 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
           if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
             {
-              libOpcode = lbSTRCPYX;
+              libOpcode = destFirst ? lbSTRCPYX : lbSTRCPYX2;
             }
           else
             {
-              libOpcode = lbSTRCPY;
+              libOpcode = destFirst ? lbSTRCPY : lbSTRCPY2;
             }
 
           pas_StandardFunctionCall(libOpcode);
@@ -1049,11 +1090,11 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
           if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
             {
-              libOpcode = lbSSTR2STRX;
+              libOpcode = destFirst ? lbSSTR2STRX : lbSSTR2STRX2;
             }
           else
             {
-              libOpcode = lbSSTR2STR;
+              libOpcode = destFirst ? lbSSTR2STR : lbSSTR2STR2;
             }
 
           pas_StandardFunctionCall(libOpcode);
@@ -1073,11 +1114,11 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
           if ((assignFlags & ASSIGN_INDEXED) != 0)
             {
-              libOpcode = lbCSTR2STRX;
+              libOpcode = destFirst ? lbCSTR2STRX : lbCSTR2STRX2;
             }
           else
             {
-              libOpcode = lbCSTR2STR;
+              libOpcode = destFirst ? lbCSTR2STR : lbCSTR2STR2;
             }
 
           pas_StandardFunctionCall(libOpcode);
@@ -1101,11 +1142,11 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
           if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
             {
-              libOpcode = lbSTR2SSTRX;
+              libOpcode = destFirst ? lbSTR2SSTRX : lbSTR2SSTRX2;
             }
           else
             {
-              libOpcode = lbSTR2SSTR;
+              libOpcode = destFirst ? lbSTR2SSTR : lbSTR2SSTR2;
             }
 
           pas_StandardFunctionCall(libOpcode);
@@ -1131,11 +1172,11 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
           if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
             {
-              libOpcode = lbSSTRCPYX;
+              libOpcode = destFirst ? lbSSTRCPYX : lbSSTRCPYX2;
             }
           else
             {
-              libOpcode = lbSSTRCPY;
+              libOpcode = destFirst ? lbSSTRCPY : lbSSTRCPY2;
             }
 
           pas_StandardFunctionCall(libOpcode);
@@ -1155,11 +1196,11 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
           if ((assignFlags & ASSIGN_INDEXED) != 0)
             {
-              libOpcode = lbCSTR2SSTRX;
+              libOpcode = destFirst ? lbCSTR2SSTRX : lbCSTR2SSTRX2;
             }
           else
             {
-              libOpcode = lbCSTR2SSTR;
+              libOpcode = destFirst ? lbCSTR2SSTR : lbCSTR2SSTR2;
             }
 
           pas_StandardFunctionCall(libOpcode);
