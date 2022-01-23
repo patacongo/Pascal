@@ -184,21 +184,22 @@
 /* Standard Functions 0x01-0x1f*/
 
 #define txABS            0x01
-#define txARCTAN         0x02
-#define txCHR            0x03
-#define txCOS            0x04
-#define txEOLN           0x05
-#define txEXP            0x06
-#define txLN             0x07
-#define txODD            0x08
-#define txORD            0x09
-#define txPRED           0x0a
-#define txROUND          0x0b
-#define txSIN            0x0c
-#define txSQR            0x0d
-#define txSQRT           0x0e
-#define txSUCC           0x0f
-#define txTRUNC          0x10
+#define txADDR           0x02
+#define txARCTAN         0x03
+#define txCHR            0x04
+#define txCOS            0x05
+#define txEOLN           0x06
+#define txEXP            0x07
+#define txLN             0x08
+#define txODD            0x09
+#define txORD            0x0a
+#define txPRED           0x0b
+#define txROUND          0x0c
+#define txSIN            0x0d
+#define txSQR            0x0e
+#define txSQRT           0x0f
+#define txSUCC           0x10
+#define txTRUNC          0x11
 
 /* "Less than standard" Functions 0x20-0x7f */
 
@@ -207,13 +208,14 @@
 /* Standard Procedures 0x81-0xbf */
 
 #define txDISPOSE        0x80
-#define txGET            0x81
-#define txHALT           0x82
-#define txNEW            0x83
-#define txPACK           0x84
-#define txPAGE           0x85
-#define txPUT            0x86
-#define txUNPACK         0x87
+#define txEXIT           0x81
+#define txGET            0x82
+#define txHALT           0x83
+#define txNEW            0x84
+#define txPACK           0x85
+#define txPAGE           0x86
+#define txPUT            0x87
+#define txUNPACK         0x88
 
 /* File I/O */
 

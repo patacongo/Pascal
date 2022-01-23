@@ -42,17 +42,17 @@
  * range 0x0000 through 0xffff.
  */
 
-/* Halt processing.
+/* Exit processing.
  *
- *   procedure halt;
+ *   procedure hist(exitCode : integer);
  *
  * ON INPUT:
- *   Takes no inputs
+ *   TOS(0) - Exit code
  * ON RETURN:
  *   Does not return
  */
 
-#define lbHALT          (0x0000)
+#define lbEXIT          (0x0000)
 
 /* Heap allocation:
  *

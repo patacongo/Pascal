@@ -2,7 +2,7 @@
  * pas_stdfunc.c
  * Standard Functions
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,7 @@
 /* Standard Pascal Functions */
 
 static exprType_t pas_AbsFunc(void);     /* Integer absolute value */
+static exprType_t pas_AddrFunc(void);    /* Address of variable, proc, func */
 static exprType_t pas_PredFunc(void);
 static void       pas_OrdFunc(void);     /* Convert scalar to integer */
 static exprType_t pas_SqrFunc(void);
@@ -94,30 +95,89 @@ static exprType_t pas_GetEnvFunc (void); /* Get environment string value */
 
 static exprType_t pas_AbsFunc(void)
 {
-   exprType_t absType;
+  exprType_t absType;
 
-   TRACE(g_lstFile,"[pas_AbsFunc]");
+  TRACE(g_lstFile,"[pas_AbsFunc]");
 
-   /* FORM:  ABS (<simple integer/real expression>) */
+  /* FORM:  ABS (<simple integer/real expression>) */
 
-   pas_CheckLParen();
+  pas_CheckLParen();
 
-   absType = pas_Expression(exprUnknown, NULL);
-   if (absType == exprInteger)
-      {
-        pas_GenerateSimple(opABS);
-      }
-   else if (absType == exprReal)
-      {
-        pas_GenerateFpOperation(fpABS);
-      }
-   else
-      {
+  absType = pas_Expression(exprUnknown, NULL);
+  if (absType == exprInteger)
+    {
+      pas_GenerateSimple(opABS);
+    }
+  else if (absType == exprReal)
+    {
+      pas_GenerateFpOperation(fpABS);
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  pas_CheckRParen();
+  return absType;
+}
+
+/****************************************************************************/
+
+static exprType_t pas_AddrFunc(void)
+{
+  exprType_t addrExprType = exprUnknown;
+
+  TRACE(g_lstFile,"[pas_AddrFunc]");
+
+  /* FORM:  'addr' '(' variable-name | procedure-name | function-name ')'
+   *
+   * Non-standard.  Like the @ except that the retuned value is an untyped
+   * address (exprAnyPointer).
+   */
+
+  pas_CheckLParen();
+
+  /* Check for variable-name | procedure-name | function-name */
+
+  switch (g_token)
+    {
+      /* Procedures and Functions (and labels) */
+
+      case sPROC :
+      case sFUNC :
+      case sLABEL :
+        error(eNOTYET);
+        break;
+
+      /* Variables */
+
+      case sFILE :
+      case sTEXTFILE :
+      case sINT :
+      case sBOOLEAN :
+      case sCHAR :
+      case sREAL :
+      case sSTRING :
+      case sSHORTSTRING :
+      case sPOINTER :
+      case sSCALAR :
+      case sSUBRANGE :
+      case sSET :
+      case sARRAY :
+      case sRECORD :
+      case sVAR_PARM :
+        pas_GenerateStackReference(opLAS, g_tknPtr);
+        addrExprType = exprAnyPointer;
+        break;
+
+      default :
         error(eINVARG);
-      }
+        break;
+    }
 
-   pas_CheckRParen();
-   return absType;
+  getToken();
+  pas_CheckRParen();
+  return addrExprType;
 }
 
 /****************************************************************************/
@@ -453,6 +513,10 @@ exprType_t pas_StandardFunction(void)
 
         case txABS :
           funcType = pas_AbsFunc();
+          break;
+
+        case txADDR :
+          funcType = pas_AddrFunc();
           break;
 
         case txSQR :

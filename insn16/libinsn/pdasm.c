@@ -470,7 +470,7 @@ static const char *sName[MAX_SETOP] =
 static const char invLbOp[] = "Invalid runtime code";
 static const char *lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "HALT",       "NEW",        "DISPOSE",     "GETENV",
+/* 0x00 */ "EXIT",       "NEW",        "DISPOSE",     "GETENV",
 /* 0x04 */ "STRCPY",     "STRCPY2",    "STRCPYX",     "STRCPYX2",
 /* 0x08 */ "SSTRCPY",    "SSTRCPY2",   "SSTRCPYX",    "SSTRCPYX2",
 /* 0x0c */ "SSTR2STR",   "SSTR2STR2",  "SSTR2STRX",   "SSTR2STRX2",

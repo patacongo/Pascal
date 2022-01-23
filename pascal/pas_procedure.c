@@ -94,6 +94,7 @@ static uint16_t pas_DefaultFileNumber(symbol_t *defaultFilePtr,
 
 /* Helpers for standard procedures  */
 
+static void     pas_ExitProc(void);                 /* EXIT procedure */
 static void     pas_HaltProc(void);                 /* HALT procedure */
 
 static void     pas_ReadProc(void);                 /* READ procedure */
@@ -352,13 +353,41 @@ static uint16_t pas_DefaultFileNumber(symbol_t *defaultFilePtr,
 
 /***********************************************************************/
 
-static void pas_HaltProc (void)
+static void pas_ExitProc(void)
+{
+  exprType_t exprType;
+
+  /* FORM (Non-Standard): exit '(' exit-code '); */
+
+  getToken();
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* The argument should be an integer value */
+
+  exprType = pas_Expression(exprInteger, NULL);
+  if (exprType != exprInteger)
+    {
+      error(eINVARG);
+    }
+
+  if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
+  else getToken();
+
+  pas_StandardFunctionCall(lbEXIT);
+}
+
+/***********************************************************************/
+
+static void pas_HaltProc(void)
 {
   /* FORM:
    *   halt
    */
 
-  pas_StandardFunctionCall(lbHALT);
+  getToken();
+  pas_GenerateDataOperation(opPUSH, 0);
+  pas_StandardFunctionCall(lbEXIT);
 }
 
 /****************************************************************************/
@@ -1904,8 +1933,11 @@ void pas_StandardProcedure(void)
         {
           /* Standard Procedures & Functions */
 
+        case txEXIT :
+          pas_ExitProc();
+          break;
+
         case txHALT :
-          getToken();
           pas_HaltProc();
           break;
 

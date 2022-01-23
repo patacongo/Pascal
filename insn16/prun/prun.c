@@ -54,6 +54,7 @@
 #include "paslib.h"
 #include "pas_error.h"
 #include "pexec.h"
+#include "plib.h"
 #include "pdbg.h"
 
 /****************************************************************************
@@ -257,7 +258,11 @@ static void prun(struct pexec_s *st)
       if (errcode != eNOERROR) break;
     }
 
-  if (errcode != eEXIT)
+  if (errcode == eEXIT)
+    {
+      printf("Exit with code %d\n", g_exitCode);
+    }
+  else
     {
       printf("Runtime error 0x%02x -- Execution Stopped\n", errcode);
     }

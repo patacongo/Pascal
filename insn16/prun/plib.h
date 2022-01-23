@@ -2,7 +2,7 @@
  * plib.h
  * External Declarations associated with the run-time library
  *
- *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,6 +42,12 @@
  ***************************************************************************/
 
 #include <stdint.h>
+
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+extern int16_t g_exitCode;
 
 /***************************************************************************
  * Public Function Prototypes

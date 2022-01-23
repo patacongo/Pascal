@@ -78,6 +78,12 @@ static int      pas_strcatc(struct pexec_s *st, char srcChar,
                             uint16_t destStrAlloc);
 
 /****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+int16_t g_exitCode;
+
+/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -402,17 +408,18 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
   switch (subfunc)
     {
-      /* Halt processing
+      /* Exit processing
        *
-       *   procedure halt;
+       *   procedure hist(exitCode : integer);
        *
        * ON INPUT:
-       *   Takes no inputs
+       *   TOS(0) - Exit code
        * ON RETURN:
        *   Does not return
        */
 
-    case lbHALT:
+    case lbEXIT:
+      POP(st, g_exitCode);
       errorCode = eEXIT;
       break;
 

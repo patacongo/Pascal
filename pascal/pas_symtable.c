@@ -103,6 +103,7 @@ unsigned int g_nConst        = 0;     /* Number constant table entries */
 static const reservedWord_t g_rsw[] =                /* Reserved word list */
 {
   {"ABS",            tSTDFUNC,        txABS},        /* (2) */
+  {"ADDR",           tSTDFUNC,        txADDR},       /* (2) */
   {"AND",            tAND,            txNONE},       /* (1) */
   {"APPEND",         tSTDPROC,        txAPPEND},     /* (3) */
   {"ARCTAN",         tSTDFUNC,        txARCTAN},     /* (2) */
@@ -124,6 +125,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"EOF",            tSTDFUNC,        txEOF},        /* (2) */
   {"EOLN",           tSTDFUNC,        txEOLN},       /* (2) */
   {"EXCLUDE",        tSTDFUNC,        txEXCLUDE},    /* (2) */
+  {"EXIT",           tSTDPROC,        txEXIT},       /* (3) */
   {"EXP",            tSTDFUNC,        txEXP},        /* (2) */
   {"FILE",           tFILE,           txNONE},       /* (1) */
   {"FINALIZATION",   tFINALIZATION,   txNONE},       /* (4) */
