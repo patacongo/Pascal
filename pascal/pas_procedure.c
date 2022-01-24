@@ -1407,7 +1407,7 @@ static void pas_WriteBinary(uint16_t fileSize)
 
 static void pas_NewProc(void)
 {
-  /* FORM:  'dispose' '(' pointer-value ')' */
+  /* FORM:  'new' '(' pointer-variable ')' */
 
   TRACE(g_lstFile,"[pas_NewProc]");
 
@@ -1427,60 +1427,76 @@ static void pas_NewProc(void)
       varPtr = g_tknPtr;
       getToken();
 
-      /* Allocate memory for an object the size of an allocated instance of
-       * this type.  A pointer to the allocated memory will lie at the top of
-       * the stack at run-time.
-       */
+      /* The variable must be a pointer type */
 
       typePtr = varPtr->sParm.v.vParent;
-      pas_GenerateDataOperation(opPUSH, typePtr->sParm.t.tAllocSize);
-      pas_StandardFunctionCall(lbNEW);
-
-      /* Save this into the pointer variable */
-
-      pas_GenerateStackReference(opSTS, varPtr);
-
-      /* If we just allocated a string, shortstring, or file type, then we
-       * have to initialize the allocated instance.
-       */
-
-      baseTypePtr = pas_GetBaseTypePointer(typePtr);
-      varType     = baseTypePtr->sParm.t.tType;
-
-      /* If we just created a string variable, then set up and initializer
-       * for the string; memory for the string buffer must be set up at run
-       * time.
-       */
-
-      if (varType == sSTRING || varType == sSHORTSTRING)
+      if (typePtr->sParm.t.tType != sPOINTER)
         {
-          pas_InitializeNewString(baseTypePtr);
+          error(ePOINTERTYPE);
         }
-
-      /* Handle files similarly */
-
-      else if (varType == sFILE || varType == sTEXTFILE)
+      else
         {
-          pas_InitializeNewFile(baseTypePtr);
-        }
+          /* Get the size of the allocation.  We want the size of the parent of
+           * this pointer type.  This would not be meaningful for the case of
+           * a pointer-to-a-pointer, but let's do as we are told.
+           */
 
-      /* A more complex case:  We just created a RECORD variable that may
-       * contain string or file fields that need to be initialized.
-       */
+          symbol_t *parentTypePtr = typePtr->sParm.t.tParent;
 
-      else if (varType == sRECORD)
-        {
-          pas_InitializeNewRecord(baseTypePtr);
-        }
+          /* Allocate memory for an object the size of an allocated instance of
+           * this type.  A pointer to the allocated memory will lie at the top of
+           * the stack at run-time.
+           */
 
-      /* Or an array that may contain variables that need initialization.
-       * (OR an array or records with fields that are arrays that ... and
-       * all need to be initialized).
-       */
+          pas_GenerateDataOperation(opPUSH, parentTypePtr->sParm.t.tAllocSize);
+          pas_StandardFunctionCall(lbNEW);
 
-      else if (typePtr->sParm.t.tType == sARRAY)
-        {
-          pas_InitializeNewArray(typePtr);
+          /* Save this into the pointer variable */
+
+          pas_GenerateStackReference(opSTS, varPtr);
+
+          /* If we just allocated a string, shortstring, or file type, then we
+           * have to initialize the allocated instance.
+           */
+
+          baseTypePtr = pas_GetBaseTypePointer(parentTypePtr);
+          varType     = baseTypePtr->sParm.t.tType;
+
+          /* If we just created a string variable, then set up and initializer
+           * for the string; memory for the string buffer must be set up at run
+           * time.
+           */
+
+          if (varType == sSTRING || varType == sSHORTSTRING)
+            {
+              pas_InitializeNewString(baseTypePtr);
+            }
+
+          /* Handle files similarly */
+
+          else if (varType == sFILE || varType == sTEXTFILE)
+            {
+              pas_InitializeNewFile(baseTypePtr);
+            }
+
+          /* A more complex case:  We just created a RECORD variable that may
+           * contain string or file fields that need to be initialized.
+           */
+
+          else if (varType == sRECORD)
+            {
+              pas_InitializeNewRecord(baseTypePtr);
+            }
+
+          /* Or an array that may contain variables that need initialization.
+           * (OR an array or records with fields that are arrays that ... and
+           * all need to be initialized).
+           */
+
+          else if (parentTypePtr->sParm.t.tType == sARRAY)
+            {
+              pas_InitializeNewArray(parentTypePtr);
+            }
         }
     }
 

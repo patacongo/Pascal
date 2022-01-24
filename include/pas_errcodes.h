@@ -77,7 +77,7 @@
  * eINVSIGNEDCONST      Invalid constant after sign
  * eINVFACTOR           Invalid factor
  * eINVFILE             Invalid file identifier (as declared in PROGRAM)
- * eINVFILETYPE         Expected  file type
+ * eINVFILETYPE         Expected file type
  * eINVLABEL            Invalid label
  * eINVPTR              Invalid pointer type
  * eINVTYPE             Invalid type identifier
@@ -101,7 +101,7 @@
  * ePOFFCONFUSION       Internal logic error in POFF file generation
  * ePOFFWRITEERROR      Error writing to POFF file
  * ePROGRAM             Expected 'PROGRAM'
- * ePTRADR              Expected pointer address (probably got value) form
+ * ePTRADR              Expected pointer address form (probably got value)
  * ePTRVAL              Expected pointer value form, got value form
  * eRBRACKET            Expected ']'
  * eRPAREN              Expected ')'
@@ -130,7 +130,8 @@
  * eINDEXTYPE           Illegal array index type
  * eARRAYTYPE           Illegal type for ARRAY OF
  * eTOOMANYINDICES      Two many indices for dimensionality of array
- * ePOINTERTYPE         Illegal pointer type
+ * ePOINTERTYPE         Expected a pointer type
+ * ePOINTERDEREF        Illegal pointer de-reference
  * eVARPARMTYPE         Illegal VAR parameter type
  * eSUBRANGE            Expected ".."
  * eSUBRANGETYPE        Illegal subrange type
@@ -275,23 +276,24 @@
 
 #define ePOINTERTYPE     ((uint16_t) 0x50)
 #define eTOOMANYINDICES  ((uint16_t) 0x51)
-#define eVARPARMTYPE     ((uint16_t) 0x52)
-#define eSUBRANGE        ((uint16_t) 0x53)
-#define eSUBRANGETYPE    ((uint16_t) 0x54)
-#define eSET             ((uint16_t) 0x55)
-#define eSETRANGE        ((uint16_t) 0x56)
-#define eSETELEMENT      ((uint16_t) 0x57)
-#define eSCALARTYPE      ((uint16_t) 0x58)
-#define eBADSHORTINT     ((uint16_t) 0x59)
-#define eSYMTABINTERNAL  ((uint16_t) 0x5a)
-#define eRECORDDECLARE   ((uint16_t) 0x5b)
-#define eRECORDOBJECT    ((uint16_t) 0x5c)
-#define eRECORDVAR       ((uint16_t) 0x5d)
-#define eRECORDTYPE      ((uint16_t) 0x5e)
-#define eUNIT            ((uint16_t) 0x5f)
+#define ePOINTERDEREF    ((uint16_t) 0x52)
+#define eVARPARMTYPE     ((uint16_t) 0x53)
+#define eSUBRANGE        ((uint16_t) 0x54)
+#define eSUBRANGETYPE    ((uint16_t) 0x55)
+#define eSET             ((uint16_t) 0x56)
+#define eSETRANGE        ((uint16_t) 0x57)
+#define eSETELEMENT      ((uint16_t) 0x58)
+#define eSCALARTYPE      ((uint16_t) 0x59)
+#define eBADSHORTINT     ((uint16_t) 0x5a)
+#define eSYMTABINTERNAL  ((uint16_t) 0x5b)
+#define eRECORDDECLARE   ((uint16_t) 0x5c)
+#define eRECORDOBJECT    ((uint16_t) 0x5d)
+#define eRECORDVAR       ((uint16_t) 0x5e)
+#define eRECORDTYPE      ((uint16_t) 0x5f)
 
-#define eUNITNAME        ((uint16_t) 0x60)
-#define eARGIGNORED      ((uint16_t) 0x61)
+#define eUNIT            ((uint16_t) 0x60)
+#define eUNITNAME        ((uint16_t) 0x61)
+#define eARGIGNORED      ((uint16_t) 0x62)
 
 /* ERRORS REPOORTED BY THE OPTIMIZER */
 

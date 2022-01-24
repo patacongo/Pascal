@@ -73,6 +73,7 @@
 struct varInfo_s
 {
   symbol_t  variable;   /* Writable copy of symbol table variable entry */
+  int16_t   ptrDepth;   /* 0=value; 1=pointer, 2=pointer-to-pointer, etc. */
   int16_t   fOffset;    /* Record field offset into variable */
 };
 
@@ -90,7 +91,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
                     exprFlag_t factorFlags);
 static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags);
 static exprType_t pas_PointerFactor(void);
-static exprType_t pas_ComplexPointerFactor(void);
+static exprType_t pas_ComplexPointerFactor(exprFlag_t factorFlags);
 static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
                     exprFlag_t factorFlags);
 static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
@@ -919,7 +920,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
       /* Then handle the pointer factor */
 
       getToken();
-      factorType = pas_PointerFactor();
+      factorType = pas_ComplexPointerFactor(FACTOR_PTREXPR);
       break;
 
     case tNOT:
@@ -965,6 +966,7 @@ static exprType_t pas_ComplexFactor(void)
    */
 
   varInfo.variable = *g_tknPtr;
+  varInfo.ptrDepth = 0;
   varInfo.fOffset  = 0;
   getToken();
 
@@ -1030,6 +1032,12 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
           if ((factorFlags & FACTOR_INDEXED) != 0)
             {
               pas_GenerateStackReference(opLDSX, varPtr);
+            }
+          else if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+            {
+              pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+              pas_GenerateSimple(opADD);
+              pas_GenerateSimple(opLDI);
             }
           else
             {
@@ -1272,65 +1280,85 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
       break;
 
     case sPOINTER :
-      /* Are we dereferencing a pointer? */
+      {
+        symbol_t *parentTypePtr = typePtr;
+        int ptrDepth = 0;
 
-      if (g_token == '^')
-        {
-          /* In a sequence of record pointers like head^.link^.link, we must
-           * explicitly load the first 'head' pointer variable.
-           */
+        /* Get the pointer depth.  Pointer = 1, pointer-to-pointer = 2, etc. */
 
-          if ((factorFlags & FACTOR_DEREFERENCE) == 0)
-            {
-              /* Load the address value of the pointer onto the stack now */
+        while (parentTypePtr->sParm.t.tType == sPOINTER)
+          {
+            if (ptrDepth > 1)
+              {
+                error(eNOTYET);
+              }
 
-              pas_GenerateStackReference(opLDS, varPtr);
-            }
-          else
-            {
-              /* Load the value pointed at by the pointer value previously
-               * obtained with opLDS.
-               */
+            ptrDepth++;
+            parentTypePtr = parentTypePtr->sParm.t.tParent;
+          }
 
-              pas_GenerateSimple(opLDI);
-            }
+        /* Are we dereferencing a pointer? */
 
-          /* Skip over the '^' */
+        while (g_token == '^')
+          {
+            /* Since we are de-referencing, we can decrement the pointer depth. */
 
-          getToken();
+            if (ptrDepth > 0)
+              {
+                ptrDepth--;
+              }
+            else
+              {
+                error(ePOINTERDEREF);
+              }
 
-          /* Indicate that we are dereferencing a pointer and that the pointer
-           * value is on the stack
-           */
+            /* In a sequence of record pointers like head^.link^.link, we must
+             * explicitly load the first 'head' pointer variable.
+             */
 
-          factorFlags |= FACTOR_DEREFERENCE;
-        }
-      else
-        {
-          factorFlags |= FACTOR_PTREXPR;
-        }
+            if ((factorFlags & FACTOR_DEREFERENCE) == 0)
+              {
+                /* Load the address value of the pointer onto the stack now */
 
-      /* If the parent type is itself a typed pointer, then get the
-       * pointed-at type.
-       */
+                pas_GenerateStackReference(opLDS, varPtr);
+                factorFlags |= FACTOR_DEREFERENCE;
+              }
+            else
+              {
+                /* Load the value pointed at by the pointer value previously
+                 * obtained with opLDS.
+                 */
 
-      if (/* typePtr->sKind == sTYPE && */ typePtr->sParm.t.tType == sPOINTER)
-        {
-          baseTypePtr   = typePtr->sParm.t.tParent;
-          varPtr->sKind = baseTypePtr->sParm.t.tType;
+                pas_GenerateSimple(opLDI);
+              }
 
-          /* REVISIT:  What if the type is a pointer to a pointer? */
+            /* Skip over the '^' */
 
-           if (varPtr->sKind == sPOINTER) fatal(eNOTYET);
-        }
-      else
-        {
-          /* Get the kind of parent type */
+            getToken();
+          }
 
-          varPtr->sKind = typePtr->sParm.t.tType;
-        }
+        /* Is this going to be a pointer assignment?  Or a value? */
 
-      factorType = pas_SimpleFactor(varInfo, factorFlags);
+        if (ptrDepth > 0)
+          {
+            factorFlags &= ~FACTOR_DEREFERENCE;
+            factorFlags |= FACTOR_PTREXPR;
+          }
+
+        /* Now set the variable type to that of the parent and continue to
+         * simplify the factor.
+         */
+
+        varPtr->sKind = parentTypePtr->sParm.t.tType;
+        factorType    = pas_SimpleFactor(varInfo, factorFlags);
+
+        /* Adjust the expression type if this is still a pointer */
+
+        if (ptrDepth > 0)
+          {
+            factorType = MK_POINTER_EXPRTYPE(factorType);
+          }
+      }
       break;
 
     case sVAR_PARM :
@@ -1850,7 +1878,7 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
 
 /****************************************************************************/
 /* Process a factor of the for ^variable OR a VAR parameter (where the
- * ^ is implicit.
+ * ^ is implicit).
  */
 
 static exprType_t pas_PointerFactor(void)
@@ -1926,7 +1954,7 @@ static exprType_t pas_PointerFactor(void)
       case sVAR_PARM :
       case sPOINTER :
       case sARRAY :
-        factorType = pas_ComplexPointerFactor();
+        factorType = pas_ComplexPointerFactor(0);
         break;
 
       /* References to address of a pointer */
@@ -1962,7 +1990,7 @@ static exprType_t pas_PointerFactor(void)
 /****************************************************************************/
 /* Process a complex pointer factor */
 
-static exprType_t pas_ComplexPointerFactor(void)
+static exprType_t pas_ComplexPointerFactor(exprFlag_t factorFlags)
 {
   varInfo_t varInfo;
 
@@ -1973,14 +2001,20 @@ static exprType_t pas_ComplexPointerFactor(void)
    */
 
   varInfo.variable = *g_tknPtr;
+  varInfo.ptrDepth = 0;
   varInfo.fOffset  = 0;
+
+  /* Since we have saved the token information, we can skip to the next
+   * token.
+   */
+
   getToken();
 
   /* Then process the complex factor until it is reduced to a simple
    * factor (like int, char, etc.)
    */
 
-  return pas_SimplePointerFactor(&varInfo, 0);
+  return pas_SimplePointerFactor(&varInfo, factorFlags);
 }
 
 /****************************************************************************/
@@ -2148,12 +2182,45 @@ static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
       break;
 
     case sPOINTER :
-      if (g_token == '^') error(ePTRADR);
-      else getToken();
+      {
+        symbol_t *parentTypePtr = typePtr;
 
-      factorFlags   |= FACTOR_DEREFERENCE;
-      varPtr->sKind  = typePtr->sParm.t.tType;
-      factorType     = pas_SimplePointerFactor(varInfo, factorFlags);
+        /* Get the parent (non-pointer) type */
+
+        while (parentTypePtr->sParm.t.tType == sPOINTER)
+          {
+            if (varInfo->ptrDepth > 1)
+              {
+                error(eNOTYET);
+              }
+
+            varInfo->ptrDepth++;
+            parentTypePtr = parentTypePtr->sParm.t.tParent;
+          }
+
+        /* Do we want the address or the pointer? Or the pointer value that
+         * it points to?
+         */
+
+        if ((factorFlags & FACTOR_PTREXPR) == 0)
+          {
+            varInfo->ptrDepth--;
+            factorFlags |= FACTOR_DEREFERENCE;
+          }
+
+        /* Verify that we are returing some kind of pointer */
+
+        if (varInfo->ptrDepth == 0 ||
+            (varInfo->ptrDepth == 1 && g_token == '^'))
+          {
+            error(ePTRADR);
+          }
+
+        /* And process a pointer to that parent type */
+
+        varPtr->sKind  = parentTypePtr->sParm.t.tType;
+        factorType     = pas_SimplePointerFactor(varInfo, factorFlags);
+      }
       break;
 
     case sVAR_PARM :

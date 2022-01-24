@@ -2,7 +2,7 @@
  * pas_statement.c
  * Pascal Statements
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -87,6 +87,8 @@
  *   a VAR parameter.
  * ASSIGN_LVALUE_ADDR
  * - LValue address was pushed on stack BEFORE RValue expression.
+ * ASSIGN_LVALUE_ADDR
+ * - LValue is a pointer to a pointer.
  */
 
 #define ASSIGN_DEREFERENCE   (1 << 0)
@@ -96,6 +98,7 @@
 #define ASSIGN_OUTER_INDEXED (1 << 4)
 #define ASSIGN_VAR_PARM      (1 << 5)
 #define ASSIGN_LVALUE_ADDR   (1 << 6)
+#define ASSIGN_PTR2PTR       (1 << 7)
 
 #define IS_CONSTANT(x) \
         (  ((x) == tINT_CONST) \
@@ -906,18 +909,74 @@ static void pas_Assignment(uint16_t storeOp, exprType_t assignType,
 static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
                                   uint8_t assignFlags)
 {
+  symbol_t *parentTypePtr;
+  int ptrDepth = 1;
+
   /* FORM: <pointer identifier>^ := <expression>
    * OR:   <pointer identifier> := <pointer expression>
    */
 
+  /* Is this a pointer to a pointer? */
+
+  parentTypePtr = typePtr->sParm.t.tParent;
+
+  while (parentTypePtr->sParm.t.tType == sPOINTER)
+    {
+      parentTypePtr = parentTypePtr->sParm.t.tParent;
+
+      /* No pointers-to-pointers-to-pointers-to-... yet */
+
+      if (ptrDepth > 1)
+        {
+          error(eNOTYET);
+        }
+      else
+        {
+          ptrDepth++;
+        }
+    }
+
   /* Are we de-referencing the pointer to assign a value to the pointed-at
    * object?  Or are we assigning an address to the pointer variable.
+   *
+   * Possibilities:
+   *
+   *  1) Dereferencing a pointer:            ptr^      := value-expression
+   *  2) Assigning an address to a pointer:  ptr       := pointer-expression
+   *  3) Dereferencing a pointer to a        ptr2ptr^^ := value-expression
+   *     pointer:                            ptr2ptr^  := pointer-expression
+   *  4) Assigning an address to a pointer   ptr2ptr   := pointer-to-pointer-
+   *     to a pointer:                                    expression
    */
 
-  if (g_token == '^') /* value assignment? */
+  /* A pointer LValue should be followed by either one or more '^' or by ':='
+   * introducing the RValue.
+   */
+
+  if (g_token != '^' && g_token != tASSIGN)
     {
-      /* In a sequence of record pointers like head^.link^.link, we must
-       * explicitly load the first 'head' pointer variable.
+      error(ePOINTERTYPE);
+    }
+
+  /* Process one or more '^' following the pointer or pointer-to-pointer */
+
+  while (g_token == '^')
+    {
+      /* If the pointer depth goes to zero, then we will expect a value
+       * expression.
+       */
+
+      if (ptrDepth > 0)
+        {
+          ptrDepth--;
+        }
+      else
+        {
+          error(ePOINTERDEREF);
+        }
+
+      /* In a sequence of record pointers like head^.link^.link or ptr2ptr^^,
+       * we must load the first 'head' pointer from the variable address.
        */
 
       if ((assignFlags & ASSIGN_DEREFERENCE) == 0)
@@ -925,6 +984,7 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
           /* Load the address value of the pointer onto the stack now */
 
           pas_GenerateStackReference(opLDS, varPtr);
+          assignFlags |= ASSIGN_DEREFERENCE;
         }
       else
         {
@@ -935,41 +995,44 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
           pas_GenerateSimple(opLDI);
         }
 
+      /* Skip over the '^' */
+
+      getToken();
+    }
+
+  if (ptrDepth == 0)
+    {
       /* Indicate that we are dereferencing a pointer.  This will cause
        * the RValue to be assigned to the target address of the pointer
        * that we just pushed onto the stack.
        */
 
-      getToken();
+      assignFlags &= ~ASSIGN_ADDRESS;
       assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_LVALUE_ADDR);
     }
   else
     {
-      /* Pointer assignment.  Assign an address to a pointer. */
+      /* No, this is a pointer assignment.  Assign an address to a pointer
+       * or pointer-to-a-pointer.
+       */
 
       assignFlags |= ASSIGN_ADDRESS;
+
+      if (ptrDepth > 1)
+        {
+          assignFlags |= ASSIGN_PTR2PTR;
+        }
     }
 
   /* If the parent type is itself a typed pointer, then get the pointed-at
    * type.
    */
 
-  if (typePtr->sParm.t.tType == sPOINTER)
-    {
-      symbol_t *baseTypePtr = typePtr->sParm.t.tParent;
+  /* Get the kind of the pointed-at object */
 
-      varPtr->sKind = baseTypePtr->sParm.t.tType;
+  varPtr->sKind = parentTypePtr->sParm.t.tType;
 
-      /* REVISIT:  What if the type is a pointer to a pointer? */
-
-       if (varPtr->sKind == sPOINTER) fatal(eNOTYET);
-    }
-  else
-    {
-      /* Get the kind of parent type */
-
-      varPtr->sKind = typePtr->sParm.t.tType;
-    }
+  /* And process the assignment (indirect recursion). */
 
   pas_SimpleAssignment(varPtr, assignFlags);
 }
