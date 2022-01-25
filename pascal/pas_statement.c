@@ -1728,13 +1728,7 @@ static void pas_CaseStatement(void)
 
           for (; ; )
             {
-              /* Generate a comparison of the CASE expression and the constant.
-               *
-               * First duplicate the value to be compared (from the CASE <expression>)
-               * then push the comparison value (from the <constant>:)
-               */
-
-              pas_GenerateSimple(opDUP);
+              /* Generate a comparison of the CASE expression and the constant. */
 
               /* Verify that we have a constant.  This could be  literal constant,
                * defined constant, or perhaps a standard function operating on
@@ -1816,21 +1810,34 @@ static void pas_CaseStatement(void)
           pas_GenerateDataOperation(opJMP, end_case);
         }
 
-      /* Check if there are more statements.  If not, verify END present */
+      /* Check if there are more statements.  If not, verify that END is
+       * present.
+       */
 
-      if (g_token == ';')
+      if (g_token != ';' && g_token != tEND)
         {
-          getToken();
-        }
-      else if (g_token == tEND)
-        {
-          getToken();
+          error(eEND);
           break;
         }
       else
         {
-          error (eEND);
-          break;
+          /* If END is encountered, then there are no further case selectors */
+
+          if (g_token == ';')
+            {
+              getToken();
+            }
+
+          /* Permit a null statement (i.e., extra ';') on the last case. */
+
+          if (g_token == tEND)
+            {
+              /* Generate the next case label for the last case selector */
+
+              pas_GenerateDataOperation(opLABEL, next_case);
+              getToken();
+              break;
+            }
         }
     }
 
