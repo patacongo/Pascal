@@ -957,7 +957,11 @@ static exprType_t pas_Factor(exprType_t findExprType)
        * Verify that the expression expects a pointer type.
        */
 
-      if (!IS_POINTER_EXPRTYPE(findExprType)) error(ePOINTERTYPE);
+      if (!IS_POINTER_EXPRTYPE(findExprType) &&
+          findExprType != exprAnyPointer)
+        {
+          error(ePOINTERTYPE);
+        }
 
       /* Then handle the pointer factor */
 
@@ -2995,46 +2999,80 @@ static bool pas_GetSubSet(symbol_t *setTypePtr, bool first)
 
 static exprType_t pas_TypeCast(symbol_t *typePtr)
 {
-  exprType_t newExprType;
-  uint16_t castType;
-  bool newOrdinal;
-
   /* Form type-name '(' expression ')' */
 
   getToken();
-
-  /* At present we are accepting only casts between ordinal type of the same
-   * size (and real types).
-   */
-
-  castType = typePtr->sParm.t.tType;
-  if (castType == sREAL)
-    {
-      newExprType = exprReal;
-      newOrdinal  = false;
-    }
+  if (g_token != '(') error(eLPAREN);
   else
     {
-      newExprType = pas_MapVariable2ExprType(castType, true);
+      exprType_t newExprType;
+      exprType_t originalExprType;
+      exprType_t findExprType;
+      uint16_t castType;
+      bool newOrdinal;
 
-      if (!pas_IsOrdinalExpression(newExprType))
+      /* At present we are accepting only casts between ordinal type of the
+       * same size (and real types).
+       */
+
+      castType = typePtr->sParm.t.tType;
+
+      /* Handle casts between pointer types.
+       * REVISIT:  How badly is this breaking Pascal's strong typing?  At least
+       * we don't support any casts of pointers outside the run-time sandbox.
+       */
+
+      if (castType == sPOINTER)
         {
-          error(eNOTYET);
-          return exprUnknown;
+          symbol_t *parent = typePtr->sParm.t.tParent;
+          uint16_t parentType = parent->sParm.t.tType;
+          if (parentType == sPOINTER)
+            {
+              /* No pointers-to-pointers yet */
+
+              error(eNOTYET);
+              return exprUnknown;
+            }
+
+          newExprType = pas_MapVariable2ExprPtrType(parentType, false);
+          if (newExprType == exprUnknown)
+            {
+              error(eEXPRTYPE);
+              return exprUnknown;
+            }
+
+          newOrdinal   = false;
+          findExprType = exprAnyPointer;  /* Expect a pointer */
         }
 
-      newOrdinal  = true;
-    }
+      /* Handle casts from ordinal (or REAL) types to REAL */
 
-  if (g_token != '(') error(eFACTORTYPE);
-  else
-    {
-      exprType_t originalExprType;
+      else if (castType == sREAL)
+        {
+          newExprType  = exprReal;
+          newOrdinal   = false;
+          findExprType = exprUnknown;  /* Expect ordinal or real */
+        }
+
+      /* Handle casts from between ordinal (or REAL) types */
+
+      else
+        {
+          newExprType = pas_MapVariable2ExprType(castType, true);
+          if (newExprType == exprUnknown)
+            {
+              error(eEXPRTYPE);
+              return exprUnknown;
+            }
+
+          newOrdinal   = true;
+          findExprType = exprUnknown;  /* Expect ordinal or real */
+        }
 
       /* Skip over the left parenthesis and evaluate the expression */
 
       getToken();
-      originalExprType = pas_Expression(exprUnknown, NULL);
+      originalExprType = pas_Expression(findExprType, NULL);
 
       if (g_token != ')') error(eRPAREN);
       else getToken();
@@ -3043,19 +3081,27 @@ static exprType_t pas_TypeCast(symbol_t *typePtr)
         {
           bool originalOrdinal = pas_IsOrdinalExpression(originalExprType);
 
-          /* Check for real expressions */
+          /* Check for conversion of ordinal value to REAL */
 
           if (newExprType == exprReal && originalOrdinal)
             {
               pas_GenerateFpOperation(fpFLOAT);
             }
+
+          /* Check for conversion of REAL to ordinal value */
+
           else if (newOrdinal && originalExprType == exprReal)
             {
               pas_GenerateFpOperation(fpROUND);
             }
-          else if (!newOrdinal || !originalOrdinal)
+
+          /* Conversions between ordinal types or pointers */
+
+          else if ((!newOrdinal || !originalOrdinal) &&
+                   (!IS_POINTER_EXPRTYPE(newExprType) ||
+                    !IS_POINTER_EXPRTYPE(originalExprType)))
             {
-              error(eNOTYET);
+              error(eEXPRTYPE);
               return exprUnknown;
             }
 
