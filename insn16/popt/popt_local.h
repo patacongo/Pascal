@@ -1,8 +1,8 @@
-/***************************************************************************
+/****************************************************************************
  * popt_local.h
  * External Declarations associated with popt_local.c
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,44 +32,46 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************************/
+ ****************************************************************************/
 
 #ifndef __POPT_LOCAL_H
 #define __POPT_LOCAL_H
 
-/***************************************************************************
+/****************************************************************************
 * Included Files
-****************************************************************************/
+*****************************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
+
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "pofflib.h"
 
-/***************************************************************************
+/****************************************************************************
 * Definitions
-****************************************************************************/
+*****************************************************************************/
 
 #define WINDOW             10           /* size of optimization window */
 
-/***************************************************************************
+/****************************************************************************
  * Public Data
  ****************************************************************************/
 
-extern opType_t  ptable[WINDOW];       /* Pcode Table */
-extern opType_t *pptr[WINDOW];         /* Valid Pcode Pointers */
+extern opType_t  g_opTable[WINDOW];    /* Pcode Table */
+extern opType_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
 
-extern int16_t   nops;                 /* No. Valid Pcode Pointers */
-extern int16_t   end_out;              /* 1 = oEND pcode has been output */
+extern int16_t   g_nOpPtrs;            /* No. Valid Pcode Pointers */
+extern bool      g_endOut;             /* true: oEND pcode has been output */
 
-/***************************************************************************
+/****************************************************************************
 * Public Function Prototypes
-****************************************************************************/
+*****************************************************************************/
 
-void localOptimization(poffHandle_t poffHandle,
-                       poffProgHandle_t poffProgHandle);
-void deletePcode      (int16_t delIndex);
-void deletePcodePair  (int16_t delIndex1, int16_t delIndex2);
-void swapPcodePair    (int16_t swapIndex1, int16_t swapIndex2);
+void popt_LocalOptimization(poffHandle_t poffHandle,
+                            poffProgHandle_t poffProgHandle);
+void popt_DeletePCode      (int16_t delIndex);
+void popt_DeletePCodePair  (int16_t delIndex1, int16_t delIndex2);
+void popt_SwapPCodePair    (int16_t swapIndex1, int16_t swapIndex2);
 
 #endif /* __PLOCAL_H */

@@ -2,7 +2,7 @@
  * popt_local.c
  * P-Code Local Optimizer
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,27 +57,26 @@
  * Private Function Prototypes
  **********************************************************************/
 
-static void initPTable        (void);
-static void putPCodeFromTable (void);
-static void setupPointer      (void);
+static void popt_InitPTable        (void);
+static void popt_PutPCodeFromTable (void);
+static void popt_SetupPointer      (void);
 
 /**********************************************************************
  * Public Data
  **********************************************************************/
 
-opType_t  ptable[WINDOW];               /* Pcode Table */
-opType_t *pptr[WINDOW];                 /* Valid Pcode Pointers */
+opType_t  g_opTable[WINDOW];    /* Pcode Table */
+opType_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
 
-int16_t   nops    = 0;                  /* No. Valid Pcode Pointers */
-int16_t   end_out = 0;                  /* 1 = oEND pcode has been output */
+int16_t   g_nOpPtrs = 0;        /* Number of valid Pcode pointers */
+bool      g_endOut  = 0;        /* 1 = oEND pcode has been output */
 
 /**********************************************************************
  * Private Variables
  **********************************************************************/
 
-static poffHandle_t     myPoffHandle;         /* Handle to POFF object */
-static poffProgHandle_t myPoffProgHandle;/* Handle to temporary POFF object */
-
+static poffHandle_t     g_myPOoffHandle;    /* Handle to POFF object */
+static poffProgHandle_t g_myPoffProgHandle; /* Handle to temporary POFF object */
 
 /**********************************************************************
  * Private Functions
@@ -85,68 +84,68 @@ static poffProgHandle_t myPoffProgHandle;/* Handle to temporary POFF object */
 
 /***********************************************************************/
 
-static void putPCodeFromTable(void)
+static void popt_PutPCodeFromTable(void)
 {
   register int16_t i;
 
-  TRACE(stderr, "[putPCodeFromTable]");
+  TRACE(stderr, "[popt_PutPCodeFromTable]");
 
   /* Transfer all buffered P-Codes (except NOPs) to the optimized file */
   do
     {
-      if ((ptable[0].op != oNOP) && !(end_out))
+      if (g_opTable[0].op != oNOP && !g_endOut)
         {
-          (void)poffAddTmpProgByte(myPoffProgHandle, ptable[0].op);
+          (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
 
-          if (ptable[0].op & o8)
-            (void)poffAddTmpProgByte(myPoffProgHandle, ptable[0].arg1);
+          if (g_opTable[0].op & o8)
+            (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
 
-          if (ptable[0].op & o16)
+          if (g_opTable[0].op & o16)
             {
-              (void)poffAddTmpProgByte(myPoffProgHandle,
-                                       (ptable[0].arg2 >> 8));
-              (void)poffAddTmpProgByte(myPoffProgHandle,
-                                       (ptable[0].arg2 & 0xff));
+              (void)poffAddTmpProgByte(g_myPoffProgHandle,
+                                       (g_opTable[0].arg2 >> 8));
+              (void)poffAddTmpProgByte(g_myPoffProgHandle,
+                                       (g_opTable[0].arg2 & 0xff));
             }
 
-          end_out =(ptable[0].op == oEND);
+          g_endOut = (g_opTable[0].op == oEND);
         }
 
       /* Move all P-Codes down one slot */
 
       for (i = 1; i < WINDOW; i++)
         {
-          ptable[i-1].op   = ptable[i].op ;
-          ptable[i-1].arg1 = ptable[i].arg1;
-          ptable[i-1].arg2 = ptable[i].arg2;
+          g_opTable[i-1].op   = g_opTable[i].op ;
+          g_opTable[i-1].arg1 = g_opTable[i].arg1;
+          g_opTable[i-1].arg2 = g_opTable[i].arg2;
         }
 
       /* Then fill the end slot with a new P-Code from the input file */
 
-      insn_GetOpCode(myPoffHandle, &ptable[WINDOW-1]);
+      insn_GetOpCode(g_myPOoffHandle, &g_opTable[WINDOW-1]);
 
-    } while (ptable[0].op == oNOP);
+    } while (g_opTable[0].op == oNOP);
 
-  setupPointer();
+  popt_SetupPointer();
 }
 
 /**********************************************************************/
 
-static void setupPointer(void)
+static void popt_SetupPointer(void)
 {
   register int16_t pindex;
 
-  TRACE(stderr, "[setupPointer]");
+  TRACE(stderr, "[popt_SetupPointer]");
 
   for (pindex = 0; pindex < WINDOW; pindex++)
     {
-      pptr[pindex] = (opType_t *) NULL;
+      g_opPtr[pindex] = (opType_t *) NULL;
     }
 
-  nops = 0;
+  g_nOpPtrs = 0;
   for (pindex = 0; pindex < WINDOW; pindex++)
     {
-      switch (ptable[pindex].op)
+      switch (g_opTable[pindex].op)
         {
           /* Terminate list when a break from sequential logic is
            * encountered
@@ -169,8 +168,8 @@ static void setupPointer(void)
         case oJGTEZ :
         case oJGTZ  :
         case oJLTEZ :
-          pptr[nops] = &ptable[pindex];
-          nops++;
+          g_opPtr[g_nOpPtrs] = &g_opTable[pindex];
+          g_nOpPtrs++;
           return;
 
           /* Skip over NOPs and comment class pcodes */
@@ -182,15 +181,15 @@ static void setupPointer(void)
           /* Include all other pcodes in the optimization list and continue */
 
         default     :
-          pptr[nops] = &ptable[pindex];
-          nops++;
+          g_opPtr[g_nOpPtrs] = &g_opTable[pindex];
+          g_nOpPtrs++;
         }
     }
 }
 
 /**********************************************************************/
 
-static void initPTable(void)
+static void popt_InitPTable(void)
 {
   register int16_t i;
 
@@ -202,31 +201,31 @@ static void initPTable(void)
 
   do
     {
-      insn_GetOpCode(myPoffHandle, &ptable[0]);
+      insn_GetOpCode(g_myPOoffHandle, &g_opTable[0]);
 
-      (void)poffAddTmpProgByte(myPoffProgHandle, ptable[0].op);
+      (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
 
-      if (ptable[0].op & o8)
+      if (g_opTable[0].op & o8)
         {
-          (void)poffAddTmpProgByte(myPoffProgHandle, ptable[0].arg1);
+          (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
         }
 
-      if (ptable[0].op & o16)
+      if (g_opTable[0].op & o16)
         {
-          (void)poffAddTmpProgByte(myPoffProgHandle, (ptable[0].arg2 >> 8));
-          (void)poffAddTmpProgByte(myPoffProgHandle, (ptable[0].arg2 & 0xff));
+          (void)poffAddTmpProgByte(g_myPoffProgHandle, (g_opTable[0].arg2 >> 8));
+          (void)poffAddTmpProgByte(g_myPoffProgHandle, (g_opTable[0].arg2 & 0xff));
         } /* end if */
     }
-  while ((ptable[0].op != oLABEL) && (ptable[0].op != oEND));
+  while ((g_opTable[0].op != oLABEL) && (g_opTable[0].op != oEND));
 
   /* Fill the pcode window and setup pointers to working section */
 
   for (i = 0; i < WINDOW; i++)
     {
-      insn_GetOpCode(myPoffHandle, &ptable[i]);
+      insn_GetOpCode(g_myPOoffHandle, &g_opTable[i]);
     }
 
-  setupPointer();
+  popt_SetupPointer();
 }
 
 /**********************************************************************
@@ -235,8 +234,8 @@ static void initPTable(void)
 
 /***********************************************************************/
 
-void localOptimization(poffHandle_t poffHandle,
-                       poffProgHandle_t poffProgHandle)
+void popt_LocalOptimization(poffHandle_t poffHandle,
+                            poffProgHandle_t poffProgHandle)
 {
   int16_t nchanges;
 
@@ -244,19 +243,19 @@ void localOptimization(poffHandle_t poffHandle,
 
   /* Save the handles for use by other, private functions */
 
-  myPoffHandle     = poffHandle;
-  myPoffProgHandle = poffProgHandle;
+  g_myPOoffHandle     = poffHandle;
+  g_myPoffProgHandle = poffProgHandle;
 
   /* Initialization */
 
-  initPTable();
+  popt_InitPTable();
 
   /* Outer loop traverse the file op-code by op-code until the oEND P-Code
    * has been output.  NOTE:  it is assumed throughout that oEND is the
    * final P-Code in the program data section.
    */
 
-  while (!(end_out))
+  while (!g_endOut)
     {
       /* The inner loop optimizes the buffered P-Codes until no further
        * changes can be made.  Then the outer loop will advance the buffer
@@ -271,56 +270,57 @@ void localOptimization(poffHandle_t poffHandle,
           nchanges += popt_LoadOptimize();
           nchanges += popt_StoreOptimize();
           nchanges += popt_ExchangeOptimize();
-        } while (nchanges);
+        }
+      while (nchanges);
 
-      putPCodeFromTable();
+      popt_PutPCodeFromTable();
     }
 }
 
 /***********************************************************************/
 
-void deletePcode(int16_t delIndex)
+void popt_DeletePCode(int16_t delIndex)
 {
-  TRACE(stderr, "[deletePcode]");
+  TRACE(stderr, "[popt_DeletePCode]");
 
-  pptr[delIndex]->op   = oNOP;
-  pptr[delIndex]->arg1 = 0;
-  pptr[delIndex]->arg2 = 0;
-  setupPointer();
+  g_opPtr[delIndex]->op   = oNOP;
+  g_opPtr[delIndex]->arg1 = 0;
+  g_opPtr[delIndex]->arg2 = 0;
+  popt_SetupPointer();
 }
 
 /**********************************************************************/
 
-void deletePcodePair(int16_t delIndex1, int16_t delIndex2)
+void popt_DeletePCodePair(int16_t delIndex1, int16_t delIndex2)
 {
-  TRACE(stderr, "[deletePcodePair]");
+  TRACE(stderr, "[popt_DeletePCodePair]");
 
-  pptr[delIndex1]->op   = oNOP;
-  pptr[delIndex1]->arg1 = 0;
-  pptr[delIndex1]->arg2 = 0;
-  pptr[delIndex2]->op   = oNOP;
-  pptr[delIndex2]->arg1 = 0;
-  pptr[delIndex2]->arg2 = 0;
-  setupPointer();
+  g_opPtr[delIndex1]->op   = oNOP;
+  g_opPtr[delIndex1]->arg1 = 0;
+  g_opPtr[delIndex1]->arg2 = 0;
+  g_opPtr[delIndex2]->op   = oNOP;
+  g_opPtr[delIndex2]->arg1 = 0;
+  g_opPtr[delIndex2]->arg2 = 0;
+  popt_SetupPointer();
 }
 
 /**********************************************************************/
 
-void swapPcodePair(int16_t swapIndex1, int16_t swapIndex2)
+void popt_SwapPCodePair(int16_t swapIndex1, int16_t swapIndex2)
 {
   opType_t opCode;
 
-  opCode.op              = pptr[swapIndex2]->op;
-  opCode.arg1            = pptr[swapIndex2]->arg1;
-  opCode.arg2            = pptr[swapIndex2]->arg2;
+  opCode.op                 = g_opPtr[swapIndex2]->op;
+  opCode.arg1               = g_opPtr[swapIndex2]->arg1;
+  opCode.arg2               = g_opPtr[swapIndex2]->arg2;
 
-  pptr[swapIndex2]->op   = pptr[swapIndex1]->op;
-  pptr[swapIndex2]->arg1 = pptr[swapIndex1]->arg1;
-  pptr[swapIndex2]->arg2 = pptr[swapIndex1]->arg2;
+  g_opPtr[swapIndex2]->op   = g_opPtr[swapIndex1]->op;
+  g_opPtr[swapIndex2]->arg1 = g_opPtr[swapIndex1]->arg1;
+  g_opPtr[swapIndex2]->arg2 = g_opPtr[swapIndex1]->arg2;
 
-  pptr[swapIndex1]->op   = opCode.op;
-  pptr[swapIndex1]->arg1 = opCode.arg1;
-  pptr[swapIndex1]->arg2 = opCode.arg2;
+  g_opPtr[swapIndex1]->op   = opCode.op;
+  g_opPtr[swapIndex1]->arg1 = opCode.arg1;
+  g_opPtr[swapIndex1]->arg2 = opCode.arg2;
 
-  setupPointer();  /* Shouldn't be necessary */
+  popt_SetupPointer();  /* Shouldn't be necessary */
 }

@@ -229,6 +229,10 @@ plopt.c:StoreOptimize()
 Eliminate store followed by load
   oSTO arg + oLOAD arg                         -> oSTO arg + oDUP
 
+popt_ExchangeOptimize()
+Eliminate exchange of constant values
+  oXCHGH const1 const2                         -> const2 const1
+
 Convert stores indexed by a constant to unindexed stores
   <push-op> arg1 + ? + oSTOX arg2              -> ? + oSTO arg1 + arg2
   <push-op> arg1 + ? + oSTOBX arg2             -> ? + oSTOB arg1 + arg2

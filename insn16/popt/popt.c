@@ -2,7 +2,7 @@
  * popt.c
  * P-Code Optimizer Main Logic
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -114,7 +114,7 @@ int main(int argc, char *argv[], char *envp[])
   writePoffFile(argv[1]);
   return 0;
 
-} /* End main */
+}
 
 /**********************************************************************
  * Private Functions
@@ -161,7 +161,7 @@ static void readPoffFile(const char *filename)
   /* Close the input file */
 
   fclose(objFile);
-} /* end pass1 */
+}
 
 /***********************************************************************/
 
@@ -193,7 +193,7 @@ static void pass1(void)
   /* Release the temporary POFF object */
 
   poffDestroyProgHandle(poffProgHandle);
-} /* end pass1 */
+}
 
 /***********************************************************************/
 
@@ -216,7 +216,7 @@ static void pass2(void)
 
   /* Perform Local Optimizatin Initialization */
 
-  localOptimization(poffHandle, poffProgHandle);
+  popt_LocalOptimization(poffHandle, poffProgHandle);
 
   /* Replace the original program data with the new program data */
 
@@ -225,7 +225,7 @@ static void pass2(void)
   /* Release the temporary POFF object */
 
   poffDestroyProgHandle(poffProgHandle);
-} /* end pass2 */
+}
 
 /***********************************************************************/
 
@@ -285,6 +285,5 @@ static void writePoffFile(const char *filename)
   /* Close the files used on writePoffFile */
 
   (void)fclose(optFile);
-} /* end writePoffFile */
+}
 
-/***********************************************************************/

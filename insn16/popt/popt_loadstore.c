@@ -2,7 +2,7 @@
  * popt_loadstore.c
  * Load/Store Optimizations
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,13 +61,13 @@
 
 static inline bool popt_CheckDataOperation(int16_t index)
 {
-  return (pptr[index]->op == oPUSHB || pptr[index]->op == oPUSH ||
-          pptr[index]->op == oLD    || pptr[index]->op == oLDH  ||
-          pptr[index]->op == oLDB   ||
-          pptr[index]->op == oLDS   || pptr[index]->op == oLDSH ||
-          pptr[index]->op == oLDSB  ||
-          pptr[index]->op == oLA    || pptr[index]->op == oLAS  ||
-          pptr[index]->op == oLAC);
+  return (g_opPtr[index]->op == oPUSHB || g_opPtr[index]->op == oPUSH ||
+          g_opPtr[index]->op == oLD    || g_opPtr[index]->op == oLDH  ||
+          g_opPtr[index]->op == oLDB   ||
+          g_opPtr[index]->op == oLDS   || g_opPtr[index]->op == oLDSH ||
+          g_opPtr[index]->op == oLDSB  ||
+          g_opPtr[index]->op == oLA    || g_opPtr[index]->op == oLAS  ||
+          g_opPtr[index]->op == oLAC);
 }
 
 /****************************************************************************
@@ -87,20 +87,20 @@ int16_t popt_LoadOptimize(void)
   /* At least two pcodes are need to perform Load optimizations */
 
   i = 0;
-  while (i < nops-1)
+  while (i < g_nOpPtrs - 1)
     {
-      switch (pptr[i]->op)
+      switch (g_opPtr[i]->op)
         {
           /* Eliminate duplicate loads */
 
         case oLDSH   :
-          if ((pptr[i + 1]->op   == oLDSH) &&
-              (pptr[i + 1]->arg1 == pptr[i]->arg1) &&
-              (pptr[i + 1]->arg2 == pptr[i]->arg2))
+          if ((g_opPtr[i + 1]->op   == oLDSH) &&
+              (g_opPtr[i + 1]->arg1 == g_opPtr[i]->arg1) &&
+              (g_opPtr[i + 1]->arg2 == g_opPtr[i]->arg2))
             {
-              pptr[i + 1]->op   = oDUPH;
-              pptr[i + 1]->arg1 = 0;
-              pptr[i + 1]->arg2 = 0;
+              g_opPtr[i + 1]->op   = oDUPH;
+              g_opPtr[i + 1]->arg1 = 0;
+              g_opPtr[i + 1]->arg2 = 0;
               nchanges++;
               i += 2;
             }
@@ -113,13 +113,13 @@ int16_t popt_LoadOptimize(void)
         case oPUSHB  :
           /* Get the index value */
 
-          if (pptr[i]->op == oPUSH)
+          if (g_opPtr[i]->op == oPUSH)
             {
-              val = pptr[i]->arg2;
+              val = g_opPtr[i]->arg2;
             }
           else
             {
-              val = pptr[i]->arg1;
+              val = g_opPtr[i]->arg1;
             }
 
           /* If the following instruction is a load, add the constant
@@ -127,39 +127,39 @@ int16_t popt_LoadOptimize(void)
            * unindexed form.
            */
 
-          if (pptr[i + 1]->op == oLDSXH)
+          if (g_opPtr[i + 1]->op == oLDSXH)
             {
-              pptr[i + 1]->op    = oLDSH;
-              pptr[i + 1]->arg2 += val;
-              deletePcode (i);
+              g_opPtr[i + 1]->op    = oLDSH;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
               nchanges++;
             }
-          else if (pptr[i + 1]->op == oLASX)
+          else if (g_opPtr[i + 1]->op == oLASX)
             {
-              pptr[i + 1]->op    = oLAS;
-              pptr[i + 1]->arg2 += val;
-              deletePcode (i);
+              g_opPtr[i + 1]->op    = oLAS;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
               nchanges++;
             }
-          else if (pptr[i + 1]->op == oLDSXB)
+          else if (g_opPtr[i + 1]->op == oLDSXB)
             {
-              pptr[i + 1]->op    = oLDSB;
-              pptr[i + 1]->arg2 += val;
-              deletePcode (i);
+              g_opPtr[i + 1]->op    = oLDSB;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
               nchanges++;
             }
-          else if (pptr[i + 1]->op == oLDSXM)
+          else if (g_opPtr[i + 1]->op == oLDSXM)
             {
-              pptr[i + 1]->op    = oLDSM;
-              pptr[i + 1]->arg2 += val;
-              deletePcode (i);
+              g_opPtr[i + 1]->op    = oLDSM;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
               nchanges++;
             }
           else if (val < 256)
             {
-              pptr[i]->op   = oPUSHB;
-              pptr[i]->arg1 = val;
-              pptr[i]->arg2 = 0;
+              g_opPtr[i]->op   = oPUSHB;
+              g_opPtr[i]->arg1 = val;
+              g_opPtr[i]->arg2 = 0;
               i++;
             }
           else
@@ -191,21 +191,21 @@ int16_t popt_StoreOptimize (void)
    */
 
   i = 0;
-  while (i < nops-1)
+  while (i < g_nOpPtrs - 1)
     {
-      switch (pptr[i]->op)
+      switch (g_opPtr[i]->op)
         {
           /* Eliminate store followed by load */
 
         case oSTSH :
-          if ((pptr[i + 1]->op   == oLDSH) &&
-              (pptr[i + 1]->arg1 == pptr[i]->arg1) &&
-              (pptr[i + 1]->arg2 == pptr[i]->arg2))
+          if ((g_opPtr[i + 1]->op   == oLDSH) &&
+              (g_opPtr[i + 1]->arg1 == g_opPtr[i]->arg1) &&
+              (g_opPtr[i + 1]->arg2 == g_opPtr[i]->arg2))
             {
-              pptr[i + 1]->op = oSTSH;
-              pptr[i]->op     = oDUPH;
-              pptr[i]->arg1   = 0;
-              pptr[i]->arg2   = 0;
+              g_opPtr[i + 1]->op = oSTSH;
+              g_opPtr[i]->op     = oDUPH;
+              g_opPtr[i]->arg1   = 0;
+              g_opPtr[i]->arg2   = 0;
               nchanges++;
               i += 2;
             }
@@ -223,20 +223,20 @@ int16_t popt_StoreOptimize (void)
            * unindexed form.
            */
 
-          if (i < nops-2)
+          if (i < g_nOpPtrs - 2)
             {
-              if (pptr[i + 2]->op == oSTSXH)
+              if (g_opPtr[i + 2]->op == oSTSXH)
                 {
-                  pptr[i + 2]->op    = oSTSH;
-                  pptr[i + 2]->arg2 += pptr[i]->arg2;
-                  deletePcode (i);
+                  g_opPtr[i + 2]->op    = oSTSH;
+                  g_opPtr[i + 2]->arg2 += g_opPtr[i]->arg2;
+                  popt_DeletePCode(i);
                   nchanges++;
                 }
-              else if (pptr[i + 2]->op == oSTSXB)
+              else if (g_opPtr[i + 2]->op == oSTSXB)
                 {
-                  pptr[i + 2]->op    = oSTSB;
-                  pptr[i + 2]->arg2 += pptr[i]->arg2;
-                  deletePcode (i);
+                  g_opPtr[i + 2]->op    = oSTSB;
+                  g_opPtr[i + 2]->arg2 += g_opPtr[i]->arg2;
+                  popt_DeletePCode(i);
                   nchanges++;
                 }
               else
@@ -251,13 +251,13 @@ int16_t popt_StoreOptimize (void)
           break;
 
         case oPUSHB :
-          if (i < nops-2)
+          if (i < g_nOpPtrs - 2)
             {
-              if (pptr[i + 2]->op == oSTSXB)
+              if (g_opPtr[i + 2]->op == oSTSXB)
                 {
-                  pptr[i + 2]->op    = oSTSB;
-                  pptr[i + 2]->arg2 += pptr[i]->arg2;
-                  deletePcode (i);
+                  g_opPtr[i + 2]->op    = oSTSB;
+                  g_opPtr[i + 2]->arg2 += g_opPtr[i]->arg2;
+                  popt_DeletePCode(i);
                   nchanges++;
                 }
               else
@@ -292,18 +292,18 @@ int16_t popt_ExchangeOptimize(void)
    */
 
   i = 2;
-  while (i < nops)
+  while (i < g_nOpPtrs)
     {
       /* Search for an exchange instruction */
 
-      switch (pptr[i]->op)
+      switch (g_opPtr[i]->op)
         {
         case oXCHGH :  /* (Two 16-bit stack arguments) */
           if (popt_CheckDataOperation(i - 1) &&
               popt_CheckDataOperation(i - 2))
             {
-              swapPcodePair(i - 1, i - 2);
-              deletePcode(i);
+              popt_SwapPCodePair(i - 1, i - 2);
+              popt_DeletePCode(i);
             }
           else
             {
