@@ -1,7 +1,7 @@
 /****************************************************************************
  * pexec.c
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -306,14 +306,29 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) * sparm);
       break;
 
+    case oUMUL :
+      POP(st, uparm1);
+      TOS(st, 0) = ((ustack_t)TOS(st, 0)) * uparm1;
+      break;
+
     case oDIV :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) / sparm);
       break;
 
+    case oUDIV :
+      POP(st, uparm1);
+      TOS(st, 0) = ((ustack_t)TOS(st, 0)) / uparm1;
+      break;
+
     case oMOD :
       POP(st, sparm);
       TOS(st, 0) = (ustack_t)(((sstack_t)TOS(st, 0)) % sparm);
+      break;
+
+    case oUMOD :
+      POP(st, uparm1);
+      TOS(st, 0) = ((ustack_t)TOS(st, 0)) % uparm1;
       break;
 
     case oSLL :
@@ -339,6 +354,11 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
     case oAND :
       POP(st, uparm1);
       TOS(st, 0) = (TOS(st, 0) & uparm1);
+      break;
+
+    case oXOR :
+      POP(st, uparm1);
+      TOS(st, 0) = (TOS(st, 0) ^ uparm1);
       break;
 
       /* Comparisons (One stack argument) */
@@ -475,6 +495,50 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
         }
 
       TOS(st, 0) = uparm1;
+      break;
+
+    case oULT   :
+      POP(st, uparm1);
+      uparm2 = PASCAL_FALSE;
+      if (uparm1 < (ustack_t)TOS(st, 0))
+        {
+          uparm2 = PASCAL_TRUE;
+        }
+
+      TOS(st, 0) = uparm2;
+      break;
+
+    case oUGTE  :
+      POP(st, uparm1);
+      uparm2 = PASCAL_FALSE;
+      if (uparm1 >= (ustack_t)TOS(st, 0))
+        {
+          uparm2 = PASCAL_TRUE;
+        }
+
+      TOS(st, 0) = uparm2;
+      break;
+
+    case oUGT   :
+      POP(st, uparm1);
+      uparm2 = PASCAL_FALSE;
+      if (uparm1 > (ustack_t)TOS(st, 0))
+        {
+          uparm2 = PASCAL_TRUE;
+        }
+
+      TOS(st, 0) = uparm2;
+      break;
+
+    case oULTE  :
+      POP(st, uparm1);
+      uparm2 = PASCAL_FALSE;
+      if (uparm1 <= (ustack_t)TOS(st, 0))
+        {
+          uparm2 = PASCAL_TRUE;
+        }
+
+      TOS(st, 0) = uparm2;
       break;
 
       /* Load (One stack argument) */
@@ -694,7 +758,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       /* Program control:  imm16 = unsigned label (no stack arguments) */
 
     case oJMP   :
-      goto branch_out;
+      goto branchOut;
 
       /* Program control:  imm16 = unsigned label (One stack argument) */
 
@@ -702,7 +766,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm1);
       if (sparm1 == 0)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -710,7 +774,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm1);
       if (sparm1 != 0)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -718,7 +782,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm1);
       if (sparm1 < 0)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -726,7 +790,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm1);
       if (sparm1 >= 0)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -734,7 +798,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm1);
       if (sparm1 > 0)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -742,7 +806,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm1);
       if (sparm1 <= 0)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -753,7 +817,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm2);
       if (sparm2 == sparm1)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -762,7 +826,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm2);
       if (sparm2 != sparm1)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -771,7 +835,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm2);
       if (sparm2 < sparm1)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -780,7 +844,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm2);
       if (sparm2 >= sparm1)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -789,7 +853,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm2);
       if (sparm2 > sparm1)
         {
-          goto branch_out;
+          goto branchOut;
         }
       break;
 
@@ -798,7 +862,43 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       POP(st, sparm2);
       if (sparm2 <= sparm1)
         {
-          goto branch_out;
+          goto branchOut;
+        }
+      break;
+
+    case oJULT  :
+      POP(st, uparm1);
+      POP(st, uparm2);
+      if (uparm2 < uparm1)
+        {
+          goto branchOut;
+        }
+      break;
+
+    case oJUGTE :
+      POP(st, uparm1);
+      POP(st, uparm2);
+      if (uparm2 >= uparm1)
+        {
+          goto branchOut;
+        }
+      break;
+
+    case oJUGT  :
+      POP(st, uparm1);
+      POP(st, uparm2);
+      if (uparm2 > uparm1)
+        {
+          goto branchOut;
+        }
+      break;
+
+    case oJULTE :
+      POP(st, uparm1);
+      POP(st, uparm2);
+      if (uparm2 <= uparm1)
+        {
+          goto branchOut;
         }
       break;
 
@@ -1023,7 +1123,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
   st->pc += 3;
   return ret;
 
-branch_out:
+branchOut:
   st->pc = (paddr_t)imm16;
   return ret;
 }

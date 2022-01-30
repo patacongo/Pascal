@@ -111,15 +111,15 @@
  * xx11 0011  ---        ---            ---            ---
  * xx11 0100  ---        PUSHB n        PUSH nn        ---
  * xx11 0101  ---        ---            INDS nn        ---
- * xx11 0110  ---        ---            ---            ---
- * xx11 0111  ---        ---            ---            ---
- * xx11 1000  ---        ---            LAX uoffs      LASX loff,offs
- * xx11 1001  ---        ---            LIB lop        ---
- * xx11 1010  ---        ---            SYSIO iop      ---
- * xx11 1011  ---        ---            ---            ---
- * xx11 1100  ---        ---            ---            ---
- * xx11 1101  ---        ---            ---            ---
- * xx11 1110  ---        ---            ---            ---
+ * xx11 0110  ---        ---            LIB lop        ---
+ * xx11 0111  UMUL       ---            SYSIO iop      ---
+ * xx11 1000  UDIV       ---            LAX uoffs      LASX loff,offs
+ * xx11 1001  UMOD       ---            ---            ---
+ * xx11 1010  ULT        ---            JULT  ilbl     ---
+ * xx11 1011  UGTE       ---            JUGTE ilbl     ---
+ * xx11 1100  UGT        ---            JUGT  ilbl     ---
+ * xx11 1101  ULTE       ---            JULTE ilbl     ---
+ * xx11 1110  XOR        ---            ---            ---
  * xx11 1111  END        ---           *LABEL ilbl    *LINE fn,lineno
  *
  * KEY:
@@ -225,7 +225,21 @@
 
 #define oRET   (0x2f)
 
-/* 0x30 - 0x3e -- unassigned */
+/* 0x30 - 0x36 -- unassigned */
+
+/* Unsigned arithmetic and comparisons */
+
+#define oUMUL  (0x37)
+#define oUDIV  (0x38)
+#define oUMOD  (0x39)
+#define oULT   (0x3a)
+#define oUGTE  (0x3b)
+#define oUGT   (0x3c)
+#define oULTE  (0x3d)
+
+/* Additional bitwise binary operator */
+
+#define oXOR   (0x3e)
 
 /* System Functions (No stack arguments) */
 
@@ -324,24 +338,33 @@
 #define oPUSH  (o16|0x34)
 #define oINDS  (o16|0x35)
 
-/* (o16|0x34)-(o16|0x37) -- unassigned */
-
-/* Load address relative to stack base: arg16 = unsigned offset, TOS=index */
-
-#define oLAX   (o16|0x38)
+/* (o16|0x34)-(o16|0x35) -- unassigned */
 
 /* System functions: arg16 = 16-bit library call identifier */
 
-#define oLIB   (o16|0x39)
+#define oLIB   (o16|0x36)
 
 /* System calls:
  * For SYSIO:        arg16 = sub-function code
  *                   TOS   = file number
  */
 
-#define oSYSIO  (o16|0x3a)
+#define oSYSIO (o16|0x37)
 
-/* (o16|0x3b)-(o16|0x3e) -- unassigned */
+/* Load address relative to stack base: arg16 = unsigned offset, TOS=index */
+
+#define oLAX   (o16|0x38)
+
+/* (o16|0x39) -- unassigned */
+
+/* Unsigned compare and branch */
+
+#define oJULT  (o16|0x3a)
+#define oJUGTE (o16|0x3b)
+#define oJUGT  (o16|0x3c)
+#define oJULTE (o16|0x3d)
+
+/* (o16|0x3e) -- unassigned */
 
 /* Program control:  arg16 = unsigned label (no stack arguments) */
 

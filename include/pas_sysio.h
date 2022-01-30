@@ -2,7 +2,7 @@
  * pas_sysio.h
  * Definitions of the arguments of the oSYSIO opcode
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,12 +74,13 @@
 #define xWRITELN           (0x0020)  /* Move to the next line */
 #define xWRITE_PAGE        (0x0021)  /* Move to the next page */
 #define xWRITE_BINARY      (0x0022)  /* Write to a binary file */
-#define xWRITE_INT         (0x0023)  /* Write an integer to a text file */
-#define xWRITE_CHAR        (0x0024)  /* Write an character to a text file */
-#define xWRITE_STRING      (0x0025)  /* Write an string to a text file */
-#define xWRITE_SHORTSTRING (0x0026)  /* Write an string to a text file */
-#define xWRITE_REAL        (0x0027)  /* Write an real value to a text file */
+#define xWRITE_INT         (0x0023)  /* Write a signed integer to a text file */
+#define xWRITE_WORD        (0x0024)  /* Write an unsigned integer to a text file */
+#define xWRITE_CHAR        (0x0025)  /* Write an character to a text file */
+#define xWRITE_STRING      (0x0026)  /* Write an string to a text file */
+#define xWRITE_SHORTSTRING (0x0027)  /* Write an string to a text file */
+#define xWRITE_REAL        (0x0028)  /* Write an real value to a text file */
 
-#define MAX_XOP          (0x0027)
+#define MAX_XOP            (0x0028)
 
 #endif /* __PAS_SYSIO_H */

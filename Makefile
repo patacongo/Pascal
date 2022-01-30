@@ -25,10 +25,10 @@ LIBINSNDIR		= $(INSNDIR)/libinsn
 # Objects and targets
 
 LIBS			= $(LIBDIR)/libpoff.a $(LIBDIR)/libpas.a \
-			  $(LIBDIR)/libinsn.a
+				  $(LIBDIR)/libinsn.a
 
-all: pascal popt regm plink plist prun
-.PHONY: all config.h libpoff.a libpas.a libinsn.a pascal popt regm plink plist prun clean deep-clean
+all: pascal popt plink plist prun
+.PHONY: all config.h libpoff.a libpas.a libinsn.a pascal popt plink plist prun clean deep-clean
 
 $(INCDIR)/config.h: Make.config
 	@$(MAKE) -f Make.config.h
@@ -65,13 +65,6 @@ $(BINDIR)/popt: $(BINDIR) config.h $(LIBS)
 	@$(MAKE) -C $(INSNDIR) popt
 
 popt: $(BINDIR)/popt
-
-$(BINDIR)/regm: $(BINDIR) config.h $(LIBS)
-ifeq ($(CONFIG_REGM),y)
-	@$(MAKE) -C $(INSNDIR) regm
-endif
-
-regm: $(BINDIR)/regm
 
 $(BINDIR)/plink: $(BINDIR) config.h $(LIBS)
 	@$(MAKE) -C $(PLINKDIR)
@@ -110,5 +103,3 @@ deep-clean: clean
 	rm -f .config include/config.h Make.config
 	$(RM) bin16/*
 	$(RM) bin32/*
-
-# ----------------------------------------------------------------------

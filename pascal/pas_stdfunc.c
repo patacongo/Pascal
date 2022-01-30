@@ -154,6 +154,7 @@ static exprType_t pas_AddrFunc(void)
       case sFILE :
       case sTEXTFILE :
       case sINT :
+      case sWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -197,49 +198,56 @@ static void pas_OrdFunc(void)
 
 static exprType_t pas_PredFunc(void)
 {
-   exprType_t predType;
+  exprType_t predType;
 
-   TRACE(g_lstFile,"[pas_PredFunc]");
+  TRACE(g_lstFile,"[pas_PredFunc]");
 
-   /* FORM:  PRED (<simple integer expression>) */
+  /* FORM:  PRED (<simple integer expression>) */
 
-   pas_CheckLParen();
+  pas_CheckLParen();
 
-   /* Process any ordinal expression */
+  /* Process any ordinal expression */
 
-   predType = pas_Expression(exprAnyOrdinal, NULL);
-   pas_CheckRParen();
-   pas_GenerateSimple(opDEC);
-   return predType;
+  predType = pas_Expression(exprAnyOrdinal, NULL);
+  pas_CheckRParen();
+  pas_GenerateSimple(opDEC);
+  return predType;
 }
 
 /****************************************************************************/
 
 static exprType_t pas_SqrFunc(void)
 {
-   exprType_t sqrType;
+  exprType_t sqrType;
 
-   TRACE(g_lstFile,"[pas_SqrFunc]");
+  TRACE(g_lstFile,"[pas_SqrFunc]");
 
-/* FORM:  SQR (<simple integer OR real expression>) */
+  /* FORM:  SQR (<simple integer OR real expression>) */
 
-   pas_CheckLParen();
+  pas_CheckLParen();
 
-   sqrType = pas_Expression(exprUnknown, NULL); /* Process any expression */
-   if (sqrType == exprInteger) {
+  sqrType = pas_Expression(exprUnknown, NULL); /* Process any expression */
+  if (sqrType == exprInteger)
+    {
+      pas_GenerateSimple(opDUP);
+      pas_GenerateSimple(opMUL);
+     }
+  else if (sqrType == exprWord)
+    {
+      pas_GenerateSimple(opDUP);
+      pas_GenerateSimple(opUMUL);
+     }
+  else if (sqrType == exprReal)
+    {
+      pas_GenerateFpOperation(fpSQR);
+    }
+  else
+    {
+      error(eINVARG);
+    }
 
-     pas_GenerateSimple(opDUP);
-     pas_GenerateSimple(opMUL);
-
-   }
-   else if (sqrType == exprReal)
-     pas_GenerateFpOperation(fpSQR);
-
-   else
-     error(eINVARG);
-
-   pas_CheckRParen();
-   return sqrType;
+  pas_CheckRParen();
+  return sqrType;
 }
 
 /****************************************************************************/

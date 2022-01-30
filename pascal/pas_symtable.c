@@ -2,7 +2,7 @@
  * pas_symtable.c
  * Table Management Package
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -585,6 +585,14 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.tMaxValue = MAXINT;
     }
 
+  typePtr = pas_AddTypeDefine("WORD", sWORD, sWORD_SIZE, NULL);
+  if (typePtr)
+    {
+      g_parentInteger            = typePtr;
+      typePtr->sParm.t.tMinValue = MINWORD;
+      typePtr->sParm.t.tMaxValue = MAXWORD;
+    }
+
   typePtr = pas_AddTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL);
   if (typePtr)
     {
@@ -735,6 +743,7 @@ void pas_DumpTables(void)
           /* Variables */
 
         case sINT :
+        case sWORD :
         case sBOOLEAN :
         case sCHAR  :
         case sREAL :

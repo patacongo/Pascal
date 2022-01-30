@@ -56,17 +56,30 @@ enum pcode_e
 
   opNEG, opABS, opINC, opDEC, opNOT,
 
-  /* Arithmetic & logical (Two stack arguments) */
+  /* Arithmetic & logical (Two stack arguments):
+   *
+   *   opMUL, opDIV, opMOD, opSRA - Signed integers only
+   *   opUMUL, opUDIV, opUMOD     - Unsigned words only
+   *
+   * Logical operations are inherently unsigned but support integers as well.
+   */
 
-  opADD, opSUB, opMUL, opDIV, opMOD, opSLL, opSRL, opSRA, opOR, opXOR, opAND,
+  opADD, opSUB, opMUL, opUMUL, opDIV, opUDIV, opMOD, opUMOD,
+  opSLL, opSRL, opSRA, opOR,   opXOR, opAND,
 
   /* Comparisons (One stack argument) */
 
   opEQUZ, opNEQZ, opLTZ, opGTEZ, opGTZ, opLTEZ,
 
-  /* Comparisons (Two stack arguments) */
+  /* Comparisons (Two stack arguments)
+   *
+   *   opLT,  opGTE,  opGT,  opLTE  - Comparizons of signed integers
+   *   opULT, opUGTE, opUGT, opULTE - Comparizons of unsigned words
+   */
 
-  opEQU, opNEQ, opLT, opGTE, opGT, opLTE,
+  opEQU, opNEQ,
+  opLT,  opGTE,  opGT,  opLTE,
+  opULT, opUGTE, opUGT, opULTE,
 
   /* Load Immediate */
 

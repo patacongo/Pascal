@@ -11,7 +11,7 @@ const
 var
   sieve, primes : array[0..w] of set of 0..maxbit;
   next : record
-           word, bit : integer
+           wordIndex, bitNumber : integer
          end;
   j, k, t, c : integer; empty:boolean;
 
@@ -22,23 +22,24 @@ begin {initialize}
       primes[t] := []
     end;
 
-  sieve[0]  := sieve[0]-[0];
-  next.word := 0;
-  next.bit  := 1;
-  empty     := false;
+  sieve[0]       := sieve[0] - [0];
+  next.wordIndex := 0;
+  next.bitNumber := 1;
+  empty          := false;
 
   with next do
   repeat {find next prime}
-    while not(bit in sieve[word]) do bit := succ(bit);
+    while not (bitNumber in sieve[wordIndex]) do
+      bitNumber := succ(bitNumber);
 
-    primes[word] := primes[word] + [bit];
-    c := 2 * bit + 1;
-    j := bit;
-    k := word;
+    primes[wordIndex] := primes[wordIndex] + [bitNumber];
+    c                 := 2 * bitNumber + 1;
+    j                 := bitNumber;
+    k                 := wordIndex;
 
     while k <= w do {eliminate}
     begin sieve[k] := sieve[k] - [j];
-      k := k + word*2;
+      k := k + wordIndex * 2;
       j := j + c;
       while j > maxbit do
         begin
@@ -47,16 +48,16 @@ begin {initialize}
         end
     end;
 
-    if sieve[word] = [] then
+    if sieve[wordIndex] = [] then
       begin
-        empty := true;
-        bit   := 0
+        empty     := true;
+        bitNumber := 0
       end;
 
-    while empty and (word<w) do
+    while empty and (wordIndex < w) do
       begin
-        word  := word + 1;
-        empty := sieve[word] = []
+        wordIndex := wordIndex + 1;
+        empty     := sieve[wordIndex] = []
       end
   until empty; {ends with}
 end.

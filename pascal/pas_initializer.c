@@ -2,7 +2,7 @@
  * pas_initializer.c
  * Handle initialization of level variables
  *
- *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -399,6 +399,7 @@ static void pas_SetInitialValues(void)
               /* Ordinal types */
 
               case sINT :
+              case sWORD :
               case sBOOLEAN :
               case sSCALAR :
                 pas_GenerateDataOperation(opPUSH, initializer->v.value.iOrdinal);

@@ -104,6 +104,8 @@ static int      pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
                                   uint16_t size);
 static int      pexec_WriteInteger(uint16_t fileNumber, int16_t value,
                                    uint16_t fieldWidth);
+static int      pexec_WriteWord(uint16_t fileNumber, uint16_t value,
+                                uint16_t fieldWidth);
 static int      pexec_WriteChar(uint16_t fileNumber, uint8_t value,
                                 uint16_t fieldWidth);
 static int      pexec_WriteReal(uint16_t fileNumber, double value,
@@ -661,6 +663,34 @@ static int pexec_WriteInteger(uint16_t fileNumber, int16_t value,
   return errorCode;
 }
 
+static int pexec_WriteWord(uint16_t fileNumber, uint16_t value,
+                           uint16_t fieldWidth)
+{
+  int errorCode = eNOERROR;
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream    == NULL ||
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+    {
+      errorCode = eNOTOPENFORWRITE;
+    }
+  else
+    {
+      const char *fmt = pexec_GetFormat('u', fieldWidth >> 8, 0);
+      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      if (nbytes < 0)
+        {
+          errorCode = eWRITEFAILED;
+        }
+    }
+
+  return errorCode;
+}
+
 static int pexec_WriteChar(uint16_t fileNumber, uint8_t value,
                            uint16_t fieldWidth)
 {
@@ -856,7 +886,8 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
   uint16_t fieldWidth;
   uint16_t size;
   uint16_t address;
-  uint16_t value;
+  uint16_t uValue;
+  int16_t  sValue;
   int      errorCode = eNOERROR;
 
   switch (subfunc)
@@ -902,9 +933,9 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     case xASSIGNFILE :
       POP(st, address);     /* File name string address */
       POP(st, size);        /* File name string size */
-      POP(st, value);       /* Binary/text boolean from stack */
+      POP(st, uValue);       /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_AssignFile(fileNumber, (value != 0),
+      errorCode = pexec_AssignFile(fileNumber, (uValue != 0),
                                    (const char *)&st->dstack.b[address],
                                    size);
       break;
@@ -1084,10 +1115,23 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 
     case xWRITE_INT :
       POP(st, fieldWidth);  /* Field width */
-      POP(st, value);       /* Write integer value */
+      POP(st, sValue);      /* Write integer value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_WriteInteger(fileNumber, (int16_t)value, fieldWidth);
+      errorCode = pexec_WriteInteger(fileNumber, sValue, fieldWidth);
+      break;
+
+    /* xWRITE_WORD: TOS(0) = Field width
+     *              TOS(1) = Write integer value
+     *              TOS(2) = File number
+     */
+
+    case xWRITE_WORD :
+      POP(st, fieldWidth);  /* Field width */
+      POP(st, uValue);      /* Write integer value */
+      POP(st, fileNumber);  /* File number from stack */
+
+      errorCode = pexec_WriteWord(fileNumber, uValue, fieldWidth);
       break;
 
     /* WRITE_CHAR: TOS(0) = Field width
@@ -1097,10 +1141,10 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 
     case xWRITE_CHAR :
       POP(st, fieldWidth);  /* Field width */
-      POP(st, value);       /* Write value */
+      POP(st, uValue);      /* Write value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_WriteChar(fileNumber, (uint8_t)value, fieldWidth);
+      errorCode = pexec_WriteChar(fileNumber, (uint8_t)uValue, fieldWidth);
       break;
 
     /* WRITE_STRING: TOS(0) = Field width

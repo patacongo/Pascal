@@ -83,7 +83,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oNEG :
@@ -116,7 +116,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oEQU  :
@@ -143,7 +143,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oNEQ  :
@@ -170,7 +170,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oLT   :
@@ -197,7 +197,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oGTE  :
@@ -224,7 +224,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oGT   :
@@ -251,7 +251,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oLTE :
@@ -278,7 +278,115 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
+          break;
+
+        case oULT   :
+          switch (g_opPtr[i + 1]->op)
+            {
+            case oNOT :
+              g_opPtr[i]->op = oUGTE;
+              popt_DeletePCode(i + 1);
+              nchanges++;
+              break;
+
+            case oJEQUZ :
+              g_opPtr[i + 1]->op = oJUGTE;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            case oJNEQZ :
+              g_opPtr[i + 1]->op = oJULT;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            default     :
+              i++;
+              break;
+            }
+          break;
+
+        case oUGTE  :
+          switch (g_opPtr[i + 1]->op)
+            {
+            case oNOT :
+              g_opPtr[i]->op = oULT;
+              popt_DeletePCode(i + 1);
+              nchanges++;
+              break;
+
+            case oJEQUZ :
+              g_opPtr[i + 1]->op = oJULT;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            case oJNEQZ :
+              g_opPtr[i + 1]->op = oJUGTE;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            default     :
+              i++;
+              break;
+            }
+          break;
+
+        case oUGT   :
+          switch (g_opPtr[i + 1]->op)
+            {
+            case oNOT :
+              g_opPtr[i]->op = oULTE;
+              popt_DeletePCode(i + 1);
+              nchanges++;
+              break;
+
+            case oJEQUZ :
+              g_opPtr[i + 1]->op = oJULTE;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            case oJNEQZ :
+              g_opPtr[i + 1]->op = oJUGT;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            default     :
+              i++;
+              break;
+            }
+          break;
+
+        case oULTE :
+          switch (g_opPtr[i + 1]->op)
+            {
+            case oNOT :
+              g_opPtr[i]->op = oUGT;
+              popt_DeletePCode(i + 1);
+              nchanges++;
+              break;
+
+            case oJEQUZ :
+              g_opPtr[i + 1]->op = oJUGT;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            case oJNEQZ :
+              g_opPtr[i + 1]->op = oJULTE;
+              popt_DeletePCode(i);
+              nchanges++;
+              break;
+
+            default     :
+              i++;
+              break;
+            }
           break;
 
         case oEQUZ  :
@@ -380,7 +488,7 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         case oGTZ   :
@@ -434,13 +542,13 @@ int16_t popt_BranchOptimize (void)
             default     :
               i++;
               break;
-            } /* end switch */
+            }
           break;
 
         default     :
           i++;
           break;
-        } /* end switch */
+        }
     } /* end while */
   return (nchanges);
 

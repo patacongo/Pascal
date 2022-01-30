@@ -2,7 +2,7 @@
  * pgen.c
  * P-Code generation logic
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -78,13 +78,16 @@ static const uint16_t opmap[NUM_OPCODES] =
   oADD,    /* opADD */
   oSUB,    /* opSUB */
   oMUL,    /* opMUL */
+  oUMUL,   /* opUMUL */
   oDIV,    /* opDIV */
+  oUDIV,   /* opUDIV */
   oMOD,    /* opMOD */
+  oUMOD,   /* opUMOD */
   oSLL,    /* opSLL */
   oSRL,    /* opSRL */
   oSRA,    /* opSRA */
   oOR,     /* opOR */
-  oNOP,    /* opXOR -- not yet implemented */
+  oXOR,    /* opXOR */
   oAND,    /* opAND */
   oEQUZ,   /* opEQUZ */
   oNEQZ,   /* opNEQZ */
@@ -98,6 +101,10 @@ static const uint16_t opmap[NUM_OPCODES] =
   oGTE,    /* opGTE */
   oGT,     /* opGT */
   oLTE,    /* opLTE */
+  oULT,    /* opULT */
+  oUGTE,   /* opUGTE */
+  oUGT,    /* opUGT */
+  oULTE,   /* opULTE */
   oLDIH,   /* opLDI -- integer load maps to 16-bit load */
   oLDIB,   /* opLDIB */
   oLDIM,   /* opLDIM */

@@ -2,7 +2,7 @@
  * pas_machine.h
  * Characteristics of the PCODE machine
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,8 +60,10 @@
 #define MAXINT              32767
 #define MININT             -32768
 #define BITS_IN_INTEGER     16
-#define MAXUINT             0xffff
-#define MINUINT             0
+
+#define sWORD_SIZE          2
+#define MAXWORD             0xffff
+#define MINWORD             0
 
 #define INT_ALIGNUP(n)      (((n) + sINT_SIZE - 1) & ~(sINT_SIZE - 1))
 #define INT_ALIGNDOWN(n)    ((n) & ~sINT_SIZE)

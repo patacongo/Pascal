@@ -179,9 +179,11 @@ void pas_Statement(void)
       /* Simple assignment statements */
 
     case sINT :
+    case sWORD :
       symPtr = g_tknPtr;
+      exprType = (g_token == sINT) ? exprInteger : exprWord;
       getToken();
-      pas_Assignment(opSTS, exprInteger, symPtr, symPtr->sParm.v.vParent);
+      pas_Assignment(opSTS, exprType, symPtr, symPtr->sParm.v.vParent);
       break;
 
     case sCHAR :
@@ -322,7 +324,9 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
        */
 
     case sINT :
-      exprType = pas_AssignExprType(exprInteger, assignFlags);
+    case sWORD :
+      exprType = (varPtr->sKind == sINT) ? exprInteger : exprWord;
+      exprType = pas_AssignExprType(exprType, assignFlags);
 
       /* Check for indexed variants */
 
@@ -1867,7 +1871,8 @@ static void pas_ForStatement(void)
 
    /* Get and verify the left side of the assignment. */
 
-   if (g_token != sINT && g_token != sSUBRANGE && g_token != sSCALAR)
+   if (g_token != sINT      && g_token != sWORD   &&
+       g_token != sSUBRANGE && g_token != sSCALAR)
      {
        error(eINTVAR);
      }

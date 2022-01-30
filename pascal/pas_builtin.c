@@ -2,7 +2,7 @@
  * pas_builtin.c
  * Functions built into the code at compile time
  *
- *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -79,6 +79,7 @@ static exprType_t pas_BuiltInSizeOf(void)
       case sFILE :
       case sTEXTFILE :
       case sINT :
+      case sWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :

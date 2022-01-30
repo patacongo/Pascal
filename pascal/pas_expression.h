@@ -2,7 +2,7 @@
  * pas_expression.h
  * External Declarations associated with pas_expression.c
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -112,30 +112,32 @@ enum exprType_e
 
   /* Standard expression types */
 
-  exprInteger        = 0x10,  /* integer value */
-  exprReal           = 0x11,  /* real value */
-  exprChar           = 0x12,  /* character value */
-  exprBoolean        = 0x13,  /* boolean(integer) value */
-  exprScalar         = 0x14,  /* scalar(integer) value */
-  exprString         = 0x15,  /* variable length string reference */
-  exprShortString    = 0x16,  /* variable length string reference */
-  exprCString        = 0x17,  /* pointer to C string */
-  exprSet            = 0x18,  /* set(integer) value */
-  exprFile           = 0x19,  /* file */
-  exprRecord         = 0x1a,  /* record */
+  exprInteger        = 0x10,  /* signed integer value */
+  exprWord           = 0x11,  /* unsigned integer value */
+  exprReal           = 0x12,  /* real value */
+  exprChar           = 0x13,  /* character value */
+  exprBoolean        = 0x14,  /* boolean(integer) value */
+  exprScalar         = 0x15,  /* scalar(integer) value */
+  exprString         = 0x16,  /* variable length string reference */
+  exprShortString    = 0x17,  /* variable length string reference */
+  exprCString        = 0x18,  /* pointer to C string */
+  exprSet            = 0x19,  /* set(integer) value */
+  exprFile           = 0x1a,  /* file */
+  exprRecord         = 0x1b,  /* record */
 
   /* Expressions that evaluate to pointers to standard type */
 
-  exprIntegerPtr     = 0x90,  /* pointer to integer value */
-  exprRealPtr        = 0x91,  /* pointer to a real value */
-  exprCharPtr        = 0x92,  /* pointer to a character value */
-  exprBooleanPtr     = 0x93,  /* pointer to a boolean value */
-  exprScalarPtr      = 0x94,  /* pointer to a scalar value */
-  exprStringPtr      = 0x95,  /* variable length string reference */
-  exprShortStringPtr = 0x96,  /* variable length string reference */
-  exprSetPtr         = 0x98,  /* pointer to a set value */
-  exprFilePtr        = 0x99,  /* pointer to a file */
-  exprRecordPtr      = 0x9a   /* pointer to a record */
+  exprIntegerPtr     = 0x90,  /* pointer to a signed integer value */
+  exprWordPtr        = 0x91,  /* pointer to an unsigned integer value */
+  exprRealPtr        = 0x92,  /* pointer to a real value */
+  exprCharPtr        = 0x93,  /* pointer to a character value */
+  exprBooleanPtr     = 0x94,  /* pointer to a boolean value */
+  exprScalarPtr      = 0x95,  /* pointer to a scalar value */
+  exprStringPtr      = 0x96,  /* variable length string reference */
+  exprShortStringPtr = 0x97,  /* variable length string reference */
+  exprSetPtr         = 0x99,  /* pointer to a set value */
+  exprFilePtr        = 0x9a,  /* pointer to a file */
+  exprRecordPtr      = 0x9b   /* pointer to a record */
 };
 
 typedef enum exprType_e exprType_t;

@@ -689,6 +689,7 @@ static void pas_ReadBinary(uint16_t fileSize)
       /* Simple ordinal types */
 
       case sINT :
+      case sWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -699,7 +700,7 @@ static void pas_ReadBinary(uint16_t fileSize)
       case sSHORTSTRING :
       case sARRAY :
       case sRECORD :
-        size   = g_tknPtr->sParm.v.vSize;
+        size = g_tknPtr->sParm.v.vSize;
         break;
 
       /* VAR parameter */
@@ -1214,11 +1215,20 @@ static void pas_WriteText(void)
           {
           case exprInteger :
             /* WRITE_INT: TOS(0) = Field width
-             *            TOS(1) = Write value
+             *            TOS(1) = Write value (signed)
              *            TOS(2) = File number
              */
 
             pas_GenerateIoOperation(xWRITE_INT);
+            break;
+
+          case exprWord :
+            /* WRITE_INT: TOS(0) = Field width
+             *            TOS(1) = Write value (unsiged)
+             *            TOS(2) = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_WORD);
             break;
 
           case exprChar :
@@ -1348,6 +1358,7 @@ static void pas_WriteBinary(uint16_t fileSize)
       /* Simple ordinal types */
 
       case sINT :
+      case sWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -1358,7 +1369,7 @@ static void pas_WriteBinary(uint16_t fileSize)
       case sSHORTSTRING :
       case sARRAY :
       case sRECORD :
-        size   = g_tknPtr->sParm.v.vSize;
+        size = g_tknPtr->sParm.v.vSize;
         break;
 
       /* VAR parameter */
@@ -2074,6 +2085,7 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
   switch (baseTypePtr->sParm.t.tType)
     {
     case sINT :
+    case sWORD :
     case sSUBRANGE :
     case sSCALAR :
       return sINT_SIZE;
@@ -2175,7 +2187,11 @@ int pas_ActualParameterList(symbol_t *procPtr)
           switch (procPtr[parmIndex].sKind)
             {
             case sINT :
-              pas_Expression(exprInteger, typePtr);
+            case sWORD :
+              exprType = (procPtr[parmIndex].sKind == sINT) ?
+                exprInteger : exprWord;
+
+              pas_Expression(exprType, typePtr);
               size += sINT_SIZE;
               break;
 
@@ -2259,6 +2275,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
                     /* Simple ordinal types */
 
                     case sINT :
+                    case sWORD :
                     case sSUBRANGE :
                     case sCHAR :
                     case sBOOLEAN :

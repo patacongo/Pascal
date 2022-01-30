@@ -2,7 +2,7 @@
  * pas_expression.c
  * Integer Expression
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -104,6 +104,7 @@ static exprType_t pas_FactorExprType(exprType_t baseExprType,
 static void       pas_SetAbstractType(symbol_t *sType);
 static exprType_t pas_GetSetFactor(void);
 static bool       pas_GetSubSet(symbol_t *setTypePtr, bool first);
+static exprType_t pas_TypeCast(symbol_t *typePtr);
 static bool       pas_IsOrdinalExpression(exprType_t testExprType);
 static bool       pas_IsStringExpression(exprType_t testExprType);
 static bool       pas_IsStringReference(exprType_t testExprType);
@@ -163,6 +164,15 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         {
           error(eTERMTYPE);
         }
+    }
+
+  /* If the findExprType is exprUnknown, then force the findExprType to be
+   * the same as the first term.  At least the two terms should agree.
+   */
+
+  if (findExprType == exprUnknown)
+    {
+      findExprType = term1Type;
     }
 
   /* Process subsequent (optional) terms and binary operations */
@@ -290,6 +300,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
               /* Integer addition */
 
             case exprInteger :
+            case exprWord :
               pas_GenerateSimple(opADD);
               break;
 
@@ -374,7 +385,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         case '-' :
           /* Integer subtraction */
 
-          if (term1Type == exprInteger)
+          if (term1Type == exprInteger || term1Type == exprWord)
             {
               pas_GenerateSimple(opSUB);
             }
@@ -403,7 +414,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         case tOR :
           /* Integer/boolean 'OR' */
 
-          if (term1Type == exprInteger || term1Type == exprBoolean)
+          if (term1Type == exprInteger || term1Type == exprWord ||
+              term1Type == exprBoolean)
             {
               pas_GenerateSimple(opOR);
             }
@@ -419,7 +431,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         case tXOR :
           /* Integer/boolean 'XOR' */
 
-          if (term1Type == exprInteger || term1Type == exprBoolean)
+          if (term1Type == exprInteger || term1Type == exprWord ||
+              term1Type == exprBoolean)
             {
               pas_GenerateSimple(opXOR);
             }
@@ -583,6 +596,10 @@ static exprType_t pas_Term(exprType_t findExprType)
             {
               pas_GenerateSimple(opMUL);
             }
+          else if (factor1Type == exprWord)
+            {
+              pas_GenerateSimple(opUMUL);
+            }
           else if (factor1Type == exprReal)
             {
               pas_GenerateFpOperation(fpMUL | arg8FpBits);
@@ -602,6 +619,10 @@ static exprType_t pas_Term(exprType_t findExprType)
           if (factor1Type == exprInteger)
             {
               pas_GenerateSimple(opDIV);
+            }
+          else if (factor1Type == exprWord)
+            {
+              pas_GenerateSimple(opUDIV);
             }
           else
             {
@@ -625,6 +646,10 @@ static exprType_t pas_Term(exprType_t findExprType)
             {
               pas_GenerateSimple(opMOD);
             }
+          else if (factor1Type == exprWord)
+            {
+              pas_GenerateSimple(opUMOD);
+            }
           else if (factor1Type == exprReal)
             {
               pas_GenerateFpOperation(fpMOD | arg8FpBits);
@@ -636,7 +661,8 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tAND :
-          if (factor1Type == exprInteger || factor1Type == exprBoolean)
+          if (factor1Type == exprInteger || factor1Type == exprWord ||
+              factor1Type == exprBoolean)
             {
               pas_GenerateSimple(opAND);
             }
@@ -647,7 +673,7 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tSHL :
-          if (factor1Type == exprInteger)
+          if (factor1Type == exprInteger || factor1Type == exprWord)
             {
               pas_GenerateSimple(opSLL);
             }
@@ -658,7 +684,7 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tSHR :
-          if (factor1Type == exprInteger)
+          if (factor1Type == exprInteger || factor1Type == exprWord)
             {
               pas_GenerateSimple(opSRA);
             }
@@ -698,8 +724,23 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
     case tINT_CONST :
       pas_GenerateDataOperation(opPUSH, g_tknInt);
+
+      /* Allow non-negative integer constants to automatically cast to
+       * unsigned words.
+       */
+
+      if (g_tknInt >= 0 && findExprType == exprWord)
+        {
+          factorType = exprWord;
+        }
+      else
+        {
+          factorType = exprInteger;
+        }
+
+      /* Skip over the constant */
+
       getToken();
-      factorType = exprInteger;
       break;
 
     case tBOOLEAN_CONST :
@@ -741,9 +782,10 @@ static exprType_t pas_Factor(exprType_t findExprType)
       /* Simple Factors */
 
     case sINT :
+    case sWORD :
+      factorType = (g_token == sINT) ? exprInteger : exprWord;
       pas_GenerateStackReference(opLDS, g_tknPtr);
       getToken();
-      factorType = exprInteger;
       break;
 
     case sBOOLEAN :
@@ -926,7 +968,8 @@ static exprType_t pas_Factor(exprType_t findExprType)
     case tNOT:
       getToken();
       factorType = pas_Factor(findExprType);
-      if (factorType != exprInteger && factorType != exprBoolean)
+      if (factorType != exprInteger && factorType != exprWord &&
+          factorType != exprBoolean)
         {
           error(eFACTORTYPE);
         }
@@ -942,6 +985,12 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
     case tBUILTIN:
       factorType = pas_BuiltInFunction();
+      break;
+
+    /* Type case? */
+
+    case sTYPE :
+      factorType = pas_TypeCast(g_tknPtr);
       break;
 
     default :
@@ -1525,6 +1574,7 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
       /* Check if we have reduced the complex factor to a simple factor */
 
     case sINT :
+    case sWORD :
       factorType = pas_FactorExprType(exprInteger, factorFlags);
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
@@ -1894,6 +1944,7 @@ static exprType_t pas_PointerFactor(void)
       /* Pointers to simple types */
 
       case sINT :
+      case sWORD :
       case sBOOLEAN :
       case sCHAR :
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -2367,6 +2418,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
       /* Check if we have reduced the complex factor to a simple factor */
 
     case sINT :
+    case sWORD :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
@@ -2750,6 +2802,7 @@ static void pas_SetAbstractType(symbol_t *sType)
           switch (sType->sParm.t.tSubType)
             {
               case sINT :
+              case sWORD :
               case sCHAR :
                 break;
 
@@ -2938,6 +2991,82 @@ static bool pas_GetSubSet(symbol_t *setTypePtr, bool first)
 }
 
 /****************************************************************************/
+/* A type name may be part of a valid factor if it is a type case */
+
+static exprType_t pas_TypeCast(symbol_t *typePtr)
+{
+  exprType_t newExprType;
+  uint16_t castType;
+  bool newOrdinal;
+
+  /* Form type-name '(' expression ')' */
+
+  getToken();
+
+  /* At present we are accepting only casts between ordinal type of the same
+   * size (and real types).
+   */
+
+  castType = typePtr->sParm.t.tType;
+  if (castType == sREAL)
+    {
+      newExprType = exprReal;
+      newOrdinal  = false;
+    }
+  else
+    {
+      newExprType = pas_MapVariable2ExprType(castType, true);
+
+      if (!pas_IsOrdinalExpression(newExprType))
+        {
+          error(eNOTYET);
+          return exprUnknown;
+        }
+
+      newOrdinal  = true;
+    }
+
+  if (g_token != '(') error(eFACTORTYPE);
+  else
+    {
+      exprType_t originalExprType;
+
+      /* Skip over the left parenthesis and evaluate the expression */
+
+      getToken();
+      originalExprType = pas_Expression(exprUnknown, NULL);
+
+      if (g_token != ')') error(eRPAREN);
+      else getToken();
+
+      if (originalExprType != exprUnknown)
+        {
+          bool originalOrdinal = pas_IsOrdinalExpression(originalExprType);
+
+          /* Check for real expressions */
+
+          if (newExprType == exprReal && originalOrdinal)
+            {
+              pas_GenerateFpOperation(fpFLOAT);
+            }
+          else if (newOrdinal && originalExprType == exprReal)
+            {
+              pas_GenerateFpOperation(fpROUND);
+            }
+          else if (!newOrdinal || !originalOrdinal)
+            {
+              error(eNOTYET);
+              return exprUnknown;
+            }
+
+          return newExprType;
+        }
+    }
+
+  return exprUnknown;
+}
+
+/****************************************************************************/
 /* Check if this is a ordinal expression.  This is what is needed, for
  * example, as an argument to ord(), pred(), succ(), or odd().
  * This is the kind of expression we need in a CASE statement
@@ -2946,8 +3075,9 @@ static bool pas_GetSubSet(symbol_t *setTypePtr, bool first)
 
 static bool pas_IsOrdinalExpression(exprType_t testExprType)
 {
-  if (testExprType == exprInteger || /* integer value */
-      testExprType == exprChar ||    /* character value */
+  if (testExprType == exprInteger || /* signed integer value */
+      testExprType == exprWord    || /* unsigned integer value */
+      testExprType == exprChar    || /* character value */
       testExprType == exprBoolean || /* boolean(integer) value */
       testExprType == exprScalar)    /* scalar(integer) value */
     {
@@ -3003,6 +3133,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
 {
   uint8_t    operation;
   uint16_t   intOpCode;
+  uint16_t   wordOpCode;
   uint16_t   fpOpCode;
   uint16_t   strOpCode;
   uint16_t   setOpCode;
@@ -3036,10 +3167,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tEQ :
       /* Select all opcodes for all cases */
 
-      intOpCode = opEQU;
-      fpOpCode  = fpEQU;
-      strOpCode = opEQUZ;
-      setOpCode = setEQUALITY;
+      intOpCode  = opEQU;
+      wordOpCode = opEQU;
+      fpOpCode   = fpEQU;
+      strOpCode  = opEQUZ;
+      setOpCode  = setEQUALITY;
 
       /* Skip over the operator */
 
@@ -3049,10 +3181,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tNE :
       /* Select all opcodes for all cases */
 
-      intOpCode = opNEQ;
-      fpOpCode  = fpNEQ;
-      strOpCode = opNEQZ;
-      setOpCode = setNONEQUALITY;
+      intOpCode  = opNEQ;
+      wordOpCode = opNEQ;
+      fpOpCode   = fpNEQ;
+      strOpCode  = opNEQZ;
+      setOpCode  = setNONEQUALITY;
 
       /* Skip over the operator */
 
@@ -3062,10 +3195,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tLT :
       /* Select all opcodes for all cases */
 
-      intOpCode = opLT;
-      fpOpCode  = fpLT;
-      strOpCode = opLTZ;
-      setOpCode = setINVALID;
+      intOpCode  = opLT;
+      wordOpCode = opNOP;
+      fpOpCode   = fpLT;
+      strOpCode  = opLTZ;
+      setOpCode  = setINVALID;
 
       /* Skip over the operator */
 
@@ -3075,10 +3209,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tLE :
       /* Select all opcodes for all cases */
 
-      intOpCode = opLTE;
-      fpOpCode  = fpLTE;
-      strOpCode = opLTEZ;
-      setOpCode = setCONTAINS;
+      intOpCode  = opLTE;
+      wordOpCode = opNOP;
+      fpOpCode   = fpLTE;
+      strOpCode  = opLTEZ;
+      setOpCode  = setCONTAINS;
 
       /* Skip over the operator */
 
@@ -3088,10 +3223,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tGT :
       /* Select all opcodes for all cases */
 
-      intOpCode = opGT;
-      fpOpCode  = fpGT;
-      strOpCode = opGTZ;
-      setOpCode = setINVALID;
+      intOpCode  = opGT;
+      wordOpCode = opNOP;
+      fpOpCode   = fpGT;
+      strOpCode  = opGTZ;
+      setOpCode  = setINVALID;
 
       /* Skip over the operator */
 
@@ -3101,10 +3237,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tGE :
       /* Select all opcodes for all cases */
 
-      intOpCode = opGTE;
-      fpOpCode  = fpGTE;
-      strOpCode = opGTEZ;
-      setOpCode = setINVALID;
+      intOpCode  = opGTE;
+      wordOpCode = opNOP;
+      fpOpCode   = fpGTE;
+      strOpCode  = opGTEZ;
+      setOpCode  = setINVALID;
 
       /* Skip over the operator */
 
@@ -3114,10 +3251,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     case tIN :
       /* Select all opcodes for all cases */
 
-      intOpCode = opNOP;
-      fpOpCode  = fpINVLD;
-      strOpCode = opNOP;
-      setOpCode = setMEMBER;
+      intOpCode  = opNOP;
+      wordOpCode = opNOP;
+      fpOpCode   = fpINVLD;
+      strOpCode  = opNOP;
+      setOpCode  = setMEMBER;
 
       /* Skip over the operator */
 
@@ -3127,10 +3265,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
     default  :
       /* Set all opcodes to no-op or invalid */
 
-      intOpCode = opNOP;
-      fpOpCode  = fpINVLD;
-      strOpCode = opNOP;
-      setOpCode = setINVALID;
+      intOpCode  = opNOP;
+      wordOpCode = opNOP;
+      fpOpCode   = fpINVLD;
+      strOpCode  = opNOP;
+      setOpCode  = setINVALID;
       break;
     }
 
@@ -3382,7 +3521,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
 
   /* Deal with integer and real arithmetic */
 
-  if (intOpCode != opNOP && !handled)
+  if ((intOpCode != opNOP || wordOpCode != opNOP) && !handled)
     {
       /* Get the second simple expression (if we did not already) */
 
@@ -3403,9 +3542,10 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
            * second is INTEGER.
            */
 
-          if (simple1Type == exprReal &&
-              simple2Type == exprInteger &&
-              fpOpCode != fpINVLD)
+          if (simple1Type  == exprReal    &&
+              (simple2Type == exprInteger ||
+               simple2Type == exprWord)   &&
+              fpOpCode     != fpINVLD)
             {
               fpOpCode   |= fpARG2;
               simple2Type = exprReal;
@@ -3415,9 +3555,10 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
            * second is REAL.
            */
 
-          else if (simple1Type == exprInteger &&
-                   simple2Type == exprReal &&
-                   fpOpCode != fpINVLD)
+          else if ((simple1Type == exprInteger ||
+                    simple2Type == exprWord)   &&
+                   simple2Type  == exprReal    &&
+                   fpOpCode     != fpINVLD)
             {
               fpOpCode   |= fpARG1;
               simple1Type = exprReal;
@@ -3464,9 +3605,18 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               handled     = true;
             }
         }
-      else
+      else if (simple1Type == exprInteger && intOpCode != opNOP)
         {
           pas_GenerateSimple(intOpCode);
+
+          /* The resulting type is boolean */
+
+          simple1Type = exprBoolean;
+          handled     = true;
+        }
+      else /* if (simple1Type == exprWord && wordOpCode != opNOP) */
+        {
+          pas_GenerateSimple(wordOpCode);
 
           /* The resulting type is boolean */
 
@@ -3745,6 +3895,10 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
           factorType = exprInteger;
           break;
 
+        case sWORD :
+          factorType = exprWord;
+          break;
+
         case sBOOLEAN :
           factorType = exprBoolean;
           break;
@@ -3776,6 +3930,10 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
               factorType = exprInteger;
               break;
 
+            case sWORD :
+              factorType = exprWord;
+              break;
+
             case sCHAR :
               factorType = exprChar;
               break;
@@ -3798,6 +3956,10 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
                 {
                 case sINT :
                   factorType = exprIntegerPtr;
+                  break;
+
+                case sWORD :
+                  factorType = exprWordPtr;
                   break;
 
                 case sBOOLEAN :
@@ -3842,7 +4004,10 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
 
       case sINT :
       case sSUBRANGE :
-        return exprInteger;           /* integer value */
+        return exprInteger;           /* signed integer value */
+
+      case sWORD :
+        return exprWord;              /* unsigned integer value */
 
       case sCHAR :
         return exprChar;              /* character value */

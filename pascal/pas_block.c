@@ -1592,6 +1592,7 @@ static symbol_t *pas_OrdinalTypeIdentifier(void)
           /* Check for an ordinal type (verify this list!) */
 
         case sINT :
+        case sWORD :
         case sBOOLEAN :
         case sCHAR :
         case sSCALAR :
@@ -1682,33 +1683,10 @@ static symbol_t *pas_GetArrayIndexType(void)
                 }
             }
         }
-
-#if 0
-      /* Some versions of small pascal allow a NON-STANDARD single
-       * integer constant as a 'dimension' of the array.
-       */
-
-      else
-        {
-          if (g_tknInt < 0) error(eINVCONST);
-          else
-            {
-              minValue  = 0;
-              maxValue  = saveTknInt - 1;
-              indexType = sSUBRANGE;
-              subType   = sINT;
-              indexSize = sINT_SIZE;
-              haveIndex = true;
-
-              getToken();
-            }
-        }
-#else
       else
         {
           error(eINDEXTYPE);
         }
-#endif
     }
 
   /* Check for enumerated-type
@@ -1764,7 +1742,9 @@ static symbol_t *pas_GetArrayIndexType(void)
 
       /* REVISIT: What about other ordinal types like sINT and sCHAR? */
 
-      else if (ordinalType == sINT || ordinalType == sCHAR)
+      else if (ordinalType == sINT  ||
+               ordinalType == sWORD ||
+               ordinalType == sCHAR)
         {
           error(eNOTYET);
           getToken();
@@ -2585,14 +2565,17 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
        * same.
        */
 
-      if (baseType == sINT)
+      if (baseType == sINT || baseType == sWORD)
         {
+          exprType_t exprType = (baseType == sINT) ? exprInteger : exprWord;
+
           /* Handle a constant integer expression.  A valid result could be
            * either an integer or a character constant.
            */
 
-          pas_ConstantExpression(exprInteger, typePtr);
-          if (g_constantToken != tINT_CONST && g_constantToken != tCHAR_CONST)
+          pas_ConstantExpression(exprType, typePtr);
+          if (g_constantToken != tINT_CONST &&
+              g_constantToken != tCHAR_CONST)
             {
               error(eBADINITIALIZER);
             }

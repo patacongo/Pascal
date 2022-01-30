@@ -123,7 +123,7 @@
 typedef uint16_t ustack_t;   /* Stack values are 16-bits in length */
 typedef int16_t  sstack_t;
 typedef uint16_t paddr_t;    /* Addresses are 16-bits in length */
-typedef uint16_t level_t;    /* Limits to MAXUINT16 levels */
+typedef uint16_t level_t;    /* Limits to UINT16_MAX levels */
 
 union stack_u
 {
