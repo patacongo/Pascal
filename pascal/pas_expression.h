@@ -104,40 +104,44 @@ enum exprType_e
 {
   /* General expression type */
 
-  exprUnknown        = 0x00,  /* value unknown */
-  exprAnyOrdinal     = 0x01,  /* any ordinal type */
-  exprAnyString      = 0x02,  /* any string type */
-  exprAnyPointer     = 0x03,  /* any pointer type */
-  exprEmptySet       = 0x04,  /* the empty set */
+  exprUnknown         = 0x00,  /* value unknown */
+  exprAnyOrdinal      = 0x01,  /* any ordinal type */
+  exprAnyString       = 0x02,  /* any string type */
+  exprAnyPointer      = 0x03,  /* any pointer type */
+  exprEmptySet        = 0x04,  /* the empty set */
 
   /* Standard expression types */
 
-  exprInteger        = 0x10,  /* signed integer value */
-  exprWord           = 0x11,  /* unsigned integer value */
-  exprReal           = 0x12,  /* real value */
-  exprChar           = 0x13,  /* character value */
-  exprBoolean        = 0x14,  /* boolean(integer) value */
-  exprScalar         = 0x15,  /* scalar(integer) value */
-  exprString         = 0x16,  /* variable length string reference */
-  exprShortString    = 0x17,  /* variable length string reference */
-  exprCString        = 0x18,  /* pointer to C string */
-  exprSet            = 0x19,  /* set(integer) value */
-  exprFile           = 0x1a,  /* file */
-  exprRecord         = 0x1b,  /* record */
+  exprInteger         = 0x10,  /* signed integer value */
+  exprWord            = 0x11,  /* unsigned integer value */
+  exprShortInteger    = 0x12,  /* signed short integer value */
+  exprShortWord       = 0x13,  /* unsigned short integer value */
+  exprChar            = 0x14,  /* character value */
+  exprBoolean         = 0x15,  /* boolean(integer) value */
+  exprReal            = 0x16,  /* real value */
+  exprScalar          = 0x17,  /* scalar(integer) value */
+  exprString          = 0x18,  /* variable length string reference */
+  exprShortString     = 0x19,  /* variable length string reference */
+  exprCString         = 0x1a,  /* pointer to C string */
+  exprSet             = 0x1b,  /* set(integer) value */
+  exprFile            = 0x1c,  /* file */
+  exprRecord          = 0x1d,  /* record */
 
   /* Expressions that evaluate to pointers to standard type */
 
-  exprIntegerPtr     = 0x90,  /* pointer to a signed integer value */
-  exprWordPtr        = 0x91,  /* pointer to an unsigned integer value */
-  exprRealPtr        = 0x92,  /* pointer to a real value */
-  exprCharPtr        = 0x93,  /* pointer to a character value */
-  exprBooleanPtr     = 0x94,  /* pointer to a boolean value */
-  exprScalarPtr      = 0x95,  /* pointer to a scalar value */
-  exprStringPtr      = 0x96,  /* variable length string reference */
-  exprShortStringPtr = 0x97,  /* variable length string reference */
-  exprSetPtr         = 0x99,  /* pointer to a set value */
-  exprFilePtr        = 0x9a,  /* pointer to a file */
-  exprRecordPtr      = 0x9b   /* pointer to a record */
+  exprIntegerPtr      = 0x90,  /* pointer to a signed integer value */
+  exprWordPtr         = 0x91,  /* pointer to an unsigned integer value */
+  exprShortIntegerPtr = 0x92,  /* pointer to a signed short integer value */
+  exprShortWordPtr    = 0x93,  /* pointer to an unsigned short integer value */
+  exprCharPtr         = 0x94,  /* pointer to a character value */
+  exprBooleanPtr      = 0x95,  /* pointer to a boolean value */
+  exprRealPtr         = 0x96,  /* pointer to a real value */
+  exprScalarPtr       = 0x97,  /* pointer to a scalar value */
+  exprStringPtr       = 0x98,  /* variable length string reference */
+  exprShortStringPtr  = 0x99,  /* variable length string reference */
+  exprSetPtr          = 0x9b,  /* pointer to a set value */
+  exprFilePtr         = 0x9c,  /* pointer to a file */
+  exprRecordPtr       = 0x9d   /* pointer to a record */
 };
 
 typedef enum exprType_e exprType_t;

@@ -406,6 +406,8 @@ static void pas_SetInitialValues(void)
                 pas_GenerateStackReference(opSTS, varPtr);
                 break;
 
+              case sSHORTINT :
+              case sSHORTWORD :
               case sCHAR:
                 pas_GenerateDataOperation(opPUSH, initializer->v.value.iOrdinal);
                 pas_GenerateStackReference(opSTSB, varPtr);

@@ -1593,6 +1593,8 @@ static symbol_t *pas_OrdinalTypeIdentifier(void)
 
         case sINT :
         case sWORD :
+        case sSHORTINT :
+        case sSHORTWORD :
         case sBOOLEAN :
         case sCHAR :
         case sSCALAR :
@@ -1742,8 +1744,8 @@ static symbol_t *pas_GetArrayIndexType(void)
 
       /* REVISIT: What about other ordinal types like sINT and sCHAR? */
 
-      else if (ordinalType == sINT  ||
-               ordinalType == sWORD ||
+      else if (ordinalType == sINT      || ordinalType == sWORD      ||
+               ordinalType == sSHORTINT || ordinalType == sSHORTWORD ||
                ordinalType == sCHAR)
         {
           error(eNOTYET);
@@ -2565,9 +2567,10 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
        * same.
        */
 
-      if (baseType == sINT || baseType == sWORD)
+      if (baseType == sINT      || baseType == sWORD      ||
+          baseType == sSHORTINT || baseType == sSHORTWORD)
         {
-          exprType_t exprType = (baseType == sINT) ? exprInteger : exprWord;
+          exprType_t exprType = pas_MapVariable2ExprType(baseType, true);
 
           /* Handle a constant integer expression.  A valid result could be
            * either an integer or a character constant.

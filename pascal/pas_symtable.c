@@ -199,13 +199,14 @@ static symbol_t *g_symbolTable;                      /* Symbol Table */
 
 static const symbolAlias_t g_aliasTable[] =
 {
-    {"ASSIGN", "ASSIGNFILE"},
-    {"CLOSE",  "CLOSEFILE"},
-    {"TEXT",   "TEXTFILE"},
-    {NULL,     NULL}
+    {"ASSIGN",   "ASSIGNFILE"},
+    {"CLOSE",    "CLOSEFILE"},
+    {"SHORTINT", "SHORTINTEGER"},
+    {"TEXT",     "TEXTFILE"},
+    {NULL,       NULL}
 };
 
-/**************************************************************/
+/****************************************************************************/
 
 const char *pas_MapToAlias(const char *name)
 {
@@ -239,7 +240,7 @@ const char *pas_MapToAlias(const char *name)
   return name;
 }
 
-/**************************************************************/
+/****************************************************************************/
 
 const reservedWord_t *pas_FindReservedWord(const char *name)
 {
@@ -593,6 +594,24 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.tMaxValue = MAXWORD;
     }
 
+  typePtr = pas_AddTypeDefine("SHORTINTEGER", sSHORTINT, sSHORTINT_SIZE,
+                               NULL);
+  if (typePtr)
+    {
+      g_parentInteger            = typePtr;
+      typePtr->sParm.t.tMinValue = MINSHORTINT;
+      typePtr->sParm.t.tMaxValue = MAXSHORTINT;
+    }
+
+  typePtr = pas_AddTypeDefine("SHORTWORD", sSHORTWORD, sSHORTWORD_SIZE,
+                              NULL);
+  if (typePtr)
+    {
+      g_parentInteger            = typePtr;
+      typePtr->sParm.t.tMinValue = MINSHORTWORD;
+      typePtr->sParm.t.tMaxValue = MAXSHORTWORD;
+    }
+
   typePtr = pas_AddTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL);
   if (typePtr)
     {
@@ -744,6 +763,8 @@ void pas_DumpTables(void)
 
         case sINT :
         case sWORD :
+        case sSHORTINT :
+        case sSHORTWORD :
         case sBOOLEAN :
         case sCHAR  :
         case sREAL :

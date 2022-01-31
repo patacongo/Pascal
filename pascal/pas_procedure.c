@@ -2,7 +2,7 @@
  * pas_procedure.c
  * Standard procedures (all called in pas_statement.c)
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -690,6 +690,8 @@ static void pas_ReadBinary(uint16_t fileSize)
 
       case sINT :
       case sWORD :
+      case sSHORTINT :
+      case sSHORTWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -1214,6 +1216,7 @@ static void pas_WriteText(void)
         switch (writeType)
           {
           case exprInteger :
+          case exprShortInteger :
             /* WRITE_INT: TOS(0) = Field width
              *            TOS(1) = Write value (signed)
              *            TOS(2) = File number
@@ -1223,6 +1226,7 @@ static void pas_WriteText(void)
             break;
 
           case exprWord :
+          case exprShortWord :
             /* WRITE_INT: TOS(0) = Field width
              *            TOS(1) = Write value (unsiged)
              *            TOS(2) = File number
@@ -1359,6 +1363,8 @@ static void pas_WriteBinary(uint16_t fileSize)
 
       case sINT :
       case sWORD :
+      case sSHORTINT :
+      case sSHORTWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -2090,6 +2096,10 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
     case sSCALAR :
       return sINT_SIZE;
 
+    case sSHORTINT :
+    case sSHORTWORD :
+      return sSHORTINT_SIZE;
+
     case sCHAR :
       return sCHAR_SIZE;
 
@@ -2188,11 +2198,16 @@ int pas_ActualParameterList(symbol_t *procPtr)
             {
             case sINT :
             case sWORD :
-              exprType = (procPtr[parmIndex].sKind == sINT) ?
-                exprInteger : exprWord;
-
+              exprType = pas_MapVariable2ExprType(procPtr[parmIndex].sKind, true);
               pas_Expression(exprType, typePtr);
               size += sINT_SIZE;
+              break;
+
+            case sSHORTINT :
+            case sSHORTWORD :
+              exprType = pas_MapVariable2ExprType(procPtr[parmIndex].sKind, true);
+              pas_Expression(exprType, typePtr);
+              size += sSHORTINT_SIZE;
               break;
 
             case sCHAR :
@@ -2276,6 +2291,8 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                     case sINT :
                     case sWORD :
+                    case sSHORTINT :
+                    case sSHORTWORD :
                     case sSUBRANGE :
                     case sCHAR :
                     case sBOOLEAN :

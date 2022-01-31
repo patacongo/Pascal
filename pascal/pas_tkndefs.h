@@ -2,7 +2,7 @@
  * pas_tkndefs.h
  * Token and Symbol Table Definitions
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -84,21 +84,23 @@
 #define sTEXTFILE        0x46
 #define sINT             0x47
 #define sWORD            0x48
-#define sBOOLEAN         0x49
-#define sCHAR            0x4a
-#define sREAL            0x4b
-#define sSTRING          0x4c
-#define sSHORTSTRING     0x4d
-#define sSTRING_CONST    0x4e
-#define sPOINTER         0x4f
-#define sSCALAR          0x50
-#define sSCALAR_OBJECT   0x51
-#define sSUBRANGE        0x52
-#define sSET             0x53
-#define sARRAY           0x54
-#define sRECORD          0x55
-#define sRECORD_OBJECT   0x56
-#define sVAR_PARM        0x57
+#define sSHORTINT        0x49
+#define sSHORTWORD       0x4a
+#define sBOOLEAN         0x4b
+#define sCHAR            0x4c
+#define sREAL            0x4d
+#define sSTRING          0x4e
+#define sSHORTSTRING     0x4f
+#define sSTRING_CONST    0x50
+#define sPOINTER         0x51
+#define sSCALAR          0x52
+#define sSCALAR_OBJECT   0x53
+#define sSUBRANGE        0x54
+#define sSET             0x55
+#define sARRAY           0x56
+#define sRECORD          0x57
+#define sRECORD_OBJECT   0x58
+#define sVAR_PARM        0x59
 
 /* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens:
  * '[', '\', ']', '^', '_', '`'

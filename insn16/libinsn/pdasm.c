@@ -2,7 +2,7 @@
  * pdasm.c
  * P-Code Disassembler
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -159,17 +159,26 @@ static const struct
 /* 0x34 */ { invOp,    NOARG16 },
 /* 0x35 */ { invOp,    NOARG16 },
 /* 0x36 */ { invOp,    NOARG16 },
-/* 0x37 */ { invOp,    NOARG16 },
-/* 0x38 */ { invOp,    NOARG16 },
 
-/* System Functions (No stack arguments) */
+/* Unsigned arithmetic */
 
-/* 0x39 */ { invOp,    NOARG16 },
-/* 0x3a */ { invOp,    NOARG16 },
-/* 0x3b */ { invOp,    NOARG16 },
-/* 0x3c */ { invOp,    NOARG16 },
-/* 0x3d */ { invOp,    NOARG16 },
-/* 0x3e */ { invOp,    NOARG16 },
+/* 0x37 */ { "UMUL ",  NOARG16 },
+/* 0x38 */ { "UDIV ",  NOARG16 },
+/* 0x39 */ { "UMOD ",  NOARG16 },
+
+/* Unsigned comparisons */
+
+/* 0x3a */ { "ULT  ",  NOARG16 },
+/* 0x3b */ { "UGTE ",  NOARG16 },
+/* 0x3c */ { "UGT  ",  NOARG16 },
+/* 0x3d */ { "ULTE ",  NOARG16 },
+
+/* More bitwise operators */
+
+/* 0x3e */ { "XOR  ",  NOARG16 },
+
+/* System functions */
+
 /* 0x3f */ { "EXIT ",  NOARG16 },
 
 /************** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ***************/
@@ -327,17 +336,17 @@ static const struct
 /* 0xb3 */ { invOp,    NOARG16 },
 /* 0xb4 */ { "PUSH ",  DECIMAL },
 /* 0xb5 */ { "INDS ",  DECIMAL },
-/* 0xb6 */ { invOp,    NOARG16 },
-/* 0xb7 */ { invOp,    NOARG16 },
+/* 0xb6 */ { "LIB  ",  lbOP,   },
+/* 0xb7 */ { "SYSIO",  xOP,    },
 /* 0xb8 */ { "LAX  ",  UDECIMAL },
+/* 0xb9 */ { invOp,    NOARG16 },
 
-/* System operations: arg16 = 16-bit operation identifer */
+/* Unsigned compare and branch */
 
-/* 0xb9 */ { "LIB  ",  lbOP,   },
-/* 0xba */ { "SYSIO",  xOP,    },
-/* 0xbb */ { invOp,    NOARG16 },
-/* 0xbc */ { invOp,    NOARG16 },
-/* 0xbd */ { invOp,    NOARG16 },
+/* 0xba */ { "JULT ",  HEX },
+/* 0xbb */ { "JUGTE",  HEX },
+/* 0xbc */ { "JUGT ",  HEX },
+/* 0xbd */ { "JULTE",  HEX },
 /* 0xbe */ { invOp,    NOARG16 },
 
 /* Program control:  arg16 = unsigned label (no stack arguments) */
@@ -455,12 +464,13 @@ static const char *xName[MAX_XOP] =
 /* 0x18 */ invXOp,      invXOp,       invXOp,       invXOp,
 /* 0x1c */ invXOp,      invXOp,       invXOp,       invXOp,
 /* 0x20 */ "WRITELN",   "WRITEPG",    "WRITEBIN",   "WRITEINT",
-/* 0x24 */ "WRITECHR",  "WRITESTR",   "WRITERL"
+/* 0x24 */ "WRITEWORD", "WRITECHR",   "WRITESTR",   "WRITESSTR",
+/* 0x28 */ "WRITERL"
 };
 
 static const char invSetOp[] = "Invalid SETOP";
 static const char *sName[MAX_SETOP] =
-{ /* SYSIO opcode mnemonics */
+{ /* Set opcode mnemonics */
 /* 0x00 */ invSetOp,     "INTERSECTION", "UNION",   "DIFFERENCE",
 /* 0x04 */ "SYMDIFF",    "EQUAL",     "NEQUAL",     "CONTAINS",
 /* 0x08 */ "MEMBER",     "INCLUDE",   "EXCLUDE",    "CARD",

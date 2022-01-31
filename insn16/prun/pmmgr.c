@@ -474,7 +474,7 @@ int pexec_Dispose(struct pexec_s *st, uint16_t address)
 
   /* Verify that the address being freed lies in the heap region */
 
-  if (address <= st->hpb + sizeof(memChunk_t) ||
+  if (address < st->hpb + sizeof(memChunk_t) ||
       address >= (st->hpb + st->hpsize - HEAP_ALLOC_UNIT))
     {
       return eHUH;

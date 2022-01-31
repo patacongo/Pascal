@@ -81,6 +81,6 @@
 #define xWRITE_SHORTSTRING (0x0027)  /* Write an string to a text file */
 #define xWRITE_REAL        (0x0028)  /* Write an real value to a text file */
 
-#define MAX_XOP            (0x0028)
+#define MAX_XOP            (0x0029)
 
 #endif /* __PAS_SYSIO_H */

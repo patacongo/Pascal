@@ -301,6 +301,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
 
             case exprInteger :
             case exprWord :
+            case exprShortInteger :
+            case exprShortWord :
               pas_GenerateSimple(opADD);
               break;
 
@@ -385,7 +387,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         case '-' :
           /* Integer subtraction */
 
-          if (term1Type == exprInteger || term1Type == exprWord)
+          if (term1Type == exprInteger      || term1Type == exprWord ||
+              term1Type == exprShortInteger || term1Type == exprShortWord)
             {
               pas_GenerateSimple(opSUB);
             }
@@ -414,7 +417,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         case tOR :
           /* Integer/boolean 'OR' */
 
-          if (term1Type == exprInteger || term1Type == exprWord ||
+          if (term1Type == exprInteger      || term1Type == exprWord      ||
+              term1Type == exprShortInteger || term1Type == exprShortWord ||
               term1Type == exprBoolean)
             {
               pas_GenerateSimple(opOR);
@@ -431,7 +435,8 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         case tXOR :
           /* Integer/boolean 'XOR' */
 
-          if (term1Type == exprInteger || term1Type == exprWord ||
+          if (term1Type == exprInteger      || term1Type == exprWord      ||
+              term1Type == exprShortInteger || term1Type == exprShortWord ||
               term1Type == exprBoolean)
             {
               pas_GenerateSimple(opXOR);
@@ -592,11 +597,11 @@ static exprType_t pas_Term(exprType_t findExprType)
       switch (operation)
         {
         case tMUL :
-          if (factor1Type == exprInteger)
+          if (factor1Type == exprInteger || factor1Type == exprShortInteger)
             {
               pas_GenerateSimple(opMUL);
             }
-          else if (factor1Type == exprWord)
+          else if (factor1Type == exprWord || factor1Type == exprShortWord)
             {
               pas_GenerateSimple(opUMUL);
             }
@@ -616,11 +621,11 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tDIV :
-          if (factor1Type == exprInteger)
+          if (factor1Type == exprInteger || factor1Type == exprShortInteger)
             {
               pas_GenerateSimple(opDIV);
             }
-          else if (factor1Type == exprWord)
+          else if (factor1Type == exprWord || factor1Type == exprShortWord)
             {
               pas_GenerateSimple(opUDIV);
             }
@@ -642,11 +647,11 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tMOD :
-          if (factor1Type == exprInteger)
+          if (factor1Type == exprInteger || factor1Type == exprShortInteger)
             {
               pas_GenerateSimple(opMOD);
             }
-          else if (factor1Type == exprWord)
+          else if (factor1Type == exprWord || factor1Type == exprShortWord)
             {
               pas_GenerateSimple(opUMOD);
             }
@@ -661,7 +666,8 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tAND :
-          if (factor1Type == exprInteger || factor1Type == exprWord ||
+          if (factor1Type == exprInteger      || factor1Type == exprWord      ||
+              factor1Type == exprShortInteger || factor1Type == exprShortWord ||
               factor1Type == exprBoolean)
             {
               pas_GenerateSimple(opAND);
@@ -673,7 +679,8 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tSHL :
-          if (factor1Type == exprInteger || factor1Type == exprWord)
+          if (factor1Type == exprInteger || factor1Type == exprWord ||
+              factor1Type == exprShortInteger || factor1Type == exprShortWord)
             {
               pas_GenerateSimple(opSLL);
             }
@@ -684,7 +691,8 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
 
         case tSHR :
-          if (factor1Type == exprInteger || factor1Type == exprWord)
+          if (factor1Type == exprInteger || factor1Type == exprWord ||
+              factor1Type == exprShortInteger || factor1Type == exprShortWord)
             {
               pas_GenerateSimple(opSRA);
             }
@@ -729,9 +737,14 @@ static exprType_t pas_Factor(exprType_t findExprType)
        * unsigned words.
        */
 
-      if (g_tknInt >= 0 && findExprType == exprWord)
+      if (g_tknInt >= 0 &&
+          (findExprType == exprWord || findExprType == exprShortWord))
         {
-          factorType = exprWord;
+          factorType = findExprType;
+        }
+      else if (findExprType == exprShortInteger)
+        {
+          factorType = exprShortInteger;
         }
       else
         {
@@ -783,21 +796,18 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
     case sINT :
     case sWORD :
-      factorType = (g_token == sINT) ? exprInteger : exprWord;
-      pas_GenerateStackReference(opLDS, g_tknPtr);
-      getToken();
-      break;
-
     case sBOOLEAN :
+      factorType = pas_MapVariable2ExprType(g_token, true);
       pas_GenerateStackReference(opLDS, g_tknPtr);
       getToken();
-      factorType = exprBoolean;
       break;
 
+    case sSHORTINT :
+    case sSHORTWORD :
     case sCHAR :
+      factorType = pas_MapVariable2ExprType(g_token, true);
       pas_GenerateStackReference(opLDSB, g_tknPtr);
       getToken();
-      factorType = exprChar;
       break;
 
     case sREAL :
@@ -972,7 +982,8 @@ static exprType_t pas_Factor(exprType_t findExprType)
     case tNOT:
       getToken();
       factorType = pas_Factor(findExprType);
-      if (factorType != exprInteger && factorType != exprWord &&
+      if (factorType != exprInteger      && factorType != exprWord      &&
+          factorType != exprShortInteger && factorType != exprShortWord &&
           factorType != exprBoolean)
         {
           error(eFACTORTYPE);
@@ -1579,7 +1590,10 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
 
     case sINT :
     case sWORD :
-      factorType = pas_FactorExprType(exprInteger, factorFlags);
+    case sBOOLEAN :
+      factorType = pas_MapVariable2ExprType(varPtr->sKind, true);
+      factorType = pas_FactorExprType(factorType, factorFlags);
+
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
@@ -1624,8 +1638,12 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
         }
       break;
 
+    case sSHORTINT :
+    case sSHORTWORD :
     case sCHAR :
-      factorType = pas_FactorExprType(exprChar, factorFlags);
+      factorType = pas_MapVariable2ExprType(varPtr->sKind, true);
+      factorType = pas_FactorExprType(factorType, factorFlags);
+
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           if ((factorFlags & FACTOR_DEREFERENCE) != 0)
@@ -1674,53 +1692,6 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
           else
             {
               pas_GenerateStackReference(opLDSB, varPtr);
-            }
-        }
-      break;
-
-    case sBOOLEAN :
-      factorType = pas_FactorExprType(exprBoolean, factorFlags);
-      if ((factorFlags & FACTOR_INDEXED) != 0)
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
-                {
-                  pas_GenerateSimple(opADD);
-                  pas_GenerateStackReference(opLDS, varPtr);
-                }
-              else
-                {
-                  pas_GenerateStackReference(opLDSX, varPtr);
-                }
-
-              pas_GenerateSimple(opLDI);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLDSX, varPtr);
-              factorType = exprBoolean;
-            }
-        }
-      else
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              /* The address of pointer we are de-referencing should already
-               * be on the stack.
-               */
-
-              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
-                {
-                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
-                  pas_GenerateSimple(opADD);
-                }
-
-              pas_GenerateSimple(opLDI);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
             }
         }
       break;
@@ -1949,6 +1920,8 @@ static exprType_t pas_PointerFactor(void)
 
       case sINT :
       case sWORD :
+      case sSHORTINT :
+      case sSHORTWORD :
       case sBOOLEAN :
       case sCHAR :
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -2423,79 +2396,6 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
 
     case sINT :
     case sWORD :
-      if ((factorFlags & FACTOR_INDEXED) != 0)
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
-                {
-                  pas_GenerateStackReference(opLDS, varPtr);
-                  pas_GenerateSimple(opADD);
-                }
-              else
-                {
-                  pas_GenerateStackReference(opLDSX, varPtr);
-                }
-            }
-          else
-            {
-              pas_GenerateStackReference(opLASX, varPtr);
-            }
-
-          factorType = exprIntegerPtr;
-        }
-      else
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLAS, varPtr);
-            }
-
-          factorType = exprIntegerPtr;
-        }
-      break;
-
-    case sCHAR :
-      if ((factorFlags & FACTOR_INDEXED) != 0)
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
-                {
-                  pas_GenerateStackReference(opLDS, varPtr);
-                  pas_GenerateSimple(opADD);
-                }
-              else
-                {
-                  pas_GenerateStackReference(opLDSX, varPtr);
-                }
-            }
-          else
-            {
-              pas_GenerateStackReference(opLASX, varPtr);
-            }
-
-          factorType = exprCharPtr;
-        }
-      else
-        {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-            }
-          else
-            {
-              pas_GenerateStackReference(opLAS, varPtr);
-            }
-
-          factorType = exprCharPtr;
-        }
-      break;
-
     case sBOOLEAN :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
@@ -2515,8 +2415,6 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
             {
               pas_GenerateStackReference(opLASX, varPtr);
             }
-
-          factorType = exprBooleanPtr;
         }
       else
         {
@@ -2528,9 +2426,46 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
             {
               pas_GenerateStackReference(opLAS, varPtr);
             }
-
-          factorType = exprBooleanPtr;
         }
+
+      factorType = pas_MapVariable2ExprPtrType(varPtr->sKind, true);
+      break;
+
+    case sSHORTINT :
+    case sSHORTWORD :
+    case sCHAR :
+      if ((factorFlags & FACTOR_INDEXED) != 0)
+        {
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+            {
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                  pas_GenerateSimple(opADD);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+            }
+          else
+            {
+              pas_GenerateStackReference(opLASX, varPtr);
+            }
+        }
+      else
+        {
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+            }
+          else
+            {
+              pas_GenerateStackReference(opLAS, varPtr);
+            }
+        }
+
+      factorType = pas_MapVariable2ExprPtrType(varPtr->sKind, true);
       break;
 
     /* The only thing that REAL, STRING and SET types have in common is that
@@ -2807,6 +2742,8 @@ static void pas_SetAbstractType(symbol_t *sType)
             {
               case sINT :
               case sWORD :
+              case sSHORTINT :
+              case sSHORTWORD :
               case sCHAR :
                 break;
 
@@ -3121,11 +3058,13 @@ static exprType_t pas_TypeCast(symbol_t *typePtr)
 
 static bool pas_IsOrdinalExpression(exprType_t testExprType)
 {
-  if (testExprType == exprInteger || /* signed integer value */
-      testExprType == exprWord    || /* unsigned integer value */
-      testExprType == exprChar    || /* character value */
-      testExprType == exprBoolean || /* boolean(integer) value */
-      testExprType == exprScalar)    /* scalar(integer) value */
+  if (testExprType == exprInteger      || /* signed integer value */
+      testExprType == exprWord         || /* unsigned integer value */
+      testExprType == exprShortInteger || /* signed short integer value */
+      testExprType == exprShortWord    || /* unsigned short integer value */
+      testExprType == exprChar         || /* character value */
+      testExprType == exprBoolean      || /* boolean(integer) value */
+      testExprType == exprScalar)         /* scalar(integer) value */
     {
       return true;
     }
@@ -3588,9 +3527,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
            * second is INTEGER.
            */
 
-          if (simple1Type  == exprReal    &&
-              (simple2Type == exprInteger ||
-               simple2Type == exprWord)   &&
+          if (simple1Type  == exprReal         &&
+              (simple2Type == exprInteger      ||
+               simple2Type == exprWord         ||
+               simple2Type == exprShortInteger ||
+               simple2Type == exprShortWord)   &&
               fpOpCode     != fpINVLD)
             {
               fpOpCode   |= fpARG2;
@@ -3601,9 +3542,11 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
            * second is REAL.
            */
 
-          else if ((simple1Type == exprInteger ||
-                    simple2Type == exprWord)   &&
-                   simple2Type  == exprReal    &&
+          else if ((simple1Type == exprInteger      ||
+                    simple2Type == exprWord         ||
+                    simple2Type == exprShortInteger ||
+                    simple2Type == exprShortWord)   &&
+                   simple2Type  == exprReal         &&
                    fpOpCode     != fpINVLD)
             {
               fpOpCode   |= fpARG1;
@@ -3651,7 +3594,9 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               handled     = true;
             }
         }
-      else if (simple1Type == exprInteger && intOpCode != opNOP)
+      else if ((simple1Type == exprInteger ||
+                simple1Type == exprShortInteger) &&
+               intOpCode != opNOP)
         {
           pas_GenerateSimple(intOpCode);
 
@@ -3660,7 +3605,9 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
           simple1Type = exprBoolean;
           handled     = true;
         }
-      else /* if (simple1Type == exprWord && wordOpCode != opNOP) */
+      else /* if ((simple1Type == exprWord ||
+            *      simple1Type == exprShortWord) &&
+            * wordOpCode != opNOP) */
         {
           pas_GenerateSimple(wordOpCode);
 
@@ -3945,6 +3892,14 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
           factorType = exprWord;
           break;
 
+        case sSHORTINT :
+          factorType = exprShortInteger;
+          break;
+
+        case sSHORTWORD :
+          factorType = exprShortWord;
+          break;
+
         case sBOOLEAN :
           factorType = exprBoolean;
           break;
@@ -3980,6 +3935,14 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
               factorType = exprWord;
               break;
 
+            case sSHORTINT :
+              factorType = exprShortInteger;
+              break;
+
+            case sSHORTWORD :
+              factorType = exprShortWord;
+              break;
+
             case sCHAR :
               factorType = exprChar;
               break;
@@ -4006,6 +3969,14 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
 
                 case sWORD :
                   factorType = exprWordPtr;
+                  break;
+
+                case sSHORTINT :
+                  factorType = exprShortIntegerPtr;
+                  break;
+
+                case sSHORTWORD :
+                  factorType = exprShortWordPtr;
                   break;
 
                 case sBOOLEAN :
@@ -4054,6 +4025,12 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
 
       case sWORD :
         return exprWord;              /* unsigned integer value */
+
+      case sSHORTINT :
+        return exprShortInteger;      /* signed short integer value */
+
+      case sSHORTWORD :
+        return exprShortWord;         /* unsigned short integer value */
 
       case sCHAR :
         return exprChar;              /* character value */

@@ -56,6 +56,8 @@
 
 /* Target P-Machine Data Storage Sizes.  Currently assumes 16-bit machine */
 
+/* Sizes of integer types */
+
 #define sINT_SIZE           2
 #define MAXINT              32767
 #define MININT             -32768
@@ -69,7 +71,15 @@
 #define INT_ALIGNDOWN(n)    ((n) & ~sINT_SIZE)
 #define INT_ISALIGNED(n)    (((n) & (sINT_SIZE - 1)) == 0)
 
-/* Sizes of Pascal types */
+#define sSHORTINT_SIZE      1
+#define MAXSHORTINT         127
+#define MINSHORTINT         -128
+
+#define sSHORTWORD_SIZE     1
+#define MAXSHORTWORD        255
+#define MINSHORTWORD        0
+
+/* Sizes of other Pascal types */
 
 #define sCHAR_SIZE          1
 #define sBOOLEAN_SIZE       sINT_SIZE

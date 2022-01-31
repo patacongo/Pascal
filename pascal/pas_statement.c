@@ -180,22 +180,20 @@ void pas_Statement(void)
 
     case sINT :
     case sWORD :
+    case sBOOLEAN :
       symPtr = g_tknPtr;
-      exprType = (g_token == sINT) ? exprInteger : exprWord;
+      exprType = pas_MapVariable2ExprType(g_token, true);
       getToken();
       pas_Assignment(opSTS, exprType, symPtr, symPtr->sParm.v.vParent);
       break;
 
+    case sSHORTINT :
+    case sSHORTWORD :
     case sCHAR :
       symPtr = g_tknPtr;
+      exprType = pas_MapVariable2ExprType(g_token, true);
       getToken();
-      pas_Assignment(opSTSB, exprChar, symPtr, symPtr->sParm.v.vParent);
-      break;
-
-    case sBOOLEAN :
-      symPtr = g_tknPtr;
-      getToken();
-      pas_Assignment(opSTSB, exprBoolean, symPtr, NULL);
+      pas_Assignment(opSTSB, exprType, symPtr, symPtr->sParm.v.vParent);
       break;
 
       /* The only thing that SET and REAL have in common is that they both
@@ -305,7 +303,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 {
   symbol_t   *typePtr;
   exprType_t  exprType;
-  exprType_t  lvalueType;
 
   TRACE(g_lstFile,"[pas_SimpleAssignment]");
 
@@ -325,7 +322,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
     case sINT :
     case sWORD :
-      exprType = (varPtr->sKind == sINT) ? exprInteger : exprWord;
+    case sBOOLEAN :
+      exprType = pas_MapVariable2ExprType(varPtr->sKind, true);
       exprType = pas_AssignExprType(exprType, assignFlags);
 
       /* Check for indexed variants */
@@ -372,8 +370,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       break;
 
+    case sSHORTINT :
+    case sSHORTWORD :
     case sCHAR :
-      exprType = pas_AssignExprType(exprChar, assignFlags);
+      exprType = pas_MapVariable2ExprType(varPtr->sKind, true);
+      exprType = pas_AssignExprType(exprType, assignFlags);
+
       if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
@@ -426,51 +428,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       break;
 
-    case sBOOLEAN :
-      exprType = pas_AssignExprType(exprBoolean, assignFlags);
-      if ((assignFlags & ASSIGN_INDEXED) != 0)
-        {
-          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
-            {
-              if ((assignFlags & ASSIGN_STORE_INDEXED) != 0)
-                {
-                  pas_GenerateStackReference(opLDS, varPtr);
-                  pas_GenerateSimple(opADD);
-                }
-              else
-                {
-                  pas_GenerateStackReference(opLDSX, varPtr);
-                }
-
-              pas_Assignment(opSTI, exprType, varPtr, NULL);
-            }
-          else
-            {
-              pas_Assignment(opSTSX, exprType, varPtr, NULL);
-            }
-        }
-      else
-        {
-          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
-            {
-              pas_GenerateStackReference(opLDS, varPtr);
-              pas_Assignment(opSTI, exprType, varPtr, NULL);
-            }
-          else
-            {
-              pas_Assignment(opSTS, exprType, varPtr, NULL);
-            }
-        }
-      break;
-
     /* The only thing that REAL and SET types have in common is that they
      * both require the same multi-word assignment.
      */
 
     case sSET :
     case sREAL :
-      lvalueType = (varPtr->sKind == sSET) ? exprSet : exprReal;
-      exprType   = pas_AssignExprType(lvalueType, assignFlags);
+      exprType = pas_MapVariable2ExprType(varPtr->sKind, false);
+      exprType = pas_AssignExprType(exprType, assignFlags);
 
       if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
@@ -1871,7 +1836,8 @@ static void pas_ForStatement(void)
 
    /* Get and verify the left side of the assignment. */
 
-   if (g_token != sINT      && g_token != sWORD   &&
+   if (g_token != sINT      && g_token != sWORD      &&
+       g_token != sSHORTINT && g_token != sSHORTWORD &&
        g_token != sSUBRANGE && g_token != sSCALAR)
      {
        error(eINTVAR);

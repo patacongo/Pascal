@@ -155,6 +155,8 @@ static exprType_t pas_AddrFunc(void)
       case sTEXTFILE :
       case sINT :
       case sWORD :
+      case sSHORTINT :
+      case sSHORTWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -227,12 +229,12 @@ static exprType_t pas_SqrFunc(void)
   pas_CheckLParen();
 
   sqrType = pas_Expression(exprUnknown, NULL); /* Process any expression */
-  if (sqrType == exprInteger)
+  if (sqrType == exprInteger || sqrType == exprShortInteger)
     {
       pas_GenerateSimple(opDUP);
       pas_GenerateSimple(opMUL);
      }
-  else if (sqrType == exprWord)
+  else if (sqrType == exprWord || sqrType == exprShortWord)
     {
       pas_GenerateSimple(opDUP);
       pas_GenerateSimple(opUMUL);
