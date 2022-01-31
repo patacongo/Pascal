@@ -105,14 +105,14 @@ static const uint16_t opmap[NUM_OPCODES] =
   oUGTE,   /* opUGTE */
   oUGT,    /* opUGT */
   oULTE,   /* opULTE */
-  oLDIH,   /* opLDI -- integer load maps to 16-bit load */
+  oLDI,    /* opLDI */
   oLDIB,   /* opLDIB */
   oLDIM,   /* opLDIM */
-  oSTIH,   /* opSTI - integer store maps to 16-bit store */
+  oSTI,    /* opSTI */
   oSTIB,   /* opSTIB */
   oSTIM,   /* opSTIM */
-  oDUPH,   /* opDUP -- integer duplicate maps to 16-bit duplicate */
-  oXCHGH,  /* opXCHG -- integer exchange maps to 16-bit exchange */
+  oDUP,    /* opDUP */
+  oXCHG,   /* opXCHG */
   oPUSHS,  /* opPUSHS */
   oPOPS,   /* opPOPS */
   oRET,    /* opRET */
@@ -128,17 +128,16 @@ static const uint16_t opmap[NUM_OPCODES] =
   oJGTE,   /* opJGTE */
   oJGT,    /* opJGT */
   oJLTE,   /* opJLTE */
-  oLDH,    /* opLD -- integer load maps to 16-bit load */
-  oLDH,    /* opLDH */
+  oLD,     /* opLD */
   oLDB,    /* opLDB */
   oLDM,    /* opLDM */
-  oSTH,    /* opST -- integer store maps to 16-bit store */
+  oST,     /* opST */
   oSTB,    /* opSTB */
   oSTM,    /* opSTM */
-  oLDXH,   /* opLDX -- integer load maps to 16-bit load */
+  oLDX,    /* opLDX */
   oLDXB,   /* opLDXB */
   oLDXM,   /* opLDXM */
-  oSTXH,   /* opSTX -- integer store maps to 16-bit store */
+  oSTX,    /* opSTX */
   oSTXB,   /* opSTXB */
   oSTXM,   /* opSTXM */
   oLA,     /* opLA */
@@ -150,17 +149,16 @@ static const uint16_t opmap[NUM_OPCODES] =
   oSYSIO,  /* opSYSIO */
   oLABEL,  /* opLABEL */
   oPCAL,   /* opPCAL */
-  oLDSH,   /* opLDS -- integer store maps to 16-bit load */
-  oLDSH,   /* opLDSH */
+  oLDS,    /* opLDS */
   oLDSB,   /* opLDSB */
   oLDSM,   /* opLDSM */
-  oSTSH,   /* opSTS -- integer store maps to 16-bit store */
+  oSTS,    /* opSTS */
   oSTSB,   /* opSTSB */
   oSTSM,   /* opSTSM */
-  oLDSXH,  /* opLDSX -- integer load maps to 16-bit load */
+  oLDSX,   /* opLDS*/
   oLDSXB,  /* opLDSXB */
   oLDSXM,  /* opLDSXM */
-  oSTSXH,  /* opSTSX -- integer store maps to 16-bit store */
+  oSTSX,   /* opSTSX */
   oSTSXB,  /* opSTSXB */
   oSTSXM,  /* opSTSXM */
   oLAS,    /* opLAS */

@@ -133,20 +133,20 @@ static const struct
 /* Load (One) or Store (Two stack argument) */
 
 /* 0x20 */ { "LDI ",   NOARG16 },
-/* 0x21 */ { "LDIH",   NOARG16 },
+/* 0x21 */ { invOp,    NOARG16 },
 /* 0x22 */ { "LDIB",   NOARG16 },
 /* 0x23 */ { "LDIM",   NOARG16 },
 /* 0x24 */ { "STI ",   NOARG16 },
-/* 0x25 */ { "STIH",   NOARG16 },
+/* 0x25 */ { invOp,    NOARG16 },
 /* 0x26 */ { "STIB",   NOARG16 },
 /* 0x27 */ { "STIM",   NOARG16 },
 
 /* Data stack operations */
 
 /* 0x28 */ { "DUP  ",  NOARG16 },
-/* 0x29 */ { "DUPH ",  NOARG16 },
+/* 0x29 */ { invOp,    NOARG16 },
 /* 0x2a */ { "XCHG ",  NOARG16 },
-/* 0x2b */ { "XCHGH",  NOARG16 },
+/* 0x2b */ { invOp,    NOARG16 },
 /* 0x2c */ { "PUSHS",  NOARG16 },
 /* 0x2d */ { "POPS",   NOARG16 },
 /* 0x2e */ { invOp,    NOARG16 },
@@ -305,28 +305,28 @@ static const struct
 /* Load:  arg16 = unsigned base offset (no stack arguments) */
 
 /* 0xa0 */ { "LD   ",  UDECIMAL },
-/* 0xa1 */ { "LDH  ",  UDECIMAL },
+/* 0xa1 */ { invOp,    NOARG16 },
 /* 0xa2 */ { "LDB  ",  UDECIMAL },
 /* 0xa3 */ { "LDM  ",  UDECIMAL },
 
 /* Store: arg16 = unsigned base offset (One stack arguments) */
 
 /* 0xa4 */ { "ST   ",  UDECIMAL },
-/* 0xa5 */ { "STH  ",  UDECIMAL },
+/* 0xa5 */ { invOp,    NOARG16 },
 /* 0xa6 */ { "STB  ",  UDECIMAL },
 /* 0xa7 */ { "STM  ",  UDECIMAL },
 
 /* Load Indexed: arg16 = unsigned base offset (One stack arguments) */
 
 /* 0xa8 */ { "LDX  ",  UDECIMAL },
-/* 0xa9 */ { "LDXH ",  UDECIMAL },
+/* 0xa9 */ { invOp,    NOARG16 },
 /* 0xaa */ { "LDXB ",  UDECIMAL },
 /* 0xab */ { "LDXM ",  UDECIMAL },
 
 /* Store Indexed: arg16 = unsigned base offset (Two stack arguments) */
 
 /* 0xac */ { "STX  ",  UDECIMAL },
-/* 0xad */ { "STXH ",  UDECIMAL },
+/* 0xad */ { invOp,    NOARG16 },
 /* 0xae */ { "STXB ",  UDECIMAL },
 /* 0xaf */ { "STXM ",  UDECIMAL },
 
@@ -396,28 +396,28 @@ static const struct
 /* Load:  arg8 = level; arg16 = signed frame offset (no stack arguments) */
 
 /* 0xe0 */ { "LDS  ",  DECIMAL },
-/* 0xe1 */ { "LDSH ",  DECIMAL },
+/* 0xe1 */ { invOp,    NOARG16 },
 /* 0xe2 */ { "LDSB ",  DECIMAL },
 /* 0xe3 */ { "LDSM ",  DECIMAL },
 
 /* Store: arg8 = level; arg16 = signed frame offset (One stack arguments) */
 
 /* 0xe4 */ { "STS  ",  DECIMAL },
-/* 0xe5 */ { "STSH ",  DECIMAL },
+/* 0xe5 */ { invOp,    NOARG16 },
 /* 0xe6 */ { "STSB ",  DECIMAL },
 /* 0xe7 */ { "STSM ",  DECIMAL },
 
 /* Load Indexed: arg8 = level; arg16 = signed frame offset (One stack arguments) */
 
 /* 0xe8 */ { "LDSX ",  DECIMAL },
-/* 0xe9 */ { "LDSXH",  DECIMAL },
+/* 0xe9 */ { invOp,    NOARG16 },
 /* 0xea */ { "LDSXB",  DECIMAL },
 /* 0xeb */ { "LDSXM",  DECIMAL },
 
 /* Store Indexed: arg8 = level; arg16 = signed frame offset (Two stack arguments) */
 
 /* 0xec */ { "STSX ",  DECIMAL },
-/* 0xed */ { "STSXH",  DECIMAL },
+/* 0xed */ { invOp,    NOARG16 },
 /* 0xee */ { "STSXB",  DECIMAL },
 /* 0xef */ { "STSXM",  DECIMAL },
 

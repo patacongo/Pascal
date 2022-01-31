@@ -2,7 +2,7 @@
  * pinsn16.h
  * 16-bit P-code operation code definitions
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -89,19 +89,19 @@
  * xx01 1111  ---        ---            ---            ---
  *
  * xx10 0000  LDI        ---            LD uoffs       LDS loff,offs
- * xx10 0001  LDIH       ---            LDH uoffs      LDSH loff,offs
+ * xx10 0001  ---        ---            ---            ---
  * xx10 0010  LDIB       ---            LDB uoffs      LDSB loff,offs
  * xx10 0011  LDIM       ---            LDM uoffs      LDSM loff,offs
  * xx10 0100  STI        ---            ST uoffs       STS loff,offs
- * xx10 0101  STIH       ---            STH uoffs      STSH loff,offs
+ * xx10 0101  ---        ---            ---            ---
  * xx10 0110  STIB       ---            STB uoffs      STSB loff,offs
  * xx10 0111  STIM       ---            STM uoffs      STSM loff,offs
  * xx10 1000  DUP        ---            LDX uoffs      LDSX loff,offs
- * xx10 1001  DUPH       ---            LDXH uoffs     LDSXH loff,offs
+ * xx10 1001  ---        ---            ---            ---
  * xx10 1010  XCHG       ---            LDXB uoffs     LDSXB loff,offs
- * xx10 1011  XCHGH      ---            LDXM uoffs     LDSXM loff,offs
+ * xx10 1011  ---        ---            LDXM uoffs     LDSXM loff,offs
  * xx10 1100  PUSHS      ---            STX uoffs      STSX loff,offs
- * xx10 1101  POPS       ---            STXH uoffs     STSXH loff,offs
+ * xx10 1101  POPS       ---            ---            ---
  * xx10 1110  ---        ---            STXB uoffs     STSXB loff,offs
  * xx10 1111  RET        ---            STXM uoffs     STSXM loff,offs
  *
@@ -193,23 +193,23 @@
 /* Load Immediate */
 
 #define oLDI   (0x20)    /* (One 16-bit stack argument) */
-#define oLDIH  (0x21)    /* (One 16-bit stack argument) */
+                         /* 0x21 -- unassigned */
 #define oLDIB  (0x22)    /* (One 16-bit stack argument) */
 #define oLDIM  (0x23)    /* (Two 16-bit stack arguments) */
 
 /* Store Immediate */
 
 #define oSTI   (0x24)    /* (One 32-bit and one 16-bit stack arguments) */
-#define oSTIH  (0x25)    /* (Two 16-bit stack arguments) */
+                         /* 0x25 -- unassigned */
 #define oSTIB  (0x26)    /* (Two 16-bit stack arguments) */
 #define oSTIM  (0x27)    /* (Two + n 16-bit stack arguments) */
 
 /* Data stack */
 
 #define oDUP   (0x28)   /* (One 32-bit stack argument */
-#define oDUPH  (0x29)   /* (One 16-bit stack argument) */
+                         /* 0x29 -- unassigned */
 #define oXCHG  (0x2a)   /* (Two 32-bit stack arguments) */
-#define oXCHGH (0x2b)   /* (Two 16-bit stack arguments) */
+                         /* 0x2a -- unassigned */
 #define oPUSHS (0x2c)   /* No arguments */
 #define oPOPS  (0x2d)   /* (One 16-bit stack argument) */
 
@@ -298,28 +298,28 @@
 /* Load:  arg16 = unsigned base offset */
 
 #define oLD    (o16|0x20)       /* (no stack arguments) */
-#define oLDH   (o16|0x21)       /* (no stack arguments) */
+                                /* (o16|0x21) -- unassigned */
 #define oLDB   (o16|0x22)       /* (no stack arguments) */
 #define oLDM   (o16|0x23)       /* (One 16-bit stack argument) */
 
 /* Store: arg16 = unsigned base offset */
 
 #define oST    (o16|0x24)       /* (One 32-bit stack argument) */
-#define oSTH   (o16|0x25)       /* (One 16-bit stack argument) */
+                                /* (o16|0x25) -- unassigned */
 #define oSTB   (o16|0x26)       /* (One 16-bit stack argument) */
 #define oSTM   (o16|0x27)       /* (One+n 16-bit stack arguments) */
 
 /* Load Indexed: arg16 = unsigned base offset */
 
 #define oLDX   (o16|0x28)       /* (One 16-bit stack argument) */
-#define oLDXH  (o16|0x29)       /* (One 16-bit stack argument) */
+                                /* (o16|0x29) -- unassigned */
 #define oLDXB  (o16|0x2a)       /* (One 16-bit stack argument) */
 #define oLDXM  (o16|0x2b)       /* (Two 16-bit stack arguments) */
 
 /* Store Indexed: arg16 = unsigned base offset */
 
 #define oSTX   (o16|0x2c)       /* (One 32-bit + one 16-bit stack arguments) */
-#define oSTXH  (o16|0x2d)       /* (Two 16-bit stack arguments) */
+                                /* (o16|0x2d) -- unassigned */
 #define oSTXB  (o16|0x2e)       /* (Two 16-bit stack arguments) */
 #define oSTXM  (o16|0x2f)       /* (Two+n 16-bit stack arguments) */
 
@@ -391,28 +391,28 @@
 /* Load:  arg8 = level; arg16 = signed frame offset */
 
 #define oLDS   (o16|o8|0x20)    /* (no stack arguments) */
-#define oLDSH  (o16|o8|0x21)    /* (no stack arguments) */
+                                /* (o16|o8|0x21) -- unassigned */
 #define oLDSB  (o16|o8|0x22)    /* (no stack arguments) */
 #define oLDSM  (o16|o8|0x23)    /* (One 16-bit stack argument) */
 
 /* Store: arg8 = level; arg16 = signed frame offset */
 
 #define oSTS   (o16|o8|0x24)    /* (One 32-bit stack argument) */
-#define oSTSH  (o16|o8|0x25)    /* (One 16-bit stack argument) */
+                                /* (o16|o8|0x25) -- unassigned */
 #define oSTSB  (o16|o8|0x26)    /* (One 16-bit stack argument) */
 #define oSTSM  (o16|o8|0x27)    /* (One+n 16-bit stack arguments) */
 
 /* Load Indexed: arg8 = level; arg16 = signed frame offset */
 
 #define oLDSX  (o16|o8|0x28)    /* (One 16-bit stack argument) */
-#define oLDSXH (o16|o8|0x29)    /* (One 16-bit stack argument) */
+                                /* (o16|o8|0x29) -- unassigned */
 #define oLDSXB (o16|o8|0x2a)    /* (One 16-bit stack argument) */
 #define oLDSXM (o16|o8|0x2b)    /* (Two 16-bit stack arguments) */
 
 /* Store Indexed: arg8 = level; arg16 = signed frame offset */
 
 #define oSTSX  (o16|o8|0x2c)    /* (One 32-bit + one 16-bit stack arguments) */
-#define oSTSXH (o16|o8|0x2d)    /* (Two 16-bit stack arguments) */
+                                /* (o16|o8|0x2d) -- unassigned */
 #define oSTSXB (o16|o8|0x2e)    /* (Two 16-bit stack arguments) */
 #define oSTSXM (o16|o8|0x2f)    /* (Two+n 16-bit stack arguments) */
 

@@ -62,10 +62,8 @@
 static inline bool popt_CheckDataOperation(int16_t index)
 {
   return (g_opPtr[index]->op == oPUSHB || g_opPtr[index]->op == oPUSH ||
-          g_opPtr[index]->op == oLD    || g_opPtr[index]->op == oLDH  ||
-          g_opPtr[index]->op == oLDB   ||
-          g_opPtr[index]->op == oLDS   || g_opPtr[index]->op == oLDSH ||
-          g_opPtr[index]->op == oLDSB  ||
+          g_opPtr[index]->op == oLD    || g_opPtr[index]->op == oLDB   ||
+          g_opPtr[index]->op == oLDS   || g_opPtr[index]->op == oLDSB  ||
           g_opPtr[index]->op == oLA    || g_opPtr[index]->op == oLAS  ||
           g_opPtr[index]->op == oLAC);
 }
@@ -93,12 +91,12 @@ int16_t popt_LoadOptimize(void)
         {
           /* Eliminate duplicate loads */
 
-        case oLDSH   :
-          if ((g_opPtr[i + 1]->op   == oLDSH) &&
+        case oLDS   :
+          if ((g_opPtr[i + 1]->op   == oLDS) &&
               (g_opPtr[i + 1]->arg1 == g_opPtr[i]->arg1) &&
               (g_opPtr[i + 1]->arg2 == g_opPtr[i]->arg2))
             {
-              g_opPtr[i + 1]->op   = oDUPH;
+              g_opPtr[i + 1]->op   = oDUP;
               g_opPtr[i + 1]->arg1 = 0;
               g_opPtr[i + 1]->arg2 = 0;
               nchanges++;
@@ -127,9 +125,9 @@ int16_t popt_LoadOptimize(void)
            * unindexed form.
            */
 
-          if (g_opPtr[i + 1]->op == oLDSXH)
+          if (g_opPtr[i + 1]->op == oLDSX)
             {
-              g_opPtr[i + 1]->op    = oLDSH;
+              g_opPtr[i + 1]->op    = oLDS;
               g_opPtr[i + 1]->arg2 += val;
               popt_DeletePCode(i);
               nchanges++;
@@ -197,13 +195,13 @@ int16_t popt_StoreOptimize (void)
         {
           /* Eliminate store followed by load */
 
-        case oSTSH :
-          if ((g_opPtr[i + 1]->op   == oLDSH) &&
+        case oSTS :
+          if ((g_opPtr[i + 1]->op   == oLDS) &&
               (g_opPtr[i + 1]->arg1 == g_opPtr[i]->arg1) &&
               (g_opPtr[i + 1]->arg2 == g_opPtr[i]->arg2))
             {
-              g_opPtr[i + 1]->op = oSTSH;
-              g_opPtr[i]->op     = oDUPH;
+              g_opPtr[i + 1]->op = oSTS;
+              g_opPtr[i]->op     = oDUP;
               g_opPtr[i]->arg1   = 0;
               g_opPtr[i]->arg2   = 0;
               nchanges++;
@@ -225,9 +223,9 @@ int16_t popt_StoreOptimize (void)
 
           if (i < g_nOpPtrs - 2)
             {
-              if (g_opPtr[i + 2]->op == oSTSXH)
+              if (g_opPtr[i + 2]->op == oSTSX)
                 {
-                  g_opPtr[i + 2]->op    = oSTSH;
+                  g_opPtr[i + 2]->op    = oSTS;
                   g_opPtr[i + 2]->arg2 += g_opPtr[i]->arg2;
                   popt_DeletePCode(i);
                   nchanges++;
@@ -298,7 +296,7 @@ int16_t popt_ExchangeOptimize(void)
 
       switch (g_opPtr[i]->op)
         {
-        case oXCHGH :  /* (Two 16-bit stack arguments) */
+        case oXCHG :  /* (Two 16-bit stack arguments) */
           if (popt_CheckDataOperation(i - 1) &&
               popt_CheckDataOperation(i - 2))
             {
@@ -311,7 +309,6 @@ int16_t popt_ExchangeOptimize(void)
             }
           break;
 
-        case oXCHG :   /* (Two 32-bit stack arguments) */
         default :
           i++;
           break;

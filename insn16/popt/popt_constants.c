@@ -795,10 +795,11 @@ int16_t popt_BinaryOptimize(void)
                 }
             }
 
-          /* A single (constant) pcode is sufficient to perform the */
-          /* following binary operator optimizations */
+          /* A single (constant) pcode is sufficient to perform the
+           * following binary operator optimizations.
+           */
 
-          else if (g_opPtr[i + 1]->op == oLDSH ||
+          else if (g_opPtr[i + 1]->op == oLDS  ||
                    g_opPtr[i + 1]->op == oLDSB ||
                    g_opPtr[i + 1]->op == oLAS  ||
                    g_opPtr[i + 1]->op == oLAC)

@@ -9,14 +9,14 @@ begin
    a := 10;
    b := 20;
    c := a + b;
-   writeln('Winthin the procedure display');
+   writeln('Within the procedure display');
    writeln('value of a = ', a , ' b =  ',  b, ' and c = ', c);
 end;
 begin
    a:= 100;
    b:= 200;
    c:= a + b;
-   writeln('Winthin the program exlocal');
+   writeln('Within the program exlocal');
    writeln('value of a = ', a , ' b =  ',  b, ' and c = ', c);
    display();
 end.

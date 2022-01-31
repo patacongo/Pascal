@@ -261,7 +261,6 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
   ustack_t uparm1;
   ustack_t uparm2;
   ustack_t uparm3;
-  ustack_t uparm4;
 
   switch (opcode)
     {
@@ -544,12 +543,6 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       /* Load (One stack argument) */
 
     case oLDI  :
-      POP(st, uparm1);                   /* Address */
-      PUSH(st, GETSTACK(st, uparm1));
-      PUSH(st, GETSTACK(st, uparm1 + BPERI));
-      break;
-
-    case oLDIH  :
       TOS(st, 0) = GETSTACK(st, TOS(st, 0));
       break;
 
@@ -579,28 +572,10 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
 
     case oDUP :
       uparm1 = TOS(st, 0);
-      uparm2 = TOS(st, 1);
-      PUSH(st, uparm2);
-      PUSH(st, uparm1);
-      break;
-
-    case oDUPH :
-      uparm1 = TOS(st, 0);
       PUSH(st, uparm1);
       break;
 
     case oXCHG :
-      uparm1 = TOS(st, 0);
-      uparm2 = TOS(st, 1);
-      uparm3 = TOS(st, 2);
-      uparm4 = TOS(st, 3);
-      TOS(st, 0) = uparm3; /* Swap 32-bit values, retaining endian-ness */
-      TOS(st, 1) = uparm4;
-      TOS(st, 2) = uparm1;
-      TOS(st, 3) = uparm2;
-      break;
-
-    case oXCHGH :
       uparm1 = TOS(st, 0);
       uparm2 = TOS(st, 1);
       TOS(st, 0) = uparm2; /* Swap 16-bit values */
@@ -617,7 +592,7 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
 
       /* Store (Two stack arguments) */
 
-    case oSTIH  :
+    case oSTI  :
       POP(st, uparm1);
       POP(st, uparm2);
       PUTSTACK(st, uparm1,uparm2);
@@ -907,12 +882,6 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
     case oLD :
       uparm1 = st->spb + imm16;
       PUSH(st, GETSTACK(st, uparm1));
-      PUSH(st, GETSTACK(st, uparm1 + BPERI));
-      break;
-
-    case oLDH :
-      uparm1 = st->spb + imm16;
-      PUSH(st, GETSTACK(st, uparm1));
       break;
 
     case oLDB :
@@ -943,14 +912,6 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       /* Load & store: imm16 = unsigned base offset (One stack argument) */
 
     case oST :
-      uparm1 = st->spb + imm16;
-      POP(st, uparm2);
-      PUTSTACK(st, uparm2, uparm1 + BPERI);
-      POP(st, uparm2);
-      PUTSTACK(st, uparm2, uparm1);
-      break;
-
-    case oSTH   :
       uparm1  = st->spb + imm16;
       POP(st, uparm2);
       PUTSTACK(st, uparm2, uparm1);
@@ -992,12 +953,6 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
     case oLDX  :
       uparm1 = st->spb + imm16 + TOS(st, 0);
       TOS(st, 0) = GETSTACK(st, uparm1);
-      PUSH(st, GETSTACK(st, uparm1 + BPERI));
-      break;
-
-    case oLDXH  :
-      uparm1 = st->spb + imm16 + TOS(st, 0);
-      TOS(st, 0) = GETSTACK(st, uparm1);
       break;
 
     case oLDXB :
@@ -1028,7 +983,7 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
 
       /* Store: imm16 = unsigned base offset (Two stack arguments) */
 
-    case oSTXH  :
+    case oSTX  :
       POP(st, uparm1);
       POP(st, uparm2);
       uparm2 += st->spb + imm16;
@@ -1152,12 +1107,6 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
     case oLDS :
       uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETSTACK(st, uparm1));
-      PUSH(st, GETSTACK(st, uparm1 + BPERI));
-      break;
-
-    case oLDSH :
-      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
-      PUSH(st, GETSTACK(st, uparm1));
       break;
 
     case oLDSB :
@@ -1187,7 +1136,7 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
 
       /* Load & store: imm8 = level; imm16 = signed frame offset (One stack argument) */
 
-    case oSTSH   :
+    case oSTS   :
       uparm1  = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       POP(st, uparm2);
       PUTSTACK(st, uparm2, uparm1);
@@ -1229,12 +1178,6 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
     case oLDSX  :
       uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16) + TOS(st, 0));
       TOS(st, 0) = GETSTACK(st, uparm1);
-      PUSH(st, GETSTACK(st, uparm1 + BPERI));
-      break;
-
-    case oLDSXH  :
-      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16) + TOS(st, 0));
-      TOS(st, 0) = GETSTACK(st, uparm1);
       break;
 
     case oLDSXB :
@@ -1265,7 +1208,7 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
 
       /* Store: imm8 = level; imm16 = signed frame offset (Two stack arguments) */
 
-    case oSTSXH  :
+    case oSTSX  :
       POP(st, uparm1);
       POP(st, uparm2);
       uparm2 += pexec_GetBaseAddress(st, imm8, signExtend16(imm16));

@@ -129,7 +129,7 @@ enum pcode_e
 
   /* Load:  arg = unsigned base offset */
 
-  opLD, opLDH, opLDB, opLDM,
+  opLD, opLDB, opLDM,
 
   /* Store: arg = unsigned base offset */
 
@@ -177,7 +177,7 @@ enum pcode_e
 
   /* Load:  arg1 = level; arg2 = signed frame offset */
 
-  opLDS, opLDSH, opLDSB, opLDSM,
+  opLDS, opLDSB, opLDSM,
 
   /* Store: arg1 = level; arg2 = signed frame offset */
 

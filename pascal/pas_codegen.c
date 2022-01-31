@@ -119,7 +119,6 @@ pas_GetLevel0Opcode(enum pcode_e eOpCode)
   switch (eOpCode)
     {
     case opLDS:   return opLD;
-    case opLDSH:  return opLDH;
     case opLDSB:  return opLDB;
     case opLDSM:  return opLDM;
     case opSTS:   return opST;

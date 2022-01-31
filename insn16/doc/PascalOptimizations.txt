@@ -231,7 +231,7 @@ Eliminate store followed by load
 
 popt_ExchangeOptimize()
 Eliminate exchange of constant values
-  oXCHGH const1 const2                         -> const2 const1
+  oXCHG const1 const2                          -> const2 const1
 
 Convert stores indexed by a constant to unindexed stores
   <push-op> arg1 + ? + oSTOX arg2              -> ? + oSTO arg1 + arg2
