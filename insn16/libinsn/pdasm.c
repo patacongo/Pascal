@@ -59,16 +59,23 @@
 
 /* These are all the format codes that apply to opcodes the an arg16 */
 
+#define NOARG8      0
+#define SHORTINT    1    /* Show ARG8 as a signed integer */
+#define SHORTWORD   2    /* Show ARG8 as an unsigned integer */
+#define fpOP        3    /* Show ARG8 as encoded floating point operation */
+#define setOP       4    /* Show ARG8 as encoded SET operation */
+
 #define NOARG16     0
-#define HEX         1
-#define DECIMAL     2
-#define UDECIMAL    3
-#define LABEL_DEC   4
-#define xOP         5
-#define lbOP        6
-#define fpOP        7
-#define setOP       8
-#define COMMENT     9
+#define HEX         1    /* Show ARG16 as hexadecimal */
+#define DECIMAL     2    /* Show ARG16 as a signed decimal */
+#define UDECIMAL    3    /* Show ARG16 as an unsigned decimal */
+#define LABEL_DEC   4    /* Show ARG16 as a label */
+#define xOP         5    /* Show ARG16 as encoded SYSIO operation */
+#define lbOP        6    /* Show ARG16 as encoded library function call */
+#define COMMENT     7    /* This is a comment */
+
+#define ARG8FMT(n)  ((n) & 0x07)
+#define ARG16FMT(n) ((n) >> 3)
 
 /* The following table defines everything that is needed to disassemble
  * a P-Code.  NOTE:  The order of definition in this table must exactly
@@ -243,7 +250,7 @@ static const struct
 /* 0x72 */ { invOp,    NOARG16 },
 /* 0x73 */ { invOp,    NOARG16 },
 /* 0x74 */ { "PUSHB",  NOARG16 },
-/* 0x75 */ { invOp,    NOARG16 },
+/* 0x75 */ { "UPUSHB", NOARG16 },
 /* 0x76 */ { invOp,    NOARG16 },
 /* 0x77 */ { invOp,    NOARG16 },
 
@@ -471,10 +478,10 @@ static const char *xName[MAX_XOP] =
 static const char invSetOp[] = "Invalid SETOP";
 static const char *sName[MAX_SETOP] =
 { /* Set opcode mnemonics */
-/* 0x00 */ invSetOp,     "INTERSECTION", "UNION",   "DIFFERENCE",
-/* 0x04 */ "SYMDIFF",    "EQUAL",     "NEQUAL",     "CONTAINS",
-/* 0x08 */ "MEMBER",     "INCLUDE",   "EXCLUDE",    "CARD",
-/* 0x0c */ "SINGLETON",  "SUBRANGE"
+/* 0x00 */ invSetOp,     "EMPTY",     "INTERSECTION", "UNION",
+/* 0x04 */ "DIFFERENCE", "SYMDIFF",   "EQUAL",        "NEQUAL",
+/* 0x08 */ "CONTAINS",   "MEMBER",    "INCLUDE",      "EXCLUDE",
+/* 0x0c */ "CARD",       "SINGLETON", "SUBRANGE"
 };
 
 static const char invLbOp[] = "Invalid runtime code";
@@ -550,96 +557,106 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 
   else
     {
+      uint8_t fmt;
+
       fprintf(lfile, "%s ", opTable[pop->op].opName);
 
-      /* Print pop->arg1 (if present) */
+      /* Print arg8 (if present) */
 
       if ((pop->op & o8) != 0)
         {
-          fprintf(lfile, "%d", pop->arg1);
+          fmt = ARG8FMT(opTable[pop->op].format);
+          switch (fmt)
+            {
+              case SHORTWORD :    /* Show ARG8 as an unsigned integer */
+                fprintf(lfile, "%u", pop->arg1);
+                break;
+
+              case SHORTINT :    /* Show ARG8 as a signed integer */
+                fprintf(lfile, "%d", signExtend16(pop->arg1));
+                break;
+
+              case fpOP :        /* Show ARG8 as encoded floating point operation */
+                if ((pop->arg1 & fpMASK) < MAX_FOP)
+                  {
+                    fprintf(lfile, "%s", fpName[(pop->arg1 & 0x3f)]);
+                  }
+                else
+                  {
+                    fprintf(lfile, "%s", invFpOp);
+                  }
+                break;
+
+              case setOP :       /* Show ARG8 as encoded SET operation */
+                if (pop->arg1 < MAX_SETOP)
+                  {
+                    fprintf(lfile, "%s", sName[pop->arg1]);
+                  }
+                else
+                  {
+                    fprintf(lfile, "%s", invSetOp);
+                  }
+                break;
+
+              case NOARG8 :
+              default:
+                break;
+            }
         }
 
-      /* Print ar16 (if present) */
+      /* Print arg16 (if present) */
 
       if ((pop->op & o16) != 0)
         {
-          switch (opTable[pop->op].format)
+          /* Separate from arg8 (if present) with a comma and space */
+
+          if ((pop->op & o8) != 0)
             {
-            case HEX       :
-              if ((pop->op & o8) != 0)
-                {
-                  fprintf(lfile, ", ");
-                }
+              fprintf(lfile, ", ");
+            }
 
-              fprintf(lfile, "0x%04x", pop->arg2);
-              break;
+          fmt = ARG16FMT(opTable[pop->op].format);
+          switch (fmt)
+            {
+              case DECIMAL :     /* Show ARG16 as a signed decimal */
+              case COMMENT :     /* This is a comment */
+                fprintf(lfile, "%" PRId32, signExtend16(pop->arg2));
+                break;
 
-            case COMMENT   :
-            case DECIMAL   :
-              if ((pop->op & o8) != 0)
-                {
-                  fprintf(lfile, ", ");
-                }
+              case HEX :         /* Show ARG16 as hexadecimal */
+                fprintf(lfile, "0x%04x", pop->arg2);
+                break;
 
-              fprintf(lfile, "%" PRId32, signExtend16(pop->arg2));
-              break;
+              case UDECIMAL :    /* Show ARG16 as an unsigned decimal */
+                fprintf(lfile, "%u", pop->arg2);
+                break;
 
-            case UDECIMAL   :
-              if ((pop->op & o8) != 0)
-                {
-                  fprintf(lfile, ", ");
-                }
+              case xOP :         /* Show ARG16 as encoded SYSIO operation */
+                if (pop->arg2 < MAX_XOP)
+                  {
+                    fprintf(lfile, "%s", xName[pop->arg2]);
+                  }
+                 else
+                  {
+                    fprintf(lfile, "%s", invXOp);
+                  }
+                break;
 
-              fprintf(lfile, "%u", pop->arg2);
-              break;
+              case lbOP :        /* Show ARG16 as encoded library function call */
+                if (pop->arg2 < MAX_LBOP)
+                  {
+                    fprintf(lfile, "%s", lbName[pop->arg2]);
+                  }
+                else
+                  {
+                    fprintf(lfile, "%s", invLbOp);
+                  }
+                break;
 
-            case fpOP       :
-              if ((pop->arg1 & fpMASK) < MAX_FOP)
-                {
-                  fprintf(lfile, "%s", fpName[(pop->arg1 & 0x3f)]);
-                }
-              else
-                {
-                  fprintf(lfile, "%s", invFpOp);
-                }
-              break;
-
-            case setOP     :
-              if (pop->arg2 < MAX_SETOP)
-                {
-                  fprintf(lfile, "%s", sName[pop->arg2]);
-                }
-              else
-                {
-                  fprintf(lfile, "%s", invSetOp);
-                }
-              break;
-
-            case xOP       :
-              if (pop->arg2 < MAX_XOP)
-                {
-                  fprintf(lfile, "%s", xName[pop->arg2]);
-                }
-              else
-                {
-                  fprintf(lfile, "%s", invXOp);
-                }
-              break;
-
-            case lbOP :
-              if (pop->arg2 < MAX_LBOP)
-                {
-                  fprintf(lfile, "%s", lbName[pop->arg2]);
-                }
-              else
-                {
-                  fprintf(lfile, "%s", invLbOp);
-                }
-              break;
-
-            case LABEL_DEC :
-            default        :
-              break;
+              case NOARG16 :     /* There is no ARG16? */
+              case LABEL_DEC :   /* Show ARG16 as a label */
+              default        :
+                break;
             }
         }
     }

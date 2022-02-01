@@ -1,5 +1,5 @@
 P-Code optimizations:
-  Let <push-ops> be oPUSH|oPUSHB
+  Let <push-ops> be oPUSH|oPUSHB}oUPUSHB
   Let <load-ops> be oLOD|oLODB|PUSH|oLADR|oLCADR
 
 pcopt.c:unaryOptimize
@@ -102,7 +102,8 @@ Simplify or delete condition branches on constants
     else                                       -> delete both
 STEP 1a:
   <push-op> arg
-    if arg < 256                               -> oPUSHB arg
+    if arg >= -128 && arg <= 127               -> oPUSHB arg
+    else if arg < 255                          -> oUPUSHB arg
     else                                       -> oPUSH  arg
 
 STEP 2:
@@ -129,7 +130,8 @@ STEP 1:
   <push-op> arg1 + <push-op> arg2 + oLTE -> oPUSH arg1 <= arg2 + STEP 1a
 STEP 1a:
   <push-op> arg
-    if arg < 256                               -> oPUSHB arg
+    if arg >= -128 && arg <= 127               -> oPUSHB arg
+    else if arg < 255                          -> oUPUSHB arg
     else                                       -> oPUSH  arg
 
 STEP 2:
@@ -161,7 +163,8 @@ STEP 2:
 STEP 2a:
   if the <push-op> op is still there
   <push-op> arg
-    if arg < 256                               -> oPUSHB arg
+    if arg >= -128 && arg <= 127               -> oPUSHB arg
+    else if arg < 255                          -> oUPUSHB arg
     else                                       -> oPUSH  arg
 
 STEP 3
@@ -223,7 +226,9 @@ Convert loads indexed by a constant to unindexed loads
   <push-op> arg1 + oLODBX arg2                 -> oLODB arg1 + arg2
   <push-op> arg1 + oLODMX arg2                 -> oLODM arg1 + arg2
   <push-op> arg
-    if arg < 256                               -> oPUSHB arg
+    if arg >= -128 && arg <= 127               -> oPUSHB arg
+    else if arg < 255                          -> oUPUSHB arg
+    else                                       -> oPUSH  arg
 
 plopt.c:StoreOptimize()
 Eliminate store followed by load

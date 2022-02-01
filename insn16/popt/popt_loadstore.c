@@ -61,10 +61,11 @@
 
 static inline bool popt_CheckDataOperation(int16_t index)
 {
-  return (g_opPtr[index]->op == oPUSHB || g_opPtr[index]->op == oPUSH ||
-          g_opPtr[index]->op == oLD    || g_opPtr[index]->op == oLDB   ||
-          g_opPtr[index]->op == oLDS   || g_opPtr[index]->op == oLDSB  ||
-          g_opPtr[index]->op == oLA    || g_opPtr[index]->op == oLAS  ||
+  return (g_opPtr[index]->op == oPUSH   || g_opPtr[index]->op == oPUSHB ||
+          g_opPtr[index]->op == oUPUSHB ||
+          g_opPtr[index]->op == oLD     || g_opPtr[index]->op == oLDB   ||
+          g_opPtr[index]->op == oLDS    || g_opPtr[index]->op == oLDSB  ||
+          g_opPtr[index]->op == oLA     || g_opPtr[index]->op == oLAS   ||
           g_opPtr[index]->op == oLAC);
 }
 
@@ -109,13 +110,18 @@ int16_t popt_LoadOptimize(void)
 
         case oPUSH  :
         case oPUSHB  :
+        case oUPUSHB  :
           /* Get the index value */
 
           if (g_opPtr[i]->op == oPUSH)
             {
               val = g_opPtr[i]->arg2;
             }
-          else
+          else if (g_opPtr[i]->op == oPUSHB)
+            {
+              val = SIGN_EXTEND(g_opPtr[i]->arg1);
+            }
+          else /* if (g_opPtr[i]->op == oUPUSHB) */
             {
               val = g_opPtr[i]->arg1;
             }
@@ -153,23 +159,39 @@ int16_t popt_LoadOptimize(void)
               popt_DeletePCode(i);
               nchanges++;
             }
-          else if (val < 256)
+
+#if 0 /* Done elsewhere */
+          else if (g_opPtr[i]->op == oPUSH)
             {
-              g_opPtr[i]->op   = oPUSHB;
-              g_opPtr[i]->arg1 = val;
-              g_opPtr[i]->arg2 = 0;
+              if ((int16_t)val >= MINSHORTINT &&
+                  (int16_t)val <= MAXSHORTINT)
+                {
+                  g_opPtr[i]->op   = oPUSHB;
+                  g_opPtr[i]->arg1 = val;
+                  g_opPtr[i]->arg2 = 0;
+                  nchanges++;
+                }
+              else if ((uint16_t)val <= MAXSHORTWORD)
+                {
+                  g_opPtr[i]->op   = oUPUSHB;
+                  g_opPtr[i]->arg1 = val;
+                  g_opPtr[i]->arg2 = 0;
+                  nchanges++;
+                }
+
               i++;
             }
+#endif
           else
             {
               i++;
             }
           break;
 
-       default :
-         i++;
-         break;
-     }
+        default :
+          i++;
+          break;
+        }
     }
 
   return nchanges;
@@ -249,12 +271,23 @@ int16_t popt_StoreOptimize (void)
           break;
 
         case oPUSHB :
+        case oUPUSHB :
           if (i < g_nOpPtrs - 2)
             {
               if (g_opPtr[i + 2]->op == oSTSXB)
                 {
+                  int16_t offset;
+                  if (g_opPtr[i]->op == oPUSHB)
+                    {
+                      offset = SIGN_EXTEND(g_opPtr[i]->arg1);
+                    }
+                  else
+                    {
+                      offset = g_opPtr[i]->arg1;
+                    }
+
                   g_opPtr[i + 2]->op    = oSTSB;
-                  g_opPtr[i + 2]->arg2 += g_opPtr[i]->arg2;
+                  g_opPtr[i + 2]->arg2 += offset;
                   popt_DeletePCode(i);
                   nchanges++;
                 }

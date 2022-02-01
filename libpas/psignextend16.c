@@ -2,7 +2,7 @@
  * psignextend16.c
  * 16-bit sign extension
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,4 +55,3 @@ int32_t signExtend16(uint16_t arg16)
   return arg32 >> 16;
 }
 
-/***********************************************************************/

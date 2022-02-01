@@ -86,7 +86,7 @@ static poffProgHandle_t g_myPoffProgHandle; /* Handle to temporary POFF object *
 
 static void popt_PutPCodeFromTable(void)
 {
-  register int16_t i;
+  int16_t i;
 
   TRACE(stderr, "[popt_PutPCodeFromTable]");
 
@@ -95,17 +95,19 @@ static void popt_PutPCodeFromTable(void)
     {
       if (g_opTable[0].op != oNOP && !g_endOut)
         {
-          (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
+          poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
 
           if (g_opTable[0].op & o8)
-            (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
+            {
+              poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
+            }
 
           if (g_opTable[0].op & o16)
             {
-              (void)poffAddTmpProgByte(g_myPoffProgHandle,
-                                       (g_opTable[0].arg2 >> 8));
-              (void)poffAddTmpProgByte(g_myPoffProgHandle,
-                                       (g_opTable[0].arg2 & 0xff));
+              poffAddTmpProgByte(g_myPoffProgHandle,
+                                 (g_opTable[0].arg2 >> 8));
+              poffAddTmpProgByte(g_myPoffProgHandle,
+                                 (g_opTable[0].arg2 & 0xff));
             }
 
           g_endOut = (g_opTable[0].op == oEND);
@@ -115,16 +117,16 @@ static void popt_PutPCodeFromTable(void)
 
       for (i = 1; i < WINDOW; i++)
         {
-          g_opTable[i-1].op   = g_opTable[i].op ;
-          g_opTable[i-1].arg1 = g_opTable[i].arg1;
-          g_opTable[i-1].arg2 = g_opTable[i].arg2;
+          g_opTable[i - 1].op   = g_opTable[i].op ;
+          g_opTable[i - 1].arg1 = g_opTable[i].arg1;
+          g_opTable[i - 1].arg2 = g_opTable[i].arg2;
         }
 
       /* Then fill the end slot with a new P-Code from the input file */
 
       insn_GetOpCode(g_myPOoffHandle, &g_opTable[WINDOW-1]);
-
-    } while (g_opTable[0].op == oNOP);
+    }
+  while (g_opTable[0].op == oNOP);
 
   popt_SetupPointer();
 }

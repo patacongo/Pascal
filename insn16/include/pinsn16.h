@@ -110,7 +110,7 @@
  * xx11 0010  ---        ---            ---            ---
  * xx11 0011  ---        ---            ---            ---
  * xx11 0100  ---        PUSHB n        PUSH nn        ---
- * xx11 0101  ---        ---            INDS nn        ---
+ * xx11 0101  ---        UPUSHB n       INDS nn        ---
  * xx11 0110  ---        ---            LIB lop        ---
  * xx11 0111  UMUL       ---            SYSIO iop      ---
  * xx11 1000  UDIV       ---            LAX uoffs      LASX loff,offs
@@ -259,11 +259,12 @@
 
 /* (o8|0x31)-(o8|0x33) -- unassigned */
 
-/* Data stack:  arg8 = 8 bit unsigned data (no stack arguments) */
+/* Data stack:  arg8 = 8 bit data (no stack arguments) */
 
 #define oPUSHB  (o8|0x34)
+#define oUPUSHB (o8|0x35)
 
-/* (o8|0x35)-(o8|0x3f) -- unassigned */
+/* (o8|0x36)-(o8|0x3f) -- unassigned */
 
 /** OPCODES WITH SINGLE 16-BIT ARGUMENT (arg16) *****************************/
 

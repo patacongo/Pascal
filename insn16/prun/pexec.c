@@ -684,9 +684,13 @@ static inline int pexec16(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8)
   st->pc += 2;
   switch (opcode)
     {
-      /* Data stack:  imm8 = 8 bit unsigned data (no stack arguments) */
+      /* Data stack:  imm8 = 8 bit  data (no stack arguments) */
 
     case oPUSHB  :
+      PUSH(st, signExtend16(imm8));
+      break;
+
+    case oUPUSHB  :
       PUSH(st, imm8);
       break;
 

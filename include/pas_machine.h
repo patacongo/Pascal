@@ -67,6 +67,8 @@
 #define MAXWORD             0xffff
 #define MINWORD             0
 
+/* Align to integer stack boundaries */
+
 #define INT_ALIGNUP(n)      (((n) + sINT_SIZE - 1) & ~(sINT_SIZE - 1))
 #define INT_ALIGNDOWN(n)    ((n) & ~sINT_SIZE)
 #define INT_ISALIGNED(n)    (((n) & (sINT_SIZE - 1)) == 0)
@@ -78,6 +80,10 @@
 #define sSHORTWORD_SIZE     1
 #define MAXSHORTWORD        255
 #define MINSHORTWORD        0
+
+/* Sign extend a a short word to an integer */
+
+#define SIGN_EXTEND(n)      (((int16_t)(n) << 8) >> 8)
 
 /* Sizes of other Pascal types */
 
