@@ -20,7 +20,7 @@ BEGIN
   word1 := SHORTWORD(-128);
   word2 := SHORTWORD(127);
 
-  WRITELN(' int1  = ',  int1:6,  ' int2  = ',  int2:6,
+  WRITELN(' int1  = ',  int1:6, ' int2  = ',  int2:6,
           ' word1 = ', word1:6, ' word2 = ', word2:6);
 
   { Set both to the range of short unsigned word }
@@ -30,7 +30,7 @@ BEGIN
   word1 := SHORTWORD(0);
   word2 := SHORTWORD(255);
 
-  WRITELN(' int1  = ',  int1:6,  ' int2  = ',  int2:6,
+  WRITELN(' int1  = ',  int1:6, ' int2  = ',  int2:6,
           ' word1 = ', word1:6, ' word2 = ', word2:6);
 
   { Set both to the their limits, the increment/decrement beyond }
@@ -40,9 +40,9 @@ BEGIN
   word1 := SHORTWORD(0);
   word2 := SHORTWORD(255);
 
-  WRITELN(' int1  = ',  int1:6,  ' int2  = ',  int2:6,
+  WRITELN(' int1  = ',  int1:6, ' int2  = ',  int2:6,
           ' word1 = ', word1:6, ' word2 = ', word2:6);
-  WRITELN(' int1  = ',  (int1  - 1):6, ' int2  = ',  (int2  + 1):6,
+  WRITELN(' int1  = ',  (int1 - 1):6, ' int2  = ', (int2  + 1):6,
           ' word1 = ', (word1 - 1):6, ' word2 = ', (word2 + 1):6);
 
   { Unrelated check of word and integer pointers }
@@ -52,6 +52,6 @@ BEGIN
   word1ptr  := uptr(@word1);
   word1ptr^ := SHORTWORD(200);
 
-  WRITELN(' int1  = ', int1:6,  ' sptr^  = ',  int1ptr^);
+  WRITELN(' int1  = ',  int1:6, ' sptr^ = ', int1ptr^);
   WRITELN(' word1 = ', word1:6, ' uptr^ = ', word1ptr^);
 END.
