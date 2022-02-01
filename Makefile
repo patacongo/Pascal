@@ -28,7 +28,7 @@ LIBS			= $(LIBDIR)/libpoff.a $(LIBDIR)/libpas.a \
 				  $(LIBDIR)/libinsn.a
 
 all: pascal popt plink plist prun
-.PHONY: all config.h libpoff.a libpas.a libinsn.a pascal popt plink plist prun clean deep-clean
+.PHONY: all config.h libpoff.a libpas.a libinsn.a pascal popt plink plist prun clean distclean
 
 $(INCDIR)/config.h: Make.config
 	@$(MAKE) -f Make.config.h
@@ -91,15 +91,7 @@ clean:
 	$(MAKE) -C $(PASDIR) clean
 	$(MAKE) -C $(PLINKDIR) clean
 	$(MAKE) -C $(INSNDIR) clean
-	find . -name \*~ -exec rm -f {} \;
-	find tests -name "*.err" -exec rm -f {} \;
-	find tests -name "*.lst" -exec rm -f {} \;
-	find tests -name "*.pex" -exec rm -f {} \;
-	find tests -name "*.o1" -exec rm -f {} \;
-	find tests -name "*.o" -exec rm -f {} \;
-	find tests -name "*.d" -exec rm -f {} \;
+	$(MAKE) -C $(TESTDIR) clean
 
-deep-clean: clean
+distclean: clean
 	rm -f .config include/config.h Make.config
-	$(RM) bin16/*
-	$(RM) bin32/*
