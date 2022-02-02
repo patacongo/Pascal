@@ -6,6 +6,7 @@ PROGRAM wordType;
 TYPE
   intptr = ^INTEGER;
   wordptr = ^WORD;
+
 VAR
   int1, int2 : INTEGER;
   word1, word2 : WORD;
@@ -42,8 +43,14 @@ BEGIN
 
   WRITELN(' int1  = ',  int1:6,  ' int2  = ',  int2:6,
           ' word1 = ', word1:6, ' word2 = ', word2:6);
-  WRITELN(' int1  = ',  (int1  - 1):6, ' int2  = ',  (int2  + 1):6,
-          ' word1 = ', (word1 - 1):6, ' word2 = ', (word2 + 1):6);
+
+  int1  := int1  - 1;
+  int2  := int2  + 1;
+  word1 := word1 - 1;
+  word2 := word2 + 1;
+
+  WRITELN(' int1  = ',  int1:6,  ' int2  = ',  int2:6,
+          ' word1 = ', word1:6, ' word2 = ', word2:6);
 
   { Unrelated check of word and integer pointers }
 

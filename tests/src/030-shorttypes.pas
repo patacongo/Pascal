@@ -6,6 +6,7 @@ PROGRAM ShortTypes;
 TYPE
   sptr = ^SHORTINTEGER;
   uptr = ^SHORTWORD;
+
 VAR
   int1, int2   : SHORTINTEGER;
   word1, word2 : SHORTWORD;

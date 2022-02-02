@@ -143,7 +143,6 @@ int16_t popt_UnaryOptimize(void)
                    popt_DeletePCode(i);
                    nchanges++;
                  }
-               else i++;
                break;
 
              case oSUB :
@@ -164,7 +163,6 @@ int16_t popt_UnaryOptimize(void)
                    popt_DeletePCode(i);
                    nchanges++;
                  }
-               else i++;
                break;
 
              case oMUL :
@@ -209,11 +207,9 @@ int16_t popt_UnaryOptimize(void)
                      }
 
                    nchanges++;
-                   i++;
                    break;
 
                  default :
-                   i++;
                    break;
                  }
                break;
@@ -227,7 +223,6 @@ int16_t popt_UnaryOptimize(void)
                    popt_DeletePCodePair(i, i + 1);
                    nchanges++;
                  }
-               else i++;
                break;
 
              case oAND :
@@ -236,7 +231,6 @@ int16_t popt_UnaryOptimize(void)
                    popt_DeletePCodePair(i, i + 1);
                    nchanges++;
                  }
-               else i++;
                break;
 
                /* Delete comparisons of constants to zero */
@@ -250,9 +244,13 @@ int16_t popt_UnaryOptimize(void)
 
              case oNEQZ  :
                if (g_opPtr[i]->arg2 != 0)
-                 g_opPtr[i]->arg2 = -1;
+                 {
+                   g_opPtr[i]->arg2 = -1;
+                 }
                else
-                 g_opPtr[i]->arg2 = 0;
+                 {
+                   g_opPtr[i]->arg2 = 0;
+                 }
 
                popt_DeletePCode(i + 1);
                nchanges++;
@@ -325,10 +323,6 @@ int16_t popt_UnaryOptimize(void)
                    g_opPtr[i + 1]->op = oEQUZ;
                    nchanges++;
                  }
-               else
-                 {
-                   i++;
-                 }
                break;
 
              case oNEQ   :
@@ -351,10 +345,6 @@ int16_t popt_UnaryOptimize(void)
                    g_opPtr[i]->arg2   = 0;
                    g_opPtr[i + 1]->op = oNEQZ;
                    nchanges++;
-                 }
-               else
-                 {
-                   i++;
                  }
                break;
 
@@ -379,10 +369,6 @@ int16_t popt_UnaryOptimize(void)
                    g_opPtr[i + 1]->op = oLTZ;
                    nchanges++;
                  }
-               else
-                 {
-                   i++;
-                 }
                break;
 
              case oGTE   :
@@ -405,10 +391,6 @@ int16_t popt_UnaryOptimize(void)
                    g_opPtr[i]->arg2   = 0;
                    g_opPtr[i + 1]->op = oGTEZ;
                    nchanges++;
-                 }
-               else
-                 {
-                   i++;
                  }
                break;
 
@@ -433,10 +415,6 @@ int16_t popt_UnaryOptimize(void)
                    g_opPtr[i + 1]->op = oGTZ;
                    nchanges++;
                  }
-               else
-                 {
-                   i++;
-                 }
                break;
 
              case oLTE   :
@@ -459,10 +437,6 @@ int16_t popt_UnaryOptimize(void)
                    g_opPtr[i]->arg2   = 0;
                    g_opPtr[i + 1]->op = oLTEZ;
                    nchanges++;
-                 }
-               else
-                 {
-                   i++;
                  }
                break;
 
@@ -553,29 +527,37 @@ int16_t popt_UnaryOptimize(void)
                break;
 
              default     :
-               i++;
                break;
              }
 
-           /* If the oPUSH instruction is still there, see if we can now
-            * represent it with a oPUSHB or oUPUSHB instruction.
+           /* If the oPUSH instruction is still there, well will need to
+            * increment the index over it.
             */
 
-           if (g_opPtr[i] != NULL && g_opPtr[i]->op == oPUSH)
+           if (g_opPtr[i] != NULL)
              {
-               if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                   (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
+               /* If the oPUSH instruction is still there, see if we can now
+                * represent it with a oPUSHB or oUPUSHB instruction.
+                */
+
+               if (g_opPtr[i]->op == oPUSH)
                  {
-                   g_opPtr[i]->op   = oPUSHB;
-                   g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                   g_opPtr[i]->arg2 = 0;
+                   if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
+                       (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
+                     {
+                       g_opPtr[i]->op   = oPUSHB;
+                       g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
+                       g_opPtr[i]->arg2 = 0;
+                     }
+                   else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
+                     {
+                       g_opPtr[i]->op   = oUPUSHB;
+                       g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
+                       g_opPtr[i]->arg2 = 0;
+                     }
                  }
-               else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                 {
-                   g_opPtr[i]->op   = oUPUSHB;
-                   g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                   g_opPtr[i]->arg2 = 0;
-                 }
+
+               i++;
              }
          }
 
@@ -639,6 +621,7 @@ int16_t popt_BinaryOptimize(void)
   int16_t nchanges = 0;
   register int16_t stmp16;
   register int16_t i;
+  register int16_t j;
 
   TRACE(stderr, "[popt_BinaryOptimize]");
 
@@ -750,8 +733,14 @@ int16_t popt_BinaryOptimize(void)
                   break;
 
                 case oEQU :
-                  if (g_opPtr[i]->arg2 == g_opPtr[i + 1]->arg2) g_opPtr[i]->arg2 = -1;
-                  else g_opPtr[i]->arg2 = 0;
+                  if (g_opPtr[i]->arg2 == g_opPtr[i + 1]->arg2)
+                    {
+                      g_opPtr[i]->arg2 = -1;
+                    }
+                  else
+                    {
+                      g_opPtr[i]->arg2 = 0;
+                    }
 
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
@@ -759,9 +748,13 @@ int16_t popt_BinaryOptimize(void)
 
                 case oNEQ :
                   if ((int16_t)g_opPtr[i]->arg2 != (int16_t)g_opPtr[i + 1]->arg2)
-                    g_opPtr[i]->arg2 = -1;
+                    {
+                      g_opPtr[i]->arg2 = -1;
+                    }
                   else
-                    g_opPtr[i]->arg2 = 0;
+                    {
+                      g_opPtr[i]->arg2 = 0;
+                    }
 
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
@@ -770,9 +763,13 @@ int16_t popt_BinaryOptimize(void)
                 case oLT  :  /* REVISIT:  arg2 is unsigned */
                 case oULT :
                   if ((int16_t)g_opPtr[i]->arg2 < (int16_t)g_opPtr[i + 1]->arg2)
-                    g_opPtr[i]->arg2 = -1;
+                    {
+                      g_opPtr[i]->arg2 = -1;
+                    }
                   else
-                    g_opPtr[i]->arg2 = 0;
+                    {
+                      g_opPtr[i]->arg2 = 0;
+                    }
 
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
@@ -781,9 +778,13 @@ int16_t popt_BinaryOptimize(void)
                 case oGTE :  /* REVISIT:  arg2 is unsigned */
                 case oUGTE :
                   if ((int16_t)g_opPtr[i]->arg2 >= (int16_t)g_opPtr[i + 1]->arg2)
-                    g_opPtr[i]->arg2 = -1;
+                    {
+                      g_opPtr[i]->arg2 = -1;
+                    }
                   else
-                    g_opPtr[i]->arg2 = 0;
+                    {
+                      g_opPtr[i]->arg2 = 0;
+                    }
 
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
@@ -792,9 +793,13 @@ int16_t popt_BinaryOptimize(void)
                 case oGT  :  /* REVISIT:  arg2 is unsigned */
                 case oUGT :
                   if ((int16_t)g_opPtr[i]->arg2 > (int16_t)g_opPtr[i + 1]->arg2)
-                    g_opPtr[i]->arg2 = -1;
+                    {
+                      g_opPtr[i]->arg2 = -1;
+                    }
                   else
-                    g_opPtr[i]->arg2 = 0;
+                    {
+                      g_opPtr[i]->arg2 = 0;
+                    }
 
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
@@ -803,54 +808,65 @@ int16_t popt_BinaryOptimize(void)
                 case oLTE :  /* REVISIT:  arg2 is unsigned */
                 case oULTE :
                   if ((int16_t)g_opPtr[i]->arg2 <= (int16_t)g_opPtr[i + 1]->arg2)
-                    g_opPtr[i]->arg2 = -1;
+                    {
+                      g_opPtr[i]->arg2 = -1;
+                    }
                   else
-                    g_opPtr[i]->arg2 = 0;
+                    {
+                      g_opPtr[i]->arg2 = 0;
+                    }
 
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
                 default   :
-                  i++;
                   break;
                 }
 
-              /* If the oPUSH instruction(s) are still there, see if we can now
-               * represent them with an oUPUSHB instructions
-               */
+              /* If the instruction(s) are still there, increment the index. */
 
-              if (g_opPtr[i] != NULL && g_opPtr[i]->op == oPUSH)
+              j = i + 1;
+              if (g_opPtr[i] != NULL)
                 {
-                  if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                      (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
+                  /* If the oPUSH instruction(s) are still there, see if we can
+                   * now represent them with an oUPUSHB instructions
+                   */
+
+                  if (g_opPtr[i]->op == oPUSH)
                     {
-                      g_opPtr[i]->op   = oPUSHB;
-                      g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                      g_opPtr[i]->arg2 = 0;
+                      if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
+                          (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
+                        {
+                          g_opPtr[i]->op   = oPUSHB;
+                          g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
+                          g_opPtr[i]->arg2 = 0;
+                        }
+                      else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
+                        {
+                          g_opPtr[i]->op   = oUPUSHB;
+                          g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
+                          g_opPtr[i]->arg2 = 0;
+                        }
                     }
-                  else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                    {
-                      g_opPtr[i]->op   = oUPUSHB;
-                      g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                      g_opPtr[i]->arg2 = 0;
-                    }
+
+                  i++;
                 }
 
-              if (g_opPtr[i + 1] != NULL && g_opPtr[i + 1]->op == oPUSH)
+              if (g_opPtr[j] != NULL && g_opPtr[j]->op == oPUSH)
                 {
-                  if ((int16_t)g_opPtr[i + 1]->arg2 >= MINSHORTINT &&
-                      (int16_t)g_opPtr[i + 1]->arg2 <= MAXSHORTINT)
+                  if ((int16_t)g_opPtr[j]->arg2 >= MINSHORTINT &&
+                      (int16_t)g_opPtr[j]->arg2 <= MAXSHORTINT)
                     {
-                      g_opPtr[i + 1]->op   = oPUSHB;
-                      g_opPtr[i + 1]->arg1 = g_opPtr[i + 1]->arg2;
-                      g_opPtr[i + 1]->arg2 = 0;
+                      g_opPtr[j]->op   = oPUSHB;
+                      g_opPtr[j]->arg1 = g_opPtr[j]->arg2;
+                      g_opPtr[j]->arg2 = 0;
                     }
-                  else if ((uint16_t)g_opPtr[i + 1]->arg2 <= MAXSHORTWORD)
+                  else if ((uint16_t)g_opPtr[j]->arg2 <= MAXSHORTWORD)
                     {
-                      g_opPtr[i + 1]->op   = oUPUSHB;
-                      g_opPtr[i + 1]->arg1 = g_opPtr[i + 1]->arg2;
-                      g_opPtr[i + 1]->arg2 = 0;
+                      g_opPtr[j]->op   = oUPUSHB;
+                      g_opPtr[j]->arg1 = g_opPtr[j]->arg2;
+                      g_opPtr[j]->arg2 = 0;
                     }
                 }
             }
@@ -900,7 +916,6 @@ int16_t popt_BinaryOptimize(void)
                       popt_DeletePCode(i);
                       nchanges++;
                     }
-                  else i++;
                   break;
 
                 case oSUB :
@@ -910,7 +925,6 @@ int16_t popt_BinaryOptimize(void)
                       popt_DeletePCode(i);
                       nchanges++;
                     }
-                  else i++;
                   break;
 
                 case oMUL :
@@ -945,11 +959,9 @@ int16_t popt_BinaryOptimize(void)
                       g_opPtr[i + 1]->arg2 = stmp16;
                       g_opPtr[i + 2]->op   = oSLL;
                       nchanges++;
-                      i++;
                       break;
 
                     default :
-                      i++;
                       break;
                     }
                   break;
@@ -960,7 +972,6 @@ int16_t popt_BinaryOptimize(void)
                       popt_DeletePCodePair(i, i + 2);
                       nchanges++;
                     }
-                  else i++;
                   break;
 
                 case oAND :
@@ -999,7 +1010,6 @@ int16_t popt_BinaryOptimize(void)
                       popt_DeletePCode(i);
                       nchanges++;
                     }
-                  else i++;
                   break;
 
                 case oGTE :
@@ -1019,7 +1029,6 @@ int16_t popt_BinaryOptimize(void)
                       popt_DeletePCode(i);
                       nchanges++;
                     }
-                  else i++;
                   break;
 
                 case oLTE :
@@ -1029,36 +1038,46 @@ int16_t popt_BinaryOptimize(void)
                       popt_DeletePCode(i);
                       nchanges++;
                     }
-                  else i++;
                   break;
 
                 default   :
-                  i++;
                   break;
                 }
 
-             /* If the oPUSH instruction is still there, see if we can now
-              * represent it with a oPUSHB or oUPUSHB instruction.
+             /* If the instructions was not deleted, then we need to increment
+              * the index.
               */
 
-             if (g_opPtr[i] != NULL && g_opPtr[i]->op == oPUSH)
+             if (g_opPtr[i] != NULL)
                {
-                 if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                     (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
+                 /* If the oPUSH instruction is still there, see if we can now
+                  * represent it with a oPUSHB or oUPUSHB instruction.
+                  */
+
+                 if (g_opPtr[i]->op == oPUSH)
                    {
-                     g_opPtr[i]->op   = oPUSHB;
-                     g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                     g_opPtr[i]->arg2 = 0;
+                     if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
+                         (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
+                       {
+                         g_opPtr[i]->op   = oPUSHB;
+                         g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
+                         g_opPtr[i]->arg2 = 0;
+                       }
+                     else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
+                       {
+                         g_opPtr[i]->op   = oUPUSHB;
+                         g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
+                         g_opPtr[i]->arg2 = 0;
+                       }
                    }
-                 else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                   {
-                     g_opPtr[i]->op   = oUPUSHB;
-                     g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                     g_opPtr[i]->arg2 = 0;
-                   }
+
+                 i++;
                }
             }
-          else i++;
+          else
+            {
+              i++;
+            }
         }
 
       /* Misc improvements on binary operators */
