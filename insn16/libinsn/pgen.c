@@ -107,6 +107,7 @@ static const uint16_t opmap[NUM_OPCODES] =
   oULTE,   /* opULTE */
   oLDI,    /* opLDI */
   oLDIB,   /* opLDIB */
+  oULDIB,  /* opULDIB */
   oLDIM,   /* opLDIM */
   oSTI,    /* opSTI */
   oSTIB,   /* opSTIB */
@@ -130,12 +131,14 @@ static const uint16_t opmap[NUM_OPCODES] =
   oJLTE,   /* opJLTE */
   oLD,     /* opLD */
   oLDB,    /* opLDB */
+  oULDB,   /* opULDB */
   oLDM,    /* opLDM */
   oST,     /* opST */
   oSTB,    /* opSTB */
   oSTM,    /* opSTM */
   oLDX,    /* opLDX */
   oLDXB,   /* opLDXB */
+  oULDXB,  /* opULDXB */
   oLDXM,   /* opLDXM */
   oSTX,    /* opSTX */
   oSTXB,   /* opSTXB */
@@ -151,12 +154,14 @@ static const uint16_t opmap[NUM_OPCODES] =
   oPCAL,   /* opPCAL */
   oLDS,    /* opLDS */
   oLDSB,   /* opLDSB */
+  oULDSB,  /* opULDSB */
   oLDSM,   /* opLDSM */
   oSTS,    /* opSTS */
   oSTSB,   /* opSTSB */
   oSTSM,   /* opSTSM */
   oLDSX,   /* opLDS*/
   oLDSXB,  /* opLDSXB */
+  oULDSXB, /* opULDSXB */
   oLDSXM,  /* opLDSXM */
   oSTSX,   /* opSTSX */
   oSTSXB,  /* opSTSXB */

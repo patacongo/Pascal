@@ -803,10 +803,15 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case sSHORTINT :
+      pas_GenerateStackReference(opLDSB, g_tknPtr);
+      getToken();
+      factorType = exprShortInteger;
+      break;
+
     case sSHORTWORD :
     case sCHAR :
       factorType = pas_MapVariable2ExprType(g_token, true);
-      pas_GenerateStackReference(opLDSB, g_tknPtr);
+      pas_GenerateStackReference(opULDSB, g_tknPtr);
       getToken();
       break;
 
@@ -1231,7 +1236,14 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
               switch (typePtr->sParm.t.tAllocSize)
                 {
                   case sCHAR_SIZE :
-                    pas_GenerateSimple(opLDIB);
+                    if (baseType == sSHORTINT)
+                      {
+                        pas_GenerateSimple(opLDIB);  /* Sign-extend */
+                      }
+                    else
+                      {
+                        pas_GenerateSimple(opULDIB); /* No sign extension */
+                      }
                     break;
 
                   case sINT_SIZE :
@@ -1639,10 +1651,7 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
       break;
 
     case sSHORTINT :
-    case sSHORTWORD :
-    case sCHAR :
-      factorType = pas_MapVariable2ExprType(varPtr->sKind, true);
-      factorType = pas_FactorExprType(factorType, factorFlags);
+      factorType = exprShortInteger;
 
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
@@ -1692,6 +1701,63 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
           else
             {
               pas_GenerateStackReference(opLDSB, varPtr);
+            }
+        }
+      break;
+
+    case sSHORTWORD :
+    case sCHAR :
+      factorType = pas_MapVariable2ExprType(varPtr->sKind, true);
+      factorType = pas_FactorExprType(factorType, factorFlags);
+
+      if ((factorFlags & FACTOR_INDEXED) != 0)
+        {
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+            {
+              if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
+                {
+                  pas_GenerateSimple(opADD);
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+
+              pas_GenerateSimple(opULDIB);
+            }
+          else if ((factorFlags & FACTOR_PTREXPR) != 0)
+            {
+              pas_GenerateStackReference(opLDSX, varPtr);
+            }
+          else
+            {
+              pas_GenerateStackReference(opULDSXB, varPtr);
+            }
+        }
+      else
+        {
+          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+            {
+              /* The address of pointer we are de-referencing should already
+               * be on the stack.
+               */
+
+              if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+                {
+                  pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+                  pas_GenerateSimple(opADD);
+                }
+
+              pas_GenerateSimple(opULDIB);
+            }
+          else if ((factorFlags & FACTOR_PTREXPR) != 0)
+            {
+              pas_GenerateStackReference(opLDS, varPtr);
+            }
+          else
+            {
+              pas_GenerateStackReference(opULDSB, varPtr);
             }
         }
       break;

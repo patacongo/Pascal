@@ -89,16 +89,16 @@
  * xx01 1111  ---        ---            ---            ---
  *
  * xx10 0000  LDI        ---            LD uoffs       LDS loff,offs
- * xx10 0001  ---        ---            ---            ---
- * xx10 0010  LDIB       ---            LDB uoffs      LDSB loff,offs
+ * xx10 0001  LDIB         ---          LDB uoffs      LDSB loff,offs
+ * xx10 0010  ULDIB       ---           ULDB uoffs     ULDSB loff,offs
  * xx10 0011  LDIM       ---            LDM uoffs      LDSM loff,offs
  * xx10 0100  STI        ---            ST uoffs       STS loff,offs
  * xx10 0101  ---        ---            ---            ---
  * xx10 0110  STIB       ---            STB uoffs      STSB loff,offs
  * xx10 0111  STIM       ---            STM uoffs      STSM loff,offs
  * xx10 1000  DUP        ---            LDX uoffs      LDSX loff,offs
- * xx10 1001  ---        ---            ---            ---
- * xx10 1010  XCHG       ---            LDXB uoffs     LDSXB loff,offs
+ * xx10 1001  ---        ---            LDXB uoffs     LDSXB loff,offs
+ * xx10 1010  XCHG       ---            ULDXB uoffs    ULDSXB loff,offs
  * xx10 1011  ---        ---            LDXM uoffs     LDSXM loff,offs
  * xx10 1100  PUSHS      ---            STX uoffs      STSX loff,offs
  * xx10 1101  POPS       ---            ---            ---
@@ -145,73 +145,73 @@
 
 /* Program control (No stack arguments) */
 
-#define oNOP   (0x00)
+#define oNOP    (0x00)
 
 /* Arithmetic & logical & and integer conversions (One 16-bit stack argument) */
 
-#define oNEG   (0x01)
-#define oABS   (0x02)
-#define oINC   (0x03)
-#define oDEC   (0x04)
-#define oNOT   (0x05)
+#define oNEG    (0x01)
+#define oABS    (0x02)
+#define oINC    (0x03)
+#define oDEC    (0x04)
+#define oNOT    (0x05)
 
 /* Arithmetic & logical (Two 16-bit stack arguments) */
 
-#define oADD   (0x06)
-#define oSUB   (0x07)
-#define oMUL   (0x08)
-#define oDIV   (0x09)
-#define oMOD   (0x0a)
-#define oSLL   (0x0b)
-#define oSRL   (0x0c)
-#define oSRA   (0x0d)
-#define oOR    (0x0e)
-#define oAND   (0x0f)
+#define oADD    (0x06)
+#define oSUB    (0x07)
+#define oMUL    (0x08)
+#define oDIV    (0x09)
+#define oMOD    (0x0a)
+#define oSLL    (0x0b)
+#define oSRL    (0x0c)
+#define oSRA    (0x0d)
+#define oOR     (0x0e)
+#define oAND    (0x0f)
 
 /* Comparisons (One 16-bit stack argument) */
 
-#define oEQUZ  (0x10)
-#define oNEQZ  (0x11)
-#define oLTZ   (0x12)
-#define oGTEZ  (0x13)
-#define oGTZ   (0x14)
-#define oLTEZ  (0x15)
+#define oEQUZ   (0x10)
+#define oNEQZ   (0x11)
+#define oLTZ    (0x12)
+#define oGTEZ   (0x13)
+#define oGTZ    (0x14)
+#define oLTEZ   (0x15)
 
 /* 0x16-0x17 -- unassigned */
 
 /* Comparisons (Two 16-bit stack arguments) */
 
-#define oEQU   (0x18)
-#define oNEQ   (0x19)
-#define oLT    (0x1a)
-#define oGTE   (0x1b)
-#define oGT    (0x1c)
-#define oLTE   (0x1d)
+#define oEQU    (0x18)
+#define oNEQ    (0x19)
+#define oLT     (0x1a)
+#define oGTE    (0x1b)
+#define oGT     (0x1c)
+#define oLTE    (0x1d)
 
 /* 0x1e - 0x1f -- unassigned */
 
 /* Load Immediate */
 
-#define oLDI   (0x20)    /* (One 16-bit stack argument) */
-                         /* 0x21 -- unassigned */
-#define oLDIB  (0x22)    /* (One 16-bit stack argument) */
-#define oLDIM  (0x23)    /* (Two 16-bit stack arguments) */
+#define oLDI    (0x20)    /* (One 16-bit stack argument) */
+#define oLDIB   (0x21)    /* (One 16-bit stack argument) */
+#define oULDIB  (0x22)    /* (One 16-bit stack argument) */
+#define oLDIM   (0x23)    /* (Two 16-bit stack arguments) */
 
 /* Store Immediate */
 
-#define oSTI   (0x24)    /* (One 32-bit and one 16-bit stack arguments) */
-                         /* 0x25 -- unassigned */
-#define oSTIB  (0x26)    /* (Two 16-bit stack arguments) */
-#define oSTIM  (0x27)    /* (Two + n 16-bit stack arguments) */
+#define oSTI    (0x24)    /* (One 32-bit and one 16-bit stack arguments) */
+                          /* 0x25 -- unassigned */
+#define oSTIB   (0x26)    /* (Two 16-bit stack arguments) */
+#define oSTIM   (0x27)    /* (Two + n 16-bit stack arguments) */
 
 /* Data stack */
 
-#define oDUP   (0x28)   /* (One 32-bit stack argument */
-                         /* 0x29 -- unassigned */
-#define oXCHG  (0x2a)   /* (Two 32-bit stack arguments) */
-                         /* 0x2a -- unassigned */
-#define oPUSHS (0x2c)   /* No arguments */
-#define oPOPS  (0x2d)   /* (One 16-bit stack argument) */
+#define oDUP    (0x28)   /* (One 32-bit stack argument */
+                          /* 0x29 -- unassigned */
+#define oXCHG   (0x2a)   /* (Two 32-bit stack arguments) */
+                          /* 0x2a -- unassigned */
+#define oPUSHS  (0x2c)   /* No arguments */
+#define oPOPS   (0x2d)   /* (One 16-bit stack argument) */
 
 /* 0x2e -- unassigned */
 
@@ -223,27 +223,27 @@
  *   Set program counter (PC) to return address
  */
 
-#define oRET   (0x2f)
+#define oRET    (0x2f)
 
 /* 0x30 - 0x36 -- unassigned */
 
 /* Unsigned arithmetic and comparisons */
 
-#define oUMUL  (0x37)
-#define oUDIV  (0x38)
-#define oUMOD  (0x39)
-#define oULT   (0x3a)
-#define oUGTE  (0x3b)
-#define oUGT   (0x3c)
-#define oULTE  (0x3d)
+#define oUMUL   (0x37)
+#define oUDIV   (0x38)
+#define oUMOD   (0x39)
+#define oULT    (0x3a)
+#define oUGTE   (0x3b)
+#define oUGT    (0x3c)
+#define oULTE   (0x3d)
 
 /* Additional bitwise binary operator */
 
-#define oXOR   (0x3e)
+#define oXOR    (0x3e)
 
 /* System Functions (No stack arguments) */
 
-#define oEND   (0x3f)
+#define oEND    (0x3f)
 
 /** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ********************************/
 
@@ -272,104 +272,104 @@
 
 /* Program control:  arg16 = unsigned label (One 16-bit stack argument) */
 
-#define oJEQUZ (o16|0x10)
-#define oJNEQZ (o16|0x11)
-#define oJLTZ  (o16|0x12)
-#define oJGTEZ (o16|0x13)
-#define oJGTZ  (o16|0x14)
-#define oJLTEZ (o16|0x15)
+#define oJEQUZ  (o16|0x10)
+#define oJNEQZ  (o16|0x11)
+#define oJLTZ   (o16|0x12)
+#define oJGTEZ  (o16|0x13)
+#define oJGTZ   (o16|0x14)
+#define oJLTEZ  (o16|0x15)
 
 /* Program control:  arg16 = unsigned label (no stack arguments) */
 
-#define oJMP   (o16|0x16)
+#define oJMP    (o16|0x16)
 
 /* (o16|0x17) -- unassigned */
 
 /* Program control:  arg16 = unsigned label (One 16-bit stack argument) */
 
-#define oJEQU  (o16|0x18)
-#define oJNEQ  (o16|0x19)
-#define oJLT   (o16|0x1a)
-#define oJGTE  (o16|0x1b)
-#define oJGT   (o16|0x1c)
-#define oJLTE  (o16|0x1d)
+#define oJEQU   (o16|0x18)
+#define oJNEQ   (o16|0x19)
+#define oJLT    (o16|0x1a)
+#define oJGTE   (o16|0x1b)
+#define oJGT    (o16|0x1c)
+#define oJLTE   (o16|0x1d)
 
 /* (o16|0x1e)-(o16|0x1f) -- unassigned */
 
 /* Load:  arg16 = unsigned base offset */
 
-#define oLD    (o16|0x20)       /* (no stack arguments) */
-                                /* (o16|0x21) -- unassigned */
-#define oLDB   (o16|0x22)       /* (no stack arguments) */
-#define oLDM   (o16|0x23)       /* (One 16-bit stack argument) */
+#define oLD     (o16|0x20)       /* (no stack arguments) */
+#define oLDB    (o16|0x21)       /* (no stack arguments) */
+#define oULDB   (o16|0x22)       /* (no stack arguments) */
+#define oLDM    (o16|0x23)       /* (One 16-bit stack argument) */
 
 /* Store: arg16 = unsigned base offset */
 
-#define oST    (o16|0x24)       /* (One 32-bit stack argument) */
-                                /* (o16|0x25) -- unassigned */
-#define oSTB   (o16|0x26)       /* (One 16-bit stack argument) */
-#define oSTM   (o16|0x27)       /* (One+n 16-bit stack arguments) */
+#define oST     (o16|0x24)       /* (One 32-bit stack argument) */
+                                 /* (o16|0x25) -- unassigned */
+#define oSTB    (o16|0x26)       /* (One 16-bit stack argument) */
+#define oSTM    (o16|0x27)       /* (One+n 16-bit stack arguments) */
 
 /* Load Indexed: arg16 = unsigned base offset */
 
-#define oLDX   (o16|0x28)       /* (One 16-bit stack argument) */
-                                /* (o16|0x29) -- unassigned */
-#define oLDXB  (o16|0x2a)       /* (One 16-bit stack argument) */
-#define oLDXM  (o16|0x2b)       /* (Two 16-bit stack arguments) */
+#define oLDX    (o16|0x28)       /* (One 16-bit stack argument) */
+#define oLDXB   (o16|0x29)       /* (One 16-bit stack argument) */
+#define oULDXB  (o16|0x2a)       /* (One 16-bit stack argument) */
+#define oLDXM   (o16|0x2b)       /* (Two 16-bit stack arguments) */
 
 /* Store Indexed: arg16 = unsigned base offset */
 
-#define oSTX   (o16|0x2c)       /* (One 32-bit + one 16-bit stack arguments) */
-                                /* (o16|0x2d) -- unassigned */
-#define oSTXB  (o16|0x2e)       /* (Two 16-bit stack arguments) */
-#define oSTXM  (o16|0x2f)       /* (Two+n 16-bit stack arguments) */
+#define oSTX    (o16|0x2c)       /* (One 32-bit + one 16-bit stack arguments) */
+                                 /* (o16|0x2d) -- unassigned */
+#define oSTXB   (o16|0x2e)       /* (Two 16-bit stack arguments) */
+#define oSTXM   (o16|0x2f)       /* (Two+n 16-bit stack arguments) */
 
 /* Load address relative to stack base: arg16 = unsigned offset */
 
-#define oLA    (o16|0x30)
+#define oLA     (o16|0x30)
 
 /* Load absolute stack address:  arg16 = RODATA offset (No stack arguments) */
 
-#define oLAC   (o16|0x31)
+#define oLAC    (o16|0x31)
 
 /* (o16|0x32)-(o16|0x33) -- unassigned */
 
 /* Data stack:  arg16 = 16 bit signed data (no stack arguments) */
 
-#define oPUSH  (o16|0x34)
-#define oINDS  (o16|0x35)
+#define oPUSH   (o16|0x34)
+#define oINDS   (o16|0x35)
 
 /* (o16|0x34)-(o16|0x35) -- unassigned */
 
 /* System functions: arg16 = 16-bit library call identifier */
 
-#define oLIB   (o16|0x36)
+#define oLIB    (o16|0x36)
 
 /* System calls:
  * For SYSIO:        arg16 = sub-function code
  *                   TOS   = file number
  */
 
-#define oSYSIO (o16|0x37)
+#define oSYSIO  (o16|0x37)
 
 /* Load address relative to stack base: arg16 = unsigned offset, TOS=index */
 
-#define oLAX   (o16|0x38)
+#define oLAX    (o16|0x38)
 
 /* (o16|0x39) -- unassigned */
 
 /* Unsigned compare and branch */
 
-#define oJULT  (o16|0x3a)
-#define oJUGTE (o16|0x3b)
-#define oJUGT  (o16|0x3c)
-#define oJULTE (o16|0x3d)
+#define oJULT   (o16|0x3a)
+#define oJUGTE  (o16|0x3b)
+#define oJUGT   (o16|0x3c)
+#define oJULTE  (o16|0x3d)
 
 /* (o16|0x3e) -- unassigned */
 
 /* Program control:  arg16 = unsigned label (no stack arguments) */
 
-#define oLABEL (o16|0x3f)
+#define oLABEL  (o16|0x3f)
 
 /** OPCODES WITH 24-BITS OF ARGUMENET (arg8 + arg16) ************************/
 
@@ -385,44 +385,44 @@
  *   Set program counter (PC) for address associated with label
  */
 
-#define oPCAL  (o16|o8|0x08)
+#define oPCAL   (o16|o8|0x08)
 
 /* (o16|o8|0x09)-(o8|o16|0x1f) -- unassigned */
 
 /* Load:  arg8 = level; arg16 = signed frame offset */
 
-#define oLDS   (o16|o8|0x20)    /* (no stack arguments) */
-                                /* (o16|o8|0x21) -- unassigned */
-#define oLDSB  (o16|o8|0x22)    /* (no stack arguments) */
-#define oLDSM  (o16|o8|0x23)    /* (One 16-bit stack argument) */
+#define oLDS    (o16|o8|0x20)    /* (no stack arguments) */
+#define oLDSB   (o16|o8|0x21)    /* (no stack arguments) */
+#define oULDSB  (o16|o8|0x22)    /* (no stack arguments) */
+#define oLDSM   (o16|o8|0x23)    /* (One 16-bit stack argument) */
 
 /* Store: arg8 = level; arg16 = signed frame offset */
 
-#define oSTS   (o16|o8|0x24)    /* (One 32-bit stack argument) */
-                                /* (o16|o8|0x25) -- unassigned */
-#define oSTSB  (o16|o8|0x26)    /* (One 16-bit stack argument) */
-#define oSTSM  (o16|o8|0x27)    /* (One+n 16-bit stack arguments) */
+#define oSTS    (o16|o8|0x24)    /* (One 32-bit stack argument) */
+                                 /* (o16|o8|0x25) -- unassigned */
+#define oSTSB   (o16|o8|0x26)    /* (One 16-bit stack argument) */
+#define oSTSM   (o16|o8|0x27)    /* (One+n 16-bit stack arguments) */
 
 /* Load Indexed: arg8 = level; arg16 = signed frame offset */
 
-#define oLDSX  (o16|o8|0x28)    /* (One 16-bit stack argument) */
-                                /* (o16|o8|0x29) -- unassigned */
-#define oLDSXB (o16|o8|0x2a)    /* (One 16-bit stack argument) */
-#define oLDSXM (o16|o8|0x2b)    /* (Two 16-bit stack arguments) */
+#define oLDSX   (o16|o8|0x28)    /* (One 16-bit stack argument) */
+#define oLDSXB  (o16|o8|0x29)    /* (One 16-bit stack argument) */
+#define oULDSXB (o16|o8|0x2a)    /* (One 16-bit stack argument) */
+#define oLDSXM  (o16|o8|0x2b)    /* (Two 16-bit stack arguments) */
 
 /* Store Indexed: arg8 = level; arg16 = signed frame offset */
 
-#define oSTSX  (o16|o8|0x2c)    /* (One 32-bit + one 16-bit stack arguments) */
-                                /* (o16|o8|0x2d) -- unassigned */
-#define oSTSXB (o16|o8|0x2e)    /* (Two 16-bit stack arguments) */
-#define oSTSXM (o16|o8|0x2f)    /* (Two+n 16-bit stack arguments) */
+#define oSTSX   (o16|o8|0x2c)    /* (One 32-bit + one 16-bit stack arguments) */
+                                 /* (o16|o8|0x2d) -- unassigned */
+#define oSTSXB  (o16|o8|0x2e)    /* (Two 16-bit stack arguments) */
+#define oSTSXM  (o16|o8|0x2f)    /* (Two+n 16-bit stack arguments) */
 
 /* FOR LAS/LASX    arg8 = level; arg16 = signed frame offset
  *                          (no stack arguments)
  */
 
-#define oLAS   (o16|o8|0x30)
-#define oLASX  (o16|o8|0x38)
+#define oLAS    (o16|o8|0x30)
+#define oLASX   (o16|o8|0x38)
 
 /* (o16|o8|0x3a)-(o8|o16|0x3e) -- unassigned */
 
@@ -430,6 +430,6 @@
  * For LINE:         arg8 = file number; arg16 = line number
  */
 
-#define oLINE    (o16|o8|0x3f)
+#define oLINE   (o16|o8|0x3f)
 
 #endif /* __PINSN16_H */

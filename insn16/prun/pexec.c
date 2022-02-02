@@ -547,6 +547,12 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
       break;
 
     case oLDIB :
+      uparm1     = GETBSTACK(st, TOS(st, 0));
+      sparm      = signExtend8(uparm1);
+      TOS(st, 0) = (ustack_t)sparm;
+      break;
+
+    case oULDIB :
       TOS(st, 0) = GETBSTACK(st, TOS(st, 0));
       break;
 
@@ -890,6 +896,13 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
 
     case oLDB :
       uparm1 = st->spb + imm16;
+      uparm1 = GETBSTACK(st, uparm1);
+      sparm1 = signExtend8(uparm1);
+      PUSH(st, (ustack_t)sparm1);
+      break;
+
+    case oULDB :
+      uparm1 = st->spb + imm16;
       PUSH(st, GETBSTACK(st, uparm1));
       break;
 
@@ -960,7 +973,14 @@ static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
       break;
 
     case oLDXB :
-      uparm1 = st->spb + imm16 + TOS(st, 0);
+      uparm1     = st->spb + imm16 + TOS(st, 0);
+      uparm1     = GETBSTACK(st, uparm1);
+      sparm1     = signExtend8(uparm1);
+      TOS(st, 0) = (ustack_t)sparm1;
+      break;
+
+    case oULDXB :
+      uparm1     = st->spb + imm16 + TOS(st, 0);
       TOS(st, 0) = GETBSTACK(st, uparm1);
       break;
 
@@ -1107,13 +1127,19 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
     {
       /* Load:  imm8 = level; imm16 = signed frame offset (no stack arguments) */
 
-
     case oLDS :
       uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETSTACK(st, uparm1));
       break;
 
     case oLDSB :
+      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm1 = GETBSTACK(st, uparm1);
+      sparm  = signExtend8(uparm1);
+      PUSH(st, (ustack_t)sparm);
+      break;
+
+    case oULDSB :
       uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETBSTACK(st, uparm1));
       break;
@@ -1185,7 +1211,16 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
       break;
 
     case oLDSXB :
-      uparm1 = pexec_GetBaseAddress(st, imm8,  signExtend16(imm16) + TOS(st, 0));
+      uparm1     = pexec_GetBaseAddress(st, imm8,
+                               signExtend16(imm16) + TOS(st, 0));
+      uparm1     = GETBSTACK(st, uparm1);
+      sparm      = signExtend8(uparm1);
+      TOS(st, 0) = (ustack_t)sparm;
+      break;
+
+    case oULDSXB :
+      uparm1     = pexec_GetBaseAddress(st, imm8,
+                               signExtend16(imm16) + TOS(st, 0));
       TOS(st, 0) = GETBSTACK(st, uparm1);
       break;
 

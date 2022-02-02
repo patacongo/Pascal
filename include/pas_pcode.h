@@ -2,7 +2,7 @@
  * pas_pcode.h
  * Logical P-code operation code definitions
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@ enum pcode_e
 
   /* Load Immediate */
 
-  opLDI, opLDIB, opLDIM,
+  opLDI, opLDIB, opULDIB, opLDIM,
 
   /* Store Immediate */
 
@@ -129,7 +129,7 @@ enum pcode_e
 
   /* Load:  arg = unsigned base offset */
 
-  opLD, opLDB, opLDM,
+  opLD, opLDB, opULDB, opLDM,
 
   /* Store: arg = unsigned base offset */
 
@@ -137,7 +137,7 @@ enum pcode_e
 
   /* Load Indexed: arg = unsigned base offset */
 
-  opLDX, opLDXB, opLDXM,
+  opLDX, opLDXB, opULDXB, opLDXM,
 
   /* Store Indexed: arg16 = unsigned base offset */
 
@@ -177,7 +177,7 @@ enum pcode_e
 
   /* Load:  arg1 = level; arg2 = signed frame offset */
 
-  opLDS, opLDSB, opLDSM,
+  opLDS, opLDSB, opULDSB, opLDSM,
 
   /* Store: arg1 = level; arg2 = signed frame offset */
 
@@ -185,7 +185,7 @@ enum pcode_e
 
   /* Load Indexed: arg1 = level; arg2 = signed frame offset */
 
-  opLDSX, opLDSXB, opLDSXM,
+  opLDSX, opLDSXB, opULDSXB, opLDSXM,
 
   /* Store Indexed: arg1 = level; arg2 = signed frame offset */
 

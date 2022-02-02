@@ -113,26 +113,27 @@ pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *varPtr)
  * so, return the mapped opcode.  Otherwise, return INVALID_PCODE.
  */
 
-static int32_t
-pas_GetLevel0Opcode(enum pcode_e eOpCode)
+static int32_t pas_GetLevel0Opcode(enum pcode_e eOpCode)
 {
   switch (eOpCode)
     {
-    case opLDS:   return opLD;
-    case opLDSB:  return opLDB;
-    case opLDSM:  return opLDM;
-    case opSTS:   return opST;
-    case opSTSB:  return opSTB;
-    case opSTSM:  return opSTM;
-    case opLDSX:  return opLDX;
-    case opLDSXB: return opLDXB;
-    case opLDSXM: return opLDXM;
-    case opSTSX:  return opSTX;
-    case opSTSXB: return opSTXB;
-    case opSTSXM: return opSTXM;
-    case opLAS:   return opLA;
-    case opLASX:  return opLAX;
-    default:      return INVALID_PCODE;
+      case opLDS:    return opLD;
+      case opLDSB:   return opLDB;
+      case opULDSB:  return opULDB;
+      case opLDSM:   return opLDM;
+      case opSTS:    return opST;
+      case opSTSB:   return opSTB;
+      case opSTSM:   return opSTM;
+      case opLDSX:   return opLDX;
+      case opLDSXB:  return opLDXB;
+      case opULDSXB: return opULDXB;
+      case opLDSXM:  return opLDXM;
+      case opSTSX:   return opSTX;
+      case opSTSXB:  return opSTXB;
+      case opSTSXM:  return opSTXM;
+      case opLAS:    return opLA;
+      case opLASX:   return opLAX;
+      default:       return INVALID_PCODE;
     }
 }
 

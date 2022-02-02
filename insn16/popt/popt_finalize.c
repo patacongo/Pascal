@@ -328,12 +328,14 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
         case oLASX:
         case oLDS:   /* Load value */
         case oLDSB:
+        case oULDSB:
         case oLDSM:
         case oSTS:   /* Store value */
         case oSTSB:
         case oSTSM:
         case oLDSX:  /* Load value indexed */
         case oLDSXB:
+        case oULDSXB:
         case oLDSXM:
         case oSTSX:  /* Store value indexed */
         case oSTSXB:

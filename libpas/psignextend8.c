@@ -1,8 +1,8 @@
-/***************************************************************************
- * include/paslib.h
- * External Declarations associated with paslib
+/**********************************************************************
+ * psignextend8.c
+ * 8-bit sign extension
  *
- *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,56 +32,25 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************************/
+ **********************************************************************/
 
-#ifndef __PASLIB_H
-#define __PASLIB_H
-
-/***************************************************************************
+/**********************************************************************
  * Included Files
- ***************************************************************************/
+ **********************************************************************/
+
+#include <string.h>
 
 #include "pas_debug.h"
-#include "stdint.h"
-#include "stdbool.h"
 #include "pas_machine.h"
-#include "pofflib.h"
+#include "paslib.h"
 
-/***************************************************************************
- * Public Function Prototypes
- ***************************************************************************/
+/***********************************************************************/
+/* This function converts a signed 8-bit value represented as a uint8_t
+ * to a int16_t.
+ */
 
-/* POFF file is always big-endian */
-
-#ifdef CONFIG_ENDIAN_BIG
-#  undef  CONFIG_POFF_SWAPNEEDED
-#  define poff16(val) (val)
-#  define poff32(val) (val)
-#else
-#  define CONFIG_POFF_SWAPNEEDED 1
-#  define poff16(val) poffSwap16(val)
-#  define poff32(val) poffSwap32(val)
-#endif
-
-/***************************************************************************
- * Public Function Prototypes
- ***************************************************************************/
-
-/* File name extension helper */
-
-bool     extension(const char *inName, const char *ext, char *outName,
-                   bool force_default);
-
-/* Math helpers */
-
-int16_t  signExtend8(uint8_t arg8);
-int32_t  signExtend16(uint16_t arg16);
-int32_t  signExtend25(uint32_t arg25);
-
-/* Endian-ness helpers */
-
-uint16_t poffSwap16(uint16_t val);
-uint32_t poffSwap32(uint32_t val);
-
-#endif /* __PASLIB_H */
-
+int16_t  signExtend8(uint8_t arg8)
+{
+  int16_t arg16 = (int16_t)arg8 << 8;
+  return arg16 >> 8;
+}

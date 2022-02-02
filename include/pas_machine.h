@@ -81,10 +81,6 @@
 #define MAXSHORTWORD        255
 #define MINSHORTWORD        0
 
-/* Sign extend a a short word to an integer */
-
-#define SIGN_EXTEND(n)      (((int16_t)(n) << 8) >> 8)
-
 /* Sizes of other Pascal types */
 
 #define sCHAR_SIZE          1

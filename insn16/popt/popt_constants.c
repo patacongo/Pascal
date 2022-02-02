@@ -75,7 +75,7 @@ int16_t popt_UnaryOptimize(void)
            if (g_opPtr[i]->op == oPUSHB)
              {
                g_opPtr[i]->op   = oPUSH;
-               g_opPtr[i]->arg2 = SIGN_EXTEND(g_opPtr[i]->arg1);
+               g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
                g_opPtr[i]->arg1 = 0;
              }
            else if (g_opPtr[i]->op == oUPUSHB)
@@ -660,7 +660,7 @@ int16_t popt_BinaryOptimize(void)
               if (g_opPtr[i]->op == oPUSHB)
                 {
                   g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = SIGN_EXTEND(g_opPtr[i]->arg1);
+                  g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
                   g_opPtr[i]->arg1 = 0;
                 }
               else if (g_opPtr[i]->op == oUPUSHB)
@@ -673,7 +673,7 @@ int16_t popt_BinaryOptimize(void)
               if (g_opPtr[i + 1]->op == oPUSHB)
                 {
                   g_opPtr[i + 1]->op   = oPUSH;
-                  g_opPtr[i + 1]->arg2 = SIGN_EXTEND(g_opPtr[i + 1]->arg1);
+                  g_opPtr[i + 1]->arg2 = signExtend8(g_opPtr[i + 1]->arg1);
                   g_opPtr[i + 1]->arg1 = 0;
                 }
               else if (g_opPtr[i + 1]->op == oUPUSHB)
@@ -859,9 +859,10 @@ int16_t popt_BinaryOptimize(void)
            * following binary operator optimizations.
            */
 
-          else if (g_opPtr[i + 1]->op == oLDS  ||
-                   g_opPtr[i + 1]->op == oLDSB ||
-                   g_opPtr[i + 1]->op == oLAS  ||
+          else if (g_opPtr[i + 1]->op == oLDS   ||
+                   g_opPtr[i + 1]->op == oLDSB  ||
+                   g_opPtr[i + 1]->op == oULDSB ||
+                   g_opPtr[i + 1]->op == oLAS   ||
                    g_opPtr[i + 1]->op == oLAC)
             {
               /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
@@ -869,7 +870,7 @@ int16_t popt_BinaryOptimize(void)
               if (g_opPtr[i]->op == oPUSHB)
                 {
                   g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = SIGN_EXTEND(g_opPtr[i]->arg1);
+                  g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
                   g_opPtr[i]->arg1 = 0;
                 }
               else if (g_opPtr[i]->op == oUPUSHB)

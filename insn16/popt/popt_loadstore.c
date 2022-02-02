@@ -46,6 +46,7 @@
 #include "pas_machine.h"
 #include "pinsn16.h"
 
+#include "paslib.h"
 #include "popt.h"
 #include "popt_local.h"
 #include "popt_loadstore.h"
@@ -63,8 +64,10 @@ static inline bool popt_CheckDataOperation(int16_t index)
 {
   return (g_opPtr[index]->op == oPUSH   || g_opPtr[index]->op == oPUSHB ||
           g_opPtr[index]->op == oUPUSHB ||
-          g_opPtr[index]->op == oLD     || g_opPtr[index]->op == oLDB   ||
-          g_opPtr[index]->op == oLDS    || g_opPtr[index]->op == oLDSB  ||
+          g_opPtr[index]->op == oLD     || g_opPtr[index]->op == oLDB  ||
+          g_opPtr[index]->op == oULDB   ||
+          g_opPtr[index]->op == oLDS    || g_opPtr[index]->op == oLDSB ||
+          g_opPtr[index]->op == oULDSB ||
           g_opPtr[index]->op == oLA     || g_opPtr[index]->op == oLAS   ||
           g_opPtr[index]->op == oLAC);
 }
@@ -119,7 +122,7 @@ int16_t popt_LoadOptimize(void)
             }
           else if (g_opPtr[i]->op == oPUSHB)
             {
-              val = SIGN_EXTEND(g_opPtr[i]->arg1);
+              val = signExtend8(g_opPtr[i]->arg1);
             }
           else /* if (g_opPtr[i]->op == oUPUSHB) */
             {
@@ -148,6 +151,13 @@ int16_t popt_LoadOptimize(void)
           else if (g_opPtr[i + 1]->op == oLDSXB)
             {
               g_opPtr[i + 1]->op    = oLDSB;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
+              nchanges++;
+            }
+          else if (g_opPtr[i + 1]->op == oULDSXB)
+            {
+              g_opPtr[i + 1]->op    = oULDSB;
               g_opPtr[i + 1]->arg2 += val;
               popt_DeletePCode(i);
               nchanges++;
@@ -279,7 +289,7 @@ int16_t popt_StoreOptimize (void)
                   int16_t offset;
                   if (g_opPtr[i]->op == oPUSHB)
                     {
-                      offset = SIGN_EXTEND(g_opPtr[i]->arg1);
+                      offset = signExtend8(g_opPtr[i]->arg1);
                     }
                   else
                     {

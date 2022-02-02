@@ -140,14 +140,14 @@ static const struct
 
 /* Load (One) or Store (Two stack argument) */
 
-/* 0x20 */ { "LDI ",   MKFMT(NOARG8, NOARG16) },
-/* 0x21 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x22 */ { "LDIB",   MKFMT(NOARG8, NOARG16) },
-/* 0x23 */ { "LDIM",   MKFMT(NOARG8, NOARG16) },
-/* 0x24 */ { "STI ",   MKFMT(NOARG8, NOARG16) },
+/* 0x20 */ { "LDI  ",  MKFMT(NOARG8, NOARG16) },
+/* 0x21 */ { "LDIB ",  MKFMT(NOARG8, NOARG16) },
+/* 0x22 */ { "ULDIB",  MKFMT(NOARG8, NOARG16) },
+/* 0x23 */ { "LDIM ",  MKFMT(NOARG8, NOARG16) },
+/* 0x24 */ { "STI  ",  MKFMT(NOARG8, NOARG16) },
 /* 0x25 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x26 */ { "STIB",   MKFMT(NOARG8, NOARG16) },
-/* 0x27 */ { "STIM",   MKFMT(NOARG8, NOARG16) },
+/* 0x26 */ { "STIB ",  MKFMT(NOARG8, NOARG16) },
+/* 0x27 */ { "STIM ",  MKFMT(NOARG8, NOARG16) },
 
 /* Data stack operations */
 
@@ -313,8 +313,8 @@ static const struct
 /* Load:  arg16 = unsigned base offset (no stack arguments) */
 
 /* 0xa0 */ { "LD   ",  MKFMT(NOARG8, UDECIMAL) },
-/* 0xa1 */ { invOp,    MKFMT(NOARG8, NOARG16)  },
-/* 0xa2 */ { "LDB  ",  MKFMT(NOARG8, UDECIMAL) },
+/* 0xa1 */ { "LDB  ",  MKFMT(NOARG8, UDECIMAL) },
+/* 0xa2 */ { "ULDB ",  MKFMT(NOARG8, UDECIMAL) },
 /* 0xa3 */ { "LDM  ",  MKFMT(NOARG8, UDECIMAL) },
 
 /* Store: arg16 = unsigned base offset (One stack arguments) */
@@ -327,8 +327,8 @@ static const struct
 /* Load Indexed: arg16 = unsigned base offset (One stack arguments) */
 
 /* 0xa8 */ { "LDX  ",  MKFMT(NOARG8, UDECIMAL) },
-/* 0xa9 */ { invOp,    MKFMT(NOARG8, NOARG16)  },
-/* 0xaa */ { "LDXB ",  MKFMT(NOARG8, UDECIMAL) },
+/* 0xa9 */ { "LDXB ",  MKFMT(NOARG8, UDECIMAL) },
+/* 0xaa */ { "ULDXB",  MKFMT(NOARG8, UDECIMAL) },
 /* 0xab */ { "LDXM ",  MKFMT(NOARG8, UDECIMAL) },
 
 /* Store Indexed: arg16 = unsigned base offset (Two stack arguments) */
@@ -405,8 +405,8 @@ static const struct
 /* Load:  arg8 = level; arg16 = signed frame offset (no stack arguments) */
 
 /* 0xe0 */ { "LDS  ",  MKFMT(SHORTINT, DECIMAL) },
-/* 0xe1 */ { invOp,    MKFMT(NOARG8, NOARG16)   },
-/* 0xe2 */ { "LDSB ",  MKFMT(SHORTINT, DECIMAL) },
+/* 0xe1 */ { "LDSB ",  MKFMT(SHORTINT, DECIMAL) },
+/* 0xe2 */ { "ULDSB",  MKFMT(SHORTINT, DECIMAL) },
 /* 0xe3 */ { "LDSM ",  MKFMT(SHORTINT, DECIMAL) },
 
 /* Store: arg8 = level; arg16 = signed frame offset (One stack arguments) */
@@ -419,8 +419,8 @@ static const struct
 /* Load Indexed: arg8 = level; arg16 = signed frame offset (One stack arguments) */
 
 /* 0xe8 */ { "LDSX ",  MKFMT(SHORTINT, DECIMAL) },
-/* 0xe9 */ { invOp,    MKFMT(NOARG8, NOARG16)   },
-/* 0xea */ { "LDSXB",  MKFMT(SHORTINT, DECIMAL) },
+/* 0xe9 */ { "LDSXB",  MKFMT(SHORTINT, DECIMAL) },
+/* 0xea */ { "ULDSXB", MKFMT(SHORTINT, DECIMAL) },
 /* 0xeb */ { "LDSXM",  MKFMT(SHORTINT, DECIMAL) },
 
 /* Store Indexed: arg8 = level; arg16 = signed frame offset (Two stack arguments) */
@@ -519,9 +519,15 @@ static const char *fpName[MAX_FOP] =
 
 void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 {
+  uint8_t fmt8;
+  uint8_t fmt16;
+
   /* Indent, comment or label */
 
-  switch (opTable[pop->op].format)
+  fmt8  = ARG8FMT(opTable[pop->op].format);
+  fmt16 = ARG16FMT(opTable[pop->op].format);
+
+  switch (fmt16)
     {
     case LABEL_DEC :
       fprintf(lfile, "L%04x:  ", pop->arg2);
@@ -538,7 +544,7 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 
   /* Special Case Comment line format */
 
-  if (opTable[pop->op].format == COMMENT)
+  if (fmt16 == COMMENT)
     {
       fprintf(lfile, "%s ", opTable[pop->op].opName);
       if (pop->op & o8)
@@ -559,23 +565,23 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
 
   else
     {
-      uint8_t fmt;
-
-      fprintf(lfile, "%s ", opTable[pop->op].opName);
+      if (fmt16 != LABEL_DEC)
+        {
+          fprintf(lfile, "%s ", opTable[pop->op].opName);
+        }
 
       /* Print arg8 (if present) */
 
       if ((pop->op & o8) != 0)
         {
-          fmt = ARG8FMT(opTable[pop->op].format);
-          switch (fmt)
+          switch (fmt8)
             {
               case SHORTWORD :    /* Show ARG8 as an unsigned integer */
                 fprintf(lfile, "%u", pop->arg1);
                 break;
 
               case SHORTINT :    /* Show ARG8 as a signed integer */
-                fprintf(lfile, "%d", signExtend16(pop->arg1));
+                fprintf(lfile, "%d", signExtend8(pop->arg1));
                 break;
 
               case fpOP :        /* Show ARG8 as encoded floating point operation */
@@ -617,12 +623,11 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
               fprintf(lfile, ", ");
             }
 
-          fmt = ARG16FMT(opTable[pop->op].format);
-          switch (fmt)
+          switch (fmt16)
             {
               case DECIMAL :     /* Show ARG16 as a signed decimal */
               case COMMENT :     /* This is a comment */
-                fprintf(lfile, "%" PRId32, signExtend16(pop->arg2));
+                fprintf(lfile, "%d", (int16_t)pop->arg2);
                 break;
 
               case HEX :         /* Show ARG16 as hexadecimal */
