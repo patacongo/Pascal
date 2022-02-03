@@ -48,6 +48,10 @@ enum longops_e
    * OPCODES WITH NO ARGUMENTS
    **-------------------------------------------------------------------**/
 
+  /* No long integer operation */
+
+  opDNOP = 0,
+
   /* Arithmetic & logical & and integer conversions (One stack argument) */
 
   opDNEG, opDABS, opDINC, opDDEC, opDNOT,
@@ -77,14 +81,6 @@ enum longops_e
   opDLT,  opDGTE,  opDGT,  opDLTE,
   opDULT, opDUGTE, opDUGT, opDULTE,
 
-  /* Load Immediate */
-
-  opDLDI,
-
-  /* Store Immediate */
-
-  opDSTI,
-
   /* Data stack */
 
   opDDUP, opDXCHG,
@@ -101,41 +97,9 @@ enum longops_e
 
   opDJEQU, opDJNEQ, opDJLT, opDJGTE, opDJGT, opDJLTE,
 
-  /* Load:  arg = unsigned base offset */
-
-  opDLD,
-
-  /* Store: arg = unsigned base offset */
-
-  opDST,
-
-  /* Load Indexed: arg = unsigned base offset */
-
-  opDLDX,
-
-  /* Store Indexed: arg16 = unsigned base offset */
-
-  opDSTX,
-
   /**-------------------------------------------------------------------
    ** OPCODES WITH TWO ARGUMENTS
    **-------------------------------------------------------------------**/
-
-  /* Load:  arg1 = level; arg2 = signed frame offset */
-
-  opDLDS,
-
-  /* Store: arg1 = level; arg2 = signed frame offset */
-
-  opDSTS,
-
-  /* Load Indexed: arg1 = level; arg2 = signed frame offset */
-
-  opDLDSX,
-
-  /* Store Indexed: arg1 = level; arg2 = signed frame offset */
-
-  opDSTSX,
 
   NUM_LONGOPS
 };

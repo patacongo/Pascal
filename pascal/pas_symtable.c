@@ -199,11 +199,12 @@ static symbol_t *g_symbolTable;                      /* Symbol Table */
 
 static const symbolAlias_t g_aliasTable[] =
 {
-    {"ASSIGN",   "ASSIGNFILE"},
-    {"CLOSE",    "CLOSEFILE"},
-    {"SHORTINT", "SHORTINTEGER"},
-    {"TEXT",     "TEXTFILE"},
-    {NULL,       NULL}
+  {"ASSIGN",   "ASSIGNFILE"},
+  {"CLOSE",    "CLOSEFILE"},
+  {"LONGINT",  "LONGINTEGER"},
+  {"SHORTINT", "SHORTINTEGER"},
+  {"TEXT",     "TEXTFILE"},
+  {NULL,       NULL}
 };
 
 /****************************************************************************/
@@ -612,6 +613,24 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
       typePtr->sParm.t.tMaxValue = MAXSHORTWORD;
     }
 
+  typePtr = pas_AddTypeDefine("LONGINTEGER", sLONGINT, sLONGINT_SIZE,
+                               NULL);
+  if (typePtr)
+    {
+      g_parentInteger            = typePtr;
+      typePtr->sParm.t.tMinValue = MINLONGINT;
+      typePtr->sParm.t.tMaxValue = MAXLONGINT;
+    }
+
+  typePtr = pas_AddTypeDefine("LONGWORD", sLONGWORD, sLONGWORD_SIZE,
+                              NULL);
+  if (typePtr)
+    {
+      g_parentInteger            = typePtr;
+      typePtr->sParm.t.tMinValue = MINLONGWORD;
+      typePtr->sParm.t.tMaxValue = MAXLONGWORD;
+    }
+
   typePtr = pas_AddTypeDefine("BOOLEAN", sBOOLEAN, sBOOLEAN_SIZE, NULL);
   if (typePtr)
     {
@@ -765,6 +784,8 @@ void pas_DumpTables(void)
         case sWORD :
         case sSHORTINT :
         case sSHORTWORD :
+        case sLONGINT :
+        case sLONGWORD :
         case sBOOLEAN :
         case sCHAR  :
         case sREAL :

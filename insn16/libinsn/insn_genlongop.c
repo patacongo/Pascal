@@ -113,8 +113,6 @@ static const uint16_t g_longOpcodeMap[NUM_LONGOPS] =
   oDUGT,    /* opDUGT */
   oDULTE,   /* opDULTE */
 
-  oDLDI,    /* opDLDI */
-  oDSTI,    /* opDSTI */
   oDDUP,    /* opDDUP */
   oDXCHG,   /* opDXCHG */
 
@@ -127,16 +125,6 @@ static const uint16_t g_longOpcodeMap[NUM_LONGOPS] =
   oDJGTE,   /* opDJGTE */
   oDJGT,    /* opDJGT */
   oDJLTE,   /* opDJLTE */
-
-  oDLD,     /* opDLD */
-  oDST,     /* opDST */
-  oDLDX,    /* opDLDX */
-  oDSTX,    /* opDSTX */
-
-  oDLDS,    /* opDLDS */
-  oDSTS,    /* opDSTS */
-  oDLDSX,   /* opDLDS*/
-  oDSTSX,   /* opDSTSX */
 };
 
 /****************************************************************************
@@ -216,16 +204,8 @@ void insn_GenerateSimpleLongOperation(enum longops_e longOpCode)
 
 /****************************************************************************/
 
-void
-insn_GenerateDataLongOperation(enum longops_e longOpCode, int32_t data)
+void insn_GenerateDataLongOperation(enum longops_e longOpCode, int32_t data)
 {
   insn16_longOpcodeGenerate(longOpCode, 0, data);
 }
 
-/****************************************************************************/
-
-void insn_GenerateLongLevelReference(enum longops_e longOpCode, uint16_t level,
-                                     int32_t offset)
-{
-  insn16_longOpcodeGenerate(longOpCode, level, offset);
-}

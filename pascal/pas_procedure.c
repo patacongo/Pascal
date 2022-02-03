@@ -692,6 +692,8 @@ static void pas_ReadBinary(uint16_t fileSize)
       case sWORD :
       case sSHORTINT :
       case sSHORTWORD :
+      case sLONGINT :
+      case sLONGWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -1365,6 +1367,8 @@ static void pas_WriteBinary(uint16_t fileSize)
       case sWORD :
       case sSHORTINT :
       case sSHORTWORD :
+      case sLONGINT :
+      case sLONGWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :
@@ -2100,6 +2104,10 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
     case sSHORTWORD :
       return sSHORTINT_SIZE;
 
+    case sLONGINT :
+    case sLONGWORD :
+      return sLONGINT_SIZE;
+
     case sCHAR :
       return sCHAR_SIZE;
 
@@ -2210,6 +2218,13 @@ int pas_ActualParameterList(symbol_t *procPtr)
               size += sSHORTINT_SIZE;
               break;
 
+            case sLONGINT :
+            case sLONGWORD :
+              exprType = pas_MapVariable2ExprType(procPtr[parmIndex].sKind, true);
+              pas_Expression(exprType, typePtr);
+              size += sLONGINT_SIZE;
+              break;
+
             case sCHAR :
               pas_Expression(exprChar, typePtr);
               size += sCHAR_SIZE;
@@ -2293,6 +2308,8 @@ int pas_ActualParameterList(symbol_t *procPtr)
                     case sWORD :
                     case sSHORTINT :
                     case sSHORTWORD :
+                    case sLONGINT :
+                    case sLONGWORD :
                     case sSUBRANGE :
                     case sCHAR :
                     case sBOOLEAN :

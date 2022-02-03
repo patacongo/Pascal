@@ -81,6 +81,14 @@
 #define MAXSHORTWORD        255
 #define MINSHORTWORD        0
 
+#define sLONGINT_SIZE       4
+#define MAXLONGINT          2147483647L
+#define MINLONGINT          -2147483648L
+
+#define sLONGWORD_SIZE      4
+#define MAXLONGWORD         4294967295UL
+#define MINLONGWORD         0
+
 /* Sizes of other Pascal types */
 
 #define sCHAR_SIZE          1

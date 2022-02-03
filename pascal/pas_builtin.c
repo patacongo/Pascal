@@ -82,6 +82,8 @@ static exprType_t pas_BuiltInSizeOf(void)
       case sWORD :
       case sSHORTINT :
       case sSHORTWORD :
+      case sLONGINT :
+      case sLONGWORD :
       case sBOOLEAN :
       case sCHAR :
       case sREAL :

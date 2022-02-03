@@ -138,21 +138,6 @@ static int32_t pas_GetLevel0Opcode(enum pcode_e eOpCode)
     }
 }
 
-/***********************************************************************/
-/* Similarly for the long integer/word opcodes. */
-
-static int32_t pas_GetLevel0LongOpcde(enum longops_e longOpCode)
-{
-  switch (longOpCode)
-    {
-      case opDLDS:    return opDLD;
-      case opDSTS:    return opDST;
-      case opDLDSX:   return opDLDX;
-      case opDSTSX:   return opDSTX;
-      default:        return INVALID_PCODE;
-    }
-}
-
 /***********************************************************************
  * Public Functions
  ***********************************************************************/
@@ -577,31 +562,4 @@ void  pas_GenerateSimpleLongOperation(enum longops_e longOpCode)
 void pas_GenerateDataLongOperation(enum longops_e longOpCode, int32_t dwData)
 {
   insn_GenerateDataLongOperation(longOpCode, dwData);
-}
-
-/***********************************************************************/
-/* Generate a reference to data on the data stack using the specified
- * level and offset.
- */
-
-void pas_GenerateLongLevelReference(enum longops_e longOpCode,
-                                    uint16_t wLevel, int32_t dwOffset)
-{
-  /* Is this variable declared at level 0 (i.e., it has global scope)
-   * that is being offset via a nesting level?
-   */
-
-  if (wLevel == 0)
-    {
-      enum longops_e level0LongOpCode = pas_GetLevel0LongOpcde(longOpCode);
-      if (PCODE_VALID(level0LongOpCode))
-        {
-          pas_GenerateDataLongOperation(level0LongOpCode, dwOffset);
-          return;
-        }
-    }
-
-  /* Then generate the opcode passing. */
-
-  insn_GenerateLongLevelReference(longOpCode, wLevel, dwOffset);
 }

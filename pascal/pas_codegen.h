@@ -72,7 +72,5 @@ void     pas_GeneratePoffOutput(void);
 
 void     pas_GenerateSimpleLongOperation(enum longops_e longop);
 void     pas_GenerateDataLongOperation(enum longops_e longop, int32_t dwData);
-void     pas_GenerateLongLevelReference(enum longops_e longop, uint16_t wLevel,
-                                        int32_t dwOffset);
 
 #endif /* __PAS_CODEGEN_H */

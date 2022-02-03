@@ -176,7 +176,7 @@ void pas_Statement(void)
 
   switch (g_token)
     {
-      /* Simple assignment statements */
+      /* Simple, ordinal assignment statements */
 
     case sINT :
     case sWORD :
@@ -196,14 +196,23 @@ void pas_Statement(void)
       pas_Assignment(opSTSB, exprType, symPtr, symPtr->sParm.v.vParent);
       break;
 
-      /* The only thing that SET and REAL have in common is that they both
-       * require large, multi-word assignments.
+    case sLONGINT :
+    case sLONGWORD :
+      symPtr = g_tknPtr;
+      exprType = pas_MapVariable2ExprType(g_token, true);
+      getToken();
+      pas_LargeAssignment(opSTSM, exprType, symPtr, symPtr->sParm.v.vParent);
+      break;
+
+      /* The only thing that SETs and REAL have in common is that they both
+       * require larger, multi-word assignments.  Same for long integers/word,
+       * but those are grouped with the ordinal types.
        */
 
     case sSET :
     case sREAL :
       symPtr = g_tknPtr;
-      exprType = (g_token == sSET) ? exprSet : exprReal;
+      exprType = pas_MapVariable2ExprType(g_token, false);
       getToken();
       pas_LargeAssignment(opSTSM, exprType, symPtr, symPtr->sParm.v.vParent);
       break;
@@ -255,6 +264,7 @@ void pas_Statement(void)
     case tWITH         : pas_WithStatement(); break;
 
       /* None of the above, try standard procedures */
+
     default            : pas_StandardProcedure(); break;
   }
 
@@ -428,10 +438,12 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         }
       break;
 
-    /* The only thing that REAL and SET types have in common is that they
-     * both require the same multi-word assignment.
+    /* The only thing that Long integer/word, REALc and SET types have in
+     * common is that they all both require the same multi-word assignment.
      */
 
+    case sLONGINT :
+    case sLONGWORD :
     case sSET :
     case sREAL :
       exprType = pas_MapVariable2ExprType(varPtr->sKind, false);
@@ -1838,6 +1850,7 @@ static void pas_ForStatement(void)
 
    if (g_token != sINT      && g_token != sWORD      &&
        g_token != sSHORTINT && g_token != sSHORTWORD &&
+       g_token != sLONGINT  && g_token != sLONGWORD &&
        g_token != sSUBRANGE && g_token != sSCALAR)
      {
        error(eINTVAR);

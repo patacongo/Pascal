@@ -65,8 +65,6 @@ void insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber);
 
 void insn_GenerateSimpleLongOperation(enum longops_e longOpCode);
 void insn_GenerateDataLongOperation(enum longops_e longOpCode, int32_t data);
-void insn_GenerateLongLevelReference(enum longops_e longOpCode, uint16_t level,
-                                     int32_t offset);
 
 /* Opcode relocation */
 

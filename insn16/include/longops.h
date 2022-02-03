@@ -51,7 +51,7 @@
  *
  *            NO ARGS    arg8 ONLY      arg16 ONLY     BOTH
  *            00xx xxxx  01xx xxxx      10xx xxxx      11xx xxxx
- * xx00 0000  ---        ---            ---            ---
+ * xx00 0000  DNOP       ---            ---            ---
  * xx00 0001  DNEG       ---            ---            ---
  * xx00 0010  DABS       ---            ---            ---
  * xx00 0011  DINC       ---            ---            ---
@@ -85,19 +85,19 @@
  * xx01 1110  ---        ---            ---            ---
  * xx01 1111  ---        ---            ---            ---
  *
- * xx10 0000  DLDI       ---            DLD uoffs      DLDS loff,offs
+ * xx10 0000  ---        ---            ---            ---
  * xx10 0001  ---        ---            ---            ---
  * xx10 0010  ---        ---            ---            ---
  * xx10 0011  ---        ---            ---            ---
- * xx10 0100  DSTI       ---            DST uoffs      DSTS loff,offs
+ * xx10 0100  ---        ---            ---            ---
  * xx10 0101  ---        ---            ---            ---
  * xx10 0110  ---        ---            ---            ---
  * xx10 0111  ---        ---            ---            ---
- * xx10 1000  DDUP       ---            DLDX uoffs     DLDSX loff,offs
+ * xx10 1000  DDUP       ---            ---            ---
  * xx10 1001  ---        ---            ---            ---
  * xx10 1010  DXCHG      ---            ---            ---
  * xx10 1011  ---        ---            ---            ---
- * xx10 1100  ---        ---            DSTX uoffs     DSTSX loff,offs
+ * xx10 1100  ---        ---            ---            ---
  * xx10 1101  ---        ---            ---            ---
  * xx10 1110  ---        ---            ---            ---
  * xx10 1111  ---        ---            ---            ---
@@ -120,18 +120,14 @@
  * xx11 1111  ---        ---            ---            ---
  *
  * KEY:
- *   loff  = 8-bit static nesting level offset (unsigned)
- *   fop   = 8-bit floating point operation
  *   ilbl  = instruction space label
- *   offs  = 16-bit frame offset (signed)
- *   uoffs = 16-bit base offset (unsigned)
- *   *     = Indicates pseudo-operations (these are removed
- *           after final fixup of the object file).
  */
 
 /** OPCODES WITH NO ARGUMENTS ***********************************************/
 
-/* 0x00 -- unassigned */
+/* No long integer operation */
+
+#define oDNOP   (0x00)
 
 /* Arithmetic & logical & and integer conversions (One 16-bit stack argument) */
 
@@ -174,19 +170,7 @@
 #define oDGT    (0x1c)
 #define oDLTE   (0x1d)
 
-/* 0x1e - 0x1f -- unassigned */
-
-/* Load Immediate */
-
-#define oDLDI   (0x20)    /* (One 16-bit stack argument) */
-
-/* 0x21 - 0x23 -- unassigned */
-
-/* Store Immediate */
-
-#define oDSTI   (0x24)    /* (One 16-bit and one 16-bit stack arguments) */
-
-/* 0x25 - 0x27 -- unassigned */
+/* 0x1e - 0x27 -- unassigned */
 
 /* Data stack */
 
@@ -240,58 +224,10 @@
 #define oDJGT   (o16|0x1c)
 #define oDJLTE  (o16|0x1d)
 
-/* (o16|0x1e)-(o16|0x1f) -- unassigned */
-
-/* Load:  arg16 = unsigned base offset */
-
-#define oDLD    (o16|0x20)       /* (no stack arguments) */
-
-/* (o16|0x21)-(o16|0x23) -- unassigned */
-
-/* Store: arg16 = unsigned base offset */
-
-#define oDST    (o16|0x24)       /* (One 16-bit stack argument) */
-
-/* (o16|0x25)-(o16|0x27) -- unassigned */
-
-/* Load Indexed: arg16 = unsigned base offset */
-
-#define oDLDX   (o16|0x28)       /* (One 16-bit stack argument) */
-
-/* (o16|0x29)-(o16|0x2b) -- unassigned */
-
-/* Store Indexed: arg16 = unsigned base offset */
-
-#define oDSTX   (o16|0x2c)       /* (One 16-bit + one 16-bit stack arguments) */
-
-/* (o16|0x2d)-(o16|0x3f) -- unassigned */
+/* (o16|0x1e)-(o16|0x3f) -- unassigned */
 
 /** OPCODES WITH 24-BITS OF ARGUMENT (arg8 + arg16) *************************/
 
-/* (o16|o8|0x00)-(o8|o16|0x1f) -- unassigned */
-
-/* Load:  arg8 = level; arg16 = signed frame offset */
-
-#define oDLDS   (o16|o8|0x20)    /* (no stack arguments) */
-
-/* (o16|o8|0x21)-(o8|o16|0x2f) -- unassigned */
-
-/* Store: arg8 = level; arg16 = signed frame offset */
-
-#define oDSTS   (o16|o8|0x24)    /* (One 16-bit stack argument) */
-
-/* (o16|o8|0x25)-(o8|o16|0x27) -- unassigned */
-
-/* Load Indexed: arg8 = level; arg16 = signed frame offset */
-
-#define oDLDSX  (o16|o8|0x28)    /* (One 16-bit stack argument) */
-
-/* (o16|o8|0x29)-(o8|o16|0x2b) -- unassigned */
-
-/* Store Indexed: arg8 = level; arg16 = signed frame offset */
-
-#define oDSTSX  (o16|o8|0x2c)    /* (One 16-bit + one 16-bit stack arguments) */
-
-/* (o16|o8|0x2d)-(o8|o16|0x3f) -- unassigned */
+/* (o16|o8|0x00)-(o8|o16|0x3f) -- unassigned */
 
 #endif /* __LONGOPS_H */

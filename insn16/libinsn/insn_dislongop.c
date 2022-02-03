@@ -34,9 +34,9 @@
  *
  **********************************************************************/
 
-/***********************************************************************
+/****************************************************************************
  * Included Files
- ***********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -50,45 +50,43 @@
 
 #include "pas_insn.h"
 
-/***********************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- ***********************************************************************/
+ ****************************************************************************/
 
 /* These are all the format codes that apply to opcodes */
 
 #define NOARG8        0
-#define SHORTINT      1    /* Show ARG8 as a signed integer */
-#define SHORTWORD     2    /* Show ARG8 as an unsigned integer */
 
 #define NOARG16       0
 #define HEX           1    /* Show ARG16 as hexadecimal */
-#define DECIMAL       2    /* Show ARG16 as a signed decimal */
-#define UDECIMAL      3    /* Show ARG16 as an unsigned decimal */
 
 #define MKFMT(a8,a16) (((a16) << 3) | a8)
 #define ARG8FMT(n)    ((n) & 0x07)
 #define ARG16FMT(n)   ((n) >> 3)
 
-/***********************************************************************
+/****************************************************************************
  * Private Data
- ***********************************************************************/
+ ****************************************************************************/
 
 /* The following table defines everything that is needed to disassemble
  * a P-Code.  NOTE:  The order of definition in this table must exactly
  * match the declaration sequence in pas_insn.h. */
 
 static const char invOp[] = "Invalid Opcode";
-static const struct
+struct opCodeInfo_s
 {
   const char *opName;       /* Opcode mnemonics */
   uint8_t format;           /* arg16 format */
-} opTable[256] =
-{
+};
 
-/******************* OPCODES WITH NO ARGUMENTS ************************/
+/********************** OPCODES WITH NO ARGUMENTS ***************************/
+
+static struct opCodeInfo_s g_noArgOpTable[0x40] =
+{
 /* Program control (No stack arguments) */
 
-/* 0x00 */ { invOp,    MKFMT(NOARG8, NOARG16) },
+/* 0x00 */ { "DNOP",   MKFMT(NOARG8, NOARG16) },
 
 /* Arithmetic & logical & and integer conversions (One stack argument) */
 
@@ -135,11 +133,11 @@ static const struct
 
 /* Load (One) or Store (Two stack argument) */
 
-/* 0x20 */ { "DLDI  ", MKFMT(NOARG8, NOARG16) },
+/* 0x20 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x21 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x22 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x23 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x24 */ { "DSTI  ", MKFMT(NOARG8, NOARG16) },
+/* 0x24 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x25 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x26 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x27 */ { invOp,    MKFMT(NOARG8, NOARG16) },
@@ -183,84 +181,15 @@ static const struct
 /* System functions */
 
 /* 0x3f */ { invOp,    MKFMT(NOARG8, NOARG16) },
+};
 
-/************** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ***************/
+/**************** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ******************/
+/* NONE */
 
-/* 0x40 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x41 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x42 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x43 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x44 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x45 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x46 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x47 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x48 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x49 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x4a */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x4b */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x4c */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x4d */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x4e */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x4f */ { invOp,    MKFMT(NOARG8, NOARG16) },
+/*************** OPCODES WITH SINGLE 16-BIT ARGUMENT (arg16) ****************/
 
-/* 0x50 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x51 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x52 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x53 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x54 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x55 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x56 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x57 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x58 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x59 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x5a */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x5b */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x5c */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x5d */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x5e */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x5f */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Data stack:  arg8 = 8 bit unsigned data (no stack arguments) */
-
-/* 0x60 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x61 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x62 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x63 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x64 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x65 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x66 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x67 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x68 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x69 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x6a */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x6b */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x6c */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x6d */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x6e */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x6f */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Floating Point Operations:  arg8 = FP op-code */
-
-/* 0x70 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x71 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x72 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x73 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x74 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x75 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x76 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x77 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* 0x78 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x79 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x7a */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x7b */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x7c */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x7d */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x7e */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0x7f */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/************ OPCODES WITH SINGLE 16-BIT ARGUMENT (arg16) ************/
-
+static struct opCodeInfo_s g_arg16OpTable[0x40] =
+{
 /* 0x80 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x81 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0x82 */ { invOp,    MKFMT(NOARG8, NOARG16) },
@@ -307,28 +236,28 @@ static const struct
 
 /* Load:  arg16 = unsigned base offset (no stack arguments) */
 
-/* 0xa0 */ { "DLD   ", MKFMT(NOARG8, UDECIMAL) },
+/* 0xa0 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xa1 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xa2 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xa3 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 
 /* Store: arg16 = unsigned base offset (One stack arguments) */
 
-/* 0xa4 */ { "DST   ", MKFMT(NOARG8, UDECIMAL) },
+/* 0xa4 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xa5 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xa6 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xa7 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 
 /* Load Indexed: arg16 = unsigned base offset (One stack arguments) */
 
-/* 0xa8 */ { "DLDX  ", MKFMT(NOARG8, UDECIMAL) },
+/* 0xa8 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xa9 */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xaa */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xab */ { invOp,    MKFMT(NOARG8, NOARG16) },
 
 /* Store Indexed: arg16 = unsigned base offset (Two stack arguments) */
 
-/* 0xac */ { "DSTX  ", MKFMT(NOARG8, UDECIMAL) },
+/* 0xac */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xad */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xae */ { invOp,    MKFMT(NOARG8, NOARG16) },
 /* 0xaf */ { invOp,    MKFMT(NOARG8, NOARG16) },
@@ -355,166 +284,50 @@ static const struct
 /* Program control:  arg16 = unsigned label (no stack arguments) */
 
 /* 0xbf */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/**** OPCODES WITH BYTE ARGUMENT (arg8) AND 16-BIT ARGUMENT (arg16) ****/
-
-/* 0xc0 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc1 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc2 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc3 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc4 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc5 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc6 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc7 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Program Control:  arg8 = level; arg16 = unsigned label (No stack
- * arguments
- */
-
-/* 0xc8 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xc9 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xca */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xcb */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xcc */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xcd */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xce */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xcf */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* 0xd0 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd1 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd2 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd3 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd4 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd5 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd6 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd7 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd8 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xd9 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xda */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xdb */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xdc */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xdd */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xde */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xdf */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Load:  arg8 = level; arg16 = signed frame offset (no stack arguments) */
-
-/* 0xe0 */ { "DLDS  ", MKFMT(SHORTINT, DECIMAL) },
-/* 0xe1 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xe2 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xe3 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Store: arg8 = level; arg16 = signed frame offset (One stack arguments) */
-
-/* 0xe4 */ { "DSTS  ", MKFMT(SHORTINT, DECIMAL) },
-/* 0xe5 */ { invOp,    MKFMT(NOARG8, NOARG16)  },
-/* 0xe6 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xe7 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Load Indexed: arg8 = level; arg16 = signed frame offset (One stack arguments) */
-
-/* 0xe8 */ { "DLDSX ", MKFMT(SHORTINT, DECIMAL) },
-/* 0xe9 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xea */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xeb */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Store Indexed: arg8 = level; arg16 = signed frame offset (Two stack arguments) */
-
-/* 0xec */ { "DSTSX ", MKFMT(SHORTINT, DECIMAL) },
-/* 0xed */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xee */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xef */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Load Address:  arg8 = level; arg16 = signed frame offset (no stack arguments) */
-
-/* 0xf0 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf1 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf2 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf3 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf4 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf5 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf6 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf7 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xf8 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* System Functions:  (No stack arguments)
- * For SYSIO:        arg16 = sub-function code
- *                   TOS   = File number
- */
-
-/* 0xf9 */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xfa */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xfb */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xfc */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xfd */ { invOp,    MKFMT(NOARG8, NOARG16) },
-/* 0xfe */ { invOp,    MKFMT(NOARG8, NOARG16) },
-
-/* Pseudo-operations:
- * For LINE:         arg8 = file number; arg16 = line number
- */
-
-/* 0xff */ { invOp,    MKFMT(NOARG8, NOARG16) },
 };
 
-/***********************************************************************/
+/**** OPCODES WITH BYTE ARGUMENT (arg8) AND 16-BIT ARGUMENT (arg16) ****/
+/* NONE */
+
+/****************************************************************************/
 
 void insn_DisassembleLongOpCode(FILE* lfile, opType_t *pop)
 {
-  uint8_t fmt8;
+  struct opCodeInfo_s *opCodeInfo;
   uint8_t fmt16;
-
-  /* Indent, comment or label */
-
-  fmt8  = ARG8FMT(opTable[pop->op].format);
-  fmt16 = ARG16FMT(opTable[pop->op].format);
 
   /* Print normal long opCode mnemonic */
 
-  fprintf(lfile, "        %s ", opTable[pop->op].opName);
-
-  /* Print arg8 (if present) */
-
-  if ((pop->op & o8) != 0)
+  switch (pop->op & (o8 | o16))
     {
-      switch (fmt8)
-        {
-          case SHORTWORD :    /* Show ARG8 as an unsigned integer */
-            fprintf(lfile, "%u", pop->arg1);
-            break;
+      case 0 :
+        opCodeInfo = &g_noArgOpTable[pop->op];
+        break;
 
-          case SHORTINT :    /* Show ARG8 as a signed integer */
-            fprintf(lfile, "%d", signExtend8(pop->arg1));
-            break;
+      case o16 :
+        opCodeInfo = &g_arg16OpTable[pop->op & 0x3f];
+        break;
 
-          case NOARG8 :
-          default:
-            break;
-        }
+      case o8 :
+      case o8 | o16 :
+        fprintf(lfile, "        %s\n", invOp);
+        return;
     }
+
+  fprintf(lfile, "        %s ", opCodeInfo->opName);
+
+  /* Print arg8 (if present) -- There are none. */
 
   /* Print arg16 (if present) */
 
   if ((pop->op & o16) != 0)
     {
-      /* Separate from arg8 (if present) with a comma and space */
-
-      if ((pop->op & o8) != 0)
-        {
-          fprintf(lfile, ", ");
-        }
+      fmt16 = ARG16FMT(opCodeInfo->format);
 
       switch (fmt16)
         {
-          case DECIMAL :     /* Show ARG16 as a signed decimal */
-            fprintf(lfile, "%d", (int16_t)pop->arg2);
-            break;
-
           case HEX :         /* Show ARG16 as hexadecimal */
             fprintf(lfile, "0x%04x", pop->arg2);
-            break;
-
-          case UDECIMAL :    /* Show ARG16 as an unsigned decimal */
-            fprintf(lfile, "%u", pop->arg2);
             break;
 
           case NOARG16 :     /* There is no ARG16? */

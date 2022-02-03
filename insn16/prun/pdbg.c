@@ -530,7 +530,6 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
       /* Get the address of the next P-Code */
 
       pc += opsize;
-
     }
 
   return pc;

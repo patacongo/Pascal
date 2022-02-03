@@ -413,13 +413,21 @@ static void pas_SetInitialValues(void)
                 pas_GenerateStackReference(opSTSB, varPtr);
                 break;
 
+              case sLONGINT :
+              case sLONGWORD :
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltAccess[0]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltAccess[1]);
+                pas_GenerateDataOperation(opPUSH, sLONGINT_SIZE);
+                pas_GenerateStackReference(opSTSM, varPtr);
+                break;
+
               /* Real values */
 
               case sREAL:
-                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[0]);
-                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[1]);
-                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[2]);
-                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltReal[3]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltAccess[0]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltAccess[1]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltAccess[2]);
+                pas_GenerateDataOperation(opPUSH, initializer->v.value.iAltAccess[3]);
                 pas_GenerateDataOperation(opPUSH, sREAL_SIZE);
                 pas_GenerateStackReference(opSTSM, varPtr);
                 break;

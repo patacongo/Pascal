@@ -2,7 +2,7 @@
  * pas_initializer.h
  * External Declarations associated with pas_initializer.c
  *
- *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -49,8 +49,9 @@ union varInitValue_u
   double   iReal;            /* Real value */
   uint32_t iRoOffset;        /* Offset to read-only string */
   uint16_t iPointer;         /* Pointer value (NIL) */
+  uint32_t iLongInt;         /* Long integer */
   uint16_t iSet[sSET_WORDS]; /* Set value */
-  uint16_t iAltReal[4];      /* Alternative access to real value */
+  uint16_t iAltAccess[4];    /* Alternative access to large values */
 };
 
 typedef union varInitValue_u varInitValue_t;

@@ -2,7 +2,7 @@
  * pas_block.c
  * Process a Pascal Block
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1595,6 +1595,8 @@ static symbol_t *pas_OrdinalTypeIdentifier(void)
         case sWORD :
         case sSHORTINT :
         case sSHORTWORD :
+        case sLONGINT :
+        case sLONGWORD :
         case sBOOLEAN :
         case sCHAR :
         case sSCALAR :
@@ -1746,6 +1748,7 @@ static symbol_t *pas_GetArrayIndexType(void)
 
       else if (ordinalType == sINT      || ordinalType == sWORD      ||
                ordinalType == sSHORTINT || ordinalType == sSHORTWORD ||
+               ordinalType == sLONGINT  || ordinalType == sLONGWORD ||
                ordinalType == sCHAR)
         {
           error(eNOTYET);
@@ -2568,7 +2571,8 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
        */
 
       if (baseType == sINT      || baseType == sWORD      ||
-          baseType == sSHORTINT || baseType == sSHORTWORD)
+          baseType == sSHORTINT || baseType == sSHORTWORD ||
+          baseType == sLONGINT  || baseType == sLONGWORD)
         {
           exprType_t exprType = pas_MapVariable2ExprType(baseType, true);
 

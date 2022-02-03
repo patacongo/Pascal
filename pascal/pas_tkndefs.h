@@ -74,7 +74,7 @@
 #define tEQ              ('=')
 #define tGT              ('>')
 
-/* Token Values 0x41-0x5A are SYMBOL TABLE definitions */
+/* Token Values 0x41-0x5a are SYMBOL TABLE definitions */
 
 #define sPROC            0x41
 #define sFUNC            0x42
@@ -86,27 +86,30 @@
 #define sWORD            0x48
 #define sSHORTINT        0x49
 #define sSHORTWORD       0x4a
-#define sBOOLEAN         0x4b
-#define sCHAR            0x4c
-#define sREAL            0x4d
-#define sSTRING          0x4e
-#define sSHORTSTRING     0x4f
-#define sSTRING_CONST    0x50
-#define sPOINTER         0x51
-#define sSCALAR          0x52
-#define sSCALAR_OBJECT   0x53
-#define sSUBRANGE        0x54
-#define sSET             0x55
-#define sARRAY           0x56
-#define sRECORD          0x57
-#define sRECORD_OBJECT   0x58
-#define sVAR_PARM        0x59
+#define sLONGINT         0x4b
+#define sLONGWORD        0x4c
+#define sBOOLEAN         0x4d
+#define sCHAR            0x4e
+#define sREAL            0x4f
+#define sSTRING          0x50
+#define sSHORTSTRING     0x51
+#define sSTRING_CONST    0x52
+#define sPOINTER         0x53
+#define sSCALAR          0x54
+#define sSCALAR_OBJECT   0x55
+#define sSUBRANGE        0x56
+#define sSET             0x57
+#define sARRAY           0x58
+#define sRECORD          0x59
+#define sRECORD_OBJECT   0x5a
 
 /* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens:
  * '[', '\', ']', '^', '_', '`'
  */
 
 /* Token Values 0x61-0x7a are SYMBOL TABLE definitions */
+
+#define sVAR_PARM        0x61
 
 /* Token Values 0x7b-0x7f are for ASCII character tokens:
  * '{', '|', '}''~', DEL
