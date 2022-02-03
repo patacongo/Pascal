@@ -255,7 +255,7 @@ static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t leveloffset,
  *
  ****************************************************************************/
 
-static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
+static inline int pexec8(struct pexec_s *st, uint8_t opcode)
 {
   sstack_t sparm;
   ustack_t uparm1;
@@ -683,7 +683,7 @@ static inline int pexec8(FAR struct pexec_s *st, uint8_t opcode)
  *
  ****************************************************************************/
 
-static inline int pexec16(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8)
+static inline int pexec16(struct pexec_s *st, uint8_t opcode, uint8_t imm8)
 {
   int ret = eNOERROR;
 
@@ -728,7 +728,7 @@ static inline int pexec16(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8)
  *
  ****************************************************************************/
 
-static inline int pexec24(FAR struct pexec_s *st, uint8_t opcode,
+static inline int pexec24(struct pexec_s *st, uint8_t opcode,
                           uint16_t imm16)
 {
   sstack_t sparm1;
@@ -1115,7 +1115,8 @@ branchOut:
  *
  ****************************************************************************/
 
-static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_t imm16)
+static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
+                   uint16_t imm16)
 {
   sstack_t sparm;
   ustack_t uparm1;
@@ -1328,10 +1329,10 @@ static int pexec32(FAR struct pexec_s *st, uint8_t opcode, uint8_t imm8, uint16_
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_init
+ * Name: pexec_Initialize
  ****************************************************************************/
 
-FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
+struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
 {
   struct pexec_s *st;
   paddr_t stacksize;
@@ -1401,10 +1402,10 @@ FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
 }
 
 /****************************************************************************
- * Name: pexec
+ * Name: pexec_Execute
  ****************************************************************************/
 
-int pexec_Execute(FAR struct pexec_s *st)
+int pexec_Execute(struct pexec_s *st)
 {
   uint8_t opcode;
   int ret;
@@ -1464,7 +1465,7 @@ int pexec_Execute(FAR struct pexec_s *st)
 }
 
 /****************************************************************************
- * Name: pexec_reset
+ * Name: pexec_Reset
  ****************************************************************************/
 
 void pexec_Reset(struct pexec_s *st)
@@ -1522,7 +1523,7 @@ void pexec_Reset(struct pexec_s *st)
 }
 
 /****************************************************************************
- * Name: pexec_release
+ * Name: pexec_Release
  ****************************************************************************/
 
 void pexec_Release(struct pexec_s *st)

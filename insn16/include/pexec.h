@@ -1,7 +1,7 @@
 /****************************************************************************
  * pexec.h
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -150,24 +150,24 @@ struct pexec_attr_s
 {
   /* Instruction space (I-Space) */
 
-  FAR uint8_t *ispace;   /* Allocated I-Space containing p-code data */
-  paddr_t      entry;    /* Entry point */
-  paddr_t      maxpc;    /* Last valid p-code address */
+  uint8_t *ispace;   /* Allocated I-Space containing p-code data */
+  paddr_t  entry;    /* Entry point */
+  paddr_t  maxpc;    /* Last valid p-code address */
 
   /* Read-only data block */
 
-  FAR uint8_t *rodata;   /* Address of read-only data block */
-  paddr_t      rosize;   /* Size of read-only data block */
+  uint8_t *rodata;   /* Address of read-only data block */
+  paddr_t  rosize;   /* Size of read-only data block */
 
   /* Allocate for variable storage */
 
-  paddr_t      strsize;  /* String storage size */
-  paddr_t      stksize;  /* Pascal stack size */
-  paddr_t      hpsize;   /* Heap storage size */
+  paddr_t  strsize;  /* String storage size */
+  paddr_t  stksize;  /* Pascal stack size */
+  paddr_t  hpsize;   /* Heap storage size */
 
   /* String allocation configuration */
 
-  paddr_t      stralloc; /* Size of string buffer allocation */
+  paddr_t  stralloc; /* Size of string buffer allocation */
 };
 
 /* This structure defines the current state of the p-code interpreter.  It
@@ -182,7 +182,7 @@ struct pexec_s
 
   /* This is the emulated P-Machine instruction space (I-Space) */
 
-  FAR uint8_t *ispace;
+  uint8_t *ispace;
 
  /* Address of last valid P-Code */
 
@@ -235,25 +235,12 @@ struct pexec_s
  * Public Function Prototypes
  ****************************************************************************/
 
-#ifdef __cplusplus
-#define EXTERN extern "C"
-extern "C"
-{
-#else
-#define EXTERN extern
-#endif
-
-FAR struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
-                               paddr_t strsize, paddr_t stksize,
-                               paddr_t hpsize);
-FAR struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr);
-int pexec_Execute(FAR struct pexec_s *st);
-void pexec_Reset(struct pexec_s *st);
-void pexec_Release(struct pexec_s *st);
-
-#undef EXTERN
-#ifdef __cplusplus
-}
-#endif
+struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
+                           paddr_t strsize, paddr_t stksize,
+                           paddr_t hpsize);
+struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr);
+int    pexec_Execute(struct pexec_s *st);
+void   pexec_Reset(struct pexec_s *st);
+void   pexec_Release(struct pexec_s *st);
 
 #endif /* __PEXEC_H */

@@ -52,7 +52,7 @@
  * Public Functions
  ****************************************************************************/
 
-FAR struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
+struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
                                paddr_t strsize, paddr_t stksize,
                                paddr_t hpsize)
 {
