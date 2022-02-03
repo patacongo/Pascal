@@ -1,8 +1,8 @@
 /**********************************************************************
- * paddopcode
+ * insn_getopcode.c
  * P-Code access utilities
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,13 +38,21 @@
  * Included Files
  **********************************************************************/
 
+#include <stdint.h>
+
 #include "pas_debug.h"
 #include "pas_pcode.h"
-#include "pinsn16.h"
+#include "insn16.h"
 
 #include "paslib.h"
 #include "pofflib.h"
 #include "pas_insn.h"
+
+/**********************************************************************
+ * Public Data
+ **********************************************************************/
+
+static int16_t g_bEndIn  = 0;  /* 1 = oEND pcode or EOF received */
 
 /**********************************************************************
  * Public Functions
@@ -52,33 +60,69 @@
 
 /**********************************************************************/
 
-void insn_AddOpCode(poffHandle_t handle, opType_t *ptr)
+uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
 {
-  /* Write the opcode which is always present */
+  uint32_t opsize = 1;
+  int c;
 
-  (void)poffAddProgByte(handle, ptr->op);
+  TRACE(stderr, "[insn_GetOpCode]");
 
-  /* Write the 8-bit argument if present */
+  /* If we are not already at the EOF, read the next character from
+   * the input stream.
+   */
 
-  if (ptr->op & o8)
+  if (!g_bEndIn)
+    c = poffGetProgByte(handle);
+  else
+    c = EOF;
+
+  /* Check for end of file.  We may have previously parsed oEND which
+   * is a 'logical' end of file for a pascal program (but not a unit)
+   * or we may be at the physical end of the file wihout encountering
+   * oEND (typical for a UNIT file).
+   */
+
+  if ((g_bEndIn) || (c == EOF))
     {
-      (void)poffAddProgByte(handle, ptr->arg1);
-    }
-
-  /* Write the 16-bit argument if present */
-
-  if (ptr->op & o16)
+      ptr->op = oEND;
+      ptr->arg1 = 0;
+      ptr->arg2 = 0;
+    } /* end if */
+  else
     {
-      (void)poffAddProgByte(handle, (ptr->arg2 >> 8));
-      (void)poffAddProgByte(handle, (ptr->arg2 & 0xff));
+      ptr->op = c;
+      g_bEndIn = (ptr->op == oEND);
+
+      if (ptr->op & o8)
+        {
+          ptr->arg1 = poffGetProgByte(handle);
+          opsize++;
+        }
+      else
+        {
+          ptr->arg1 = 0;
+        }
+
+      if (ptr->op & o16)
+        {
+          ptr->arg2  = (poffGetProgByte(handle) << 8);
+          ptr->arg2 |= (poffGetProgByte(handle) & 0xff);
+          opsize += 2;
+        }
+      else
+        {
+          ptr->arg2 = 0;
+        }
     }
+  return opsize;
 }
 
 /**********************************************************************/
 
-void insn_ResetOpCodeWrite(poffHandle_t handle)
+void insn_ResetOpCodeRead(poffHandle_t handle)
 {
   poffResetAccess(handle);
+  g_bEndIn = 0;
 }
 
 /***********************************************************************/

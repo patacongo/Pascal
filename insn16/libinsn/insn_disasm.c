@@ -1,5 +1,5 @@
 /**********************************************************************
- * pdasm.c
+ * insn_disasm.c
  * P-Code Disassembler
  *
  *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
@@ -44,7 +44,7 @@
 
 #include "pas_debug.h"
 #include "pas_pcode.h"
-#include "pinsn16.h"
+#include "insn16.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"
 #include "pas_setops.h"

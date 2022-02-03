@@ -1,5 +1,5 @@
 /**********************************************************************
- * pgen.c
+ * insn_generate.c
  * P-Code generation logic
  *
  *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
@@ -49,7 +49,7 @@
 #include "pofflib.h"      /* POFF library definitions */
 #include "pas_pcode.h"    /* Logical opcode definitions */
 #include "pas_errcodes.h" /* Error codes */
-#include "pinsn16.h"      /* 16-bit target INSN opcode definitions */
+#include "insn16.h"       /* 16-bit target INSN opcode definitions */
 #include "pas_error.h"    /* Error handling logic */
 
 #include "pas_insn.h"     /* (to verify prototypes in this file) */
@@ -67,7 +67,7 @@ extern FILE *g_lstFile;           /* LIST file pointer */
 
 /* Indexed by enum pcode_e in pas_pcode.h.  Order must match indexing. */
 
-static const uint16_t opmap[NUM_OPCODES] =
+static const uint16_t g_opCodeMap[NUM_OPCODES] =
 {
   oNOP,    /* opNOP */
   oNEG,    /* opNEG */
@@ -211,7 +211,7 @@ insn16_DisassemblePCode(uint8_t opcode, uint8_t arg1, uint16_t arg2)
 static void
 insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2)
 {
-  uint16_t insn_opcode = opmap[opcode];
+  uint16_t insn_opcode = g_opCodeMap[opcode];
   uint16_t arg16;
   TRACE(g_lstFile,"[insn16_Generate:0x%02x->0x%04x]", opcode, insn_opcode);
 

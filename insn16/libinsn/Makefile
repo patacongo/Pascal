@@ -1,7 +1,7 @@
 ############################################################################
 # insn16/libinsn/Makefile
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,34 +35,35 @@
 #
 # Directories
 #
-LIBINSNDIR  = ${shell pwd}
-INSNDIR     = $(LIBINSNDIR)/..
-PASCAL      = $(LIBINSNDIR)/../..
+LIBINSNDIR   = ${shell pwd}
+INSNDIR      = $(LIBINSNDIR)/..
+PASCAL       = $(LIBINSNDIR)/../..
 
 include $(PASCAL)/Make.config
 include $(PASCAL)/Make.defs
 
-INCDIR      = $(PASCAL)/include
-LIBDIR      = $(PASCAL)/lib
+INCDIR       = $(PASCAL)/include
+LIBDIR       = $(PASCAL)/lib
 
 #
 # Tools
 #
 EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES   += $(EXTRA_INCLUDES)
-CFLAGS     += $(EXTRA_INCLUDES)
+INCLUDES    += $(EXTRA_INCLUDES)
+CFLAGS      += $(EXTRA_INCLUDES)
 
 #
 # Objects and targets
 #
-LIBINSNSRCS = paddopcode.c paddtmpopcode.c pdasm.c pgen.c \
-              pgetopcode.c preloc.c
-LIBINSNOBJS = $(LIBINSNSRCS:.c=.o)
+LIBINSNSRCS  = insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
+LIBINSNSRCS += insn_generate.c insh_longops.c insn_getopcode.c
+LIBINSNSRCS += insn_relocate.c
+LIBINSNOBJS  = $(LIBINSNSRCS:.c=.o)
 
-OBJS        = $(LIBINSNOBJS)
-DEPS        = $(LIBINSNSRCS:.c=.d)
+OBJS         = $(LIBINSNOBJS)
+DEPS         = $(LIBINSNSRCS:.c=.d)
 
-SUFFIXES   += .d
+SUFFIXES    += .d
 
 all: libinsn.a
 .PHONY: all libinsn.a check_libs clean

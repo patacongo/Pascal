@@ -54,8 +54,8 @@ enum longops_e
 
   /* Arithmetic & logical (Two stack arguments):
    *
-   *   opDMUL, opDDIV, opDMOD, opDSRA - Signed integers only
-   *   opDUMUL, opDUDIV, opDUMOD     - Unsigned words only
+   *   opDMUL, opDDIV, opDMOD, opDSRA - Signed long integers only
+   *   opDUMUL, opDUDIV, opDUMOD      - Unsigned long words only
    *
    * Logical opDerations are inherently unsigned but support integers as well.
    */
@@ -69,8 +69,8 @@ enum longops_e
 
   /* Comparisons (Two stack arguments)
    *
-   *   opDLT,  opDGTE,  opDGT,  opDLTE  - Comparizons of signed integers
-   *   opDULT, opDUGTE, opDUGT, opDULTE - Comparizons of unsigned words
+   *   opDLT,  opDGTE,  opDGT,  opDLTE  - Comparizons of signed long integers
+   *   opDULT, opDUGTE, opDUGT, opDULTE - Comparizons of unsigned long words
    */
 
   opDEQU, opDNEQ,
@@ -79,7 +79,7 @@ enum longops_e
 
   /* Load Immediate */
 
-  opDLDI, opDLDIB, opDULDIB, opDLDIM,
+  opDLDI,
 
   /* Store Immediate */
 
@@ -116,10 +116,6 @@ enum longops_e
   /* Store Indexed: arg16 = unsigned base offset */
 
   opDSTX,
-
-  /* Data stack:  arg = 32 bit signed data (no stack arguments) */
-
-  opDPUSH,
 
   /**-------------------------------------------------------------------
    ** OPCODES WITH TWO ARGUMENTS

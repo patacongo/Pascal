@@ -2,7 +2,7 @@
  * pas_insn.h
  * External Declarations associated libinsn.a
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,7 +60,11 @@ void insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level,
                                  int32_t offset);
 void insn_GenerateProcedureCall(uint16_t level, int32_t offset);
 void insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber);
-void insn_SetStaticNestingLevel(uint32_t level);
+
+void insn_GenerateSimpleLongOperation(enum longops_e longop);
+void insn_GenerateDataLongOperation(enum longops_e longop, int32_t data);
+void insn_GenerateLongLevelReference(enum longops_e longop, uint16_t level,
+                                     int32_t offset);
 
 /* Opcode relocation */
 

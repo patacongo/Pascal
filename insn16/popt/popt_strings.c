@@ -56,7 +56,7 @@
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "pas_errcodes.h"
-#include "pinsn16.h"
+#include "insn16.h"
 #include "pas_sysio.h"
 #include "pas_library.h"
 

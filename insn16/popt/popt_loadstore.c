@@ -44,7 +44,7 @@
 
 #include "pas_debug.h"
 #include "pas_machine.h"
-#include "pinsn16.h"
+#include "insn16.h"
 
 #include "paslib.h"
 #include "popt.h"

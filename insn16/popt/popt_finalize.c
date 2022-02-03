@@ -48,7 +48,7 @@
 #include "pas_machine.h"
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
-#include "pinsn16.h"
+#include "insn16.h"
 #include "poff.h"
 #include "paslib.h"
 #include "pofflib.h"

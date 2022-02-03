@@ -1,8 +1,8 @@
 /**********************************************************************
- * preloc.c
+ * insn_relocate.c
  * Perform P-Code relocations
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@
 #include "pas_machine.h"
 #include "pas_errcodes.h"
 #include "pas_pcode.h"
-#include "pinsn16.h"
+#include "insn16.h"
 
 #include "pofflib.h"
 #include "pas_error.h"

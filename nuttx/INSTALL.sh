@@ -180,7 +180,7 @@ cp -a ${pascaldir}/libpas/psignextend16.c ${pascaldir}/libpas/pswap.c \
       ${pascaldir}/libpas/Make.defs ${installdir}/pcode/libpas/. || \
   { echo "Failed to copy ${pascaldir}/libpas" ; exit 1; }
 
-cp -a ${pascaldir}/${modeldir}/include/pexec.h  ${pascaldir}/${modeldir}/include/pinsn16.h \
+cp -a ${pascaldir}/${modeldir}/include/pexec.h  ${pascaldir}/${modeldir}/include/insn16.h \
       ${installdir}/pcode/insn/include/. || \
   { echo "Failed to copy ${pascaldir}/${modeldir}/include" ; exit 1; }
 

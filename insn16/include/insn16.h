@@ -1,5 +1,5 @@
 /****************************************************************************
- * pinsn16.h
+ * insn16.h
  * 16-bit P-code operation code definitions
  *
  *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ****************************************************************************/
 
-#ifndef __PINSN16_H
-#define __PINSN16_H
+#ifndef __INSN16_H
+#define __INSN16_H
 
 /****************************************************************************
  * Included Files
@@ -107,12 +107,12 @@
  *
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS loff,offs
  * xx11 0001  ---        SETOP sop      LAC dlbl       ---
- * xx11 0010  ---        ---            ---            ---
+ * xx11 0010  ---        LONGOP lop     ---            ---
  * xx11 0011  ---        ---            ---            ---
  * xx11 0100  ---        PUSHB n        PUSH nn        ---
  * xx11 0101  ---        UPUSHB n       INDS nn        ---
- * xx11 0110  ---        ---            LIB lop        ---
- * xx11 0111  UMUL       ---            SYSIO iop      ---
+ * xx11 0110  ---        ---            LIB libop      ---
+ * xx11 0111  UMUL       ---            SYSIO sysop    ---
  * xx11 1000  UDIV       ---            LAX uoffs      LASX loff,offs
  * xx11 1001  UMOD       ---            ---            ---
  * xx11 1010  ULT        ---            JULT  ilbl     ---
@@ -125,18 +125,17 @@
  * KEY:
  *   n     = 8-bit value (unsigned)
  *   loff  = 8-bit static nesting level offset (unsigned)
- *   vt    = 8-bit type code (unsigned)
  *   nn    = 16-bit value (signed)
  *   fop   = 8-bit floating point operation
  *   sop   = 8-bit set operation
- *   iop   = 16-bit sysio operation
- *   lop   = 16-bit library call identifier
+ *   lop   = 8-bit long operation.  1-4 bytes follow the LONGOP code.
+ *   sysop = 16-bit sysio operation
+ *   libop = 16-bit library call identifier
  *   fn    = 8-bit file number
  *   ilbl  = instruction space label
  *   dlbl  = stack data label
  *   offs  = 16-bit frame offset (signed)
  *   uoffs = 16-bit base offset (unsigned)
- *   c     = string follows pseudo-operation
  *   *     = Indicates pseudo-operations (these are removed
  *           after final fixup of the object file).
  */
@@ -199,16 +198,16 @@
 
 /* Store Immediate */
 
-#define oSTI    (0x24)    /* (One 32-bit and one 16-bit stack arguments) */
+#define oSTI    (0x24)    /* (Two 16-bit stack arguments) */
                           /* 0x25 -- unassigned */
 #define oSTIB   (0x26)    /* (Two 16-bit stack arguments) */
 #define oSTIM   (0x27)    /* (Two + n 16-bit stack arguments) */
 
 /* Data stack */
 
-#define oDUP    (0x28)   /* (One 32-bit stack argument */
+#define oDUP    (0x28)   /* (One 16-bit stack argument */
                           /* 0x29 -- unassigned */
-#define oXCHG   (0x2a)   /* (Two 32-bit stack arguments) */
+#define oXCHG   (0x2a)   /* (Two 16-bit stack arguments) */
                           /* 0x2a -- unassigned */
 #define oPUSHS  (0x2c)   /* No arguments */
 #define oPOPS   (0x2d)   /* (One 16-bit stack argument) */
@@ -256,6 +255,10 @@
 /* Set operations:  arg8  = SET opcode */
 
 #define oSETOP  (o8|0x31)
+
+/* Long integer/word operations:  arg8  = opcode, opcode size is 1-4 bytes */
+
+#define oLONGOP (o8|0x32)
 
 /* (o8|0x31)-(o8|0x33) -- unassigned */
 
@@ -305,7 +308,7 @@
 
 /* Store: arg16 = unsigned base offset */
 
-#define oST     (o16|0x24)       /* (One 32-bit stack argument) */
+#define oST     (o16|0x24)       /* (One 16-bit stack argument) */
                                  /* (o16|0x25) -- unassigned */
 #define oSTB    (o16|0x26)       /* (One 16-bit stack argument) */
 #define oSTM    (o16|0x27)       /* (One+n 16-bit stack arguments) */
@@ -319,7 +322,7 @@
 
 /* Store Indexed: arg16 = unsigned base offset */
 
-#define oSTX    (o16|0x2c)       /* (One 32-bit + one 16-bit stack arguments) */
+#define oSTX    (o16|0x2c)       /* (One 16-bit + one 16-bit stack arguments) */
                                  /* (o16|0x2d) -- unassigned */
 #define oSTXB   (o16|0x2e)       /* (Two 16-bit stack arguments) */
 #define oSTXM   (o16|0x2f)       /* (Two+n 16-bit stack arguments) */
@@ -371,7 +374,7 @@
 
 #define oLABEL  (o16|0x3f)
 
-/** OPCODES WITH 24-BITS OF ARGUMENET (arg8 + arg16) ************************/
+/** OPCODES WITH 24-BITS OF ARGUMENT (arg8 + arg16) *************************/
 
 /* (o16|o8|0x00)-(o8|o16|0x07) -- unassigned */
 
@@ -398,7 +401,7 @@
 
 /* Store: arg8 = level; arg16 = signed frame offset */
 
-#define oSTS    (o16|o8|0x24)    /* (One 32-bit stack argument) */
+#define oSTS    (o16|o8|0x24)    /* (One 16-bit stack argument) */
                                  /* (o16|o8|0x25) -- unassigned */
 #define oSTSB   (o16|o8|0x26)    /* (One 16-bit stack argument) */
 #define oSTSM   (o16|o8|0x27)    /* (One+n 16-bit stack arguments) */
@@ -412,7 +415,7 @@
 
 /* Store Indexed: arg8 = level; arg16 = signed frame offset */
 
-#define oSTSX   (o16|o8|0x2c)    /* (One 32-bit + one 16-bit stack arguments) */
+#define oSTSX   (o16|o8|0x2c)    /* (One 16-bit + one 16-bit stack arguments) */
                                  /* (o16|o8|0x2d) -- unassigned */
 #define oSTSXB  (o16|o8|0x2e)    /* (Two 16-bit stack arguments) */
 #define oSTSXM  (o16|o8|0x2f)    /* (Two+n 16-bit stack arguments) */
@@ -432,4 +435,4 @@
 
 #define oLINE   (o16|o8|0x3f)
 
-#endif /* __PINSN16_H */
+#endif /* __INSN16_H */

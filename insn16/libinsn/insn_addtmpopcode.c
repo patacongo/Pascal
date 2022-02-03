@@ -1,8 +1,8 @@
 /**********************************************************************
- * paddtmpopcode
+ * insn_addtmpopcode
  * P-Code access utilities
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 
 #include "pas_debug.h"
 #include "pas_pcode.h"
-#include "pinsn16.h"
+#include "insn16.h"
 
 #include "paslib.h"
 #include "pofflib.h"
