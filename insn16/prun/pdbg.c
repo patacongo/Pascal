@@ -2,7 +2,7 @@
  * pdbg.c
  * P-Code Debugger
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -96,10 +96,6 @@ struct trace_s
   ustack_t tos;
 };
 typedef struct trace_s trace_t;
-
-/**********************************************************************
- * Private Constant Data
- **********************************************************************/
 
 /**********************************************************************
  * Private Data
@@ -472,17 +468,28 @@ static void pdbg_programstatus(struct pexec_s *st)
 static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
 {
   opType_t op;
-  paddr_t opsize;
+  paddr_t  opsize;
   uint8_t *address;
+  bool     bLongOpCode;
 
-  for (; ((pc < st->maxpc) && (nitems > 0)); nitems--)
+  for (; pc < st->maxpc && nitems > 0; nitems--)
     {
-      address = &st->ispace[pc];
+      address  = &st->ispace[pc];
 
       op.op    = *address++;
+      opsize   = 1;
+
+      /* Treat long operations as a transparent extension to the instruction set */
+
+      bLongOpCode = (op.op == oLONGOP);
+      if (bLongOpCode)
+        {
+          op.op = *address++;
+          opsize++;
+        }
+
       op.arg1  = 0;
       op.arg2  = 0;
-      opsize   = 1;
       printf("PC:%04x  %02x", pc, op.op);
 
       if ((op.op & o8) != 0)
@@ -492,7 +499,9 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
           opsize++;
         }
       else
-        printf("..");
+        {
+          printf("..");
+        }
 
       if ((op.op & o16) != 0)
         {
@@ -502,12 +511,21 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
           opsize += 2;
         }
       else
-        printf("....");
+        {
+          printf("....");
+        }
 
       /* The disassemble it to stdout */
 
       printf("  ");
-      insn_DisassemblePCode(stdout, &op);
+      if (bLongOpCode)
+        {
+          insn_DisassembleLongOpCode(stdout, &op);
+        }
+      else
+        {
+          insn_DisassemblePCode(stdout, &op);
+        }
 
       /* Get the address of the next P-Code */
 

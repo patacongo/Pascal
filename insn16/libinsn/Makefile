@@ -56,8 +56,8 @@ CFLAGS      += $(EXTRA_INCLUDES)
 # Objects and targets
 #
 LIBINSNSRCS  = insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
-LIBINSNSRCS += insn_generate.c insh_longops.c insn_getopcode.c
-LIBINSNSRCS += insn_relocate.c
+LIBINSNSRCS += insn_dislongop.c insn_generate.c insn_genlongop.c
+LIBINSNSRCS += insn_getopcode.c insn_relocate.c
 LIBINSNOBJS  = $(LIBINSNSRCS:.c=.o)
 
 OBJS         = $(LIBINSNOBJS)

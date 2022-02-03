@@ -48,6 +48,7 @@
 #include "pas_defns.h"     /* Common types */
 #include "pas_tkndefs.h"   /* Token / symbol table definitions */
 #include "pas_pcode.h"     /* Logical opcode definitions */
+#include "pas_longops.h"   /* Logical long integer/word opcode definitions */
 #include "pas_errcodes.h"  /* error code definitions */
 
 #include "pas_main.h"      /* Global variables */
@@ -134,6 +135,21 @@ static int32_t pas_GetLevel0Opcode(enum pcode_e eOpCode)
       case opLAS:    return opLA;
       case opLASX:   return opLAX;
       default:       return INVALID_PCODE;
+    }
+}
+
+/***********************************************************************/
+/* Similarly for the long integer/word opcodes. */
+
+static int32_t pas_GetLevel0LongOpcde(enum longops_e longOpCode)
+{
+  switch (longOpCode)
+    {
+      case opDLDS:    return opDLD;
+      case opDSTS:    return opDST;
+      case opDLDSX:   return opDLDX;
+      case opDSTSX:   return opDSTX;
+      default:        return INVALID_PCODE;
     }
 }
 
@@ -545,4 +561,47 @@ void pas_GenerateProcImport(symbol_t *pProc)
   /* Add the symbol to the symbol table */
 
   pProc->sParm.p.pSymIndex = poffAddSymbol(g_poffHandle, &symbol);
+}
+
+/***********************************************************************/
+/* Generate the most simple of all long operations */
+
+void  pas_GenerateSimpleLongOperation(enum longops_e longOpCode)
+{
+  insn_GenerateSimpleLongOperation(longOpCode);
+}
+
+/***********************************************************************/
+/* Generate a long operation with a single data argument */
+
+void pas_GenerateDataLongOperation(enum longops_e longOpCode, int32_t dwData)
+{
+  insn_GenerateDataLongOperation(longOpCode, dwData);
+}
+
+/***********************************************************************/
+/* Generate a reference to data on the data stack using the specified
+ * level and offset.
+ */
+
+void pas_GenerateLongLevelReference(enum longops_e longOpCode,
+                                    uint16_t wLevel, int32_t dwOffset)
+{
+  /* Is this variable declared at level 0 (i.e., it has global scope)
+   * that is being offset via a nesting level?
+   */
+
+  if (wLevel == 0)
+    {
+      enum longops_e level0LongOpCode = pas_GetLevel0LongOpcde(longOpCode);
+      if (PCODE_VALID(level0LongOpCode))
+        {
+          pas_GenerateDataLongOperation(level0LongOpCode, dwOffset);
+          return;
+        }
+    }
+
+  /* Then generate the opcode passing. */
+
+  insn_GenerateLongLevelReference(longOpCode, wLevel, dwOffset);
 }

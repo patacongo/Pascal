@@ -190,8 +190,8 @@ insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2);
 /* Disassemble an Op-code */
 
 #if CONFIG_DEBUG
-static inline void
-insn16_DisassemblePCode(uint8_t opcode, uint8_t arg1, uint16_t arg2)
+static inline void insn16_DisassemblePCode(uint8_t opcode, uint8_t arg1,
+                                           uint16_t arg2)
 {
   opType_t op;
 
@@ -208,8 +208,8 @@ insn16_DisassemblePCode(uint8_t opcode, uint8_t arg1, uint16_t arg2)
 /***********************************************************************/
 /* Generate an Op-Code */
 
-static void
-insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2)
+static void insn16_Generate(enum pcode_e opcode, uint16_t arg1,
+                            int32_t arg2)
 {
   uint16_t insn_opcode = g_opCodeMap[opcode];
   uint16_t arg16;
@@ -239,16 +239,14 @@ insn16_Generate(enum pcode_e opcode, uint16_t arg1, int32_t arg2)
  * Public Functions
  ***********************************************************************/
 
-void
-insn_GenerateSimple(enum pcode_e opcode)
+void insn_GenerateSimple(enum pcode_e opcode)
 {
   insn16_Generate(opcode, 0, 0);
 }
 
 /***********************************************************************/
 
-void
-insn_GenerateDataOperation(enum pcode_e opcode, int32_t data)
+void insn_GenerateDataOperation(enum pcode_e opcode, int32_t data)
 {
   insn16_Generate(opcode, 0, data);
 }
@@ -265,56 +263,50 @@ void insn_GenerateDataSize(uint32_t dwDataSize)
 
 /***********************************************************************/
 
-void
-insn_GenerateFpOperation(uint8_t fpOpcode)
+void insn_GenerateFpOperation(uint8_t fpOpcode)
 {
   insn16_Generate(opFLOAT, fpOpcode, 0);
 }
 
 /***********************************************************************/
 
-void
-insn_GenerateSetOperation(uint8_t setOpcode)
+void insn_GenerateSetOperation(uint8_t setOpcode)
 {
   insn16_Generate(opSETOP, setOpcode, 0);
 }
 
 /***********************************************************************/
 
-void
-insn_GenerateIoOperation(uint16_t ioOpcode)
+void insn_GenerateIoOperation(uint16_t ioOpcode)
 {
   insn16_Generate(opSYSIO, 0, (int32_t)ioOpcode);
 }
 
 /***********************************************************************/
 
-void
-insn_StandardFunctionCall(uint16_t libOpcode)
+void insn_StandardFunctionCall(uint16_t libOpcode)
 {
   insn16_Generate(opLIB, 0, (int32_t)libOpcode);
 }
 
 /***********************************************************************/
 
-void
-insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level, int32_t offset)
+void insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level,
+                                 int32_t offset)
 {
   insn16_Generate(opcode, level, offset);
 }
 
 /***********************************************************************/
 
-void
-insn_GenerateProcedureCall(uint16_t level, int32_t offset)
+void insn_GenerateProcedureCall(uint16_t level, int32_t offset)
 {
   insn16_Generate(opPCAL, level, offset);
 }
 
 /***********************************************************************/
 
-void
-insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber)
+void insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber)
 {
   insn16_Generate(opLINE, includeNumber, lineNumber);
 }

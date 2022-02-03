@@ -208,7 +208,7 @@
 
 /* Additional bitwise binary operator */
 
-#define oXOR    (0x3e)
+#define oDXOR   (0x3e)
 
 /* 0x3f -- unassigned */
 
@@ -284,7 +284,7 @@
 
 /* Load Indexed: arg8 = level; arg16 = signed frame offset */
 
-#define oLDSX   (o16|o8|0x28)    /* (One 16-bit stack argument) */
+#define oDLDSX  (o16|o8|0x28)    /* (One 16-bit stack argument) */
 
 /* (o16|o8|0x29)-(o8|o16|0x2b) -- unassigned */
 

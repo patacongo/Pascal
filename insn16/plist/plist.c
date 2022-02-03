@@ -2,7 +2,7 @@
  * plist.c
  * POFF file lister
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,7 @@
  **********************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -52,6 +53,7 @@
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "pas_pcode.h"
+#include "pas_longops.h"
 #include "insn16.h"
 #include "pas_errcodes.h"
 
@@ -123,7 +125,7 @@ int main (int argc, char *argv[], char *envp[])
     {
       printf ("Error opening %s\n", fileName);
       exit (1);
-    } /* end if */
+    }
 
   /* Read the POFF file */
 
@@ -216,7 +218,7 @@ static void parseArgs(int argc, char **argv)
     {
       fprintf(stderr, "ERROR: POFF filename required\n");
       showUsage(argv[0]);
-    } /* end if */
+    }
 
   /* Parse the command line options */
 
@@ -305,12 +307,28 @@ static void dumpProgramData(poffHandle_t poffHandle)
 
   while ((inch = poffGetProgByte(poffHandle)) != EOF)
     {
+      bool bLongOpCode = (inch) == oLONGOP;
+
+      /* Treat long operations as a transparent extension to the instruction set */
+
+      opSize  = 1;
+
+      if (bLongOpCode)
+        {
+          inch = poffGetProgByte(poffHandle);
+          if (inch == EOF)
+            {
+              break;
+            }
+
+          opSize += 1;
+        }
+
       /* Get opcode arguments (if any) */
 
       op.op   = (uint8_t) inch;
       op.arg1 = 0;
       op.arg2 = 0;
-      opSize  = 1;
 
       if (op.op & o8)
         {
@@ -323,7 +341,7 @@ static void dumpProgramData(poffHandle_t poffHandle)
           op.arg2  = poffGetProgByte(poffHandle) << 8;
           op.arg2 |= poffGetProgByte(poffHandle);
           opSize  += 2;
-        } /* end if */
+        }
 
       /* Find the line number associated with this line */
 
@@ -344,18 +362,21 @@ static void dumpProgramData(poffHandle_t poffHandle)
       /* Print the address then the opcode on stdout */
 
       fprintf(stdout, "%08" PRIx32 " ", pc);
-      insn_DisassemblePCode(stdout, &op);
+      if (bLongOpCode)
+        {
+          insn_DisassembleLongOpCode(stdout, &op);
+        }
+      else
+        {
+          insn_DisassemblePCode(stdout, &op);
+        }
 
       /* Bump the PC to the next address */
 
       pc += opSize;
-
-    } /* end while */
+    }
 
   /* Release buffers associated with line number information */
 
   poffReleaseLineNumberTable();
-
-} /* end dumpProgramData */
-
-/***********************************************************************/
+}

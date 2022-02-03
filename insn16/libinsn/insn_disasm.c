@@ -57,7 +57,7 @@
  * Pre-processor Definitions
  ***********************************************************************/
 
-/* These are all the format codes that apply to opcodes the an arg16 */
+/* These are all the format codes that apply to opcodes */
 
 #define NOARG8        0
 #define SHORTINT      1    /* Show ARG8 as a signed integer */
@@ -77,6 +77,10 @@
 #define MKFMT(a8,a16) (((a16) << 3) | a8)
 #define ARG8FMT(n)    ((n) & 0x07)
 #define ARG16FMT(n)   ((n) >> 3)
+
+/***********************************************************************
+ * Private Data
+ ***********************************************************************/
 
 /* The following table defines everything that is needed to disassemble
  * a P-Code.  NOTE:  The order of definition in this table must exactly

@@ -42,6 +42,8 @@
  ***************************************************************************/
 
 #include <stdint.h>
+#include "pas_pcode.h"
+#include "pas_longops.h"
 
 /***************************************************************************
  * Public Function Prototypes
@@ -61,9 +63,9 @@ void insn_GenerateLevelReference(enum pcode_e opcode, uint16_t level,
 void insn_GenerateProcedureCall(uint16_t level, int32_t offset);
 void insn_GenerateLineNumber(uint16_t includeNumber, uint32_t lineNumber);
 
-void insn_GenerateSimpleLongOperation(enum longops_e longop);
-void insn_GenerateDataLongOperation(enum longops_e longop, int32_t data);
-void insn_GenerateLongLevelReference(enum longops_e longop, uint16_t level,
+void insn_GenerateSimpleLongOperation(enum longops_e longOpCode);
+void insn_GenerateDataLongOperation(enum longops_e longOpCode, int32_t data);
+void insn_GenerateLongLevelReference(enum longops_e longOpCode, uint16_t level,
                                      int32_t offset);
 
 /* Opcode relocation */
@@ -83,5 +85,6 @@ void insn_ResetTmpOpCodeWrite(poffProgHandle_t progHandle);
 /* INSN-specific disassembler */
 
 void insn_DisassemblePCode(FILE* lfile, opType_t *pop);
+void insn_DisassembleLongOpCode(FILE* lfile, opType_t *pop);
 
 #endif /* __PAS_INSN_H */
