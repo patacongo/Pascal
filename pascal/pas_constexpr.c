@@ -597,7 +597,7 @@ static void pas_ConstantFactor(exprType_t findExprType, symbol_t *typePtr)
 
           /* Create a 1 character constant string */
 
-          temp[0] = (char)g_tknInt;
+          temp[0] = (char)g_tknUInt;
           temp[1] = '\0';
 
           g_constantToken     = tSTRING_CONST;
@@ -615,12 +615,12 @@ static void pas_ConstantFactor(exprType_t findExprType, symbol_t *typePtr)
       if (findExprType == exprReal)
         {
           g_constantToken = tREAL_CONST;
-          g_constantReal  = (double)g_tknInt;
+          g_constantReal  = (double)g_tknUInt;
         }
       else
         {
           g_constantToken = g_token;
-          g_constantInt   = g_tknInt;
+          g_constantInt   = g_tknUInt;
         }
 
       getToken();
@@ -769,7 +769,7 @@ static void pas_GetConstantSubSet(uint16_t minElement, uint16_t maxElement)
       uint16_t firstElement;
 
       setType      = g_token;
-      firstElement = g_tknInt;
+      firstElement = g_tknUInt;
 
       /* Check if this is a single element, or a sub-range of set elements */
 
@@ -789,7 +789,7 @@ static void pas_GetConstantSubSet(uint16_t minElement, uint16_t maxElement)
             {
               /* Add a range of elements to the set */
 
-              pas_AddBitSetElements(firstElement, g_tknInt, minElement,
+              pas_AddBitSetElements(firstElement, g_tknUInt, minElement,
                                     maxElement);
               getToken();
             }

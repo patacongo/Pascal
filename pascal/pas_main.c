@@ -2,7 +2,7 @@
  * pas_main.c
  * Main process
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@
 
 uint16_t    g_token;                 /* Current token */
 uint16_t    g_tknSubType;            /* Extended token type */
-int32_t     g_tknInt;                /* Integer token value */
+uint32_t    g_tknUInt;               /* Integer token value */
 double      g_tknReal;               /* Real token value */
 symbol_t   *g_tknPtr;                /* Pointer to symbol token*/
 fileState_t g_fileState[MAX_INCL];   /* State of all open files */

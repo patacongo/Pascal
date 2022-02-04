@@ -76,7 +76,6 @@ bool     extension(const char *inName, const char *ext, char *outName,
 
 int16_t  signExtend8(uint8_t arg8);
 int32_t  signExtend16(uint16_t arg16);
-int32_t  signExtend25(uint32_t arg25);
 
 /* Endian-ness helpers */
 

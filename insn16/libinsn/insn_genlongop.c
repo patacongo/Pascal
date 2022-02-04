@@ -71,6 +71,8 @@ extern FILE *g_lstFile;           /* LIST file pointer */
 
 static const uint16_t g_longOpcodeMap[NUM_LONGOPS] =
 {
+  oDNOP,    /* opDNOP */
+
   oDNEG,    /* opDNEG */
   oDABS,    /* opDABS */
   oDINC,    /* opDINC */
@@ -115,6 +117,8 @@ static const uint16_t g_longOpcodeMap[NUM_LONGOPS] =
 
   oDDUP,    /* opDDUP */
   oDXCHG,   /* opDXCHG */
+  oCNVD,    /* opCNVD */
+  oDCNV,    /* opDCNV */
 
   oDJEQUZ,  /* opDJEQUZ */
   oDJNEQZ,  /* opDJNEQZ */
@@ -124,7 +128,7 @@ static const uint16_t g_longOpcodeMap[NUM_LONGOPS] =
   oDJLT,    /* opDJLT */
   oDJGTE,   /* opDJGTE */
   oDJGT,    /* opDJGT */
-  oDJLTE,   /* opDJLTE */
+  oDJLTE    /* opDJLTE */
 };
 
 /****************************************************************************

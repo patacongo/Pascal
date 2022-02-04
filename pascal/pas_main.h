@@ -73,7 +73,7 @@
 
 extern uint16_t    g_token;                /* Current token */
 extern uint16_t    g_tknSubType;           /* Extended token type */
-extern int32_t     g_tknInt;               /* Integer token value */
+extern uint32_t    g_tknUInt;              /* Unsigned integer token value */
 extern double      g_tknReal;              /* Real token value */
 extern symbol_t   *g_tknPtr;               /* Pointer to symbol token */
 extern fileState_t g_fileState[MAX_INCL];  /* State of all open files */

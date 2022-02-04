@@ -1323,55 +1323,46 @@ static exprType_t pas_AssignExprType(exprType_t baseExprType,
 
 static void pas_GotoStatement(void)
 {
-   char     labelname [8];             /* Label symbol table name */
-   symbol_t *label_ptr;                /* Pointer to Label Symbol */
+  char     labelname [8];             /* Label symbol table name */
+  symbol_t *label_ptr;                /* Pointer to Label Symbol */
 
-   TRACE(g_lstFile,"[pas_GotoStatement]");
+  TRACE(g_lstFile,"[pas_GotoStatement]");
 
-   /* FORM:  GOTO <integer> */
+  /* FORM:  GOTO <integer> */
 
-   /* Get the token after the goto reserved word. It should be an <integer> */
+  /* Get the token after the goto reserved word. It should be an <integer> */
 
-   getToken();
-   if (g_token != tINT_CONST)
-     {
-       /* Token following the goto is not an integer */
+  getToken();
+  if (g_token != tINT_CONST)
+    {
+      /* Token following the goto is not an integer */
 
-       error(eINVLABEL);
-     }
-   else
-     {
-       /* The integer label must be non-negative */
+      error(eINVLABEL);
+    }
+  else
+    {
+      /* Find and verify the symbol associated with the label */
 
-       if (g_tknInt < 0)
-         {
-           error(eINVLABEL);
-         }
-       else
-         {
-           /* Find and verify the symbol associated with the label */
+      (void)sprintf (labelname, "%" PRIu32, g_tknUInt);
+      if (!(label_ptr = pas_FindSymbol(labelname, 0)))
+        {
+          error(eUNDECLABEL);
+        }
+      else if (label_ptr->sKind != sLABEL)
+        {
+          error(eINVLABEL);
+        }
+      else
+        {
+          /* Generate the branch to the label */
 
-           (void)sprintf (labelname, "%" PRId32, g_tknInt);
-           if (!(label_ptr = pas_FindSymbol(labelname, 0)))
-             {
-               error(eUNDECLABEL);
-             }
-           else if (label_ptr->sKind != sLABEL)
-             {
-               error(eINVLABEL);
-             }
-           else
-             {
-               /* Generate the branch to the label */
+          pas_GenerateDataOperation(opJMP, label_ptr->sParm.l.lLabel);
+        }
 
-               pas_GenerateDataOperation(opJMP, label_ptr->sParm.l.lLabel);
-             }
-         }
+      /* Get the token after the <integer> value */
 
-       /* Get the token after the <integer> value */
-
-       getToken();
-     }
+      getToken();
+    }
 }
 
 /***********************************************************************/
@@ -1387,7 +1378,7 @@ static void pas_LabelStatement(void)
 
    /* Verify that the integer is a label name */
 
-   (void)sprintf (labelName, "%" PRId32, g_tknInt);
+   (void)sprintf (labelName, "%" PRIu32, g_tknUInt);
    if (!(labelPtr = pas_FindSymbol(labelName, 0)))
      {
        error(eUNDECLABEL);
@@ -1718,9 +1709,21 @@ static void pas_CaseStatement(void)
 
               if (IS_CONSTANT(g_token))
                 {
+                  uint16_t value;
+
+                  if ((g_tknUInt & ~0xffff) != 0)
+                    {
+                      error(eINTOVF);
+                      value = UINT16_MAX;
+                    }
+                  else
+                    {
+                      value = (uint16_t)g_tknUInt;
+                    }
+
                   /* It is a literal constant value */
 
-                  pas_GenerateDataOperation(opPUSH, g_tknInt);
+                  pas_GenerateDataOperation(opPUSH, value);
 
                   /* Skip over the constant */
 

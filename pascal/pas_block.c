@@ -169,10 +169,10 @@ static void pas_DeclareLabel(void)
    do
      {
        getToken();
-       if ((g_token == tINT_CONST) && (g_tknInt >= 0))
+       if (g_token == tINT_CONST)
          {
            labelname = g_stringSP;
-           (void)sprintf(labelname, "%" PRId32, g_tknInt);
+           (void)sprintf(labelname, "%" PRIu32, g_tknUInt);
            while (*g_stringSP++);
            (void)pas_AddLabel(labelname, ++g_label);
            getToken();
@@ -885,7 +885,7 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
 
           if (typePtr != NULL)
             {
-              typePtr->sParm.t.tMaxValue = g_tknInt;
+              typePtr->sParm.t.tMaxValue = g_tknUInt;
             }
 
           /* Return the size of an allocated instance of this type. */
@@ -1005,13 +1005,23 @@ static symbol_t *pas_NewSimpleType(char *typeName)
    * Case 1: <constant> is INTEGER
    */
 
-  else if (g_token == tINT_CONST ||
-           g_token == '-' ||
-           g_token == '+')
+  else if (g_token == tINT_CONST || g_token == '-' || g_token == '+')
     {
-      int16_t  value = g_tknInt;
+      int16_t value;
 
-      if (g_token == '-' || g_token == '+')
+      if (g_token == tINT_CONST)
+        {
+          if ((g_tknUInt & ~0xffff) != 0)
+            {
+              error(eINTOVF);
+              value = INT16_MAX;
+            }
+          else
+            {
+              value = (int16_t)g_tknUInt;
+            }
+        }
+      else if (g_token == '-' || g_token == '+')
         {
           uint16_t unary = g_token;
 
@@ -1019,7 +1029,20 @@ static symbol_t *pas_NewSimpleType(char *typeName)
           if (g_token != tINT_CONST) error(eINTCONST);
           else
             {
-              value = (unary == '-') ? -g_tknInt : g_tknInt;
+              if ((g_tknUInt & ~0xffff) != 0)
+                {
+                  error(eINTOVF);
+                  value = INT16_MAX;
+                }
+              else
+                {
+                  value = (int16_t)g_tknUInt;
+                }
+
+              if (unary == '-')
+                {
+                  value = -value;
+                }
             }
         }
 
@@ -1040,22 +1063,47 @@ static symbol_t *pas_NewSimpleType(char *typeName)
 
       if (g_token == tINT_CONST)
         {
-          value = g_tknInt;
+          if ((g_tknUInt & ~0xffff) != 0)
+            {
+              error(eINTOVF);
+              value = INT16_MAX;
+            }
+          else
+            {
+              value = (int16_t)g_tknUInt;
+            }
         }
       else if (g_token == '-' || g_token == '+')
         {
           uint16_t unary = g_token;
 
           getToken();
-          if (g_token != tINT_CONST) error(eINTCONST);
+          if (g_token != tINT_CONST)
+            {
+              error(eINTCONST);
+            }
           else
             {
-              value = (unary == '-') ? -g_tknInt : g_tknInt;
+              if ((g_tknUInt & ~0xffff) != 0)
+                {
+                  error(eINTOVF);
+                  value = INT16_MAX;
+                }
+              else
+                {
+                  value = (int16_t)g_tknUInt;
+                }
+
+              if (unary == '-')
+                {
+                  value = -value;
+                }
             }
         }
       else
         {
           error(eINTCONST);
+          value = INT16_MAX;
         }
 
       if (value < typePtr->sParm.t.tMinValue)
@@ -1078,7 +1126,7 @@ static symbol_t *pas_NewSimpleType(char *typeName)
 
       typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sCHAR_SIZE, NULL);
       typePtr->sParm.t.tSubType  = sCHAR;
-      typePtr->sParm.t.tMinValue = g_tknInt;
+      typePtr->sParm.t.tMinValue = g_tknUInt;
       typePtr->sParm.t.tMaxValue = MAXCHAR;
 
       /* Verify that ".." separates the two constants */
@@ -1089,13 +1137,13 @@ static symbol_t *pas_NewSimpleType(char *typeName)
 
       /* Verify that the ".." is following by a CHAR constant */
 
-      if (g_token != tCHAR_CONST || g_tknInt < typePtr->sParm.t.tMinValue)
+      if (g_token != tCHAR_CONST || g_tknUInt < typePtr->sParm.t.tMinValue)
         {
           error(eSUBRANGETYPE);
         }
       else
         {
-          typePtr->sParm.t.tMaxValue = g_tknInt;
+          typePtr->sParm.t.tMaxValue = g_tknUInt;
           getToken();
         }
     }
@@ -1108,7 +1156,7 @@ static symbol_t *pas_NewSimpleType(char *typeName)
 
       typePtr = pas_AddTypeDefine(typeName, sSUBRANGE, sINT_SIZE, g_tknPtr);
       typePtr->sParm.t.tSubType  = g_token;
-      typePtr->sParm.t.tMinValue = g_tknInt;
+      typePtr->sParm.t.tMinValue = g_tknUInt;
       typePtr->sParm.t.tMaxValue = MAXINT;
 
       /* Verify that ".." separates the two constants */
@@ -1649,7 +1697,7 @@ static symbol_t *pas_GetArrayIndexType(void)
   if (g_token == tINT_CONST ||
      (g_token == sTYPE && g_tknPtr->sParm.t.tType == tINT_CONST))
     {
-      int32_t saveTknInt = g_tknInt;
+      uint32_t saveTknUInit = g_tknUInt;
 
       /* Check for a subrange-type of integer constants.
        *
@@ -1673,11 +1721,11 @@ static symbol_t *pas_GetArrayIndexType(void)
             }
           else
             {
-              if (g_tknInt <= saveTknInt) error(eSUBRANGETYPE);
+              if (g_tknUInt <= saveTknUInit) error(eSUBRANGETYPE);
               else
                 {
-                  minValue  = saveTknInt;
-                  maxValue  = g_tknInt;
+                  minValue  = saveTknUInit;
+                  maxValue  = g_tknUInt;
                   indexSize = sINT_SIZE;
                   indexType = sSUBRANGE;
                   subType   = sINT;
@@ -2594,7 +2642,7 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
         {
           /* Simple char or boolean initializer.  No expression. */
 
-          initializer.iValue.iOrdinal = g_tknInt;
+          initializer.iValue.iOrdinal = g_tknUInt;
           getToken();
         }
       else if (g_token == sSCALAR_OBJECT && baseType == sSCALAR)

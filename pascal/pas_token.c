@@ -2,7 +2,7 @@
  * pas_token.c
  * Tokenization Package
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -529,7 +529,7 @@ static void identifier(void)
             }
           else
             {
-              g_tknInt  = g_tknPtr->sParm.c.cValue.i;
+              g_tknUInt = g_tknPtr->sParm.c.cValue.u;
             }
         }
 
@@ -572,7 +572,7 @@ static void string(void)
   if (count == 1)                    /* Check for char constant */
     {
       g_token    = tCHAR_CONST;      /* indicate char constant type */
-      g_tknInt   = *g_tokenString;   /* (integer) value = single char */
+      g_tknUInt  = *g_tokenString;   /* (integer) value = single char */
       g_stringSP = g_tokenString;    /* "pop" from string stack */
     }
 }
@@ -717,7 +717,7 @@ static void unsignedNumber(void)
       /* Terminate the integer string and convert it using sscanf */
 
       *g_stringSP++ = '\0';
-      (void)sscanf(g_tokenString, "%" PRId32, &g_tknInt);
+      (void)sscanf(g_tokenString, "%" PRIu32, &g_tknUInt);
 
       /* Remove the integer string from the character identifer stack */
 
@@ -930,7 +930,7 @@ static void unsignedHexadecimal(void)
   /* Terminate the hex string and convert to binary using sscanf */
 
   *g_stringSP++ = '\0';
-  (void)sscanf(g_tokenString, "%" PRIx32, &g_tknInt);
+  (void)sscanf(g_tokenString, "%" PRIx32, &g_tknUInt);
 
   /* Remove the hex string from the character identifer stack */
 
@@ -986,7 +986,5 @@ static void unsignedBinary(void)
    * why we did it above.
    */
 
-  g_tknInt = (int32_t)value;
+  g_tknUInt = value;
 }
-
-/***************************************************************/

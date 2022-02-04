@@ -147,8 +147,9 @@ struct symConst_s           /* for sKind == constant type */
 {
   union
   {
-    double  f;              /* real value */
-    int32_t i;              /* integer value */
+    double   f;             /* real value */
+    int32_t  i;             /* integer value */
+    uint32_t u;
   } cValue;
 
   struct symbol_s *cParent;  /* pointer to parent type */

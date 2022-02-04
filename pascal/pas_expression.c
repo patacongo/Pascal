@@ -849,32 +849,31 @@ static exprType_t pas_Factor(exprType_t findExprType)
           {
             /* Check if the caller asked for long integer type. */
 
-            case exprLongInteger :    /* signed short integer value */
-              lword.sData = g_tknInt;
+            case exprLongInteger :      /* signed short integer value */
+            case exprLongWord :         /* unsigned short integer value */
+              lword.uData = g_tknUInt;  /* g_tknUInt is unsigned */
               pas_GenerateDataOperation(opPUSH, lword.word[0]);
               pas_GenerateDataOperation(opPUSH, lword.word[1]);
-              factorType = exprLongInteger;
-              break;
-
-            case exprLongWord :       /* unsigned short integer value */
-              lword.uData = g_tknInt;
-              pas_GenerateDataOperation(opPUSH, lword.word[0]);
-              pas_GenerateDataOperation(opPUSH, lword.word[1]);
-              factorType = exprLongWord;
+              factorType = findExprType;
               break;
 
             default :
-              if (g_tknInt >= MININT && g_tknInt <= MAXINT)
+              if ((g_tknUInt & ~0xffff) == 0)  /* g_tknUInt is unsigned */
                 {
-                  pas_GenerateDataOperation(opPUSH, g_tknInt);
+                  pas_GenerateDataOperation(opPUSH, g_tknUInt);
 
-                  if (g_tknInt >= MAXSHORTINT && g_tknInt <= MAXSHORTINT &&
-                      findExprType == exprShortInteger)
+                  if ((g_tknUInt & ~0xff) == 0 && findExprType == exprShortInteger)
                     {
                       factorType = exprShortInteger;
                     }
-                  else if ((uint16_t)g_tknInt <= MAXWORD &&
+                  else if ((uint16_t)g_tknUInt <= MAXWORD &&
                             findExprType == exprShortWord)
+                    {
+                      factorType = exprShortWord;
+                    }
+                  else if ((uint16_t)g_tknUInt > MAXWORD &&
+                           (findExprType == exprLongWord ||
+                            findExprType == exprLongInteger))
                     {
                       factorType = exprShortWord;
                     }
@@ -888,9 +887,9 @@ static exprType_t pas_Factor(exprType_t findExprType)
                * automatically cast to unsigned integer type.
                */
 
-              else if ((uint32_t)g_tknInt <= MAXWORD)
+              else if (g_tknUInt <= MAXWORD)
                 {
-                  pas_GenerateDataOperation(opPUSH, g_tknInt);
+                  pas_GenerateDataOperation(opPUSH, g_tknUInt);
                   factorType = exprWord;
                 }
 
@@ -898,9 +897,9 @@ static exprType_t pas_Factor(exprType_t findExprType)
                * to long integer type.
                */
 
-              else /* if (g_tknInt >= MINLONGINT && g_tknInt <= MAXLONGINT) */
+              else /* if (g_tknUInt >= MINLONGINT && g_tknUInt <= MAXLONGINT) */
                 {
-                  lword.sData = g_tknInt;
+                  lword.uData = g_tknUInt;
                   pas_GenerateDataOperation(opPUSH, lword.word[0]);
                   pas_GenerateDataOperation(opPUSH, lword.word[1]);
                   factorType = exprLongInteger;
@@ -915,13 +914,13 @@ static exprType_t pas_Factor(exprType_t findExprType)
       break;
 
     case tBOOLEAN_CONST :
-      pas_GenerateDataOperation(opPUSH, g_tknInt);
+      pas_GenerateDataOperation(opPUSH, g_tknUInt);
       getToken();
       factorType = exprBoolean;
       break;
 
     case tCHAR_CONST :
-      pas_GenerateDataOperation(opPUSH, g_tknInt);
+      pas_GenerateDataOperation(opPUSH, g_tknUInt);
       getToken();
       factorType = exprChar;
       break;
@@ -3230,6 +3229,16 @@ static exprType_t pas_TypeCast(symbol_t *typePtr)
 
           if (newExprType == exprReal && originalOrdinal)
             {
+              /* REVISIT: Won't work for long integer types */
+
+              if (originalExprType != exprLongInteger &&
+                  originalExprType != exprLongWord)
+                {
+                  /* For now, convert to a 16-bit integer.  Might overflow! */
+
+                  pas_GenerateSimpleLongOperation(opDCNV);
+                }
+
               pas_GenerateFpOperation(fpFLOAT);
             }
 
@@ -3237,14 +3246,60 @@ static exprType_t pas_TypeCast(symbol_t *typePtr)
 
           else if (newOrdinal && originalExprType == exprReal)
             {
+              /* REVISIT: Won't work for long integer types */
+
+              if (originalExprType != exprLongInteger &&
+                  originalExprType != exprLongWord)
+                {
+                  /* For now, convert to a 16-bit integer.  Might overflow! */
+
+                  pas_GenerateSimpleLongOperation(opDCNV);
+                }
+
               pas_GenerateFpOperation(fpROUND);
             }
 
+          /* REVISIT:  Check for conversion of REAL to long integer value */
+
           /* Conversions between ordinal types or pointers */
 
-          else if ((!newOrdinal || !originalOrdinal) &&
-                   (!IS_POINTER_EXPRTYPE(newExprType) ||
-                    !IS_POINTER_EXPRTYPE(originalExprType)))
+          else if (newOrdinal && originalOrdinal)
+            {
+              /* All ordinal types EXCEPT for the long integers are the
+               * same size and, hence, require no real effort.
+               */
+
+              if ((newExprType     == exprLongInteger ||
+                   newExprType     == exprLongWord) &&
+                  originalExprType != exprLongInteger &&
+                  originalExprType != exprLongWord)
+                {
+                  /* Convert the 16-bit integer value to a 32-bit long integer type */
+
+                  pas_GenerateSimpleLongOperation(opCNVD);
+                }
+              else if (newExprType      != exprLongInteger &&
+                       newExprType      != exprLongWord &&
+                       (originalExprType == exprLongInteger ||
+                        originalExprType == exprLongWord))
+                {
+                  /* Convert the 32-bit integer value to a 16-bit ordinal type */
+
+                  pas_GenerateSimpleLongOperation(opDCNV);
+                }
+              else
+                {
+                  /* Both are 16-bit ordinal types */
+                }
+            }
+
+          /* Conversions between pointers */
+
+          else if (IS_POINTER_EXPRTYPE(newExprType) &&
+                   IS_POINTER_EXPRTYPE(originalExprType))
+            {
+            }
+          else
             {
               error(eEXPRTYPE);
               return exprUnknown;

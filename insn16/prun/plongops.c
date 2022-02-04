@@ -458,6 +458,28 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       pexec_UPutTos32(st, uparm1, 1);
       break;
 
+    case oCNVD :
+      {
+        int32_t sLong;
+        int16_t sWord;
+
+        /* Convert 16-bit signed data 32-bit signed */
+
+        POP(st, sWord);
+        sLong = signExtend16(sWord);
+        pexec_UPush32(st, (uint32_t)sLong);
+      }
+      break;
+
+    case oDCNV :
+      {
+        /* Convert 32-bit signed/unsigned data 16-bit signed */
+
+        int32_t sLong = (int32_t)pexec_UPop32(st);
+        PUSH(st, (uint16_t)sLong);
+      }
+      break;
+
     default :
       return eILLEGALOPCODE;
     }

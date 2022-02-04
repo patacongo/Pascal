@@ -134,6 +134,8 @@ static struct opCodeInfo_s g_longOpTable8[0x40] =
 
   { "DDUP  ", MKFMT(NOARG8, NOARG16) },
   { "DXCHG ", MKFMT(NOARG8, NOARG16) },
+  { "CNVD  ", MKFMT(NOARG8, NOARG16) },
+  { "DCNV  ", MKFMT(NOARG8, NOARG16) },
 
   /* Unsigned arithmetic */
 

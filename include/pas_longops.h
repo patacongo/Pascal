@@ -83,7 +83,7 @@ enum longops_e
 
   /* Data stack */
 
-  opDDUP, opDXCHG,
+  opDDUP, opDXCHG, opCNVD, opDCNV,
 
   /**-------------------------------------------------------------------
    ** OPCODES WITH ONE ARGUMENT
@@ -96,10 +96,6 @@ enum longops_e
   /* Program control:  arg = unsigned label (One stack argument) */
 
   opDJEQU, opDJNEQ, opDJLT, opDJGTE, opDJGT, opDJLTE,
-
-  /**-------------------------------------------------------------------
-   ** OPCODES WITH TWO ARGUMENTS
-   **-------------------------------------------------------------------**/
 
   NUM_LONGOPS
 };
