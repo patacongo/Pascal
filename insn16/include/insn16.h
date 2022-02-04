@@ -107,7 +107,7 @@
  *
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS loff,offs
  * xx11 0001  ---        SETOP sop      LAC dlbl       ---
- * xx11 0010  ---        LONGOP lop     ---            ---
+ * xx11 0010  ---        LONGOP lop     ---            LONGOP lop,ilbl
  * xx11 0011  ---        ---            ---            ---
  * xx11 0100  ---        PUSHB n        PUSH nn        ---
  * xx11 0101  ---        UPUSHB n       INDS nn        ---
@@ -256,9 +256,9 @@
 
 #define oSETOP  (o8|0x31)
 
-/* Long integer/word operations:  arg8  = opcode, opcode size is 1-4 bytes */
+/* Long integer/word operations:  arg8  = opcode */
 
-#define oLONGOP (o8|0x32)
+#define oLONGOP8 (o8|0x32)
 
 /* (o8|0x31)-(o8|0x33) -- unassigned */
 
@@ -426,6 +426,10 @@
 
 #define oLAS    (o16|o8|0x30)
 #define oLASX   (o16|o8|0x38)
+
+/* Long integer/word operations:  arg8  = opcode, arg16 = instruction label */
+
+#define oLONGOP24 (016|o8|0x37)
 
 /* (o16|o8|0x3a)-(o8|o16|0x3e) -- unassigned */
 

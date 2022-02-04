@@ -48,6 +48,7 @@
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "insn16.h"
+#include "longops.h"
 #include "pas_fpops.h"
 #include "pas_sysio.h"
 #include "pas_errcodes.h"
@@ -56,6 +57,7 @@
 #include "pfloat.h"
 #include "psysio.h"
 #include "psetops.h"
+#include "plongops.h"
 #include "plib.h"
 #include "pmmgr.h"
 #include "pexec.h"
@@ -712,6 +714,10 @@ static inline int pexec16(struct pexec_s *st, uint8_t opcode, uint8_t imm8)
       ret = pexec_setops(st, imm8);
       break;
 
+    case oLONGOP8 :
+      ret = pexec_LongOperation8(st, (enum longOp8_e)imm8);
+      break;
+
     default :
       ret = eILLEGALOPCODE;
       break;
@@ -1310,6 +1316,12 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       st->pc = (paddr_t)imm16;
       return ret;
 
+      /* Long branch operations:  imm8 = long opcode; imm16 = unsigned label. */
+
+    case oLONGOP24 :
+      ret = pexec_LongOperation24(st, (enum longOp24_e)imm8, imm16);
+      return ret;
+
       /* Pseudo-operations:  (No stack arguments)
        * For LINE:    imm8 = file number; imm16 = line number
        */
@@ -1319,6 +1331,8 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       ret = eILLEGALOPCODE;
       break;
     }
+
+  /* All non-branching operations exit through here */
 
   st->pc += 4;
   return ret;

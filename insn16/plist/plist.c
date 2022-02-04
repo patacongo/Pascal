@@ -307,28 +307,12 @@ static void dumpProgramData(poffHandle_t poffHandle)
 
   while ((inch = poffGetProgByte(poffHandle)) != EOF)
     {
-      bool bLongOpCode = (inch) == oLONGOP;
-
-      /* Treat long operations as a transparent extension to the instruction set */
-
-      opSize  = 1;
-
-      if (bLongOpCode)
-        {
-          inch = poffGetProgByte(poffHandle);
-          if (inch == EOF)
-            {
-              break;
-            }
-
-          opSize += 1;
-        }
-
       /* Get opcode arguments (if any) */
 
-      op.op   = (uint8_t) inch;
+      op.op   = (uint8_t)inch;
       op.arg1 = 0;
       op.arg2 = 0;
+      opSize  = 1;
 
       if (op.op & o8)
         {
@@ -346,7 +330,7 @@ static void dumpProgramData(poffHandle_t poffHandle)
       /* Find the line number associated with this line */
 
       ln = poffFindLineNumber(pc);
-      if ((ln) && (ln != lastln))
+      if (ln != 0 && ln != lastln)
         {
           /* Print the line number line */
 
@@ -362,7 +346,10 @@ static void dumpProgramData(poffHandle_t poffHandle)
       /* Print the address then the opcode on stdout */
 
       fprintf(stdout, "%08" PRIx32 " ", pc);
-      if (bLongOpCode)
+
+      /* Treat long operations as a transparent extension to the instruction set */
+
+      if (inch == oLONGOP8 || inch == oLONGOP24)
         {
           insn_DisassembleLongOpCode(stdout, &op);
         }

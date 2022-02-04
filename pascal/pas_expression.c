@@ -80,6 +80,17 @@ struct varInfo_s
 
 typedef struct varInfo_s varInfo_t;
 
+/* Used for dealing with LongInteger and LongWord types */
+
+union uWord_u
+{
+  int32_t  sData;
+  uint32_t uData;
+  uint16_t word[2];
+};
+
+typedef union uWord_u uWord_t;
+
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
@@ -284,6 +295,24 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
                 {
                   arg8FpBits = fpARG1;
                   term1Type = exprReal;
+                }
+
+              /* Allow automatic integer conversions if the integer types have
+               * same size in the stack representation.  The type of TERM1 wins
+               * arbitrarily.
+               */
+
+              else if ((term1Type == exprInteger      || term1Type == exprWord ||
+                        term1Type == exprShortInteger || term1Type == exprShortWord) &&
+                       (term2Type == exprInteger      || term2Type == exprWord ||
+                        term2Type == exprShortInteger || term2Type == exprShortWord))
+                {
+                  term2Type = term1Type;
+                }
+              else if ((term1Type == exprLongInteger || term1Type == exprLongWord) &&
+                       (term2Type == exprLongInteger || term2Type == exprLongWord))
+                {
+                  term2Type = term1Type;
                 }
 
                /* Otherwise, the two terms must agree in type */
@@ -813,30 +842,76 @@ static exprType_t pas_Factor(exprType_t findExprType)
       /* Constant factors */
 
     case tINT_CONST :
-      pas_GenerateDataOperation(opPUSH, g_tknInt);
+      {
+        uWord_t lword;
 
-      /* Allow non-negative integer constants to automatically cast to
-       * unsigned words.
-       */
+        switch (findExprType)
+          {
+            /* Check if the caller asked for long integer type. */
 
-      if (g_tknInt >= 0 &&
-          (findExprType == exprWord || findExprType == exprShortWord ||
-           findExprType == exprLongWord))
-        {
-          factorType = findExprType;
-        }
-      else if (findExprType == exprShortInteger || findExprType == exprLongInteger)
-        {
-          factorType = findExprType;
-        }
-      else
-        {
-          factorType = exprInteger;
-        }
+            case exprLongInteger :    /* signed short integer value */
+              lword.sData = g_tknInt;
+              pas_GenerateDataOperation(opPUSH, lword.word[0]);
+              pas_GenerateDataOperation(opPUSH, lword.word[1]);
+              factorType = exprLongInteger;
+              break;
 
-      /* Skip over the constant */
+            case exprLongWord :       /* unsigned short integer value */
+              lword.uData = g_tknInt;
+              pas_GenerateDataOperation(opPUSH, lword.word[0]);
+              pas_GenerateDataOperation(opPUSH, lword.word[1]);
+              factorType = exprLongWord;
+              break;
 
-      getToken();
+            default :
+              if (g_tknInt >= MININT && g_tknInt <= MAXINT)
+                {
+                  pas_GenerateDataOperation(opPUSH, g_tknInt);
+
+                  if (g_tknInt >= MAXSHORTINT && g_tknInt <= MAXSHORTINT &&
+                      findExprType == exprShortInteger)
+                    {
+                      factorType = exprShortInteger;
+                    }
+                  else if ((uint16_t)g_tknInt <= MAXWORD &&
+                            findExprType == exprShortWord)
+                    {
+                      factorType = exprShortWord;
+                    }
+                  else
+                    {
+                      factorType = exprInteger;
+                    }
+                }
+
+              /* Allow out-of-range, non-negative integer constants to
+               * automatically cast to unsigned integer type.
+               */
+
+              else if ((uint32_t)g_tknInt <= MAXWORD)
+                {
+                  pas_GenerateDataOperation(opPUSH, g_tknInt);
+                  factorType = exprWord;
+                }
+
+              /* Allow out-of-range integer constants to automatically cast
+               * to long integer type.
+               */
+
+              else /* if (g_tknInt >= MINLONGINT && g_tknInt <= MAXLONGINT) */
+                {
+                  lword.sData = g_tknInt;
+                  pas_GenerateDataOperation(opPUSH, lword.word[0]);
+                  pas_GenerateDataOperation(opPUSH, lword.word[1]);
+                  factorType = exprLongInteger;
+                }
+              break;
+          }
+
+        /* Skip over the constant */
+
+        getToken();
+      }
       break;
 
     case tBOOLEAN_CONST :
@@ -3115,7 +3190,7 @@ static exprType_t pas_TypeCast(symbol_t *typePtr)
           findExprType = exprAnyPointer;  /* Expect a pointer */
         }
 
-      /* Handle casts from ordinal (or REAL) types to REAL */
+      /* Handle casts from ordinal (or REAL) types to REAL type */
 
       else if (castType == sREAL)
         {
@@ -3124,7 +3199,7 @@ static exprType_t pas_TypeCast(symbol_t *typePtr)
           findExprType = exprUnknown;  /* Expect ordinal or real */
         }
 
-      /* Handle casts from between ordinal (or REAL) types */
+      /* Handle casts from REAL (or ordinal) types to ordinal types */
 
       else
         {

@@ -168,19 +168,25 @@ static void insn16_longOpcodeGenerate(enum longops_e longOpCode,
                                       uint16_t arg1, int32_t arg2)
 {
   uint16_t insn_longOpCode = g_longOpcodeMap[longOpCode];
+  uint16_t insn_opCode;
   uint16_t arg16;
+
   TRACE(g_lstFile,"[insn16_longOpcodeGenerate:0x%02x->0x%04x]",
         longOpCode, insn_longOpCode);
 
-  poffAddProgByte(g_poffHandle, oLONGOP);
-  poffAddProgByte(g_poffHandle, insn_longOpCode);
-  if (insn_longOpCode & o8)
+  if ((insn_longOpCode & o16) != 0)
     {
-      if (arg1 > 0xff) error(eINTOVF);
-      poffAddProgByte(g_poffHandle, (uint8_t)arg1);
+      insn_opCode = oLONGOP24;
+    }
+  else
+    {
+      insn_opCode = oLONGOP8;
     }
 
-  if (insn_longOpCode & o16)
+  poffAddProgByte(g_poffHandle, insn_opCode);
+  poffAddProgByte(g_poffHandle, insn_longOpCode);
+
+  if ((insn_longOpCode & o16) != 0)
     {
       if (arg2 < -32768 || arg2 > 65535) error(eINTOVF);
       arg16 = (uint16_t)arg2;

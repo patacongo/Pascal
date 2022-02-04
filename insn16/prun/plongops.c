@@ -109,8 +109,8 @@ static uint32_t pexec_UGetTos32(struct pexec_s *st, int offset32)
 {
   uWord_t uWord;
 
-  uWord.word[offset32 + 1] = pexec_UGetTos32(st, 0);
-  uWord.word[offset32]     = pexec_UGetTos32(st, 1);
+  uWord.word[1] = TOS(st, offset32);
+  uWord.word[0] = TOS(st, offset32 + 1);
   return uWord.uData;
 }
 
@@ -132,14 +132,18 @@ static void pexec_UPutTos32(struct pexec_s *st, uint32_t value, int offset32)
 }
 
 /****************************************************************************
- * Name: pexec_LongOperation16
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: pexec_LongOperation8
  *
  * Descripton:
  *   Handle LONGOP + 8-bit operation with no immediate data
  *
  ****************************************************************************/
 
-static inline int pexec_LongOperation16(struct pexec_s *st, uint8_t opcode)
+int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
 {
   int32_t  sparm1;
   int32_t  sparm2;
@@ -458,20 +462,18 @@ static inline int pexec_LongOperation16(struct pexec_s *st, uint8_t opcode)
       return eILLEGALOPCODE;
     }
 
-  st->pc += 2;
   return eNOERROR;
 }
 
 /****************************************************************************
- * Name: pexec_LongOperation32
+ * Name: pexec_LongOperation24
  *
  * Descripton:
  *   Handle LONGOP + 24-bit operation with 16-bits of immediate data (imm16)
  *
  ****************************************************************************/
 
-static inline int pexec_LongOperation32(struct pexec_s *st, uint8_t opcode,
-                                        uint16_t imm16)
+int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
 {
   int32_t  sparm1;
   int32_t  sparm2;
@@ -633,57 +635,5 @@ static inline int pexec_LongOperation32(struct pexec_s *st, uint8_t opcode,
 
 branchOut:
   st->pc = (paddr_t)imm16;
-  return ret;
-}
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: insn16/prun/plongops.c
- ****************************************************************************/
-
-int pexec_LongOperation(struct pexec_s *st)
-{
-  uint8_t opcode;
-  int ret;
-
-  /* Make sure that the program counter is within range */
-
-  if (st->pc >= st->maxpc)
-    {
-      ret = eBADPC;
-    }
-  else
-    {
-      /* Get the instruction to execute */
-
-      opcode = st->ispace[st->pc];
-      if ((opcode & o8) != 0)
-        {
-          /* There are none */
-
-          ret = eILLEGALOPCODE;
-        }
-      else if ((opcode & o16) != 0)
-        {
-          /* Get the immediate, big-endian 16-bit value */
-
-          uint16_t imm16  = ((st->ispace[st->pc + 1]) << 8) |
-                              st->ispace[st->pc + 2];
-
-          /* Handle 24-bit instructions */
-
-          ret = pexec_LongOperation32(st, opcode, imm16);
-        }
-      else
-        {
-          /* Handle 8-bit instructions */
-
-          ret = pexec_LongOperation16(st, opcode);
-        }
-    }
-
   return ret;
 }

@@ -470,26 +470,16 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
   opType_t op;
   paddr_t  opsize;
   uint8_t *address;
-  bool     bLongOpCode;
 
   for (; pc < st->maxpc && nitems > 0; nitems--)
     {
       address  = &st->ispace[pc];
 
       op.op    = *address++;
-      opsize   = 1;
-
-      /* Treat long operations as a transparent extension to the instruction set */
-
-      bLongOpCode = (op.op == oLONGOP);
-      if (bLongOpCode)
-        {
-          op.op = *address++;
-          opsize++;
-        }
-
       op.arg1  = 0;
       op.arg2  = 0;
+      opsize   = 1;
+
       printf("PC:%04x  %02x", pc, op.op);
 
       if ((op.op & o8) != 0)
@@ -518,7 +508,10 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
       /* The disassemble it to stdout */
 
       printf("  ");
-      if (bLongOpCode)
+
+      /* Treat long operations as a transparent extension to the instruction set */
+
+      if (op.op == oLONGOP8 || op.op == oLONGOP24)
         {
           insn_DisassembleLongOpCode(stdout, &op);
         }

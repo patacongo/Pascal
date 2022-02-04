@@ -76,11 +76,13 @@
 #define xWRITE_BINARY      (0x0022)  /* Write to a binary file */
 #define xWRITE_INT         (0x0023)  /* Write a signed integer to a text file */
 #define xWRITE_WORD        (0x0024)  /* Write an unsigned integer to a text file */
-#define xWRITE_CHAR        (0x0025)  /* Write an character to a text file */
-#define xWRITE_STRING      (0x0026)  /* Write an string to a text file */
-#define xWRITE_SHORTSTRING (0x0027)  /* Write an string to a text file */
-#define xWRITE_REAL        (0x0028)  /* Write an real value to a text file */
+#define xWRITE_LONGINT     (0x0025)  /* Write an long integer to a text file */
+#define xWRITE_LONGWORD    (0x0026)  /* Write an unsigned integer to a text file */
+#define xWRITE_CHAR        (0x0027)  /* Write an character to a text file */
+#define xWRITE_STRING      (0x0028)  /* Write an string to a text file */
+#define xWRITE_SHORTSTRING (0x0029)  /* Write an string to a text file */
+#define xWRITE_REAL        (0x002a)  /* Write an real value to a text file */
 
-#define MAX_XOP            (0x0029)
+#define MAX_XOP            (0x002b)
 
 #endif /* __PAS_SYSIO_H */

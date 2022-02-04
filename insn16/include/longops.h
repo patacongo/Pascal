@@ -44,190 +44,109 @@
 #include "insn16.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Public Types
  ****************************************************************************/
-
-/* Opcode Encoding Summary:
- *
- *            NO ARGS    arg8 ONLY      arg16 ONLY     BOTH
- *            00xx xxxx  01xx xxxx      10xx xxxx      11xx xxxx
- * xx00 0000  DNOP       ---            ---            ---
- * xx00 0001  DNEG       ---            ---            ---
- * xx00 0010  DABS       ---            ---            ---
- * xx00 0011  DINC       ---            ---            ---
- * xx00 0100  DDEC       ---            ---            ---
- * xx00 0101  DNOT       ---            ---            ---
- * xx00 0110  DADD       ---            ---            ---
- * xx00 0111  DSUB       ---            ---            ---
- * xx00 1000  DMUL       ---            ---            ---
- * xx00 1001  DDIV       ---            ---            ---
- * xx00 1010  DMOD       ---            ---            ---
- * xx00 1011  DSLL       ---            ---            ---
- * xx00 1100  DSRL       ---            ---            ---
- * xx00 1101  DSRA       ---            ---            ---
- * xx00 1110  DOR        ---            ---            ---
- * xx00 1111  DAND       ---            ---            ---
- *
- * xx01 0000  DEQUZ      ---            DJEQUZ ilbl    ---
- * xx01 0001  DNEQZ      ---            DJNEQZ ilbl    ---
- * xx01 0010  DLTZ       ---            DJLTZ  ilbl    ---
- * xx01 0011  DGTEZ      ---            DJGTEZ ilbl    ---
- * xx01 0100  DGTZ       ---            DJGTZ  ilbl    ---
- * xx01 0101  DLTEZ      ---            DJLTEZ ilbl    ---
- * xx01 0110  ---        ---            DJMP   ilbl    ---
- * xx01 0111  ---        ---            ---            ---
- * xx01 1000  DEQU       ---            DJEQU  ilbl    ---
- * xx01 1001  DNEQ       ---            DJNEQ  ilbl    ---
- * xx01 1010  DLT        ---            DJLT   ilbl    ---
- * xx01 1011  DGTE       ---            DJGTE  ilbl    ---
- * xx01 1100  DGT        ---            DJGT   ilbl    ---
- * xx01 1101  DLTE       ---            DJLTE  ilbl    ---
- * xx01 1110  ---        ---            ---            ---
- * xx01 1111  ---        ---            ---            ---
- *
- * xx10 0000  ---        ---            ---            ---
- * xx10 0001  ---        ---            ---            ---
- * xx10 0010  ---        ---            ---            ---
- * xx10 0011  ---        ---            ---            ---
- * xx10 0100  ---        ---            ---            ---
- * xx10 0101  ---        ---            ---            ---
- * xx10 0110  ---        ---            ---            ---
- * xx10 0111  ---        ---            ---            ---
- * xx10 1000  DDUP       ---            ---            ---
- * xx10 1001  ---        ---            ---            ---
- * xx10 1010  DXCHG      ---            ---            ---
- * xx10 1011  ---        ---            ---            ---
- * xx10 1100  ---        ---            ---            ---
- * xx10 1101  ---        ---            ---            ---
- * xx10 1110  ---        ---            ---            ---
- * xx10 1111  ---        ---            ---            ---
- *
- * xx11 0000  ---        ---            ---            ---
- * xx11 0001  ---        ---            ---            ---
- * xx11 0010  ---        ---            ---            ---
- * xx11 0011  ---        ---            ---            ---
- * xx11 0100  ---        ---            ---            ---
- * xx11 0101  ---        ---            ---            ---
- * xx11 0110  ---        ---            ---            ---
- * xx11 0111  DUMUL      ---            ---            ---
- * xx11 1000  DUDIV      ---            ---            ---
- * xx11 1001  DUMOD      ---            ---            ---
- * xx11 1010  DULT       ---            ---            ---
- * xx11 1011  DUGTE      ---            ---            ---
- * xx11 1100  DUGT       ---            ---            ---
- * xx11 1101  DULTE      ---            ---            ---
- * xx11 1110  DXOR       ---            ---            ---
- * xx11 1111  ---        ---            ---            ---
- *
- * KEY:
- *   ilbl  = instruction space label
- */
 
 /** OPCODES WITH NO ARGUMENTS ***********************************************/
 
-/* No long integer operation */
+enum longOp8_e
+{
+  /* No long integer operation */
 
-#define oDNOP   (0x00)
+  oDNOP = o8,
 
-/* Arithmetic & logical & and integer conversions (One 16-bit stack argument) */
+  /* Arithmetic & logical & and integer conversions (One 32-bit stack argument) */
 
-#define oDNEG   (0x01)
-#define oDABS   (0x02)
-#define oDINC   (0x03)
-#define oDDEC   (0x04)
-#define oDNOT   (0x05)
+  oDNEG,
+  oDABS,
+  oDINC,
+  oDDEC,
+  oDNOT,
 
-/* Arithmetic & logical (Two 16-bit stack arguments) */
+  /* Arithmetic & logical (Two 32-bit stack arguments) */
 
-#define oDADD   (0x06)
-#define oDSUB   (0x07)
-#define oDMUL   (0x08)
-#define oDDIV   (0x09)
-#define oDMOD   (0x0a)
-#define oDSLL   (0x0b)
-#define oDSRL   (0x0c)
-#define oDSRA   (0x0d)
-#define oDOR    (0x0e)
-#define oDAND   (0x0f)
+  oDADD,
+  oDSUB,
+  oDMUL,
+  oDDIV,
+  oDMOD,
+  oDSLL,
+  oDSRL,
+  oDSRA,
+  oDOR,
+  oDAND,
 
-/* Comparisons (One 16-bit stack argument) */
+  /* Comparisons (One 32-bit stack argument) */
 
-#define oDEQUZ  (0x10)
-#define oDNEQZ  (0x11)
-#define oDLTZ   (0x12)
-#define oDGTEZ  (0x13)
-#define oDGTZ   (0x14)
-#define oDLTEZ  (0x15)
+  oDEQUZ,
+  oDNEQZ,
+  oDLTZ,
+  oDGTEZ,
+  oDGTZ,
+  oDLTEZ,
 
-/* 0x16-0x17 -- unassigned */
+  /* Comparisons (Two 32-bit stack arguments) */
 
-/* Comparisons (Two 16-bit stack arguments) */
+  oDEQU,
+  oDNEQ,
+  oDLT,
+  oDGTE,
+  oDGT,
+  oDLTE,
 
-#define oDEQU   (0x18)
-#define oDNEQ   (0x19)
-#define oDLT    (0x1a)
-#define oDGTE   (0x1b)
-#define oDGT    (0x1c)
-#define oDLTE   (0x1d)
+  /* Data stack */
 
-/* 0x1e - 0x27 -- unassigned */
+  oDDUP,    /* (One 32-bit stack argument */
+  oDXCHG,   /* (Two 32-bit stack arguments) */
 
-/* Data stack */
+  /* Unsigned arithmetic and comparisons */
 
-#define oDDUP   (0x28)   /* (One 16-bit stack argument */
-                         /* 0x29 -- unassigned */
-#define oDXCHG  (0x2a)   /* (Two 16-bit stack arguments) */
+  oDUMUL,
+  oDUDIV,
+  oDUMOD,
+  oDULT,
+  oDUGTE,
+  oDUGT,
+  oDULTE,
 
-/* 0x2b - 0x36 -- unassigned */
+  /* Additional bitwise binary operator */
 
-/* Unsigned arithmetic and comparisons */
-
-#define oDUMUL  (0x37)
-#define oDUDIV  (0x38)
-#define oDUMOD  (0x39)
-#define oDULT   (0x3a)
-#define oDUGTE  (0x3b)
-#define oDUGT   (0x3c)
-#define oDULTE  (0x3d)
-
-/* Additional bitwise binary operator */
-
-#define oDXOR   (0x3e)
-
-/* 0x3f -- unassigned */
+  oDXOR
+};
 
 /** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ********************************/
-
-/* (o8|0x00)-(o8|0x3f) -- unassigned */
+/* NONE */
 
 /** OPCODES WITH SINGLE 16-BIT ARGUMENT (arg16) *****************************/
 
-/* (o16|0x00)-(o16|0x0f) -- unassigned */
+enum longOp24_e
+{
+  /* Program control:  arg16 = unsigned label (One 32-bit stack argument) */
 
-/* Program control:  arg16 = unsigned label (One 16-bit stack argument) */
+  oDJEQUZ = o8 | o16,
+  oDJNEQZ,
+  oDJLTZ,
+  oDJGTEZ,
+  oDJGTZ,
+  oDJLTEZ,
 
-#define oDJEQUZ (o16|0x10)
-#define oDJNEQZ (o16|0x11)
-#define oDJLTZ  (o16|0x12)
-#define oDJGTEZ (o16|0x13)
-#define oDJGTZ  (o16|0x14)
-#define oDJLTEZ (o16|0x15)
+  /* Program control:  arg16 = unsigned label (One 32-bit stack argument) */
 
-/* (o16|0x15)-(o16|0x17) -- unassigned */
+  oDJEQU,
+  oDJNEQ,
 
-/* Program control:  arg16 = unsigned label (One 16-bit stack argument) */
+  oDJLT,
+  oDJGTE,
+  oDJGT,
+  oDJLTE,
 
-#define oDJEQU  (o16|0x18)
-#define oDJNEQ  (o16|0x19)
-#define oDJLT   (o16|0x1a)
-#define oDJGTE  (o16|0x1b)
-#define oDJGT   (o16|0x1c)
-#define oDJLTE  (o16|0x1d)
-
-/* (o16|0x1e)-(o16|0x3f) -- unassigned */
+  oDJULT,
+  oDJUGTE,
+  oDJUGT,
+  oDJULTE
+};
 
 /** OPCODES WITH 24-BITS OF ARGUMENT (arg8 + arg16) *************************/
-
-/* (o16|o8|0x00)-(o8|o16|0x3f) -- unassigned */
+/* NONE */
 
 #endif /* __LONGOPS_H */

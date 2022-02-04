@@ -477,8 +477,8 @@ static const char *xName[MAX_XOP] =
 /* 0x18 */ invXOp,      invXOp,       invXOp,       invXOp,
 /* 0x1c */ invXOp,      invXOp,       invXOp,       invXOp,
 /* 0x20 */ "WRITELN",   "WRITEPG",    "WRITEBIN",   "WRITEINT",
-/* 0x24 */ "WRITEWORD", "WRITECHR",   "WRITESTR",   "WRITESSTR",
-/* 0x28 */ "WRITERL"
+/* 0x24 */ "WRITEWORD", "WRITELONG",  "WRITEULONG", "WRITECHR",
+/* 0x28 */ "WRITESTR",  "WRITESSTR",  "WRITERL"
 };
 
 static const char invSetOp[] = "Invalid SETOP";

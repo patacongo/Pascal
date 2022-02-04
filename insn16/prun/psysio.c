@@ -39,6 +39,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -77,13 +78,24 @@ struct pexecFileTable_s
 
 typedef struct pexecFileTable_s pexecFileTable_t;
 
+/* Used for dealing with LongInteger and LongWord types */
+
+union uWord_u
+{
+  int32_t  sData;
+  uint32_t uData;
+  uint16_t word[2];
+};
+
+typedef union uWord_u uWord_t;
+
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
 static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
 static void     pexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
-static const char *pexec_GetFormat(char fmtChar, uint8_t fieldWidth,
+static const char *pexec_GetFormat(char *baseFormat, uint8_t fieldWidth,
                                    uint8_t precision);
 static void     pexec_CheckEoln(uint16_t fileNumber, char *buffer);
 static ustack_t pexec_AllocateFile(void);
@@ -104,6 +116,8 @@ static int      pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
                                   uint16_t size);
 static int      pexec_WriteInteger(uint16_t fileNumber, int16_t value,
                                    uint16_t fieldWidth);
+static int      pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
+                                       uint16_t fieldWidth);
 static int      pexec_WriteWord(uint16_t fileNumber, uint16_t value,
                                 uint16_t fieldWidth);
 static int      pexec_WriteChar(uint16_t fileNumber, uint8_t value,
@@ -245,7 +259,7 @@ static void pexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
   *dest   = result.hw[3];
 }
 
-static const char *pexec_GetFormat(char fmtChar, uint8_t fieldWidth,
+static const char *pexec_GetFormat(char *baseFormat, uint8_t fieldWidth,
                                    uint8_t precision)
 {
   static char fmt[20];
@@ -254,16 +268,16 @@ static const char *pexec_GetFormat(char fmtChar, uint8_t fieldWidth,
     {
       if (precision > 0)
         {
-          snprintf(fmt, 20, "%%%u.%u%c", fieldWidth, precision, fmtChar);
+          snprintf(fmt, 20, "%%%u.%u%s", fieldWidth, precision, baseFormat);
         }
       else
         {
-          snprintf(fmt, 20, "%%%u%c", fieldWidth, fmtChar);
+          snprintf(fmt, 20, "%%%u%s", fieldWidth, baseFormat);
         }
     }
   else
     {
-      snprintf(fmt, 20, "%%%c", fmtChar);
+      snprintf(fmt, 20, "%%%s", baseFormat);
     }
 
   return fmt;
@@ -652,7 +666,35 @@ static int pexec_WriteInteger(uint16_t fileNumber, int16_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat('d', fieldWidth >> 8, 0);
+      const char *fmt = pexec_GetFormat("d", fieldWidth >> 8, 0);
+      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      if (nbytes < 0)
+        {
+          errorCode = eWRITEFAILED;
+        }
+    }
+
+  return errorCode;
+}
+
+static int pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
+                                  uint16_t fieldWidth)
+{
+  int errorCode = eNOERROR;
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream    == NULL ||
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+    {
+      errorCode = eNOTOPENFORWRITE;
+    }
+  else
+    {
+      const char *fmt = pexec_GetFormat(PRId32, fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -680,7 +722,35 @@ static int pexec_WriteWord(uint16_t fileNumber, uint16_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat('u', fieldWidth >> 8, 0);
+      const char *fmt = pexec_GetFormat("u", fieldWidth >> 8, 0);
+      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      if (nbytes < 0)
+        {
+          errorCode = eWRITEFAILED;
+        }
+    }
+
+  return errorCode;
+}
+
+static int pexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
+                               uint16_t fieldWidth)
+{
+  int errorCode = eNOERROR;
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream    == NULL ||
+           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+    {
+      errorCode = eNOTOPENFORWRITE;
+    }
+  else
+    {
+      const char *fmt = pexec_GetFormat(PRIu32, fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -708,7 +778,7 @@ static int pexec_WriteChar(uint16_t fileNumber, uint8_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat('c', fieldWidth >> 8, 0);
+      const char *fmt = pexec_GetFormat("c", fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -737,7 +807,7 @@ static int pexec_WriteReal(uint16_t fileNumber, double value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat('f', fieldWidth >> 8,
+      const char *fmt = pexec_GetFormat("f", fieldWidth >> 8,
                                         fieldWidth & 0x00ff);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
@@ -933,7 +1003,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     case xASSIGNFILE :
       POP(st, address);     /* File name string address */
       POP(st, size);        /* File name string size */
-      POP(st, uValue);       /* Binary/text boolean from stack */
+      POP(st, uValue);      /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
       errorCode = pexec_AssignFile(fileNumber, (uValue != 0),
                                    (const char *)&st->dstack.b[address],
@@ -1119,6 +1189,42 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, fileNumber);  /* File number from stack */
 
       errorCode = pexec_WriteInteger(fileNumber, sValue, fieldWidth);
+      break;
+
+    /* WRITE_LONGINT: TOS(0)   = Field width
+     *                TOS(1-2) = Write integer value
+     *                TOS(3)   = File number
+     */
+
+    case xWRITE_LONGINT :
+      {
+        uWord_t lword;
+
+        POP(st, fieldWidth);    /* Field width */
+        POP(st, lword.word[1]); /* Write integer value[1] */
+        POP(st, lword.word[0]); /* Write integer value[0] */
+        POP(st, fileNumber);    /* File number from stack */
+
+        errorCode = pexec_WriteLongInteger(fileNumber, lword.sData, fieldWidth);
+      }
+      break;
+
+    /* WRITE_LONGWORD: TOS(0)   = Field width
+     *                 TOS(1-2) = Write unsigned integer value
+     *                 TOS(3)   = File number
+     */
+
+    case xWRITE_LONGWORD :
+      {
+        uWord_t lword;
+
+        POP(st, fieldWidth);    /* Field width */
+        POP(st, lword.word[1]); /* Write unsigned integer value[1] */
+        POP(st, lword.word[0]); /* Write unsigned integer value[0] */
+        POP(st, fileNumber);    /* File number from stack */
+
+        errorCode = pexec_WriteLongWord(fileNumber, lword.uData, fieldWidth);
+      }
       break;
 
     /* xWRITE_WORD: TOS(0) = Field width

@@ -1237,6 +1237,24 @@ static void pas_WriteText(void)
             pas_GenerateIoOperation(xWRITE_WORD);
             break;
 
+          case exprLongInteger :
+            /* WRITE_LONGINT: TOS(0)   = Field width
+             *                TOS(1-2) = Write value (signed)
+             *                TOS(3)   = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_LONGINT);
+            break;
+
+          case exprLongWord :
+            /* WRITE_LONGWORD: TOS(0)   = Field width
+             *                 TOS(1-2) = Write value (unsigned)
+             *                 TOS(3)   = File number
+             */
+
+            pas_GenerateIoOperation(xWRITE_LONGWORD);
+            break;
+
           case exprChar :
             /* WRITE_CHAR: TOS(0) = Field width
              *             TOS(1) = Write value

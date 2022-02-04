@@ -2,7 +2,7 @@
 # insn16/prun/Makefile
 # Host system makefile
 #
-#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ CFLAGS   += $(EXTRA_INCLUDES)
 # Objects and targets
 #
 RUNSRCS   = prun.c pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
-RUNSRCS  += pmmgr.c
+RUNSRCS  += plongops.c pmmgr.c
 RUNOBJS   = $(RUNSRCS:.c=.o)
 
 OBJS      = $(RUNOBJS)
