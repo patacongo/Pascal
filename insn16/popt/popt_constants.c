@@ -48,7 +48,12 @@
 #include "paslib.h"
 #include "popt.h"
 #include "popt_local.h"
+#include "popt_push.h"
 #include "popt_constants.h"
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
 
 /****************************************************************************/
 
@@ -72,18 +77,7 @@ int16_t popt_UnaryOptimize(void)
          {
            /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
 
-           if (g_opPtr[i]->op == oPUSHB)
-             {
-               g_opPtr[i]->op   = oPUSH;
-               g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
-               g_opPtr[i]->arg1 = 0;
-             }
-           else if (g_opPtr[i]->op == oUPUSHB)
-             {
-               g_opPtr[i]->op   = oPUSH;
-               g_opPtr[i]->arg2 = g_opPtr[i]->arg1;
-               g_opPtr[i]->arg1 = 0;
-             }
+           popt_ExpandPush(g_opPtr[i]);
 
            switch (g_opPtr[i + 1]->op)
              {
@@ -540,23 +534,7 @@ int16_t popt_UnaryOptimize(void)
                 * represent it with a oPUSHB or oUPUSHB instruction.
                 */
 
-               if (g_opPtr[i]->op == oPUSH)
-                 {
-                   if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                       (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
-                     {
-                       g_opPtr[i]->op   = oPUSHB;
-                       g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                       g_opPtr[i]->arg2 = 0;
-                     }
-                   else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                     {
-                       g_opPtr[i]->op   = oUPUSHB;
-                       g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                       g_opPtr[i]->arg2 = 0;
-                     }
-                 }
-
+               popt_OptimizePush(g_opPtr[i]);
                i++;
              }
          }
@@ -640,31 +618,8 @@ int16_t popt_BinaryOptimize(void)
             {
               /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
 
-              if (g_opPtr[i]->op == oPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
-                  g_opPtr[i]->arg1 = 0;
-                }
-              else if (g_opPtr[i]->op == oUPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = g_opPtr[i]->arg1;
-                  g_opPtr[i]->arg1 = 0;
-                }
-
-              if (g_opPtr[i + 1]->op == oPUSHB)
-                {
-                  g_opPtr[i + 1]->op   = oPUSH;
-                  g_opPtr[i + 1]->arg2 = signExtend8(g_opPtr[i + 1]->arg1);
-                  g_opPtr[i + 1]->arg1 = 0;
-                }
-              else if (g_opPtr[i + 1]->op == oUPUSHB)
-                {
-                  g_opPtr[i + 1]->op   = oPUSH;
-                  g_opPtr[i + 1]->arg2 = g_opPtr[i + 1]->arg1;
-                  g_opPtr[i + 1]->arg1 = 0;
-                }
+              popt_ExpandPush(g_opPtr[i]);
+              popt_ExpandPush(g_opPtr[i + 1]);
 
               switch (g_opPtr[i + 2]->op)
                 {
@@ -833,41 +788,13 @@ int16_t popt_BinaryOptimize(void)
                    * now represent them with an oUPUSHB instructions
                    */
 
-                  if (g_opPtr[i]->op == oPUSH)
-                    {
-                      if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                          (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
-                        {
-                          g_opPtr[i]->op   = oPUSHB;
-                          g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                          g_opPtr[i]->arg2 = 0;
-                        }
-                      else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                        {
-                          g_opPtr[i]->op   = oUPUSHB;
-                          g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                          g_opPtr[i]->arg2 = 0;
-                        }
-                    }
-
+                  popt_OptimizePush(g_opPtr[i]);
                   i++;
                 }
 
               if (g_opPtr[j] != NULL && g_opPtr[j]->op == oPUSH)
                 {
-                  if ((int16_t)g_opPtr[j]->arg2 >= MINSHORTINT &&
-                      (int16_t)g_opPtr[j]->arg2 <= MAXSHORTINT)
-                    {
-                      g_opPtr[j]->op   = oPUSHB;
-                      g_opPtr[j]->arg1 = g_opPtr[j]->arg2;
-                      g_opPtr[j]->arg2 = 0;
-                    }
-                  else if ((uint16_t)g_opPtr[j]->arg2 <= MAXSHORTWORD)
-                    {
-                      g_opPtr[j]->op   = oUPUSHB;
-                      g_opPtr[j]->arg1 = g_opPtr[j]->arg2;
-                      g_opPtr[j]->arg2 = 0;
-                    }
+                  popt_OptimizePush(g_opPtr[j]);
                 }
             }
 
@@ -883,18 +810,7 @@ int16_t popt_BinaryOptimize(void)
             {
               /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
 
-              if (g_opPtr[i]->op == oPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
-                  g_opPtr[i]->arg1 = 0;
-                }
-              else if (g_opPtr[i]->op == oUPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = g_opPtr[i]->arg1;
-                  g_opPtr[i]->arg1 = 0;
-                }
+              popt_ExpandPush(g_opPtr[i]);
 
               switch (g_opPtr[i + 2]->op)
                 {
@@ -1054,23 +970,7 @@ int16_t popt_BinaryOptimize(void)
                   * represent it with a oPUSHB or oUPUSHB instruction.
                   */
 
-                 if (g_opPtr[i]->op == oPUSH)
-                   {
-                     if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                         (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
-                       {
-                         g_opPtr[i]->op   = oPUSHB;
-                         g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                         g_opPtr[i]->arg2 = 0;
-                       }
-                     else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                       {
-                         g_opPtr[i]->op   = oUPUSHB;
-                         g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                         g_opPtr[i]->arg2 = 0;
-                       }
-                   }
-
+                 popt_OptimizePush(g_opPtr[i]);
                  i++;
                }
             }

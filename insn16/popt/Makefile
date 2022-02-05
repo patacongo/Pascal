@@ -2,7 +2,7 @@
 # insn16/popt/Makefile
 # Host system makefile
 #
-#   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ CFLAGS   += $(EXTRA_INCLUDES)
 # Objects and targets
 #
 POPTSRCS  = popt.c popt_strings.c popt_local.c popt_constants.c
-POPTSRCS += popt_branch.c popt_loadstore.c popt_finalize.c
+POPTSRCS += popt_branch.c popt_loadstore.c popt_finalize.c popt_push.c
 POPTOBJS  = $(POPTSRCS:.c=.o)
 
 OBJS      = $(POPTOBJS)

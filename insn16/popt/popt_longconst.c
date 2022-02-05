@@ -48,17 +48,33 @@
 #include "paslib.h"
 #include "popt.h"
 #include "popt_local.h"
-#include "popt_constants.h"
+#include "popt_push.h"
+#include "popt_longconst.h"
+
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+union uWord_u
+{
+  int32_t  sData;
+  uint32_t uData;
+  uint16_t word[2];
+};
+
+typedef union uWord_u uWord_t;
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
 
 /****************************************************************************/
 
 int16_t popt_LongUnaryOptimize(void)
 {
   int16_t nchanges = 0;
-  register uint16_t temp;
-  register int16_t i;
-  register int16_t j;
-  register int16_t k;
+  uint16_t temp;
+  ing i;
 
   TRACE(stderr, "[popt_LongUnaryOptimize]");
 
@@ -71,7 +87,7 @@ int16_t popt_LongUnaryOptimize(void)
 
       if (g_opPtr[i] == oLONGOP8)
        {
-          j = i - 1;
+          int j = i - 1;
 
           /* Check for a long operation on a constant (PUSHed) value.  All Unary
             * operators are LONGOP8 types.
@@ -80,45 +96,99 @@ int16_t popt_LongUnaryOptimize(void)
           if (g_opPtr[j]->op == oPUSH || g_opPtr[j]->op == oPUSHB ||
               g_opPtr[j]->op == oUPUSHB)
            {
-              /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
-
-              if (g_opPtr[j]->op == oPUSHB)
-                {
-                  g_opPtr[j]->op   = oPUSH;
-                  g_opPtr[j]->arg2 = signExtend8(g_opPtr[j]->arg1);
-                  g_opPtr[j]->arg1 = 0;
-                }
-              else if (g_opPtr[j]->op == oUPUSHB)
-                {
-                  g_opPtr[j]->op   = oPUSH;
-                  g_opPtr[j]->arg2 = g_opPtr[j]->arg1;
-                  g_opPtr[j]->arg1 = 0;
-                }
-
               /* With two opcodes, only the 16- to 32-bit conversion long
                * operations can be optimized.
                */
 
+              /* Conversion of signed 16-bit value to a signed long value */
+
+              if (g_opPtr[i]->arg1 == oCNVD)
+                {
+                  uWord_t word;
+
+                  /* Turn the oPUSHB or oUPUSHB into an oPUSH op (PUSH) */
+
+                  popt_ExpandPush(g_opPtr[j]);
+                  word.SData = signExtend16(g_opPtr[j]->arg2);
+
+                  g_opPtr[j]->arg2 = word.word[0];
+                  popt_OptimizePush(g_opPtr[j]);
+
+                  g_opPtr[i]->op   = oPUSH;
+                  g_opPtr[i]->arg1 = 0;
+                  g_opPtr[i]->arg2 = word.word[1];
+                  popt_OptimizePush(g_opPtr[i]);
+
+                  i++;
+                  continue;
+                }
+
+              /* Conversion of unsigned 16-bit value to an unsigned long value */
+
+              if (g_opPtr[i]->arg1 == oUCNVD)
+                {
+                  uWord_t word;
+
+                  /* Turn the oPUSHB or oUPUSHB into an oPUSH op (PUSH) */
+
+                  popt_ExpandPush(g_opPtr[j]);
+                  word.uData = (uint32_t)g_opPtr[j]->arg2;
+
+                  g_opPtr[j]->arg2 = word.word[0];
+                  popt_OptimizePush(g_opPtr[j]);
+
+                  g_opPtr[i]->op   = oPUSH;
+                  g_opPtr[i]->arg1 = 0;
+                  g_opPtr[i]->arg2 = word.word[1];
+                  popt_OptimizePush(g_opPtr[i]);
+
+                  i++;
+                  continue;
+                }
+
+              /* All other Unary optimatizations required 2 constant pushes */
+
+              k = i - 2;
+              if (k < 0 ||
+                  (g_opPtr[k]->op != oPUSH && g_opPtr[j]->op != oPUSHB &&
+                   g_opPtr[k]->op != oUPUSHB))
+                {
+                  i++;
+                  continue;
+                }
+
+              /* Turn the oPUSHB or oUPUSHB into an oPUSH op (PUSH) */
+
+              popt_ExpandPush(g_opPtr[j]);
+              popt_ExpandPush(g_opPtr[k]);
+
               /* Handle according to the specific long operation in arg1 */
+
+               switch (g_opPtr[i]->arg1)
+                 {
+                   /* Convert 32-bit value to 16-bit value (signed or unsigned) */
+
+                   case oDCNV :
+                     {
+                       uWord_t word;
+
+                       /* We just want to retain the LS word, but we also don't
+                        * want any knowledge of endian-ness.
+                        */
+
+                       word.word[0] = g_opPtr[k]->arg2;
+                       word.word[1] = g_opPtr[j]->arg2;
+
+                       g_opPtr[k]->arg2 = (uint16_t)(word.uData & 0xffff);
+
+                       popt_DeletePCode(j);
+                       popt_DeletePCode(i);
+                       nchanges++
+                     }
+                     break;
 LEFT OFF!!!
-               switch (g_opPtr[i]->arg1)
-                 {
-                   case oCNVD :   /* Convert signed 16-bit value to signed long value */
-                     break;
 
-                   case oUCNVD :  /* Convert unsigned 16-bit value to unsigned long value */
-                     break;
-
-                   case oDCNV :   /* Convert 32-bit value to 16-bit value (signed or unsigned) */
-                     break;
-                 }
-
-              /* Handle according to the specific long operation in arg1 */
-
-               switch (g_opPtr[i]->arg1)
-                 {
                    /* Delete unary operators on constants */
-LEFT OFF!!!
 
                    case oDNEG   :
                    g_opPtr[i]->arg2 = -(g_opPtr[i]->arg2);
@@ -574,23 +644,7 @@ LEFT OFF!!!
                 * represent it with a oPUSHB or oUPUSHB instruction.
                 */
 
-               if (g_opPtr[i]->op == oPUSH)
-                 {
-                   if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                       (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
-                     {
-                       g_opPtr[i]->op   = oPUSHB;
-                       g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                       g_opPtr[i]->arg2 = 0;
-                     }
-                   else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                     {
-                       g_opPtr[i]->op   = oUPUSHB;
-                       g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                       g_opPtr[i]->arg2 = 0;
-                     }
-                 }
-
+               popt_OptimizePush(g_opPtr[i]);
                i++;
              }
          }
@@ -685,31 +739,8 @@ int16_t popt_LongBinaryOptimize(void)
            * instructions (temporarily)
            */
 
-          if (g_opPtr[j]->op == oPUSHB)
-            {
-              g_opPtr[j]->op   = oPUSH;
-              g_opPtr[j]->arg2 = signExtend8(g_opPtr[j]->arg1);
-              g_opPtr[j]->arg1 = 0;
-            }
-          else if (g_opPtr[j]->op == oUPUSHB)
-            {
-              g_opPtr[j]->op   = oPUSH;
-              g_opPtr[j]->arg2 = g_opPtr[j]->arg1;
-              g_opPtr[j]->arg1 = 0;
-            }
-
-          if (g_opPtr[k]->op == oPUSHB)
-            {
-              g_opPtr[k]->op   = oPUSH;
-              g_opPtr[k]->arg2 = signExtend8(g_opPtr[k]->arg1);
-              g_opPtr[k]->arg1 = 0;
-            }
-          else if (g_opPtr[k]->op == oUPUSHB)
-            {
-              g_opPtr[k]->op   = oPUSH;
-              g_opPtr[k]->arg2 = g_opPtr[k]->arg1;
-              g_opPtr[k]->arg1 = 0;
-            }
+          popt_ExpandPush(g_opPtr[j]);
+          popt_ExpandPush(g_opPtr[k]);
 LEFT OFF!!!
 ##############################################################################
 
@@ -880,41 +911,13 @@ LEFT OFF!!!
                    * now represent them with an oUPUSHB instructions
                    */
 
-                  if (g_opPtr[i]->op == oPUSH)
-                    {
-                      if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                          (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
-                        {
-                          g_opPtr[i]->op   = oPUSHB;
-                          g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                          g_opPtr[i]->arg2 = 0;
-                        }
-                      else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                        {
-                          g_opPtr[i]->op   = oUPUSHB;
-                          g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                          g_opPtr[i]->arg2 = 0;
-                        }
-                    }
-
+                  popt_OptimizePush(g_opPtr[i]);
                   i++;
                 }
 
               if (g_opPtr[j] != NULL && g_opPtr[j]->op == oPUSH)
                 {
-                  if ((int16_t)g_opPtr[j]->arg2 >= MINSHORTINT &&
-                      (int16_t)g_opPtr[j]->arg2 <= MAXSHORTINT)
-                    {
-                      g_opPtr[j]->op   = oPUSHB;
-                      g_opPtr[j]->arg1 = g_opPtr[j]->arg2;
-                      g_opPtr[j]->arg2 = 0;
-                    }
-                  else if ((uint16_t)g_opPtr[j]->arg2 <= MAXSHORTWORD)
-                    {
-                      g_opPtr[j]->op   = oUPUSHB;
-                      g_opPtr[j]->arg1 = g_opPtr[j]->arg2;
-                      g_opPtr[j]->arg2 = 0;
-                    }
+                   popt_OptimizePush(g_opPtr[j]);
                 }
             }
 
@@ -930,18 +933,7 @@ LEFT OFF!!!
             {
               /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
 
-              if (g_opPtr[i]->op == oPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
-                  g_opPtr[i]->arg1 = 0;
-                }
-              else if (g_opPtr[i]->op == oUPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = g_opPtr[i]->arg1;
-                  g_opPtr[i]->arg1 = 0;
-                }
+              popt_ExpandPush(g_opPtr[i]);
 
               switch (g_opPtr[i + 2]->op)
                 {
@@ -1101,23 +1093,7 @@ LEFT OFF!!!
                   * represent it with a oPUSHB or oUPUSHB instruction.
                   */
 
-                 if (g_opPtr[i]->op == oPUSH)
-                   {
-                     if ((int16_t)g_opPtr[i]->arg2 >= MINSHORTINT &&
-                         (int16_t)g_opPtr[i]->arg2 <= MAXSHORTINT)
-                       {
-                         g_opPtr[i]->op   = oPUSHB;
-                         g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                         g_opPtr[i]->arg2 = 0;
-                       }
-                     else if ((uint16_t)g_opPtr[i]->arg2 <= MAXSHORTWORD)
-                       {
-                         g_opPtr[i]->op   = oUPUSHB;
-                         g_opPtr[i]->arg1 = g_opPtr[i]->arg2;
-                         g_opPtr[i]->arg2 = 0;
-                       }
-                   }
-
+                 popt_OptimizePush(g_opPtr[i]);
                  i++;
                }
             }
