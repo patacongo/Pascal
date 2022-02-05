@@ -471,9 +471,20 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       }
       break;
 
+    case oUCNVD :
+      {
+        uint16_t uWord;
+
+        /* Convert 16-bit unsigned data 32-bit unsigned */
+
+        POP(st, uWord);
+        pexec_UPush32(st, (int32_t)uWord);
+      }
+      break;
+
     case oDCNV :
       {
-        /* Convert 32-bit signed/unsigned data 16-bit signed */
+        /* Convert 32-bit signed/unsigned data 16-bit signed/unsigned */
 
         int32_t sLong = (int32_t)pexec_UPop32(st);
         PUSH(st, (uint16_t)sLong);

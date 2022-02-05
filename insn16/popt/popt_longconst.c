@@ -1,8 +1,8 @@
 /****************************************************************************
- * popt_constants.c
- * Constant Expression Optimizations
+ * popt_longconst.c
+ * Long Constant Expression Optimizations
  *
- *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,50 +52,84 @@
 
 /****************************************************************************/
 
-int16_t popt_UnaryOptimize(void)
+int16_t popt_LongUnaryOptimize(void)
 {
   int16_t nchanges = 0;
   register uint16_t temp;
   register int16_t i;
+  register int16_t j;
+  register int16_t k;
 
-  TRACE(stderr, "[popt_UnaryOptimize]");
+  TRACE(stderr, "[popt_LongUnaryOptimize]");
 
   /* At least two pcodes are need to perform unary optimizations */
 
-   i = 0;
-   while (i < g_nOpPtrs - 1)
-     {
-       /* Check for a constant value being pushed onto the stack */
+  i = 1;
+  while (i < g_nOpPtrs)
+    {
+      /* Check for a long operation. */
 
-       if (g_opPtr[i]->op == oPUSH || g_opPtr[i]->op == oPUSHB ||
-           g_opPtr[i]->op == oUPUSHB)
-         {
-           /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
+      if (g_opPtr[i] == oLONGOP8)
+       {
+          j = i - 1;
 
-           if (g_opPtr[i]->op == oPUSHB)
-             {
-               g_opPtr[i]->op   = oPUSH;
-               g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
-               g_opPtr[i]->arg1 = 0;
-             }
-           else if (g_opPtr[i]->op == oUPUSHB)
-             {
-               g_opPtr[i]->op   = oPUSH;
-               g_opPtr[i]->arg2 = g_opPtr[i]->arg1;
-               g_opPtr[i]->arg1 = 0;
-             }
+          /* Check for a long operation on a constant (PUSHed) value.  All Unary
+            * operators are LONGOP8 types.
+            */
 
-           switch (g_opPtr[i + 1]->op)
-             {
-               /* Delete unary operators on constants */
+          if (g_opPtr[j]->op == oPUSH || g_opPtr[j]->op == oPUSHB ||
+              g_opPtr[j]->op == oUPUSHB)
+           {
+              /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
 
-             case oNEG   :
-               g_opPtr[i]->arg2 = -(g_opPtr[i]->arg2);
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
+              if (g_opPtr[j]->op == oPUSHB)
+                {
+                  g_opPtr[j]->op   = oPUSH;
+                  g_opPtr[j]->arg2 = signExtend8(g_opPtr[j]->arg1);
+                  g_opPtr[j]->arg1 = 0;
+                }
+              else if (g_opPtr[j]->op == oUPUSHB)
+                {
+                  g_opPtr[j]->op   = oPUSH;
+                  g_opPtr[j]->arg2 = g_opPtr[j]->arg1;
+                  g_opPtr[j]->arg1 = 0;
+                }
 
-             case oABS   :
+              /* With two opcodes, only the 16- to 32-bit conversion long
+               * operations can be optimized.
+               */
+
+              /* Handle according to the specific long operation in arg1 */
+LEFT OFF!!!
+               switch (g_opPtr[i]->arg1)
+                 {
+                   case oCNVD :   /* Convert signed 16-bit value to signed long value */
+                     break;
+
+                   case oUCNVD :  /* Convert unsigned 16-bit value to unsigned long value */
+                     break;
+
+                   case oDCNV :   /* Convert 32-bit value to 16-bit value (signed or unsigned) */
+                     break;
+                 }
+
+              /* Handle according to the specific long operation in arg1 */
+
+               switch (g_opPtr[i]->arg1)
+                 {
+                   /* Delete unary operators on constants */
+LEFT OFF!!!
+
+                   case oDNEG   :
+                   g_opPtr[i]->arg2 = -(g_opPtr[i]->arg2);
+                   popt_DeletePCode(i + 1);
+                   nchanges++;
+                   break;
+
+##############################################################################
+LEFT OFF!!!
+
+             case oDABS   :
                if (signExtend16(g_opPtr[i]->arg2) < 0)
                  {
                    g_opPtr[i]->arg2 = -signExtend16(g_opPtr[i]->arg2);
@@ -105,19 +139,19 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oINC   :
+             case oDINC   :
                (g_opPtr[i]->arg2)++;
                popt_DeletePCode(i + 1);
                nchanges++;
                break;
 
-             case oDEC   :
+             case oDDEC   :
                (g_opPtr[i]->arg2)--;
                popt_DeletePCode(i + 1);
                nchanges++;
                break;
 
-             case oNOT   :
+             case oDNOT   :
                g_opPtr[i]->arg2 = ~(g_opPtr[i]->arg2);
                popt_DeletePCode(i + 1);
                nchanges++;
@@ -125,7 +159,7 @@ int16_t popt_UnaryOptimize(void)
 
                /* Simplify binary operations on constants */
 
-             case oADD :
+             case oDADD :
                if (g_opPtr[i]->arg2 == 0)
                  {
                    popt_DeletePCodePair(i, i + 1);
@@ -133,19 +167,19 @@ int16_t popt_UnaryOptimize(void)
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i + 1]->op = oINC;
+                   g_opPtr[i + 1]->arg1 = oDINC;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                else if (g_opPtr[i]->arg2 == (uint16_t)-1)
                  {
-                   g_opPtr[i + 1]->op = oDEC;
+                   g_opPtr[i + 1]->arg1 = oDDEC;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                break;
 
-             case oSUB :
+             case oDSUB :
                if (g_opPtr[i]->arg2 == 0)
                  {
                    popt_DeletePCodePair(i, i + 1);
@@ -153,22 +187,22 @@ int16_t popt_UnaryOptimize(void)
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i + 1]->op = oDEC;
+                   g_opPtr[i + 1]->arg1 = oDDEC;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                else if (g_opPtr[i]->arg2 == (uint16_t)-1)
                  {
-                   g_opPtr[i + 1]->op = oINC;
+                   g_opPtr[i + 1]->arg1 = oDINC;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                break;
 
-             case oMUL :
-             case oUMUL :
-             case oDIV :
-             case oUDIV :
+             case oDMUL :
+             case oDUMUL :
+             case oDDIV :
+             case oDUDIV :
                temp = 0;
                switch (g_opPtr[i]->arg2)
                  {
@@ -192,16 +226,16 @@ int16_t popt_UnaryOptimize(void)
                  case     4 : temp++;
                  case     2 : temp++;
                    g_opPtr[i]->arg2 = temp;
-                   if (g_opPtr[i + 1]->op == oMUL ||
-                       g_opPtr[i + 1]->op == oUMUL)
+                   if (g_opPtr[i + 1]->op == oDMUL ||
+                       g_opPtr[i + 1]->op == oDUMUL)
                      {
                        g_opPtr[i + 1]->op = oSLL;
                      }
-                   else if (g_opPtr[i + 1]->op == oDIV)
+                   else if (g_opPtr[i + 1]->op == oDDIV)
                      {
                        g_opPtr[i + 1]->op = oSRA;
                      }
-                   else /* if g_opPtr[i + 1]->op == oUDIV) */
+                   else /* if g_opPtr[i + 1]->op == oDUDIV) */
                      {
                        g_opPtr[i + 1]->op = oSRL;
                      }
@@ -214,10 +248,10 @@ int16_t popt_UnaryOptimize(void)
                  }
                break;
 
-             case oSLL :
-             case oSRL :
-             case oSRA :
-             case oOR  :
+             case oDSLL :
+             case oDSRL :
+             case oDSRA :
+             case oDOR  :
                if (g_opPtr[i]->arg2 == 0)
                  {
                    popt_DeletePCodePair(i, i + 1);
@@ -225,7 +259,7 @@ int16_t popt_UnaryOptimize(void)
                  }
                break;
 
-             case oAND :
+             case oDAND :
                if (g_opPtr[i]->arg2 == 0xffff)
                  {
                    popt_DeletePCodePair(i, i + 1);
@@ -235,14 +269,14 @@ int16_t popt_UnaryOptimize(void)
 
                /* Delete comparisons of constants to zero */
 
-             case oEQUZ  :
+             case oDEQUZ  :
                if (g_opPtr[i]->arg2 == 0) g_opPtr[i]->arg2 = -1;
                else g_opPtr[i]->arg2 = 0;
                popt_DeletePCode(i + 1);
                nchanges++;
                break;
 
-             case oNEQZ  :
+             case oDNEQZ  :
                if (g_opPtr[i]->arg2 != 0)
                  {
                    g_opPtr[i]->arg2 = -1;
@@ -256,7 +290,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oLTZ   :
+             case oDLTZ   :
                if (signExtend16(g_opPtr[i]->arg2) < 0)
                  {
                    g_opPtr[i]->arg2 = -1;
@@ -270,7 +304,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oGTEZ  :
+             case oDGTEZ  :
                if (signExtend16(g_opPtr[i]->arg2) >= 0)
                  {
                    g_opPtr[i]->arg2 = -1;
@@ -284,7 +318,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oGTZ   :
+             case oDGTZ   :
                if (g_opPtr[i]->arg2 > 0) g_opPtr[i]->arg2 = -1;
                else g_opPtr[i]->arg2 = 0;
 
@@ -292,7 +326,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oLTEZ :
+             case oDLTEZ :
                if (g_opPtr[i]->arg2 <= 0) g_opPtr[i]->arg2 = -1;
                else g_opPtr[i]->arg2 = 0;
 
@@ -302,99 +336,99 @@ int16_t popt_UnaryOptimize(void)
 
                /*  Simplify comparisons with certain constants */
 
-             case oEQU   :
+             case oDEQU   :
                if (g_opPtr[i]->arg2 == 0)
                  {
-                   g_opPtr[i + 1]->op = oEQUZ;
+                   g_opPtr[i + 1]->arg1 = oDEQUZ;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i]->op     = oDEC;
+                   g_opPtr[i]->arg1     = oDDEC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oEQUZ;
+                   g_opPtr[i + 1]->arg1 = oDEQUZ;
                    nchanges++;
                  }
                else if (signExtend16(g_opPtr[i]->arg2) == -1)
                  {
-                   g_opPtr[i]->op     = oINC;
+                   g_opPtr[i]->arg1     = oDINC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oEQUZ;
+                   g_opPtr[i + 1]->arg1 = oDEQUZ;
                    nchanges++;
                  }
                break;
 
-             case oNEQ   :
+             case oDNEQ   :
                if (g_opPtr[i]->arg2 == 0)
                  {
-                   g_opPtr[i + 1]->op = oNEQZ;
+                   g_opPtr[i + 1]->arg1 = oDNEQZ;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i]->op     = oDEC;
+                   g_opPtr[i]->arg1     = oDDEC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oNEQZ;
+                   g_opPtr[i + 1]->arg1 = oDNEQZ;
                    nchanges++;
                  }
                else if (signExtend16(g_opPtr[i]->arg2) == -1)
                  {
-                   g_opPtr[i]->op     = oINC;
+                   g_opPtr[i]->arg1     = oDINC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oNEQZ;
+                   g_opPtr[i + 1]->arg1 = oDNEQZ;
                    nchanges++;
                  }
                break;
 
-             case oLT    :
+             case oDLT    :
                if (g_opPtr[i]->arg2 == 0)
                  {
-                   g_opPtr[i + 1]->op = oLTZ;
+                   g_opPtr[i + 1]->arg1 = oDLTZ;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i]->op     = oDEC;
+                   g_opPtr[i]->arg1     = oDDEC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oLTZ;
+                   g_opPtr[i + 1]->arg1 = oDLTZ;
                    nchanges++;
                  }
                else if (signExtend16(g_opPtr[i]->arg2) == -1)
                  {
-                   g_opPtr[i]->op     = oINC;
+                   g_opPtr[i]->arg1     = oDINC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oLTZ;
+                   g_opPtr[i + 1]->arg1 = oDLTZ;
                    nchanges++;
                  }
                break;
 
-             case oGTE   :
+             case oDGTE   :
                if (g_opPtr[i]->arg2 == 0)
                  {
-                   g_opPtr[i + 1]->op = oGTEZ;
+                   g_opPtr[i + 1]->arg1 = oDGTEZ;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i]->op     = oDEC;
+                   g_opPtr[i]->arg1     = oDDEC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oGTEZ;
+                   g_opPtr[i + 1]->arg1 = oDGTEZ;
                    nchanges++;
                  }
                else if (signExtend16(g_opPtr[i]->arg2) == -1)
                  {
-                   g_opPtr[i]->op     = oINC;
+                   g_opPtr[i]->arg1     = oDINC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oGTEZ;
+                   g_opPtr[i + 1]->arg1 = oDGTEZ;
                    nchanges++;
                  }
                break;
 
-             case oGT    :
+             case oDGT    :
                if (g_opPtr[i]->arg2 == 0)
                  {
                    g_opPtr[i + 1]->op = oGTZ;
@@ -403,46 +437,46 @@ int16_t popt_UnaryOptimize(void)
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i]->op     = oDEC;
+                   g_opPtr[i]->arg1     = oDDEC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oGTZ;
+                   g_opPtr[i + 1]->arg1 = oDGTZ;
                    nchanges++;
                  }
                else if (signExtend16(g_opPtr[i]->arg2) == -1)
                  {
-                   g_opPtr[i]->op     = oINC;
+                   g_opPtr[i]->arg1     = oDINC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oGTZ;
+                   g_opPtr[i + 1]->arg1 = oDGTZ;
                    nchanges++;
                  }
                break;
 
-             case oLTE   :
+             case oDLTE   :
                if (g_opPtr[i]->arg2 == 0)
                  {
-                   g_opPtr[i + 1]->op = oLTEZ;
+                   g_opPtr[i + 1]->arg1 = oDLTEZ;
                    popt_DeletePCode(i);
                    nchanges++;
                  }
                else if (g_opPtr[i]->arg2 == 1)
                  {
-                   g_opPtr[i]->op     = oDEC;
+                   g_opPtr[i]->arg1     = oDDEC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oLTEZ;
+                   g_opPtr[i + 1]->arg1 = oDLTEZ;
                    nchanges++;
                  }
                else if (signExtend16(g_opPtr[i]->arg2) == -1)
                  {
-                   g_opPtr[i]->op     = oINC;
+                   g_opPtr[i]->arg1     = oDINC;
                    g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->op = oLTEZ;
+                   g_opPtr[i + 1]->arg1 = oDLTEZ;
                    nchanges++;
                  }
                break;
 
              /* Simplify or delete condition branches on constants */
 
-             case oJEQUZ :
+             case oDJEQUZ :
                if (g_opPtr[i]->arg2 == 0)
                  {
                    g_opPtr[i + 1]->op = oJMP;
@@ -456,7 +490,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oJNEQZ :
+             case oDJNEQZ :
                if (g_opPtr[i]->arg2 != 0)
                  {
                    g_opPtr[i + 1]->op = oJMP;
@@ -470,7 +504,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oJLTZ  :
+             case oDJLTZ  :
                if (signExtend16(g_opPtr[i]->arg2) < 0)
                  {
                    g_opPtr[i + 1]->op = oJMP;
@@ -484,7 +518,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oJGTEZ :
+             case oDJGTEZ :
                if (signExtend16(g_opPtr[i]->arg2) >= 0)
                  {
                    g_opPtr[i + 1]->op = oJMP;
@@ -498,7 +532,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oJGTZ  :
+             case oDJGTZ  :
                if (g_opPtr[i]->arg2 > 0)
                  {
                    g_opPtr[i + 1]->op = oJMP;
@@ -512,7 +546,7 @@ int16_t popt_UnaryOptimize(void)
                nchanges++;
                break;
 
-             case oJLTEZ :
+             case oDJLTEZ :
                if (g_opPtr[i]->arg2 <= 0)
                  {
                    g_opPtr[i + 1]->op = oJMP;
@@ -560,55 +594,53 @@ int16_t popt_UnaryOptimize(void)
                i++;
              }
          }
+##############################################################################
+                }
+            }
+LEFT OFF!!!
 
-       /* Delete multiple modifications of DSEG pointer */
+          /* Perform optimizations on back-to-back Unary operators */
 
-       else if (g_opPtr[i]->op == oINDS)
-         {
-           if (g_opPtr[i + 1]->op == oINDS)
-             {
-               g_opPtr[i]->arg2 += g_opPtr[i + 1]->arg2;
-               popt_DeletePCode(i + 1);
-               nchanges++;
-             }
-           else
-             {
-               i++;
-             }
-         }
+          else if (g_opPtr[i] == oLONGOP8)
+           {
+              /* Check for the effect of an INC reversed by a following DEC, and
+               * vice versa.
+               */
 
-       /* Check for the effect of an INC reversed by a following DEC, and
-        * vice versa.
-        */
-
-       else if (g_opPtr[i]->op == oINC)
-         {
-           if (g_opPtr[i + 1]->op == oDEC)
-             {
-               popt_DeletePCodePair(i, i + 1);
-               nchanges++;
-             }
-           else
-             {
-               i++;
-             }
-         }
-       else if (g_opPtr[i]->op == oDEC)
-         {
-           if (g_opPtr[i + 1]->op == oINC)
-             {
-               popt_DeletePCodePair(i, i + 1);
-               nchanges++;
-             }
-           else
-             {
-               i++;
-             }
-         }
-       else
-         {
-           i++;
-         }
+              if (g_opPtr[i]->op == oDINC)
+                {
+                  if (g_opPtr[i + 1]->op == oDDEC)
+                    {
+                      popt_DeletePCodePair(i, i + 1);
+                      nchanges++;
+                    }
+                  else
+                    {
+                      i++;
+                    }
+                }
+              else if (g_opPtr[i]->op == oDDEC)
+                {
+                  if (g_opPtr[i + 1]->op == oDINC)
+                    {
+                     popt_DeletePCodePair(i, i + 1);
+                     nchanges++;
+                    }
+                  else
+                   {
+                     i++;
+                   }
+               }
+             else
+               {
+                 i++;
+               }
+            }
+          else
+            {
+              i++
+            }
+        }
      }
 
    return nchanges;
@@ -616,123 +648,138 @@ int16_t popt_UnaryOptimize(void)
 
 /****************************************************************************/
 
-int16_t popt_BinaryOptimize(void)
+int16_t popt_LongBinaryOptimize(void)
 {
   int16_t nchanges = 0;
   register int16_t stmp16;
   register int16_t i;
   register int16_t j;
+  register int16_t k;
 
-  TRACE(stderr, "[popt_BinaryOptimize]");
+  TRACE(stderr, "[popt_LongBinaryOptimize]");
 
   /* At least three pcodes are needed to perform the following binary
    * operator optimizations.
    */
 
-  i = 0;
-  while (i < g_nOpPtrs - 2)
+  i = 2;
+  while (i < g_nOpPtrs)
     {
-      if (g_opPtr[i]->op == oPUSH || g_opPtr[i]->op == oPUSHB ||
-          g_opPtr[i]->op == oUPUSHB)
-        {
-          if (g_opPtr[i + 1]->op == oPUSH || g_opPtr[i + 1]->op == oPUSHB ||
-              g_opPtr[i + 1]->op == oUPUSHB)
+      j = i - 1;
+      k = i - 2;
+
+      /* Check for a long operation. */
+
+      if (g_opPtr[i] == oLONGOP8)
+       {
+          /* Check for a long operation on a constant (PUSHed) value.  All Binary
+            * operators are LONGOP8 types.
+            */
+
+          if ((g_opPtr[j]->op == oPUSH || g_opPtr[j]->op == oPUSHB ||
+               g_opPtr[j]->op == oUPUSHB) &&
+              (g_opPtr[k]->op == oPUSH || g_opPtr[k]->op == oPUSHB ||
+               g_opPtr[k]->op == oUPUSHB) &&
+
+          /* Turn the oPUSHB or oUPUSHB instructions into an oPUSH
+           * instructions (temporarily)
+           */
+
+          if (g_opPtr[j]->op == oPUSHB)
             {
-              /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
+              g_opPtr[j]->op   = oPUSH;
+              g_opPtr[j]->arg2 = signExtend8(g_opPtr[j]->arg1);
+              g_opPtr[j]->arg1 = 0;
+            }
+          else if (g_opPtr[j]->op == oUPUSHB)
+            {
+              g_opPtr[j]->op   = oPUSH;
+              g_opPtr[j]->arg2 = g_opPtr[j]->arg1;
+              g_opPtr[j]->arg1 = 0;
+            }
 
-              if (g_opPtr[i]->op == oPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = signExtend8(g_opPtr[i]->arg1);
-                  g_opPtr[i]->arg1 = 0;
-                }
-              else if (g_opPtr[i]->op == oUPUSHB)
-                {
-                  g_opPtr[i]->op   = oPUSH;
-                  g_opPtr[i]->arg2 = g_opPtr[i]->arg1;
-                  g_opPtr[i]->arg1 = 0;
-                }
-
-              if (g_opPtr[i + 1]->op == oPUSHB)
-                {
-                  g_opPtr[i + 1]->op   = oPUSH;
-                  g_opPtr[i + 1]->arg2 = signExtend8(g_opPtr[i + 1]->arg1);
-                  g_opPtr[i + 1]->arg1 = 0;
-                }
-              else if (g_opPtr[i + 1]->op == oUPUSHB)
-                {
-                  g_opPtr[i + 1]->op   = oPUSH;
-                  g_opPtr[i + 1]->arg2 = g_opPtr[i + 1]->arg1;
-                  g_opPtr[i + 1]->arg1 = 0;
-                }
+          if (g_opPtr[k]->op == oPUSHB)
+            {
+              g_opPtr[k]->op   = oPUSH;
+              g_opPtr[k]->arg2 = signExtend8(g_opPtr[k]->arg1);
+              g_opPtr[k]->arg1 = 0;
+            }
+          else if (g_opPtr[k]->op == oUPUSHB)
+            {
+              g_opPtr[k]->op   = oPUSH;
+              g_opPtr[k]->arg2 = g_opPtr[k]->arg1;
+              g_opPtr[k]->arg1 = 0;
+            }
+LEFT OFF!!!
+##############################################################################
 
               switch (g_opPtr[i + 2]->op)
                 {
-                case oADD :
+                case oDADD :
                   g_opPtr[i]->arg2 += g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oSUB :
+                case oDSUB :
                   g_opPtr[i]->arg2 -= g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oMUL :   /* REVISIT:  arg2 is unsigned */
-                case oUMUL :
+                case oDMUL :   /* REVISIT:  arg2 is unsigned */
+                case oDUMUL :
                   g_opPtr[i]->arg2 *= g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oDIV :
+                case oDDIV :
                   stmp16 = g_opPtr[i]->arg2 / signExtend16(g_opPtr[i + 1]->arg2);
                   g_opPtr[i]->arg2 = stmp16;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oMOD : /* REVISIT:  arg2 is unigned */
-                case oUMOD :
+                case oDMOD : /* REVISIT:  arg2 is unigned */
+                case oDUMOD :
                   g_opPtr[i]->arg2 %= g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oSLL :
+                case oDSLL :
                   g_opPtr[i]->arg2 <<= g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oSRL :
+                case oDSRL :
                   g_opPtr[i]->arg2 >>= g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oSRA :
+                case oDSRA :
                   stmp16 = (((int16_t)g_opPtr[i]->arg2) >> g_opPtr[i + 1]->arg2);
                   g_opPtr[i]->arg2 = (uint16_t)stmp16;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oOR  :
+                case oDOR  :
                   g_opPtr[i]->arg2 |= g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oAND :
+                case oDAND :
                   g_opPtr[i]->arg2 &= g_opPtr[i + 1]->arg2;
                   popt_DeletePCodePair(i + 1, i + 2);
                   nchanges++;
                   break;
 
-                case oEQU :
+                case oDEQU :
                   if (g_opPtr[i]->arg2 == g_opPtr[i + 1]->arg2)
                     {
                       g_opPtr[i]->arg2 = -1;
@@ -746,7 +793,7 @@ int16_t popt_BinaryOptimize(void)
                   nchanges++;
                   break;
 
-                case oNEQ :
+                case oDNEQ :
                   if ((int16_t)g_opPtr[i]->arg2 != (int16_t)g_opPtr[i + 1]->arg2)
                     {
                       g_opPtr[i]->arg2 = -1;
@@ -760,8 +807,8 @@ int16_t popt_BinaryOptimize(void)
                   nchanges++;
                   break;
 
-                case oLT  :  /* REVISIT:  arg2 is unsigned */
-                case oULT :
+                case oDLT  :  /* REVISIT:  arg2 is unsigned */
+                case oDULT :
                   if ((int16_t)g_opPtr[i]->arg2 < (int16_t)g_opPtr[i + 1]->arg2)
                     {
                       g_opPtr[i]->arg2 = -1;
@@ -775,8 +822,8 @@ int16_t popt_BinaryOptimize(void)
                   nchanges++;
                   break;
 
-                case oGTE :  /* REVISIT:  arg2 is unsigned */
-                case oUGTE :
+                case oDGTE :  /* REVISIT:  arg2 is unsigned */
+                case oDUGTE :
                   if ((int16_t)g_opPtr[i]->arg2 >= (int16_t)g_opPtr[i + 1]->arg2)
                     {
                       g_opPtr[i]->arg2 = -1;
@@ -790,8 +837,8 @@ int16_t popt_BinaryOptimize(void)
                   nchanges++;
                   break;
 
-                case oGT  :  /* REVISIT:  arg2 is unsigned */
-                case oUGT :
+                case oDGT  :  /* REVISIT:  arg2 is unsigned */
+                case oDUGT :
                   if ((int16_t)g_opPtr[i]->arg2 > (int16_t)g_opPtr[i + 1]->arg2)
                     {
                       g_opPtr[i]->arg2 = -1;
@@ -805,8 +852,8 @@ int16_t popt_BinaryOptimize(void)
                   nchanges++;
                   break;
 
-                case oLTE :  /* REVISIT:  arg2 is unsigned */
-                case oULTE :
+                case oDLTE :  /* REVISIT:  arg2 is unsigned */
+                case oDULTE :
                   if ((int16_t)g_opPtr[i]->arg2 <= (int16_t)g_opPtr[i + 1]->arg2)
                     {
                       g_opPtr[i]->arg2 = -1;
@@ -875,9 +922,9 @@ int16_t popt_BinaryOptimize(void)
            * following binary operator optimizations.
            */
 
-          else if (g_opPtr[i + 1]->op == oLDS   ||
-                   g_opPtr[i + 1]->op == oLDSB  ||
-                   g_opPtr[i + 1]->op == oULDSB ||
+          else if (g_opPtr[i + 1]->op == oDLDS   ||
+                   g_opPtr[i + 1]->op == oDLDSB  ||
+                   g_opPtr[i + 1]->op == oDULDSB ||
                    g_opPtr[i + 1]->op == oLAS   ||
                    g_opPtr[i + 1]->op == oLAC)
             {
@@ -898,7 +945,7 @@ int16_t popt_BinaryOptimize(void)
 
               switch (g_opPtr[i + 2]->op)
                 {
-                case oADD :
+                case oDADD :
                   if (g_opPtr[i]->arg2 == 0)
                     {
                       popt_DeletePCodePair(i, i + 2);
@@ -906,29 +953,29 @@ int16_t popt_BinaryOptimize(void)
                     }
                   else if (g_opPtr[i]->arg2 == 1)
                     {
-                      g_opPtr[i + 2]->op = oINC;
+                      g_opPtr[i + 2]->arg1 = oDINC;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   else if (g_opPtr[i]->arg2 == (uint16_t)-1)
                     {
-                      g_opPtr[i + 2]->op = oDEC;
+                      g_opPtr[i + 2]->arg1 = oDDEC;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   break;
 
-                case oSUB :
+                case oDSUB :
                   if (g_opPtr[i]->arg2 == 0)
                     {
-                      g_opPtr[i]->op = oNEG;
+                      g_opPtr[i]->arg1 = oDNEG;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   break;
 
-                case oMUL :
-                case oUMUL :
+                case oDMUL :
+                case oDUMUL :
                   stmp16 = 0;
                   switch (g_opPtr[i]->arg2)
                     {
@@ -957,7 +1004,7 @@ int16_t popt_BinaryOptimize(void)
                       g_opPtr[i + 1]->op   = oPUSH;
                       g_opPtr[i + 1]->arg1 = 0;
                       g_opPtr[i + 1]->arg2 = stmp16;
-                      g_opPtr[i + 2]->op   = oSLL;
+                      g_opPtr[i + 2]->arg1 = oDSLL;
                       nchanges++;
                       break;
 
@@ -966,7 +1013,7 @@ int16_t popt_BinaryOptimize(void)
                     }
                   break;
 
-                case oOR  :
+                case oDOR  :
                   if (g_opPtr[i]->arg2 == 0)
                     {
                       popt_DeletePCodePair(i, i + 2);
@@ -974,7 +1021,7 @@ int16_t popt_BinaryOptimize(void)
                     }
                   break;
 
-                case oAND :
+                case oDAND :
                   if (g_opPtr[i]->arg2 == 0xffff)
                     {
                       popt_DeletePCodePair(i, i + 2);
@@ -983,58 +1030,58 @@ int16_t popt_BinaryOptimize(void)
                   else i++;
                   break;
 
-                case oEQU :
+                case oDEQU :
                   if (g_opPtr[i]->arg2 == 0)
                     {
-                      g_opPtr[i + 2]->op = oEQUZ;
+                      g_opPtr[i + 2]->arg1 = oDEQUZ;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   else i++;
                   break;
 
-                case oNEQ :
+                case oDNEQ :
                   if (g_opPtr[i]->arg2 == 0)
                     {
-                      g_opPtr[i + 2]->op = oNEQZ;
+                      g_opPtr[i + 2]->arg1 = oDNEQZ;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   else i++;
                   break;
 
-                case oLT  :
+                case oDLT  :
                   if (g_opPtr[i]->arg2 == 0)
                     {
-                      g_opPtr[i + 2]->op = oGTEZ;
+                      g_opPtr[i + 2]->arg1 = oDGTEZ;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   break;
 
-                case oGTE :
+                case oDGTE :
                   if (g_opPtr[i]->arg2 == 0)
                     {
-                      g_opPtr[i + 2]->op = oLTZ;
+                      g_opPtr[i + 2]->arg1 = oDLTZ;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   else i++;
                   break;
 
-                case oGT  :
+                case oDGT  :
                   if (g_opPtr[i]->arg2 == 0)
                     {
-                      g_opPtr[i + 2]->op = oLTEZ;
+                      g_opPtr[i + 2]->arg1 = oDLTEZ;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
                   break;
 
-                case oLTE :
+                case oDLTE :
                   if (g_opPtr[i]->arg2 == 0)
                     {
-                      g_opPtr[i + 2]->op = oGTZ;
+                      g_opPtr[i + 2]->arg1 = oDGTZ;
                       popt_DeletePCode(i);
                       nchanges++;
                     }
@@ -1082,22 +1129,22 @@ int16_t popt_BinaryOptimize(void)
 
       /* Misc improvements on binary operators */
 
-      else if (g_opPtr[i]->op == oNEG)
+      else if (g_opPtr[i]->op == oDNEG)
         {
           /* Negation followed by add is subtraction */
 
-          if (g_opPtr[i + 1]->op == oADD)
+          if (g_opPtr[i + 1]->op == oDADD)
             {
-               g_opPtr[i + 1]->op = oSUB;
+               g_opPtr[i + 1]->arg1 = oDSUB;
                popt_DeletePCode(i);
                nchanges++;
             }
 
           /* Negation followed by subtraction is addition */
 
-          else if (g_opPtr[i]->op == oSUB)
+          else if (g_opPtr[i]->op == oDSUB)
             {
-               g_opPtr[i + 1]->op = oADD;
+               g_opPtr[i + 1]->arg1 = oDADD;
                popt_DeletePCode(i);
                nchanges++;
             }

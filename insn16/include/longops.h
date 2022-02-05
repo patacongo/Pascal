@@ -99,6 +99,7 @@ enum longOp8_e
   oDDUP,    /* (One 32-bit stack argument */
   oDXCHG,   /* (Two 32-bit stack arguments) */
   oCNVD,    /* (One 16-bit stack argument) */
+  oUCNVD,   /* (One 16-bit stack argument) */
   oDCNV,    /* (One 32-bit stack argument) */
 
   /* Unsigned arithmetic and comparisons */

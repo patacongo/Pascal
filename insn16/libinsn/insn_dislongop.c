@@ -85,7 +85,7 @@ struct opCodeInfo_s
 
 /* This table is indexed via enum longOp8_e & ~o8 */
 
-static struct opCodeInfo_s g_longOpTable8[0x40] =
+static struct opCodeInfo_s g_longOpTable8[] =
 {
   /* Program control (No stack arguments) */
 
@@ -135,6 +135,7 @@ static struct opCodeInfo_s g_longOpTable8[0x40] =
   { "DDUP  ", MKFMT(NOARG8, NOARG16) },
   { "DXCHG ", MKFMT(NOARG8, NOARG16) },
   { "CNVD  ", MKFMT(NOARG8, NOARG16) },
+  { "UCNVD ", MKFMT(NOARG8, NOARG16) },
   { "DCNV  ", MKFMT(NOARG8, NOARG16) },
 
   /* Unsigned arithmetic */
@@ -155,6 +156,8 @@ static struct opCodeInfo_s g_longOpTable8[0x40] =
   { "DXOR  ", MKFMT(NOARG8, NOARG16) },
 };
 
+#define NUM_LONGOP8 (sizeof(g_longOpTable8) / sizeof(struct opCodeInfo_s))
+
 /**************** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ******************/
 /* NONE */
 
@@ -162,7 +165,7 @@ static struct opCodeInfo_s g_longOpTable8[0x40] =
 
 /* This table is indexed via enum longOp24_e & ~o8 */
 
-static struct opCodeInfo_s g_longOpTable24[0x40] =
+static struct opCodeInfo_s g_longOpTable24[] =
 {
 /* Program control:  arg16 = unsigned label (One stack argument) */
 
@@ -189,6 +192,8 @@ static struct opCodeInfo_s g_longOpTable24[0x40] =
   { "DUJLTE", MKFMT(NOARG8, HEX) },
 };
 
+#define NUM_LONGOP24 (sizeof(g_longOpTable24) / sizeof(struct opCodeInfo_s))
+
 /**** OPCODES WITH BYTE ARGUMENT (arg8) AND 16-BIT ARGUMENT (arg16) ****/
 /* NONE */
 
@@ -198,18 +203,26 @@ void insn_DisassembleLongOpCode(FILE* lfile, opType_t *pop)
 {
   struct opCodeInfo_s *opCodeInfo;
   uint8_t fmt16;
+  int index;
 
   /* Print normal long opCode mnemonic */
 
+  index = pop->arg1 & 0x3f;
   switch (pop->op & (o8 | o16))
     {
       case o8 :
-        opCodeInfo = &g_longOpTable8[pop->arg1 & 0x3f];
-        break;
+        if (index < NUM_LONGOP8)
+          {
+            opCodeInfo = &g_longOpTable8[index];
+            break;
+          }
 
       case o8 | o16 :
-        opCodeInfo = &g_longOpTable24[pop->arg1 & 0x3f];
-        break;
+        if (index < NUM_LONGOP24)
+          {
+            opCodeInfo = &g_longOpTable24[index];
+            break;
+          }
 
       case 0 :
       case o16 :

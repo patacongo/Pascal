@@ -83,7 +83,7 @@ enum longops_e
 
   /* Data stack */
 
-  opDDUP, opDXCHG, opCNVD, opDCNV,
+  opDDUP, opDXCHG, opCNVD, opUCNVD, opDCNV,
 
   /**-------------------------------------------------------------------
    ** OPCODES WITH ONE ARGUMENT

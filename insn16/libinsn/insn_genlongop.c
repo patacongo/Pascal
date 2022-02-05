@@ -118,6 +118,7 @@ static const uint16_t g_longOpcodeMap[NUM_LONGOPS] =
   oDDUP,    /* opDDUP */
   oDXCHG,   /* opDXCHG */
   oCNVD,    /* opCNVD */
+  oUCNVD,   /* opUCNVD */
   oDCNV,    /* opDCNV */
 
   oDJEQUZ,  /* opDJEQUZ */
@@ -133,10 +134,6 @@ static const uint16_t g_longOpcodeMap[NUM_LONGOPS] =
 
 /****************************************************************************
  * Private Function Prototypes
- ****************************************************************************/
-
-/****************************************************************************
- * Private Functions
  ****************************************************************************/
 
 static void insn16_longOpcodeGenerate(enum longops_e opcode, uint16_t arg1,
