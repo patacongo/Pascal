@@ -1697,7 +1697,7 @@ static symbol_t *pas_GetArrayIndexType(void)
   if (g_token == tINT_CONST ||
      (g_token == sTYPE && g_tknPtr->sParm.t.tType == tINT_CONST))
     {
-      uint32_t saveTknUInit = g_tknUInt;
+      uint32_t saveTknUInt = g_tknUInt;
 
       /* Check for a subrange-type of integer constants.
        *
@@ -1721,10 +1721,10 @@ static symbol_t *pas_GetArrayIndexType(void)
             }
           else
             {
-              if (g_tknUInt <= saveTknUInit) error(eSUBRANGETYPE);
+              if (g_tknUInt < saveTknUInt) error(eSUBRANGETYPE);
               else
                 {
-                  minValue  = saveTknUInit;
+                  minValue  = saveTknUInt;
                   maxValue  = g_tknUInt;
                   indexSize = sINT_SIZE;
                   indexType = sSUBRANGE;
