@@ -1719,20 +1719,20 @@ static symbol_t *pas_GetArrayIndexType(void)
             {
               error(eINTCONST);
             }
+          else if (g_tknUInt < saveTknUInt)
+            {
+              error(eSUBRANGETYPE);
+            }
           else
             {
-              if (g_tknUInt < saveTknUInt) error(eSUBRANGETYPE);
-              else
-                {
-                  minValue  = saveTknUInt;
-                  maxValue  = g_tknUInt;
-                  indexSize = sINT_SIZE;
-                  indexType = sSUBRANGE;
-                  subType   = sINT;
-                  haveIndex = true;
+              minValue  = saveTknUInt;
+              maxValue  = g_tknUInt;
+              indexSize = sINT_SIZE;
+              indexType = sSUBRANGE;
+              subType   = sINT;
+              haveIndex = true;
 
-                  getToken();
-                }
+              getToken();
             }
         }
       else
