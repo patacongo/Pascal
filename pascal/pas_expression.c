@@ -99,6 +99,7 @@ struct exprOpcodes_s
   enum pcode_e   wordOpCode;
   enum pcode_e   ptrOpCode;
   enum pcode_e   charOpCode;
+  enum pcode_e   boolOpCode;
   enum longops_e longIntOpCode;
   enum longops_e longWordOpCode;
   uint16_t       fpOpCode;
@@ -3483,6 +3484,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       exprOpCodes.wordOpCode     = opEQU;
       exprOpCodes.ptrOpCode      = opEQU;
       exprOpCodes.charOpCode     = opEQU;
+      exprOpCodes.boolOpCode     = opEQU;
       exprOpCodes.longIntOpCode  = opDEQU;
       exprOpCodes.longWordOpCode = opDEQU;
       exprOpCodes.fpOpCode       = fpEQU;
@@ -3501,6 +3503,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       exprOpCodes.wordOpCode     = opNEQ;
       exprOpCodes.ptrOpCode      = opNEQ;
       exprOpCodes.charOpCode     = opNEQ;
+      exprOpCodes.boolOpCode     = opNEQ;
       exprOpCodes.longIntOpCode  = opDNEQ;
       exprOpCodes.longWordOpCode = opDNEQ;
       exprOpCodes.fpOpCode       = fpNEQ;
@@ -3837,16 +3840,16 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
         }
     }
 
-  /* There are a limited number of operations on CHAR types.  Of course, they
-   * can always be converted to integer (with the CHR function) for more
-   * extensive operations.
+  /* There are a limited number of operations on CHAR and boolean types.  Of
+   * course, they can always be converted to integer (with the CHR function)
+   * for more extensive operations.
    */
 
-  if (exprOpCodes.charOpCode != opNOP && simple1Type == exprChar && !handled)
-    {
-      /* We need an exact type match */
+  /* We need an exact type match for these */
 
-      if (simple1Type == simple2Type)
+  if (simple1Type == simple2Type && !handled)
+    {
+      if (exprOpCodes.charOpCode != opNOP && simple1Type == exprChar)
         {
           /* Generate the comparison */
 
@@ -3857,11 +3860,23 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
           simple1Type = exprBoolean;
           handled     = true;
         }
+      else if (exprOpCodes.boolOpCode != opNOP && simple1Type == exprBoolean)
+        {
+          /* Generate the comparison */
+
+          pas_GenerateSimple(exprOpCodes.boolOpCode);
+
+          /* The resulting type is still boolean */
+
+          handled = true;
+        }
     }
 
   /* Deal with integer and real arithmetic */
 
-  if ((exprOpCodes.intOpCode != opNOP || exprOpCodes.wordOpCode != opNOP || exprOpCodes.longIntOpCode != opDNOP ||
+  if ((exprOpCodes.intOpCode      != opNOP  ||
+       exprOpCodes.wordOpCode     != opNOP  ||
+       exprOpCodes.longIntOpCode  != opDNOP ||
        exprOpCodes.longWordOpCode != opDNOP) && !handled)
     {
       /* Get the second simple expression (if we did not already) */
