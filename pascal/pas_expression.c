@@ -587,10 +587,36 @@ static exprType_t pas_Term(exprType_t findExprType)
           break;
         }
 
-      /* Get the next factor */
+      /* Get the next factor.  The shift instructions are different in that
+       * there is an asymmetry:  The type of the shift value is a 16-bit
+       * ordinal type regardless of what is being shifted.
+       */
 
       getToken();
-      factor2Type = pas_Factor(findExprType);
+
+      if (operation == tSHL || operation == tSHR)
+        {
+          factor2Type = pas_Factor(exprAnyOrdinal);
+
+          /* All ordinals are 16-bits in width (at least on the stack) except
+           * for the long integer types.
+           */
+
+          if (factor2Type == exprLongInteger || factor2Type == exprLongWord ||
+              factor2Type == exprUnknown)
+            {
+              error(eSHIFTTYPE);
+              factor2Type = exprInteger;
+            }
+        }
+      else
+        {
+          /* Otherwise, the type of the second factor should, generally, match
+           * the type of the first.
+           */
+
+          factor2Type = pas_Factor(findExprType);
+        }
 
       /* Before generating the operation, verify that the types match.
        * Perform automatic type conversion from INTEGER to REAL as
@@ -626,16 +652,18 @@ static exprType_t pas_Term(exprType_t findExprType)
               factor1Type = exprReal;
             }
 
-          /* Otherwise, the two factors must agree in type */
+          /* Otherwise, the two factors must agree in type (except for the
+           * case of the SHIFT instructions as described above.
+           */
 
-          else
+          else if (operation == tSHL || operation == tSHR)
             {
               error(eFACTORTYPE);
             }
         }
 
-    /* Handle the cases for conversions when the two string
-     * type are the same type.
+    /* Handle the cases for conversions when the two string types are the
+     * same type.
      */
 
       else

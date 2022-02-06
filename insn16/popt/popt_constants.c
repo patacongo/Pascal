@@ -48,7 +48,7 @@
 #include "paslib.h"
 #include "popt.h"
 #include "popt_local.h"
-#include "popt_push.h"
+#include "popt_util.h"
 #include "popt_constants.h"
 
 /****************************************************************************
@@ -60,8 +60,7 @@
 int16_t popt_UnaryOptimize(void)
 {
   int16_t nchanges = 0;
-  register uint16_t temp;
-  register int16_t i;
+  int16_t i;
 
   TRACE(stderr, "[popt_UnaryOptimize]");
 
@@ -159,53 +158,42 @@ int16_t popt_UnaryOptimize(void)
                  }
                break;
 
-             case oMUL :
-             case oUMUL :
-             case oDIV :
-             case oUDIV :
-               temp = 0;
-               switch (g_opPtr[i]->arg2)
-                 {
-                 case 1 :
-                   popt_DeletePCodePair(i, i + 1);
-                   nchanges++;
-                   break;
+              case oMUL :
+              case oUMUL :
+              case oDIV :
+              case oUDIV :
+                {
+                  if (g_opPtr[i]->arg2 == 1)
+                    {
+                      popt_DeletePCodePair(i, i + 1);
+                      nchanges++;
+                    }
+                  else
+                    {
+                      int16_t temp =
+                        popt_PowerOfTwo((uint32_t)g_opPtr[i]->arg2);
 
-                 case 16384 : temp++;
-                 case  8192 : temp++;
-                 case  4096 : temp++;
-                 case  2048 : temp++;
-                 case  1024 : temp++;
-                 case   512 : temp++;
-                 case   256 : temp++;
-                 case   128 : temp++;
-                 case    64 : temp++;
-                 case    32 : temp++;
-                 case    16 : temp++;
-                 case     8 : temp++;
-                 case     4 : temp++;
-                 case     2 : temp++;
-                   g_opPtr[i]->arg2 = temp;
-                   if (g_opPtr[i + 1]->op == oMUL ||
-                       g_opPtr[i + 1]->op == oUMUL)
-                     {
-                       g_opPtr[i + 1]->op = oSLL;
-                     }
-                   else if (g_opPtr[i + 1]->op == oDIV)
-                     {
-                       g_opPtr[i + 1]->op = oSRA;
-                     }
-                   else /* if g_opPtr[i + 1]->op == oUDIV) */
-                     {
-                       g_opPtr[i + 1]->op = oSRL;
-                     }
+                      if (temp >= 1)
+                        {
+                          g_opPtr[i]->arg2 = temp;
+                          if (g_opPtr[i + 1]->op == oMUL ||
+                             g_opPtr[i + 1]->op == oUMUL)
+                            {
+                              g_opPtr[i + 1]->op = oSLL;
+                            }
+                          else if (g_opPtr[i + 1]->op == oDIV)
+                            {
+                              g_opPtr[i + 1]->op = oSRA;
+                            }
+                          else /* if g_opPtr[i + 1]->op == oUDIV) */
+                            {
+                              g_opPtr[i + 1]->op = oSRL;
+                            }
 
-                   nchanges++;
-                   break;
-
-                 default :
-                   break;
-                 }
+                          nchanges++;
+                        }
+                    }
+               }
                break;
 
              case oSLL :

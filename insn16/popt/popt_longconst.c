@@ -44,11 +44,12 @@
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "insn16.h"
+#include "longops.h"
 
 #include "paslib.h"
 #include "popt.h"
 #include "popt_local.h"
-#include "popt_push.h"
+#include "popt_util.h"
 #include "popt_longconst.h"
 
 /****************************************************************************
@@ -73,8 +74,7 @@ typedef union uWord_u uWord_t;
 int16_t popt_LongUnaryOptimize(void)
 {
   int16_t nchanges = 0;
-  uint16_t temp;
-  ing i;
+  int i;
 
   TRACE(stderr, "[popt_LongUnaryOptimize]");
 
@@ -85,17 +85,18 @@ int16_t popt_LongUnaryOptimize(void)
     {
       /* Check for a long operation. */
 
-      if (g_opPtr[i] == oLONGOP8)
-       {
-          int j = i - 1;
+      if (g_opPtr[i]->op == oLONGOP8)
+        {
+          int j1 = i - 1;
+          int j0 = i - 2;
 
           /* Check for a long operation on a constant (PUSHed) value.  All Unary
             * operators are LONGOP8 types.
             */
 
-          if (g_opPtr[j]->op == oPUSH || g_opPtr[j]->op == oPUSHB ||
-              g_opPtr[j]->op == oUPUSHB)
-           {
+          if (g_opPtr[j1]->op == oPUSH || g_opPtr[j1]->op == oPUSHB ||
+              g_opPtr[j1]->op == oUPUSHB)
+            {
               /* With two opcodes, only the 16- to 32-bit conversion long
                * operations can be optimized.
                */
@@ -108,11 +109,11 @@ int16_t popt_LongUnaryOptimize(void)
 
                   /* Turn the oPUSHB or oUPUSHB into an oPUSH op (PUSH) */
 
-                  popt_ExpandPush(g_opPtr[j]);
-                  word.SData = signExtend16(g_opPtr[j]->arg2);
+                  popt_ExpandPush(g_opPtr[j1]);
+                  word.sData = signExtend16(g_opPtr[j1]->arg2);
 
-                  g_opPtr[j]->arg2 = word.word[0];
-                  popt_OptimizePush(g_opPtr[j]);
+                  g_opPtr[j1]->arg2 = word.word[0];
+                  popt_OptimizePush(g_opPtr[j1]);
 
                   g_opPtr[i]->op   = oPUSH;
                   g_opPtr[i]->arg1 = 0;
@@ -131,11 +132,11 @@ int16_t popt_LongUnaryOptimize(void)
 
                   /* Turn the oPUSHB or oUPUSHB into an oPUSH op (PUSH) */
 
-                  popt_ExpandPush(g_opPtr[j]);
-                  word.uData = (uint32_t)g_opPtr[j]->arg2;
+                  popt_ExpandPush(g_opPtr[j1]);
+                  word.uData = (uint32_t)g_opPtr[j1]->arg2;
 
-                  g_opPtr[j]->arg2 = word.word[0];
-                  popt_OptimizePush(g_opPtr[j]);
+                  g_opPtr[j1]->arg2 = word.word[0];
+                  popt_OptimizePush(g_opPtr[j1]);
 
                   g_opPtr[i]->op   = oPUSH;
                   g_opPtr[i]->arg1 = 0;
@@ -148,554 +149,638 @@ int16_t popt_LongUnaryOptimize(void)
 
               /* All other Unary optimatizations required 2 constant pushes */
 
-              k = i - 2;
-              if (k < 0 ||
-                  (g_opPtr[k]->op != oPUSH && g_opPtr[j]->op != oPUSHB &&
-                   g_opPtr[k]->op != oUPUSHB))
+              if (j0 >= 0 &&
+                  (g_opPtr[j0]->op == oPUSH || g_opPtr[j0]->op == oPUSHB ||
+                   g_opPtr[j0]->op == oUPUSHB))
+                {
+                  uWord_t word;
+
+                  /* Turn the oPUSHB or oUPUSHB into an oPUSH op (PUSH) */
+
+                  popt_ExpandPush(g_opPtr[j1]);
+                  popt_ExpandPush(g_opPtr[j0]);
+
+                  word.word[0] = g_opPtr[j0]->arg2;
+                  word.word[1] = g_opPtr[j1]->arg2;
+
+                  /* Handle according to the specific long operation in arg1 */
+
+                  switch (g_opPtr[i]->arg1)
+                    {
+                      /* Convert 32-bit value to 16-bit value (signed or unsigned) */
+
+                      case oDCNV :
+                        g_opPtr[j0]->arg2 = (uint16_t)(word.uData & 0xffff);
+
+                        popt_DeletePCode(j1);
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      /* Delete unary operators on constants */
+
+                      case oDNEG :
+                        word.sData        = -word.sData;
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDABS :
+                        if (word.sData < 0)
+                          {
+                            word.sData        = -word.sData;
+                            g_opPtr[j0]->arg2 = word.word[0];
+                            g_opPtr[j1]->arg2 = word.word[1];
+                          }
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                     case oDINC :
+                        word.uData++;
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDDEC :
+                        word.uData--;
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDNOT   :
+                        word.sData        = ~word.sData;
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      /* Simplify binary operations on constants */
+
+                     case oDADD :
+                        if (word.sData == 0)
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[i]->arg1 = oDINC;
+                            popt_DeletePCodePair(j1, j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[i]->arg1 = oDDEC;
+                            popt_DeletePCodePair(j1, j0);
+                            nchanges++;
+                          }
+                       break;
+
+                      case oDSUB :
+                        if (word.sData == 0)
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[i]->arg1 = oDDEC;
+                            popt_DeletePCodePair(j1, j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[i]->arg1 = oDINC;
+                            popt_DeletePCodePair(j1, j0);
+                            nchanges++;
+                          }
+                        break;
+
+                      case oDMUL :
+                      case oDUMUL :
+                      case oDDIV :
+                      case oDUDIV :
+                        if (word.sData == 1)
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                            nchanges++;
+                            continue;
+                          }
+                        else
+                          {
+                            int16_t temp =
+                              popt_PowerOfTwo((uint32_t)g_opPtr[i]->arg2);
+
+                            if (temp >= 1)
+                              {
+                                g_opPtr[j1]->arg2 = temp;
+                                if (g_opPtr[i]->arg1 == oDMUL ||
+                                    g_opPtr[i]->arg1 == oDUMUL)
+                                  {
+                                    g_opPtr[i]->arg1 = oDSLL;
+                                  }
+                                else if (g_opPtr[i]->arg1 == oDDIV)
+                                  {
+                                    g_opPtr[i]->arg1 = oDSRA;
+                                  }
+                                else /* if g_opPtr[i]->arg1 == oDUDIV) */
+                                 {
+                                    g_opPtr[i]->arg1 = oDSRL;
+                                  }
+
+                                nchanges++;
+                              }
+                          }
+                        break;
+
+                      case oDSLL :
+                      case oDSRL :
+                      case oDSRA :
+                      case oDOR  :
+                        if (word.sData == 0)
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                            nchanges++;
+                            continue;
+                          }
+                        break;
+
+                      case oDAND :
+                        if (word.uData == 0xffffffff)
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                            nchanges++;
+                            continue;
+                          }
+                        break;
+
+                      /* Delete comparisons of constants to zero */
+
+                      case oDEQUZ  :
+                        if (word.sData == 0)
+                          {
+                            word.sData = PASCAL_TRUE;
+                          }
+                        else
+                          {
+                            word.sData = PASCAL_FALSE;
+                          }
+
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDNEQZ  :
+                        if (word.sData != 0)
+                          {
+                            word.sData = PASCAL_TRUE;
+                          }
+                        else
+                          {
+                            word.sData = PASCAL_FALSE;
+                          }
+
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDLTZ   :
+                        if (word.sData < 0)
+                          {
+                            word.sData = PASCAL_TRUE;
+                          }
+                        else
+                          {
+                            word.sData = PASCAL_FALSE;
+                          }
+
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDGTEZ  :
+                        if (word.sData >= 0)
+                          {
+                            word.sData = PASCAL_TRUE;
+                          }
+                        else
+                          {
+                            word.sData = PASCAL_FALSE;
+                          }
+
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDGTZ   :
+                        if (word.sData > 0)
+                          {
+                            word.sData = PASCAL_TRUE;
+                          }
+                        else
+                          {
+                            word.sData = PASCAL_FALSE;
+                          }
+
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                      case oDLTEZ :
+                        if (word.sData <= 0)
+                          {
+                            word.sData = PASCAL_TRUE;
+                          }
+                        else
+                          {
+                            word.sData = PASCAL_FALSE;
+                          }
+
+                        g_opPtr[j0]->arg2 = word.word[0];
+                        g_opPtr[j1]->arg2 = word.word[1];
+
+                        popt_DeletePCode(i);
+                        nchanges++;
+                        continue;
+
+                        /* Simplify comparisons with certain constants */
+
+                      case oDEQU :
+                        if (word.sData == 0)
+                          {
+                            g_opPtr[i]->arg1    = oDEQUZ;
+                            popt_DeletePCodePair(i, j1);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDDEC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDEQUZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDINC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDEQUZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        break;
+
+                      case oDNEQ :
+                        if (word.sData == 0)
+                          {
+                            g_opPtr[i]->arg1   = oDNEQZ;
+                            popt_DeletePCodePair(i, j1);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDDEC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDNEQZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDINC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1   = oDNEQZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        break;
+
+                      case oDLT :
+                        if (word.sData == 0)
+                          {
+                            g_opPtr[i]->arg1   = oDLTZ;
+                            popt_DeletePCodePair(i, j1);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDDEC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDLTZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDINC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDLTZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        break;
+
+                      case oDGTE :
+                        if (word.sData == 0)
+                          {
+                            g_opPtr[i]->arg1   = oDGTEZ;
+                            popt_DeletePCodePair(i, j1);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDDEC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDGTEZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDINC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDGTEZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        break;
+
+                      case oDGT :
+                        if (word.sData == 0)
+                          {
+                            g_opPtr[i]->arg1   = oDGTZ;
+                            popt_DeletePCodePair(i, j1);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDDEC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDGTZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDINC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDGTZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        break;
+
+                      case oDLTE :
+                        if (word.sData == 0)
+                          {
+                            g_opPtr[i]->arg1   = oDLTEZ;
+                            popt_DeletePCodePair(i, j1);
+                            nchanges++;
+                            continue;
+                          }
+                        else if (word.sData == 1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDDEC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1    = oDLTEZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        else if (word.sData == -1)
+                          {
+                            g_opPtr[j1]->op     = oLONGOP8;
+                            g_opPtr[j1]->arg1   = oDINC;
+                            g_opPtr[j1]->arg2   = 0;
+
+                            g_opPtr[i]->arg1   = oDLTEZ;
+
+                            popt_DeletePCode(j0);
+                            nchanges++;
+                          }
+                        break;
+
+                      /* Simplify or delete condition branches on constants */
+
+                      case oDJEQUZ :
+                        if (word.sData == 0)
+                          {
+                            g_opPtr[i]->op   = oJMP;
+                            g_opPtr[i]->arg1 = 0;
+                            popt_DeletePCodePair(j1, j0);
+                            i++;
+                          }
+                        else
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                          }
+
+                        nchanges++;
+                        continue;
+
+                      case oDJNEQZ :
+                        if (word.sData != 0)
+                          {
+                            g_opPtr[i]->op   = oJMP;
+                            g_opPtr[i]->arg1 = 0;
+                            popt_DeletePCodePair(j1, j0);
+                            i++;
+                          }
+                        else
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                          }
+
+                        nchanges++;
+                        continue;
+
+                      case oDJLTZ  :
+                        if (word.sData < 0)
+                          {
+                            g_opPtr[i]->op   = oJMP;
+                            g_opPtr[i]->arg1 = 0;
+                            popt_DeletePCodePair(j1, j0);
+                            i++;
+                          }
+                        else
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                          }
+
+                        nchanges++;
+                        continue;
+
+                      case oDJGTEZ :
+                        if (word.sData >= 0)
+                          {
+                            g_opPtr[i]->op   = oJMP;
+                            g_opPtr[i]->arg1 = 0;
+                            popt_DeletePCodePair(j1, j0);
+                            i++;
+                          }
+                        else
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                          }
+
+                        nchanges++;
+                        continue;
+
+                      case oDJGTZ  :
+                        if (word.sData > 0)
+                          {
+                            g_opPtr[i]->op   = oJMP;
+                            g_opPtr[i]->arg1 = 0;
+                            popt_DeletePCodePair(j1, j0);
+                            i++;
+                          }
+                        else
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                          }
+
+                        nchanges++;
+                        continue;
+                        break;
+
+                      case oDJLTEZ :
+                        if (word.sData <= 0)
+                          {
+                            g_opPtr[i]->op   = oJMP;
+                            g_opPtr[i]->arg1 = 0;
+                            popt_DeletePCodePair(j1, j0);
+                            i++;
+                          }
+                        else
+                          {
+                            popt_DeletePCodeTrio(i, j1, j0);
+                          }
+
+                        nchanges++;
+                        continue;
+
+                      default:
+                        break;
+                    }
+                }
+
+              /* If the oPUSH instructions are still there, see if we can now
+               * represent them with a oPUSHB or oUPUSHB instruction.
+               */
+
+              popt_OptimizePush(g_opPtr[j1]);
+              popt_OptimizePush(g_opPtr[j0]);
+
+              /* If the LONGOP8 instruction is still there, well will need to
+               * increment the index over it.
+               */
+
+              if (g_opPtr[i] == NULL || g_opPtr[i]->op != oLONGOP8)
                 {
                   i++;
                   continue;
                 }
-
-              /* Turn the oPUSHB or oUPUSHB into an oPUSH op (PUSH) */
-
-              popt_ExpandPush(g_opPtr[j]);
-              popt_ExpandPush(g_opPtr[k]);
-
-              /* Handle according to the specific long operation in arg1 */
-
-               switch (g_opPtr[i]->arg1)
-                 {
-                   /* Convert 32-bit value to 16-bit value (signed or unsigned) */
-
-                   case oDCNV :
-                     {
-                       uWord_t word;
-
-                       /* We just want to retain the LS word, but we also don't
-                        * want any knowledge of endian-ness.
-                        */
-
-                       word.word[0] = g_opPtr[k]->arg2;
-                       word.word[1] = g_opPtr[j]->arg2;
-
-                       g_opPtr[k]->arg2 = (uint16_t)(word.uData & 0xffff);
-
-                       popt_DeletePCode(j);
-                       popt_DeletePCode(i);
-                       nchanges++
-                     }
-                     break;
-LEFT OFF!!!
-
-                   /* Delete unary operators on constants */
-
-                   case oDNEG   :
-                   g_opPtr[i]->arg2 = -(g_opPtr[i]->arg2);
-                   popt_DeletePCode(i + 1);
-                   nchanges++;
-                   break;
-
-##############################################################################
-LEFT OFF!!!
-
-             case oDABS   :
-               if (signExtend16(g_opPtr[i]->arg2) < 0)
-                 {
-                   g_opPtr[i]->arg2 = -signExtend16(g_opPtr[i]->arg2);
-                 }
-
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDINC   :
-               (g_opPtr[i]->arg2)++;
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDDEC   :
-               (g_opPtr[i]->arg2)--;
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDNOT   :
-               g_opPtr[i]->arg2 = ~(g_opPtr[i]->arg2);
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-               /* Simplify binary operations on constants */
-
-             case oDADD :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDINC;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == (uint16_t)-1)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDDEC;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               break;
-
-             case oDSUB :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDDEC;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == (uint16_t)-1)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDINC;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               break;
-
-             case oDMUL :
-             case oDUMUL :
-             case oDDIV :
-             case oDUDIV :
-               temp = 0;
-               switch (g_opPtr[i]->arg2)
-                 {
-                 case 1 :
-                   popt_DeletePCodePair(i, i + 1);
-                   nchanges++;
-                   break;
-
-                 case 16384 : temp++;
-                 case  8192 : temp++;
-                 case  4096 : temp++;
-                 case  2048 : temp++;
-                 case  1024 : temp++;
-                 case   512 : temp++;
-                 case   256 : temp++;
-                 case   128 : temp++;
-                 case    64 : temp++;
-                 case    32 : temp++;
-                 case    16 : temp++;
-                 case     8 : temp++;
-                 case     4 : temp++;
-                 case     2 : temp++;
-                   g_opPtr[i]->arg2 = temp;
-                   if (g_opPtr[i + 1]->op == oDMUL ||
-                       g_opPtr[i + 1]->op == oDUMUL)
-                     {
-                       g_opPtr[i + 1]->op = oSLL;
-                     }
-                   else if (g_opPtr[i + 1]->op == oDDIV)
-                     {
-                       g_opPtr[i + 1]->op = oSRA;
-                     }
-                   else /* if g_opPtr[i + 1]->op == oDUDIV) */
-                     {
-                       g_opPtr[i + 1]->op = oSRL;
-                     }
-
-                   nchanges++;
-                   break;
-
-                 default :
-                   break;
-                 }
-               break;
-
-             case oDSLL :
-             case oDSRL :
-             case oDSRA :
-             case oDOR  :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                   nchanges++;
-                 }
-               break;
-
-             case oDAND :
-               if (g_opPtr[i]->arg2 == 0xffff)
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                   nchanges++;
-                 }
-               break;
-
-               /* Delete comparisons of constants to zero */
-
-             case oDEQUZ  :
-               if (g_opPtr[i]->arg2 == 0) g_opPtr[i]->arg2 = -1;
-               else g_opPtr[i]->arg2 = 0;
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDNEQZ  :
-               if (g_opPtr[i]->arg2 != 0)
-                 {
-                   g_opPtr[i]->arg2 = -1;
-                 }
-               else
-                 {
-                   g_opPtr[i]->arg2 = 0;
-                 }
-
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDLTZ   :
-               if (signExtend16(g_opPtr[i]->arg2) < 0)
-                 {
-                   g_opPtr[i]->arg2 = -1;
-                 }
-               else
-                 {
-                   g_opPtr[i]->arg2 = 0;
-                 }
-
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDGTEZ  :
-               if (signExtend16(g_opPtr[i]->arg2) >= 0)
-                 {
-                   g_opPtr[i]->arg2 = -1;
-                 }
-               else
-                 {
-                   g_opPtr[i]->arg2 = 0;
-                 }
-
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDGTZ   :
-               if (g_opPtr[i]->arg2 > 0) g_opPtr[i]->arg2 = -1;
-               else g_opPtr[i]->arg2 = 0;
-
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-             case oDLTEZ :
-               if (g_opPtr[i]->arg2 <= 0) g_opPtr[i]->arg2 = -1;
-               else g_opPtr[i]->arg2 = 0;
-
-               popt_DeletePCode(i + 1);
-               nchanges++;
-               break;
-
-               /*  Simplify comparisons with certain constants */
-
-             case oDEQU   :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDEQUZ;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i]->arg1     = oDDEC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDEQUZ;
-                   nchanges++;
-                 }
-               else if (signExtend16(g_opPtr[i]->arg2) == -1)
-                 {
-                   g_opPtr[i]->arg1     = oDINC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDEQUZ;
-                   nchanges++;
-                 }
-               break;
-
-             case oDNEQ   :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDNEQZ;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i]->arg1     = oDDEC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDNEQZ;
-                   nchanges++;
-                 }
-               else if (signExtend16(g_opPtr[i]->arg2) == -1)
-                 {
-                   g_opPtr[i]->arg1     = oDINC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDNEQZ;
-                   nchanges++;
-                 }
-               break;
-
-             case oDLT    :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDLTZ;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i]->arg1     = oDDEC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDLTZ;
-                   nchanges++;
-                 }
-               else if (signExtend16(g_opPtr[i]->arg2) == -1)
-                 {
-                   g_opPtr[i]->arg1     = oDINC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDLTZ;
-                   nchanges++;
-                 }
-               break;
-
-             case oDGTE   :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDGTEZ;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i]->arg1     = oDDEC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDGTEZ;
-                   nchanges++;
-                 }
-               else if (signExtend16(g_opPtr[i]->arg2) == -1)
-                 {
-                   g_opPtr[i]->arg1     = oDINC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDGTEZ;
-                   nchanges++;
-                 }
-               break;
-
-             case oDGT    :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   g_opPtr[i + 1]->op = oGTZ;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i]->arg1     = oDDEC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDGTZ;
-                   nchanges++;
-                 }
-               else if (signExtend16(g_opPtr[i]->arg2) == -1)
-                 {
-                   g_opPtr[i]->arg1     = oDINC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDGTZ;
-                   nchanges++;
-                 }
-               break;
-
-             case oDLTE   :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   g_opPtr[i + 1]->arg1 = oDLTEZ;
-                   popt_DeletePCode(i);
-                   nchanges++;
-                 }
-               else if (g_opPtr[i]->arg2 == 1)
-                 {
-                   g_opPtr[i]->arg1     = oDDEC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDLTEZ;
-                   nchanges++;
-                 }
-               else if (signExtend16(g_opPtr[i]->arg2) == -1)
-                 {
-                   g_opPtr[i]->arg1     = oDINC;
-                   g_opPtr[i]->arg2   = 0;
-                   g_opPtr[i + 1]->arg1 = oDLTEZ;
-                   nchanges++;
-                 }
-               break;
-
-             /* Simplify or delete condition branches on constants */
-
-             case oDJEQUZ :
-               if (g_opPtr[i]->arg2 == 0)
-                 {
-                   g_opPtr[i + 1]->op = oJMP;
-                   popt_DeletePCode(i);
-                 }
-               else
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                 }
-
-               nchanges++;
-               break;
-
-             case oDJNEQZ :
-               if (g_opPtr[i]->arg2 != 0)
-                 {
-                   g_opPtr[i + 1]->op = oJMP;
-                   popt_DeletePCode(i);
-                 }
-               else
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                 }
-
-               nchanges++;
-               break;
-
-             case oDJLTZ  :
-               if (signExtend16(g_opPtr[i]->arg2) < 0)
-                 {
-                   g_opPtr[i + 1]->op = oJMP;
-                   popt_DeletePCode(i);
-                 }
-               else
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                 }
-
-               nchanges++;
-               break;
-
-             case oDJGTEZ :
-               if (signExtend16(g_opPtr[i]->arg2) >= 0)
-                 {
-                   g_opPtr[i + 1]->op = oJMP;
-                   popt_DeletePCode(i);
-                 }
-               else
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                 }
-
-               nchanges++;
-               break;
-
-             case oDJGTZ  :
-               if (g_opPtr[i]->arg2 > 0)
-                 {
-                   g_opPtr[i + 1]->op = oJMP;
-                   popt_DeletePCode(i);
-                 }
-               else
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                 }
-
-               nchanges++;
-               break;
-
-             case oDJLTEZ :
-               if (g_opPtr[i]->arg2 <= 0)
-                 {
-                   g_opPtr[i + 1]->op = oJMP;
-                   popt_DeletePCode(i);
-                 }
-               else
-                 {
-                   popt_DeletePCodePair(i, i + 1);
-                 }
-
-               nchanges++;
-               break;
-
-             default     :
-               break;
-             }
-
-           /* If the oPUSH instruction is still there, well will need to
-            * increment the index over it.
-            */
-
-           if (g_opPtr[i] != NULL)
-             {
-               /* If the oPUSH instruction is still there, see if we can now
-                * represent it with a oPUSHB or oUPUSHB instruction.
-                */
-
-               popt_OptimizePush(g_opPtr[i]);
-               i++;
-             }
-         }
-##############################################################################
-                }
             }
-LEFT OFF!!!
 
           /* Perform optimizations on back-to-back Unary operators */
 
-          else if (g_opPtr[i] == oLONGOP8)
-           {
+          if (g_opPtr[j1]->op == oLONGOP8)
+            {
               /* Check for the effect of an INC reversed by a following DEC, and
                * vice versa.
                */
 
-              if (g_opPtr[i]->op == oDINC)
+              if (g_opPtr[i]->arg1 == oDINC)
                 {
-                  if (g_opPtr[i + 1]->op == oDDEC)
+                  if (g_opPtr[j1]->arg1 == oDDEC)
                     {
-                      popt_DeletePCodePair(i, i + 1);
+                      popt_DeletePCodePair(i, j1);
                       nchanges++;
-                    }
-                  else
-                    {
-                      i++;
                     }
                 }
               else if (g_opPtr[i]->op == oDDEC)
                 {
-                  if (g_opPtr[i + 1]->op == oDINC)
+                  if (g_opPtr[j1]->op == oDINC)
                     {
                      popt_DeletePCodePair(i, i + 1);
                      nchanges++;
                     }
-                  else
-                   {
-                     i++;
-                   }
                }
-             else
-               {
-                 i++;
-               }
-            }
-          else
-            {
-              i++
             }
         }
-     }
+
+      /* No long optiminzation -- try the next opcode */
+
+
+      i++;
+    }
 
    return nchanges;
 }
@@ -705,414 +790,449 @@ LEFT OFF!!!
 int16_t popt_LongBinaryOptimize(void)
 {
   int16_t nchanges = 0;
-  register int16_t stmp16;
-  register int16_t i;
-  register int16_t j;
-  register int16_t k;
+  int i;
 
   TRACE(stderr, "[popt_LongBinaryOptimize]");
 
-  /* At least three pcodes are needed to perform the following binary
+  /* At least two pcodes are needed to perform any of the following binary
    * operator optimizations.
    */
 
-  i = 2;
+  i = 1;
   while (i < g_nOpPtrs)
     {
-      j = i - 1;
-      k = i - 2;
-
       /* Check for a long operation. */
 
-      if (g_opPtr[i] == oLONGOP8)
+      if (g_opPtr[i]->op == oLONGOP8)
        {
           /* Check for a long operation on a constant (PUSHed) value.  All Binary
-            * operators are LONGOP8 types.
-            */
-
-          if ((g_opPtr[j]->op == oPUSH || g_opPtr[j]->op == oPUSHB ||
-               g_opPtr[j]->op == oUPUSHB) &&
-              (g_opPtr[k]->op == oPUSH || g_opPtr[k]->op == oPUSHB ||
-               g_opPtr[k]->op == oUPUSHB) &&
-
-          /* Turn the oPUSHB or oUPUSHB instructions into an oPUSH
-           * instructions (temporarily)
+           * operators are oLONGOP8 types.
+           *
+           * All long operations with two 32-bit arguments, we need five opcodes.
            */
 
-          popt_ExpandPush(g_opPtr[j]);
-          popt_ExpandPush(g_opPtr[k]);
-LEFT OFF!!!
-##############################################################################
+          if (i >= 4 &&
+              (g_opPtr[i - 1]->op == oPUSH || g_opPtr[i - 1]->op == oPUSHB ||
+               g_opPtr[i - 1]->op == oUPUSHB) &&
+              (g_opPtr[i - 2]->op == oPUSH || g_opPtr[i - 2]->op == oPUSHB ||
+               g_opPtr[i - 2]->op == oUPUSHB) &&
+              (g_opPtr[i - 3]->op == oPUSH || g_opPtr[i - 3]->op == oPUSHB ||
+               g_opPtr[i - 3]->op == oUPUSHB) &&
+              (g_opPtr[i - 4]->op == oPUSH || g_opPtr[i - 4]->op == oPUSHB ||
+               g_opPtr[i - 4]->op == oUPUSHB))
+            {
+              uWord_t wordJ;
+              uWord_t wordK;
 
-              switch (g_opPtr[i + 2]->op)
+              int j1 = i - 1;
+              int j0 = i - 2;
+              int k1 = i - 3;
+              int k0 = i - 4;
+
+              /* Turn the oPUSHB or oUPUSHB instructions into an oPUSH
+               * instructions (temporarily)
+               */
+
+              popt_ExpandPush(g_opPtr[j1]);
+              popt_ExpandPush(g_opPtr[j0]);
+              popt_ExpandPush(g_opPtr[k1]);
+              popt_ExpandPush(g_opPtr[k0]);
+
+              wordJ.word[0] = g_opPtr[j0]->arg2;
+              wordJ.word[1] = g_opPtr[j1]->arg2;
+              wordK.word[0] = g_opPtr[k0]->arg2;
+              wordK.word[1] = g_opPtr[k1]->arg2;
+
+              switch (g_opPtr[i]->arg1)
                 {
-                case oDADD :
-                  g_opPtr[i]->arg2 += g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                  case oDADD :
+                    wordK.sData       += wordJ.sData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                case oDSUB :
-                  g_opPtr[i]->arg2 -= g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDMUL :   /* REVISIT:  arg2 is unsigned */
-                case oDUMUL :
-                  g_opPtr[i]->arg2 *= g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                  case oDSUB :
+                    wordK.sData       -= wordJ.sData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                case oDDIV :
-                  stmp16 = g_opPtr[i]->arg2 / signExtend16(g_opPtr[i + 1]->arg2);
-                  g_opPtr[i]->arg2 = stmp16;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDMOD : /* REVISIT:  arg2 is unigned */
-                case oDUMOD :
-                  g_opPtr[i]->arg2 %= g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                  case oDMUL :
+                    wordK.sData       *= wordJ.sData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                case oDSLL :
-                  g_opPtr[i]->arg2 <<= g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDSRL :
-                  g_opPtr[i]->arg2 >>= g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                  case oDUMUL :
+                    wordK.uData       *= wordJ.uData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                case oDSRA :
-                  stmp16 = (((int16_t)g_opPtr[i]->arg2) >> g_opPtr[i + 1]->arg2);
-                  g_opPtr[i]->arg2 = (uint16_t)stmp16;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDOR  :
-                  g_opPtr[i]->arg2 |= g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                  case oDDIV :
+                    wordK.sData       /= wordJ.sData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                case oDAND :
-                  g_opPtr[i]->arg2 &= g_opPtr[i + 1]->arg2;
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDEQU :
-                  if (g_opPtr[i]->arg2 == g_opPtr[i + 1]->arg2)
-                    {
-                      g_opPtr[i]->arg2 = -1;
-                    }
-                  else
-                    {
-                      g_opPtr[i]->arg2 = 0;
-                    }
+                  case oUDIV :
+                    wordK.uData       /= wordJ.uData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDNEQ :
-                  if ((int16_t)g_opPtr[i]->arg2 != (int16_t)g_opPtr[i + 1]->arg2)
-                    {
-                      g_opPtr[i]->arg2 = -1;
-                    }
-                  else
-                    {
-                      g_opPtr[i]->arg2 = 0;
-                    }
+                  case oDMOD :
+                    wordK.sData       %= wordJ.sData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDLT  :  /* REVISIT:  arg2 is unsigned */
-                case oDULT :
-                  if ((int16_t)g_opPtr[i]->arg2 < (int16_t)g_opPtr[i + 1]->arg2)
-                    {
-                      g_opPtr[i]->arg2 = -1;
-                    }
-                  else
-                    {
-                      g_opPtr[i]->arg2 = 0;
-                    }
+                  case oDUMOD :
+                    wordK.uData       %= wordJ.uData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDGTE :  /* REVISIT:  arg2 is unsigned */
-                case oDUGTE :
-                  if ((int16_t)g_opPtr[i]->arg2 >= (int16_t)g_opPtr[i + 1]->arg2)
-                    {
-                      g_opPtr[i]->arg2 = -1;
-                    }
-                  else
-                    {
-                      g_opPtr[i]->arg2 = 0;
-                    }
+                  case oDOR  :
+                    wordK.uData       |= wordJ.uData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDGT  :  /* REVISIT:  arg2 is unsigned */
-                case oDUGT :
-                  if ((int16_t)g_opPtr[i]->arg2 > (int16_t)g_opPtr[i + 1]->arg2)
-                    {
-                      g_opPtr[i]->arg2 = -1;
-                    }
-                  else
-                    {
-                      g_opPtr[i]->arg2 = 0;
-                    }
+                  case oDAND :
+                    wordK.uData       &= wordJ.uData;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    popt_DeletePCodeTrio(i, j1, j0);
+                    nchanges++;
+                    i++;
+                    continue;
 
-                case oDLTE :  /* REVISIT:  arg2 is unsigned */
-                case oDULTE :
-                  if ((int16_t)g_opPtr[i]->arg2 <= (int16_t)g_opPtr[i + 1]->arg2)
-                    {
-                      g_opPtr[i]->arg2 = -1;
-                    }
-                  else
-                    {
-                      g_opPtr[i]->arg2 = 0;
-                    }
+                  case oDEQU :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
 
-                  popt_DeletePCodePair(i + 1, i + 2);
-                  nchanges++;
-                  break;
+                    if (wordK.uData == wordJ.uData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
 
-                default   :
-                  break;
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDNEQ :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.uData != wordJ.uData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDLT  :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.sData < wordJ.sData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDULT :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.uData < wordJ.uData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDGTE :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.sData >= wordJ.sData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDUGTE :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.uData >= wordJ.uData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDGT :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.sData > wordJ.sData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDUGT :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.uData > wordJ.uData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDLTE :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.sData <= wordJ.sData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
+
+                  case oDULTE :
+                    g_opPtr[i]->op   = oPUSH;
+                    g_opPtr[i]->arg1 = 0;
+
+                    if (wordK.uData <= wordJ.uData)
+                      {
+                        g_opPtr[i]->arg2 = PASCAL_TRUE;
+                      }
+                    else
+                      {
+                        g_opPtr[i]->arg2 = 0;
+                      }
+
+                    popt_OptimizePush(g_opPtr[i]);
+                    popt_DeletePCodeQuartet(j1, j0, k1, k0);
+                    nchanges++;
+                    continue;
                 }
 
-              /* If the instruction(s) are still there, increment the index. */
+              /* If the oPUSH instructions are still there, see if we can now
+               * represent it with a oPUSHB or oUPUSHB instruction.
+               */
 
-              j = i + 1;
-              if (g_opPtr[i] != NULL)
+              popt_OptimizePush(g_opPtr[j1]);
+              popt_OptimizePush(g_opPtr[j0]);
+              popt_OptimizePush(g_opPtr[k1]);
+              popt_OptimizePush(g_opPtr[k0]);
+
+              /* If the LONGOP8 instruction is still there, well will need to
+               * increment the index over it.
+               */
+
+              if (g_opPtr[i] == NULL || g_opPtr[i]->op != oLONGOP8)
                 {
-                  /* If the oPUSH instruction(s) are still there, see if we can
-                   * now represent them with an oUPUSHB instructions
-                   */
-
-                  popt_OptimizePush(g_opPtr[i]);
                   i++;
-                }
-
-              if (g_opPtr[j] != NULL && g_opPtr[j]->op == oPUSH)
-                {
-                   popt_OptimizePush(g_opPtr[j]);
+                  continue;
                 }
             }
 
-          /* A single (constant) pcode is sufficient to perform the
-           * following binary operator optimizations.
-           */
+          /* Shift operations have a 16-bit shift and a 32-bit value to be shifted. */
 
-          else if (g_opPtr[i + 1]->op == oDLDS   ||
-                   g_opPtr[i + 1]->op == oDLDSB  ||
-                   g_opPtr[i + 1]->op == oDULDSB ||
-                   g_opPtr[i + 1]->op == oLAS   ||
-                   g_opPtr[i + 1]->op == oLAC)
+          if (i >= 3 &&
+              (g_opPtr[i - 1]->op == oPUSH || g_opPtr[i - 1]->op == oPUSHB ||
+               g_opPtr[i - 1]->op == oUPUSHB) &&
+              (g_opPtr[i - 2]->op == oPUSH || g_opPtr[i - 2]->op == oPUSHB ||
+               g_opPtr[i - 2]->op == oUPUSHB) &&
+              (g_opPtr[i - 3]->op == oPUSH || g_opPtr[i - 3]->op == oPUSHB ||
+               g_opPtr[i - 3]->op == oUPUSHB))
             {
-              /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
+              uWord_t wordK;
 
-              popt_ExpandPush(g_opPtr[i]);
+              int j  = i - 1;
+              int k1 = i - 2;
+              int k0 = i - 3;
 
-              switch (g_opPtr[i + 2]->op)
+              /* Turn the oPUSHB or oUPUSHB instructions into an oPUSH
+               * instructions (temporarily)
+               */
+
+              popt_ExpandPush(g_opPtr[j]);
+              popt_ExpandPush(g_opPtr[k1]);
+              popt_ExpandPush(g_opPtr[k0]);
+
+              wordK.word[0] = g_opPtr[k0]->arg2;
+              wordK.word[1] = g_opPtr[k1]->arg2;
+
+              switch (g_opPtr[i]->arg1)
                 {
-                case oDADD :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      popt_DeletePCodePair(i, i + 2);
-                      nchanges++;
-                    }
-                  else if (g_opPtr[i]->arg2 == 1)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDINC;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  else if (g_opPtr[i]->arg2 == (uint16_t)-1)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDDEC;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  break;
+                  case oDSLL :
+                    wordK.uData <<= g_opPtr[j]->arg2;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                case oDSUB :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      g_opPtr[i]->arg1 = oDNEG;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  break;
+                    popt_DeletePCodePair(i, j);
+                    nchanges++;
+                    break;
 
-                case oDMUL :
-                case oDUMUL :
-                  stmp16 = 0;
-                  switch (g_opPtr[i]->arg2)
-                    {
-                    case 1 :
-                      popt_DeletePCodePair(i, i + 2);
-                      nchanges++;
-                      break;
+                  case oDSRL :
+                    wordK.uData >>= g_opPtr[j]->arg2;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                    case 16384 : stmp16++;
-                    case  8192 : stmp16++;
-                    case  4096 : stmp16++;
-                    case  2048 : stmp16++;
-                    case  1024 : stmp16++;
-                    case   512 : stmp16++;
-                    case   256 : stmp16++;
-                    case   128 : stmp16++;
-                    case    64 : stmp16++;
-                    case    32 : stmp16++;
-                    case    16 : stmp16++;
-                    case     8 : stmp16++;
-                    case     4 : stmp16++;
-                    case     2 : stmp16++;
-                      g_opPtr[i]->op       = g_opPtr[i + 1]->op;
-                      g_opPtr[i]->arg1     = g_opPtr[i + 1]->arg1;
-                      g_opPtr[i]->arg2     = g_opPtr[i + 1]->arg2;
-                      g_opPtr[i + 1]->op   = oPUSH;
-                      g_opPtr[i + 1]->arg1 = 0;
-                      g_opPtr[i + 1]->arg2 = stmp16;
-                      g_opPtr[i + 2]->arg1 = oDSLL;
-                      nchanges++;
-                      break;
+                    popt_DeletePCodePair(i, j);
+                    nchanges++;
+                    break;
 
-                    default :
-                      break;
-                    }
-                  break;
+                  case oDSRA :
+                    wordK.sData >>= g_opPtr[j]->arg2;
+                    g_opPtr[k0]->arg2  = wordK.word[0];
+                    g_opPtr[k1]->arg2  = wordK.word[1];
 
-                case oDOR  :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      popt_DeletePCodePair(i, i + 2);
-                      nchanges++;
-                    }
-                  break;
-
-                case oDAND :
-                  if (g_opPtr[i]->arg2 == 0xffff)
-                    {
-                      popt_DeletePCodePair(i, i + 2);
-                      nchanges++;
-                    }
-                  else i++;
-                  break;
-
-                case oDEQU :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDEQUZ;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  else i++;
-                  break;
-
-                case oDNEQ :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDNEQZ;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  else i++;
-                  break;
-
-                case oDLT  :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDGTEZ;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  break;
-
-                case oDGTE :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDLTZ;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  else i++;
-                  break;
-
-                case oDGT  :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDLTEZ;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  break;
-
-                case oDLTE :
-                  if (g_opPtr[i]->arg2 == 0)
-                    {
-                      g_opPtr[i + 2]->arg1 = oDGTZ;
-                      popt_DeletePCode(i);
-                      nchanges++;
-                    }
-                  break;
-
-                default   :
-                  break;
+                    popt_DeletePCodePair(i, j);
+                    nchanges++;
+                    break;
                 }
 
-             /* If the instructions was not deleted, then we need to increment
-              * the index.
-              */
+              /* If the oPUSH instructions are still there, see if we can now
+               * represent it with a oPUSHB or oUPUSHB instruction.
+               */
 
-             if (g_opPtr[i] != NULL)
-               {
-                 /* If the oPUSH instruction is still there, see if we can now
-                  * represent it with a oPUSHB or oUPUSHB instruction.
-                  */
+              popt_OptimizePush(g_opPtr[j]);
+              popt_OptimizePush(g_opPtr[k1]);
+              popt_OptimizePush(g_opPtr[k0]);
 
-                 popt_OptimizePush(g_opPtr[i]);
-                 i++;
-               }
-            }
-          else
-            {
-              i++;
+              /* If the LONGOP8 instruction is still there, well will need to
+               * increment the index over it.
+               */
+
+              if (g_opPtr[i] == NULL || g_opPtr[i]->op != oLONGOP8)
+                {
+                  i++;
+                  continue;
+                }
             }
         }
 
       /* Misc improvements on binary operators */
 
-      else if (g_opPtr[i]->op == oDNEG)
+      if (g_opPtr[i - 1]->op == oLONGOP8 && g_opPtr[i - 1]->op == oDNEG)
         {
           /* Negation followed by add is subtraction */
 
-          if (g_opPtr[i + 1]->op == oDADD)
+          if (g_opPtr[i]->op == oDADD)
             {
-               g_opPtr[i + 1]->arg1 = oDSUB;
-               popt_DeletePCode(i);
+               g_opPtr[i]->arg1 = oDSUB;
+               popt_DeletePCode(i - 1);
                nchanges++;
             }
 
@@ -1120,19 +1240,13 @@ LEFT OFF!!!
 
           else if (g_opPtr[i]->op == oDSUB)
             {
-               g_opPtr[i + 1]->arg1 = oDADD;
-               popt_DeletePCode(i);
+               g_opPtr[i]->arg1 = oDADD;
+               popt_DeletePCode(i - 1);
                nchanges++;
             }
-          else
-            {
-              i++;
-            }
         }
-      else
-        {
-          i++;
-        }
+
+      i++;
     }
 
   return nchanges;

@@ -68,10 +68,14 @@ extern bool      g_endOut;             /* true: oEND pcode has been output */
 * Public Function Prototypes
 *****************************************************************************/
 
-void popt_LocalOptimization(poffHandle_t poffHandle,
-                            poffProgHandle_t poffProgHandle);
-void popt_DeletePCode      (int16_t delIndex);
-void popt_DeletePCodePair  (int16_t delIndex1, int16_t delIndex2);
-void popt_SwapPCodePair    (int16_t swapIndex1, int16_t swapIndex2);
+void popt_LocalOptimization  (poffHandle_t poffHandle,
+                              poffProgHandle_t poffProgHandle);
+void popt_DeletePCode        (int16_t delIndex);
+void popt_DeletePCodePair    (int16_t delIndex1, int16_t delIndex2);
+void popt_DeletePCodeTrio    (int16_t delIndex1, int16_t delIndex2,
+                              int16_t delIndex3);
+void popt_DeletePCodeQuartet (int16_t delIndex1, int16_t delIndex2,
+                              int16_t delIndex3, int16_t delIndex4);
+void popt_SwapPCodePair      (int16_t swapIndex1, int16_t swapIndex2);
 
 #endif /* __PLOCAL_H */

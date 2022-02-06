@@ -1,6 +1,6 @@
-/**********************************************************************
- * popt_push.c
- * Helpers for PUSH instructions
+/***************************************************************************
+ * popt_util.h
+ * External Declarations associated with popt_branch.c
  *
  *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -32,62 +32,24 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ***************************************************************************/
 
-/**********************************************************************
+#ifndef __POPT_UTIL_H
+#define __POPT_UTIL_H
+
+/***************************************************************************
  * Included Files
- **********************************************************************/
+ ***************************************************************************/
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "pas_machine.h"
-#include "paslib.h"
-#include "insn16.h"
 
-/**********************************************************************
- * Public Functions
- **********************************************************************/
+/***************************************************************************
+ * Public Function Prototypes
+ ***************************************************************************/
 
-/***********************************************************************/
-/* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
+void popt_ExpandPush(opType_t *opPtr);
+void popt_OptimizePush(opType_t *opPtr);
+int  popt_PowerOfTwo(uint32_t value);
 
-void popt_ExpandPush(opType_t *opPtr)
-{
-  if (opPtr->op == oPUSHB)
-   {
-      opPtr->op   = oPUSH;
-      opPtr->arg2 = signExtend8(opPtr->arg1);
-      opPtr->arg1 = 0;
-    }
-  else if (opPtr->op == oUPUSHB)
-    {
-      opPtr->op   = oPUSH;
-      opPtr->arg2 = opPtr->arg1;
-      opPtr->arg1 = 0;
-    }
-}
-
-/***********************************************************************/
-/* Optimize a PUSH instruction */
-
-void popt_OptimizePush(opType_t *opPtr)
-{
-  if (opPtr->op == oPUSH)
-   {
-      if ((int16_t)opPtr->arg2 >= MINSHORTINT &&
-          (int16_t)opPtr->arg2 <= MAXSHORTINT)
-        {
-          opPtr->op   = oPUSHB;
-          opPtr->arg1 = opPtr->arg2;
-          opPtr->arg2 = 0;
-        }
-      else if ((uint16_t)opPtr->arg2 <= MAXSHORTWORD)
-        {
-          opPtr->op   = oUPUSHB;
-          opPtr->arg1 = opPtr->arg2;
-          opPtr->arg2 = 0;
-        }
-    }
-}
+#endif /* __POPT_UTIL_H */

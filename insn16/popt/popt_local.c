@@ -49,6 +49,7 @@
 #include "paslib.h"
 #include "pas_insn.h"
 #include "popt_constants.h"
+#include "popt_longconst.h"
 #include "popt_loadstore.h"
 #include "popt_branch.h"
 #include "popt_local.h"
@@ -131,7 +132,7 @@ static void popt_PutPCodeFromTable(void)
   popt_SetupPointer();
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
 static void popt_SetupPointer(void)
 {
@@ -189,7 +190,7 @@ static void popt_SetupPointer(void)
     }
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
 static void popt_InitPTable(void)
 {
@@ -267,7 +268,9 @@ void popt_LocalOptimization(poffHandle_t poffHandle,
       do
         {
           nchanges  = popt_UnaryOptimize ();
+          nchanges += popt_LongUnaryOptimize();
           nchanges += popt_BinaryOptimize();
+          nchanges += popt_LongBinaryOptimize();
           nchanges += popt_BranchOptimize();
           nchanges += popt_LoadOptimize();
           nchanges += popt_StoreOptimize();
@@ -291,7 +294,7 @@ void popt_DeletePCode(int16_t delIndex)
   popt_SetupPointer();
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
 void popt_DeletePCodePair(int16_t delIndex1, int16_t delIndex2)
 {
@@ -306,7 +309,48 @@ void popt_DeletePCodePair(int16_t delIndex1, int16_t delIndex2)
   popt_SetupPointer();
 }
 
-/**********************************************************************/
+/****************************************************************************/
+
+void popt_DeletePCodeTrio(int16_t delIndex1, int16_t delIndex2,
+                          int16_t delIndex3)
+{
+  TRACE(stderr, "[popt_DeletePCodeTrio]");
+
+  g_opPtr[delIndex1]->op   = oNOP;
+  g_opPtr[delIndex1]->arg1 = 0;
+  g_opPtr[delIndex1]->arg2 = 0;
+  g_opPtr[delIndex2]->op   = oNOP;
+  g_opPtr[delIndex2]->arg1 = 0;
+  g_opPtr[delIndex2]->arg2 = 0;
+  g_opPtr[delIndex3]->op   = oNOP;
+  g_opPtr[delIndex3]->arg1 = 0;
+  g_opPtr[delIndex3]->arg2 = 0;
+  popt_SetupPointer();
+}
+
+/****************************************************************************/
+
+void popt_DeletePCodeQuartet(int16_t delIndex1, int16_t delIndex2,
+                             int16_t delIndex3, int16_t delIndex4)
+{
+  TRACE(stderr, "[popt_DeletePCodeTrio]");
+
+  g_opPtr[delIndex1]->op   = oNOP;
+  g_opPtr[delIndex1]->arg1 = 0;
+  g_opPtr[delIndex1]->arg2 = 0;
+  g_opPtr[delIndex2]->op   = oNOP;
+  g_opPtr[delIndex2]->arg1 = 0;
+  g_opPtr[delIndex2]->arg2 = 0;
+  g_opPtr[delIndex3]->op   = oNOP;
+  g_opPtr[delIndex3]->arg1 = 0;
+  g_opPtr[delIndex3]->arg2 = 0;
+  g_opPtr[delIndex4]->op   = oNOP;
+  g_opPtr[delIndex4]->arg1 = 0;
+  g_opPtr[delIndex4]->arg2 = 0;
+  popt_SetupPointer();
+}
+
+/****************************************************************************/
 
 void popt_SwapPCodePair(int16_t swapIndex1, int16_t swapIndex2)
 {

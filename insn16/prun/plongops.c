@@ -225,17 +225,17 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDSLL :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      POP(st, sparm1);
       pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) << sparm1, 0);
       break;
 
     case oDSRL :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      POP(st, sparm1);
       pexec_UPutTos32(st, pexec_UGetTos32(st, 0) >> sparm1, 0);
       break;
 
     case oDSRA :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      POP(st, sparm1);
       pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) >> sparm1, 0);
       break;
 

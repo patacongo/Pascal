@@ -1,6 +1,6 @@
 /***************************************************************************
- * popt_push.h
- * External Declarations associated with popt_branch.c
+ * popt_longconst.h
+ * External Declarations associated with popt_longconst.h
  *
  *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,21 +34,20 @@
  *
  ***************************************************************************/
 
-#ifndef __POPT_BRANCH_H
-#define __POPT_BRANCH_H
+#ifndef __POPT_LONGCONST_H
+#define __POPT_LONGCONST_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
-#include "pas_machine.h"
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void popt_ExpandPush(opType_t *opPtr);
-void popt_OptimizePush(opType_t *opPtr);
+extern int16_t popt_LongUnaryOptimize(void);
+extern int16_t popt_LongBinaryOptimize(void);
 
-#endif /* __POPT_BRANCH_H */
+#endif /* __POPT_LONGCONST_H */

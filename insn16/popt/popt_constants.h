@@ -1,8 +1,8 @@
 /***************************************************************************
  * popt_constants.h
- * External Declarations associated with PCOPT.C
+ * External Declarations associated with popt_constants.h
  *
- *   Copyright (C) 200-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 200-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
