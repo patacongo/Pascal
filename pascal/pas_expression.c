@@ -1247,16 +1247,29 @@ static exprType_t pas_ComplexFactor(void)
    * pas_SimpleFactor() will modify it.
    */
 
-  varInfo.variable = *g_tknPtr;
-  varInfo.ptrDepth = 0;
-  varInfo.fOffset  = 0;
-  getToken();
+  if (g_tknPtr == NULL)
+    {
+      error(eEXPRTYPE);
+      return exprUnknown;
+    }
+  else
+    {
+      varInfo.variable = *g_tknPtr;
+      varInfo.ptrDepth = 0;
+      varInfo.fOffset  = 0;
 
-  /* Then process the complex factor until it is reduced to a simple factor
-   * (like int, char, etc.)
-   */
+      /* Since we have saved the token information, we can skip to the next
+       * token.
+       */
 
-  return pas_SimpleFactor(&varInfo, 0);
+      getToken();
+
+      /* Then process the complex factor until it is reduced to a simple
+       * factor (like int, char, etc.)
+       */
+
+      return pas_SimpleFactor(&varInfo, 0);
+    }
 }
 
 /****************************************************************************/
@@ -2311,21 +2324,29 @@ static exprType_t pas_ComplexPointerFactor(exprFlag_t factorFlags)
    * pas_SimplePointerFactor() will modify it.
    */
 
-  varInfo.variable = *g_tknPtr;
-  varInfo.ptrDepth = 0;
-  varInfo.fOffset  = 0;
+  if (g_tknPtr == NULL)
+    {
+      error(eEXPRTYPE);
+      return exprUnknown;
+    }
+  else
+    {
+      varInfo.variable = *g_tknPtr;
+      varInfo.ptrDepth = 0;
+      varInfo.fOffset  = 0;
 
-  /* Since we have saved the token information, we can skip to the next
-   * token.
-   */
+      /* Since we have saved the token information, we can skip to the next
+       * token.
+       */
 
-  getToken();
+      getToken();
 
-  /* Then process the complex factor until it is reduced to a simple
-   * factor (like int, char, etc.)
-   */
+      /* Then process the complex factor until it is reduced to a simple
+       * factor (like int, char, etc.)
+       */
 
-  return pas_SimplePointerFactor(&varInfo, factorFlags);
+      return pas_SimplePointerFactor(&varInfo, factorFlags);
+    }
 }
 
 /****************************************************************************/

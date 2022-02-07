@@ -71,23 +71,50 @@
  * ASSIGN_DEREFERENCE (only)
  * - Means load address (LDS), then store to address(STI).  For example,
  *   assignment of a value to the target address of a pointer.
+ *
+ *     <expression> - Push expression value
+ *     opLDS        - Load address from pointer
+ *     opSTI        - Save to the address
+ *
  * ASSIGN_DEREFERENCE + ASSIGN_INDEXED
  * - Means load address first with index (LDSX), then store value (STI)
  *   For example, assignment to an LVALUE that is an array of pointers
+ *
+ *     <expression> - Push expression value
+ *     <index>      - Array index
+ *     opLDSX       - Load address from index into an array of pointers
+ *     opSTI        - Save to the address
+ *
  * ASSIGN_DEREFERENCE + ASSIGN_INDEXED + ASSIGN_STORE_INDEXED
  * - Means load pointer(LDS), then store with index (STSX).
  *   For example, LVALUE is a pointer to an array of values.
+ *
+ *     <expression> - Push expression value
+ *     <index>      - Array index
+ *     opLDS        - Load address an array of pointers
+ *     opSTSX       - Save to the indexed element of the array
+ *
  * ASSIGN_ADDRESS
  * - Assign a pointer address, rather than a value.  The only effect is to
  *   assume a pointer expression rather than a value expression.
  * ASSIGN_INDEXED (only)
  * - Save value to indexed stack address(STSX)
+ *
+ *     <expression> - Push expression value
+ *     opSTSX       - Save to the indexed element of the array
+ *
  * ASSIGN_VAR_PARM
  * - Does very little but distinguish if we are working with a pointer or
  *   a VAR parameter.
  * ASSIGN_LVALUE_ADDR
  * - LValue address was pushed on stack BEFORE RValue expression.
- * ASSIGN_LVALUE_ADDR
+ *
+ *     opLDS        - Pointer value
+ *    [opLDI        - Pointer-to-pointer value]
+ *     <expression> - Push expression value
+ *     opSTI        - Save to the indexed element of the array
+ *
+ * ASSIGN_PTR2PTR
  * - LValue is a pointer to a pointer.
  */
 
@@ -797,7 +824,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
          * OR:   etc., etc., etc.
          */
 
-        /* assignFlags:
+        /* Special assignFlags:
          *
          * - ASSIGN_DEREFERENCE and ASSIGN_VAR_PARM if the array identifier
          *   is an array VAR parameter.
@@ -1971,13 +1998,13 @@ static void pas_WithStatement(void)
    /* Process each RECORD or RECORD OBJECT in the <variable> list */
 
    getToken();
-   for(;;)
+   for (; ; )
      {
        /* A RECORD type variable may be used in the WITH statement only if
         * there is no other WITH active
         */
 
-       if ((g_token == sRECORD) && (!g_withRecord.wParent))
+       if (g_token == sRECORD && !g_withRecord.wParent)
          {
            /* Save the RECORD variable as the new with record */
 
@@ -1996,9 +2023,8 @@ static void pas_WithStatement(void)
         * (again only if there is no other WITH active)
         */
 
-       else if ((g_token == sVAR_PARM) &&
-                (!g_withRecord.wParent) &&
-                (g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD))
+       else if (g_token == sVAR_PARM && !g_withRecord.wParent &&
+                g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD)
          {
            /* Save the RECORD VAR parameter as the new with record */
 
@@ -2017,9 +2043,8 @@ static void pas_WithStatement(void)
         * (again only if there is no other WITH active)
         */
 
-       else if ((g_token == sPOINTER) &&
-                (!g_withRecord.wParent) &&
-                (g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD))
+       else if (g_token == sPOINTER && !g_withRecord.wParent &&
+                g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD)
          {
            /* Save the RECORD pointer as the new with record */
 

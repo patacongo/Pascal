@@ -1,58 +1,60 @@
-program PointerRecordExample(input, output);
+PROGRAM PointerRecordExample(INPUT, OUTPUT);
 
-type
+TYPE
   rptr = ^recdata;
-  recdata = record
-    number : integer;
-    code : string;
+  recdata = RECORD
+    number : INTEGER;
+    code : STRING;
     nextrecord : rptr
-  end;
+  END;
 
-var
+VAR
  startrecord, listrecord, insertptr : rptr;
- digitcode : integer;
- textstring : string;
- exitflag, first : boolean;
+ digitcode : INTEGER;
+ textstring : STRING;
+ exitflag, first : BOOLEAN;
 
-begin
- exitflag := false;
- first := true;
- while exitflag = false do
- begin
-  writeln('Enter in a digit [-1 to end]');
-  readln(digitcode);
-  if digitcode = -1 then
-   exitflag := true
-  else
-  begin
-   writeln('Enter in a small text string');
-   readln(textstring);
-   new(insertptr);
-   if insertptr = nil then
-   begin
-    writeln('1: unable to allocate storage space');
-    halt
-   end;
-   if first = true then begin
+BEGIN
+ exitflag := FALSE;
+ first := TRUE;
+
+ WHILE exitflag = FALSE DO
+ BEGIN
+  WRITELN('Enter in a digit [-1 to END]');
+  READLN(digitcode);
+  if digitcode = -1 THEN
+   exitflag := TRUE
+  ELSE
+  BEGIN
+   WRITELN('Enter in a small text string');
+   READLN(textstring);
+   NEW(insertptr);
+   IF insertptr = NIL THEN
+   BEGIN
+    WRITELN('1: unable to allocate storage space');
+    HALT
+   END;
+   IF first = TRUE THEN BEGIN
     startrecord := insertptr;
     listrecord := insertptr;
-    first := false
-   end
-   else begin
+    first := FALSE
+   END
+   ELSE BEGIN
     listrecord^.nextrecord := insertptr;
     listrecord := insertptr
-   end;
+   END;
    insertptr^.number := digitcode;
    insertptr^.code := textstring;
-   insertptr^.nextrecord := nil
-  end
- end;
- while startrecord <> nil do
- begin
+   insertptr^.nextrecord := NIL
+  END
+ END;
+
+ WHILE startrecord <> NIL DO
+ BEGIN
   listrecord := startrecord;
-  writeln(startrecord^.number);
-  writeln(startrecord^.code);
+  WRITELN(startrecord^.number);
+  WRITELN(startrecord^.code);
   startrecord := startrecord^.nextrecord;
-  dispose(listrecord)
- end
-end.
+  DISPOSE(listrecord)
+ END
+END.
