@@ -66,53 +66,82 @@
  ****************************************************************************/
 
 /* Assignment flags.  These options apply primarily for complex assignments
- * involving ARRAYs, POINTERs, and VAR parameters:
+ * involving ARRAYs, POINTERs, and VAR parameters.  The simplests assignment
+ * form (no flags) is:
+ *
+ *     <expression>   - Push expression value
+ *     opSTS          - Store to variable address
  *
  * ASSIGN_DEREFERENCE (only)
- * - Means load address (LDS), then store to address(STI).  For example,
- *   assignment of a value to the target address of a pointer.
+ * - Means to load the address of a pointer (LDS), then store to the
+ *   expression value to that address(STI).  For example, assignment of a
+ *   value to the target address of a pointer.
  *
- *     <expression> - Push expression value
- *     opLDS        - Load address from pointer
- *     opSTI        - Save to the address
+ *     <address>      - Target address of pointer
+ *     <expression>   - Push expression value
+ *     opSTI          - Save to the address
+ *
+ * ASSIGN_INDEXED (only)
+ * - Save value to indexed stack address(STSX)
+ *
+ *     <expression>   - Push expression value
+ *     <index-offset> - Address offset derived from the array index
+ *     opSTSX         - Save to the indexed element of the array
  *
  * ASSIGN_DEREFERENCE + ASSIGN_INDEXED
- * - Means load address first with index (LDSX), then store value (STI)
- *   For example, assignment to an LVALUE that is an array of pointers
+ * - The pointer address and index address offset are on the stack.  We need
+ *   to load address first with index (LDSX), then store value to that address
+ *   (STI).  For example, assignment of an expression value to a pointer to
+ *   array (such as a VAR parameter).
  *
- *     <expression> - Push expression value
- *     <index>      - Array index
- *     opLDSX       - Load address from index into an array of pointers
- *     opSTI        - Save to the address
+ *     <address>      - Target address of pointer
+ *     <index-offset> - Address offset derived from the array index
+ *     opLDSX         - Load address from indexed pointer to an array.
+ *     <expression>   - Push expression value
+ *     opSTI          - Save to the address
  *
  * ASSIGN_DEREFERENCE + ASSIGN_INDEXED + ASSIGN_STORE_INDEXED
- * - Means load pointer(LDS), then store with index (STSX).
- *   For example, LVALUE is a pointer to an array of values.
+ * - The pointer address and index address offset are on the stack.  We need
+ *   To add the offset to the address to get the address to store the result.
+ *   For example, assignment to an expression that is an array of pointers
  *
- *     <expression> - Push expression value
- *     <index>      - Array index
- *     opLDS        - Load address an array of pointers
- *     opSTSX       - Save to the indexed element of the array
+ *     <expression>   - Push expression value
+ *     <address>      - Target address of pointer
+ *     <index-offset> - Address offset derived from the array index
+ *     opADD          - Get the address from index into an array of pointers
+ *     opSTI          - Save the expression to that address
  *
  * ASSIGN_ADDRESS
  * - Assign a pointer address, rather than a value.  The only effect is to
  *   assume a pointer expression rather than a value expression.
- * ASSIGN_INDEXED (only)
- * - Save value to indexed stack address(STSX)
- *
- *     <expression> - Push expression value
- *     opSTSX       - Save to the indexed element of the array
  *
  * ASSIGN_VAR_PARM
- * - Does very little but distinguish if we are working with a pointer or
- *   a VAR parameter.
- * ASSIGN_LVALUE_ADDR
- * - LValue address was pushed on stack BEFORE RValue expression.
+ * - Does very little differently compared to ASSIGN_DEREFERENCE, but
+ *   distinguish between if we are working with a pointer or with a VAR
+ *   parameter.
  *
- *     opLDS        - Pointer value
- *    [opLDI        - Pointer-to-pointer value]
- *     <expression> - Push expression value
- *     opSTI        - Save to the indexed element of the array
+ * ASSIGN_LVALUE_ADDR
+ * - LValue address was pushed on stack BEFORE the RValue expression.
+ *   The is necessary when the LValue is complex.  For example,
+ *   ptr^.next^.next^.value = expression.
+ *
+ *     opLDS          - Pointer target address
+ *    [opLDI          - Pointer-to-pointer target address]
+ *     <expression>   - Push expression value
+ *     opSTI          - Save to the indexed element of the array
+ *
+ * ASSIGN_LVALUE_ADDR + ASSIGN_INDEXED
+ * - LValue address was pushed on stack BEFORE the RValue expression.
+ *   The is necessary when the LValue is complex.  For example,
+ *   ptr^.next^.next^.value = expression.
+ *
+ *     opLDS          - Pointer target address
+ *    [opLDI          - Pointer-to-pointer target address]
+ *     <expression>   - Push expression value
+ *     opXCHG         - Change ordering on stack
+ *     <index-offset> - Address offset derived from the array index
+ *     opADD          - Get the address from index into an array of pointers
+ *     opSTI          - Save to the indexed element of the array
  *
  * ASSIGN_PTR2PTR
  * - LValue is a pointer to a pointer.
@@ -367,23 +396,59 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
       if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
         {
+          /* Are we assigning to a pointer to an array? Or to an array
+           * of pointers?
+           */
+
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               if ((assignFlags & ASSIGN_STORE_INDEXED) != 0)
                 {
-                  /* The pointer value and the index value both on the stack */
+                  /* The pointer value and the index value both on the stack.
+                   * Expect:
+                   *
+                   *   TOS(0)  <index-offset> Address offset derived from
+                   *                          the array index
+                   *   TOS(2)  <expression>   Evaluated expression
+                   */
 
                   pas_GenerateSimple(opADD);
                 }
               else
                 {
+                  /* Expect:
+                   *
+                   *   TOS(0)  <index-offset> Address offset derived from
+                   *                          the array index
+                   *   TOS(1)  <expression>   Evaluated expression
+                   */
+
                   pas_GenerateStackReference(opLDSX, varPtr);
                 }
 
               pas_Assignment(opSTI, exprType, varPtr, typePtr);
             }
+          else if ((assignFlags & ASSIGN_LVALUE_ADDR) != 0)
+            {
+              /* Expect:
+               *
+               *   TOS(1)  <expression>   Evaluated expression
+               *   TOS(0)  <index-offset> Address offset derived from
+               *                          the array index
+               *   TOS(2)  <address>      Target address of pointer
+               */
+
+              pas_Assignment(opSTI, exprType, varPtr, typePtr);
+            }
           else
             {
+              /* Expect:
+               *
+               *   TOS(0)  <expression>   Push expression value
+               *   TOS(1)  <index-offset> Address offset derived from the
+               *                          array index
+               */
+
               pas_Assignment(opSTSX, exprType, varPtr, typePtr);
             }
         }
@@ -392,15 +457,22 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
       else
         {
-          if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
+          if ((assignFlags & (ASSIGN_DEREFERENCE | ASSIGN_LVALUE_ADDR)) != 0)
             {
-              /* Address of pointer is on the stack */
+              /* Address of pointer is on the stack.
+               * Expect:
+               *
+               *   TOS(0)  <expression>   Evaluated LValue expression
+               *   TOS(1)  <address>      Target address of pointer
+               */
 
               pas_Assignment(opSTI, exprType, varPtr, typePtr);
             }
           else
             {
-              /* Use the variable address */
+              /* Use the variable address.
+               * Expect only the evaluated expression at the top of the stack.
+               */
 
               pas_Assignment(opSTS, exprType, varPtr, typePtr);
             }
@@ -413,24 +485,64 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       exprType = pas_MapVariable2ExprType(varPtr->sKind, true);
       exprType = pas_AssignExprType(exprType, assignFlags);
 
+      /* Check for indexed variants */
+
       if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
+          /* Are we assigning to a pointer to an array? Or to an array
+           * of pointers?
+           */
+
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               if ((assignFlags & ASSIGN_STORE_INDEXED) != 0)
                 {
+                  /* The pointer value and the index value both on the stack.
+                   * Expect:
+                   *
+                   *   TOS(0)  <index-offset> Address offset derived from
+                   *                          the array index
+                   *   TOS(2)  <expression>   Evaluated expression
+                   */
+
                   pas_GenerateStackReference(opLDS, varPtr);
                   pas_GenerateSimple(opADD);
                 }
               else
                 {
+                  /* Expect:
+                   *
+                   *   TOS(0)  <index-offset> Address offset derived from
+                   *                          the array index
+                   *   TOS(1)  <expression>   Evaluated expression
+                   */
+
                   pas_GenerateStackReference(opLDSX, varPtr);
                 }
 
               pas_Assignment(opSTIB, exprType, varPtr, typePtr);
             }
+          else if ((assignFlags & ASSIGN_LVALUE_ADDR) != 0)
+            {
+              /* Expect:
+               *
+               *   TOS(1)  <expression>   Evaluated expression
+               *   TOS(0)  <index-offset> Address offset derived from
+               *                          the array index
+               *   TOS(2)  <address>      Target address of pointer
+               */
+
+              pas_Assignment(opSTIB, exprType, varPtr, typePtr);
+            }
           else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
+              /* Expect:
+               *
+               *   TOS(0)  <expression>   Push expression value
+               *   TOS(1)  <index-offset> Address offset derived from the
+               *                          array index
+               */
+
               pas_Assignment(opSTSX, exprType, varPtr, typePtr);
             }
           else
@@ -438,12 +550,22 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
               pas_Assignment(opSTSXB, exprType, varPtr, typePtr);
             }
         }
+
+      /* Not indexed */
+
       else
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               if ((assignFlags & ASSIGN_STORE_INDEXED) != 0)
                 {
+                  /* Address of pointer is on the stack.
+                   * Expect:
+                   *
+                   *   TOS(0)  <expression>   Evaluated LValue expression
+                   *   TOS(1)  <address>      Target address of pointer
+                   */
+
                   pas_GenerateStackReference(opLDS, varPtr);
                   pas_GenerateSimple(opADD);
                 }
@@ -454,12 +576,32 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 
               pas_Assignment(opSTIB, exprType, varPtr, typePtr);
             }
+          else if ((assignFlags & ASSIGN_LVALUE_ADDR) != 0)
+            {
+              /* Address of pointer is on the stack.
+               * Expect:
+               *
+               *   TOS(0)  <expression>   Evaluated LValue expression
+               *   TOS(1)  <address>      Target address of pointer
+               */
+
+              pas_Assignment(opSTIB, exprType, varPtr, typePtr);
+            }
           else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
+              /* Use the variable address.
+               * Expect only the evaluated pointer expression at the top of
+               * the stack.
+               */
+
               pas_Assignment(opSTS, exprType, varPtr, typePtr);
             }
           else
             {
+              /* Use the variable address.
+               * Expect only the evaluated expression at the top of the stack.
+               */
+
               pas_Assignment(opSTSB, exprType, varPtr, typePtr);
             }
         }
@@ -476,19 +618,52 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       exprType = pas_MapVariable2ExprType(varPtr->sKind, false);
       exprType = pas_AssignExprType(exprType, assignFlags);
 
+      /* Check for indexed variants */
+
       if ((assignFlags & ASSIGN_INDEXED) != 0)
         {
+          /* Are we assigning to a pointer to an array? Or to an array
+           * of pointers?
+           */
+
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
               if ((assignFlags & ASSIGN_STORE_INDEXED) != 0)
                 {
+                  /* The pointer value and the index value both on the stack.
+                   * Expect:
+                   *
+                   *   TOS(0)  <index-offset> Address offset derived from
+                   *                          the array index
+                   *   TOS(2)  <expression>   Evaluated expression
+                   */
+
                   pas_GenerateStackReference(opLDS, varPtr);
                   pas_GenerateSimple(opADD);
                 }
               else
                 {
+                  /* Expect:
+                   *
+                   *   TOS(0)  <index-offset> Address offset derived from
+                   *                          the array index
+                   *   TOS(1)  <expression>   Evaluated expression
+                   */
+
                   pas_GenerateStackReference(opLDSX, varPtr);
                 }
+
+              pas_LargeAssignment(opSTIM, exprType, varPtr, typePtr);
+            }
+          else if ((assignFlags & ASSIGN_LVALUE_ADDR) != 0)
+            {
+              /* Expect:
+               *
+               *   TOS(1)  <expression>   Evaluated expression
+               *   TOS(0)  <index-offset> Address offset derived from
+               *                          the array index
+               *   TOS(2)  <address>      Target address of pointer
+               */
 
               pas_LargeAssignment(opSTIM, exprType, varPtr, typePtr);
             }
@@ -501,19 +676,49 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
               pas_LargeAssignment(opSTSXM, exprType, varPtr, typePtr);
             }
         }
+
+      /* Not indexed */
+
       else
         {
           if ((assignFlags & ASSIGN_DEREFERENCE) != 0)
             {
+              /* Address of pointer is on the stack.
+               * Expect:
+               *
+               *   TOS(0)  <expression>   Evaluated LValue expression
+               *   TOS(1)  <address>      Target address of pointer
+               */
+
               pas_GenerateStackReference(opLDS, varPtr);
               pas_LargeAssignment(opSTIM, exprType, varPtr, typePtr);
             }
+          else if ((assignFlags & ASSIGN_LVALUE_ADDR) != 0)
+            {
+              /* Address of pointer is on the stack.
+               * Expect:
+               *
+               *   TOS(0)  <expression>   Evaluated LValue expression
+               *   TOS(1)  <address>      Target address of pointer
+               */
+
+              pas_LargeAssignment(opSTIM, exprType, varPtr, typePtr);
+             }
           else if ((assignFlags & ASSIGN_ADDRESS) != 0)
             {
+              /* Use the variable address.
+               * Expect only the evaluated pointer expression at the top of
+               * the stack.
+               */
+
               pas_Assignment(opSTS, exprType, varPtr, typePtr);
             }
           else
             {
+              /* Use the variable address.
+               * Expect only the evaluated expression at the top of the stack.
+               */
+
               pas_LargeAssignment(opSTSM, exprType, varPtr, typePtr);
             }
         }
@@ -583,8 +788,13 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
             {
               pas_Assignment(opSTSX, exprRecordPtr, varPtr, typePtr);
             }
-          else if ((assignFlags & (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM)) != 0)
+          else if ((assignFlags & (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM |
+                                   ASSIGN_LVALUE_ADDR)) != 0)
             {
+              /* In these cases, the destination, LValue address of the
+               * assignment is on the stack.
+               */
+
               pas_Assignment(opSTI, exprRecordPtr, varPtr, typePtr);
             }
           else
@@ -645,7 +855,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                * VAR parameter.
                */
 
-              if ((assignFlags & (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM)) != 0)
+              if ((assignFlags & (ASSIGN_DEREFERENCE | ASSIGN_VAR_PARM |
+                                  ASSIGN_LVALUE_ADDR)) != 0)
                 {
                   /* Add the offset to the record field to the RECORD address
                    * that should already be on the stack.
@@ -700,83 +911,96 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sRECORD_OBJECT :
-      /* FORM: <field> := <expression>
-       * NOTE:  This must have been preceeded with a WITH statement
-       * defining the RECORD type
-       */
+      {
+        /* FORM: <field> := <expression>
+         * NOTE:  This must have been preceeded with a WITH statement
+         * defining the RECORD type
+         */
 
-      if (!g_withRecord.wParent)
-        {
-          error(eINVTYPE);
-        }
-      else if ((assignFlags && (ASSIGN_DEREFERENCE | ASSIGN_ADDRESS)) != 0)
-        {
-          error(ePOINTERTYPE);
-        }
-      else if ((assignFlags && ASSIGN_INDEXED) != 0)
-        {
-          error(eARRAYTYPE);
-        }
+        symbol_t *baseTypePtr;
 
-      /* Verify that a field identifier is associated with the RECORD
-       * specified by the WITH statement.
-       */
+        /* Get a pointer to the underlying type of the RECORD */
 
-      else if (varPtr->sParm.r.rRecord != g_withRecord.wParent)
-        {
-          error(eRECORDOBJECT);
-        }
-      else
-        {
-          int16_t tempOffset;
+        baseTypePtr = pas_GetBaseTypePointer(varPtr->sParm.r.rRecord);
+        if (baseTypePtr->sParm.t.tType != sRECORD)
+          {
+            error(eRECORDTYPE);
+          }
+        else if (!g_withRecord.wParent)
+          {
+            error(eINVTYPE);
+          }
+        else if ((assignFlags && (ASSIGN_DEREFERENCE | ASSIGN_ADDRESS |
+                                  ASSIGN_LVALUE_ADDR)) != 0)
+          {
+            error(ePOINTERTYPE);
+          }
+        else if ((assignFlags && ASSIGN_INDEXED) != 0)
+          {
+            error(eARRAYTYPE);
+          }
 
-          /* Now there are two cases to consider:  (1) the g_withRecord is a
-           * pointer to a RECORD, or (2) the g_withRecord is the RECORD itself
-           */
+        /* Verify that a field identifier is associated with the RECORD
+         * specified by the WITH statement.
+         */
 
-          if (g_withRecord.wPointer)
-            {
-              /* If the pointer is really a VAR parameter, then other syntax
-               * rules will apply
-               */
+        else if (g_withRecord.wParent != baseTypePtr)
+          {
+            error(eRECORDOBJECT);
+          }
+        else
+          {
+            int16_t tempOffset;
 
-              if (g_withRecord.wVarParm)
-                {
-                  assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE |
-                                  ASSIGN_STORE_INDEXED | ASSIGN_VAR_PARM);
-                }
-              else
-                {
-                  assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE);
-                }
+            /* Now there are two cases to consider:  (1) the g_withRecord is
+             * a pointer to a RECORD, or (2) the g_withRecord is the RECORD
+             * itself
+             */
 
-              pas_GenerateDataOperation(opPUSH,
-                                        varPtr->sParm.r.rOffset +
-                                        g_withRecord.wIndex);
-              tempOffset = g_withRecord.wOffset;
-            }
-          else
-            {
-              tempOffset = varPtr->sParm.r.rOffset + g_withRecord.wOffset;
-            }
+            if (g_withRecord.wPointer)
+              {
+                /* If the pointer is really a VAR parameter, then other
+                 * syntax rules will apply
+                 */
 
-          /* Modify the variable so that it has the characteristics of the
-           * the field but with level and offset associated with the record
-           * NOTE:  We have to be careful here because the structure
-           * associated with sRECORD_OBJECT is not the same as for
-           * variables!
-           */
+                if (g_withRecord.wVarParm)
+                  {
+                    assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE |
+                                    ASSIGN_STORE_INDEXED | ASSIGN_VAR_PARM);
+                  }
+                else
+                  {
+                    assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE);
+                  }
 
-          typePtr                 = varPtr->sParm.r.rParent;
+                pas_GenerateDataOperation(opPUSH,
+                                          varPtr->sParm.r.rOffset +
+                                          g_withRecord.wIndex);
+                tempOffset = g_withRecord.wOffset;
+              }
+            else
+              {
+                tempOffset = varPtr->sParm.r.rOffset + g_withRecord.wOffset;
+              }
 
-          varPtr->sKind           = typePtr->sParm.t.tType;
-          varPtr->sLevel          = g_withRecord.wLevel;
-          varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
-          varPtr->sParm.v.vOffset = tempOffset;
-          varPtr->sParm.v.vParent = typePtr;
+            /* Modify the variable so that it has the characteristics of the
+             * the field but with level and offset associated with the record
+             * NOTE:  We have to be careful here because the structure
+             * associated with sRECORD_OBJECT is not the same as for
+             * variables!
+             */
 
-          pas_SimpleAssignment(varPtr, assignFlags);
-        }
+            typePtr                 = varPtr->sParm.r.rParent;
+
+            varPtr->sKind           = typePtr->sParm.t.tType;
+            varPtr->sLevel          = g_withRecord.wLevel;
+            varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
+            varPtr->sParm.v.vOffset = tempOffset;
+            varPtr->sParm.v.vParent = typePtr;
+
+            pas_SimpleAssignment(varPtr, assignFlags);
+          }
+      }
       break;
 
     case sPOINTER :
@@ -987,12 +1211,12 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
        * we must load the first 'head' pointer from the variable address.
        */
 
-      if ((assignFlags & ASSIGN_DEREFERENCE) == 0)
+      if ((assignFlags & ASSIGN_LVALUE_ADDR) == 0)
         {
           /* Load the address value of the pointer onto the stack now */
 
           pas_GenerateStackReference(opLDS, varPtr);
-          assignFlags |= ASSIGN_DEREFERENCE;
+          assignFlags |= ASSIGN_LVALUE_ADDR;
         }
       else
         {
@@ -1016,7 +1240,7 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
        */
 
       assignFlags &= ~ASSIGN_ADDRESS;
-      assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_LVALUE_ADDR);
+      assignFlags |= ASSIGN_LVALUE_ADDR;
     }
   else
     {
@@ -1983,138 +2207,149 @@ static void pas_ForStatement(void)
 
 static void pas_WithStatement(void)
 {
-   with_t saveWithRecord;
+  with_t saveWithRecord;
 
-   TRACE(g_lstFile,"[pas_WithStatement]");
+  TRACE(g_lstFile,"[pas_WithStatement]");
 
-   /* Generate WITH <variable[,variable[...]] DO <statement> */
+  /* Generate WITH <variable[,variable[...]] DO <statement> */
 
-   /* Save the current WITH pointer.  Only one WITH can be active at
-    * any given time.
-    */
+  /* Save the current WITH pointer.  Only one WITH can be active at
+   * any given time.
+   */
 
-   saveWithRecord = g_withRecord;
+  saveWithRecord = g_withRecord;
 
-   /* Process each RECORD or RECORD OBJECT in the <variable> list */
+  /* Process each RECORD or RECORD OBJECT in the <variable> list */
 
-   getToken();
-   for (; ; )
-     {
-       /* A RECORD type variable may be used in the WITH statement only if
-        * there is no other WITH active
-        */
+  getToken();
+  for (; ; )
+    {
+      symbol_t *withTypePtr;
+      symbol_t *baseTypePtr;
 
-       if (g_token == sRECORD && !g_withRecord.wParent)
-         {
-           /* Save the RECORD variable as the new with record */
+      /* Get a pointer to the underlying base type symbol */
 
-           g_withRecord.wLevel   = g_tknPtr->sLevel;
-           g_withRecord.wPointer = false;
-           g_withRecord.wVarParm = false;
-           g_withRecord.wOffset  = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.wParent  = g_tknPtr->sParm.v.vParent;
+      withTypePtr = g_tknPtr;
+      baseTypePtr = pas_GetBaseTypePointer(withTypePtr);
+      if (baseTypePtr->sParm.t.tType != sRECORD)
+        {
+          error(eRECORDTYPE);
+        }
 
-           /* Skip over the RECORD variable */
+      /* A RECORD type variable may be used in the WITH statement only if
+       * there is no other WITH active
+       */
 
-           getToken();
-         }
+      else if (g_token == sRECORD && !g_withRecord.wParent)
+        {
+          /* Save the RECORD variable as the new with record */
 
-       /* A RECORD VAR parameter may also be used in the WITH statement
-        * (again only if there is no other WITH active)
-        */
+          g_withRecord.wLevel   = withTypePtr->sLevel;
+          g_withRecord.wPointer = false;
+          g_withRecord.wVarParm = false;
+          g_withRecord.wOffset  = withTypePtr->sParm.v.vOffset;
+          g_withRecord.wParent  = baseTypePtr;
 
-       else if (g_token == sVAR_PARM && !g_withRecord.wParent &&
-                g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD)
-         {
-           /* Save the RECORD VAR parameter as the new with record */
+          /* Skip over the RECORD variable */
 
-           g_withRecord.wLevel   = g_tknPtr->sLevel;
-           g_withRecord.wPointer = true;
-           g_withRecord.wVarParm = true;
-           g_withRecord.wOffset  = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.wParent  = g_tknPtr->sParm.v.vParent;
+          getToken();
+        }
 
-           /* Skip over the RECORD VAR parameter */
+      /* A RECORD VAR parameter may also be used in the WITH statement
+       * (again only if there is no other WITH active)
+       */
 
-           getToken();
-         }
+      else if (g_token == sVAR_PARM && !g_withRecord.wParent &&
+               baseTypePtr->sParm.t.tType == sRECORD)
+        {
+          /* Save the RECORD VAR parameter as the new with record */
 
-       /* A pointer to a RECORD may also be used in the WITH statement
-        * (again only if there is no other WITH active)
-        */
+          g_withRecord.wLevel   = withTypePtr->sLevel;
+          g_withRecord.wPointer = true;
+          g_withRecord.wVarParm = true;
+          g_withRecord.wOffset  = withTypePtr->sParm.v.vOffset;
+          g_withRecord.wParent  = baseTypePtr;
 
-       else if (g_token == sPOINTER && !g_withRecord.wParent &&
-                g_tknPtr->sParm.v.vParent->sParm.t.tType == sRECORD)
-         {
-           /* Save the RECORD pointer as the new with record */
+          /* Skip over the RECORD VAR parameter */
 
-           g_withRecord.wLevel   = g_tknPtr->sLevel;
-           g_withRecord.wPointer = true;
-           g_withRecord.wPointer = false;
-           g_withRecord.wOffset  = g_tknPtr->sParm.v.vOffset;
-           g_withRecord.wParent  = g_tknPtr->sParm.v.vParent;
+          getToken();
+        }
 
-           /* Skip over the RECORD pointer */
+      /* A pointer to a RECORD may also be used in the WITH statement
+       * (again only if there is no other WITH active)
+       */
 
-           getToken();
+      else if (g_token == sPOINTER && !g_withRecord.wParent &&
+               baseTypePtr->sParm.t.tType == sRECORD)
+        {
+          /* Save the RECORD pointer as the new with record */
 
-           /* Verify that deferencing is specified! */
+          g_withRecord.wLevel   = withTypePtr->sLevel;
+          g_withRecord.wPointer = true;
+          g_withRecord.wPointer = false;
+          g_withRecord.wOffset  = withTypePtr->sParm.v.vOffset;
+          g_withRecord.wParent  = baseTypePtr;
 
-           if (g_token != '^') error(eRECORDVAR);
-           else getToken();
-         }
+          /* Skip over the RECORD pointer */
 
-       /* A RECORD_OBJECT may be used in the WITH statement if the field
-        * is from the same sRECORD type and is itself of type RECORD.
-        */
+          getToken();
 
-       else if (g_token == sRECORD_OBJECT &&
-                g_tknPtr->sParm.r.rRecord == g_withRecord.wParent &&
-                g_tknPtr->sParm.r.rParent->sParm.t.tType == sRECORD)
-         {
-           /* Okay, update the with record to use this record field */
+          /* Verify that deferencing is specified! */
 
-           if (g_withRecord.wPointer)
-             {
-               g_withRecord.wIndex += g_tknPtr->sParm.r.rOffset;
-             }
-           else
-             {
-               g_withRecord.wOffset += g_tknPtr->sParm.r.rOffset;
-             }
+          if (g_token != '^') error(eRECORDVAR);
+          else getToken();
+        }
 
-           g_withRecord.wParent = g_tknPtr->sParm.r.rParent;
+      /* A RECORD_OBJECT may be used in the WITH statement if the field
+       * is from the same sRECORD type and is itself of type RECORD.
+       */
 
-           /* Skip over the sRECORD_OBJECT */
+      else if (g_token == sRECORD_OBJECT &&
+               withTypePtr->sParm.r.rRecord == g_withRecord.wParent &&
+               baseTypePtr->sParm.t.tType == sRECORD)
+        {
+          /* Okay, update the with record to use this record field */
 
-           getToken();
-         }
+          if (g_withRecord.wPointer)
+            {
+              g_withRecord.wIndex += withTypePtr->sParm.r.rOffset;
+            }
+          else
+            {
+              g_withRecord.wOffset += withTypePtr->sParm.r.rOffset;
+            }
 
-     /* Anything else is an error */
+          g_withRecord.wParent = withTypePtr->sParm.r.rParent;
 
-       else
-         {
-           error(eRECORDVAR);
-           break;
-         }
+          /* Skip over the sRECORD_OBJECT */
 
+          getToken();
+        }
 
-       /* Check if there are multiple variables in the WITH statement */
+    /* Anything else is an error */
 
-       if (g_token == ',') getToken();
-       else break;
-     }
+      else
+        {
+          error(eRECORDVAR);
+          break;
+        }
+
+      /* Check if there are multiple variables in the WITH statement */
+
+      if (g_token == ',') getToken();
+      else break;
+    }
 
    /* Verify that the RECORD list is terminated with DO */
 
-   if (g_token != tDO) error (eDO);
-   else getToken();
+  if (g_token != tDO) error (eDO);
+  else getToken();
 
-   /* Then process the statement following the WITH */
+  /* Then process the statement following the WITH */
 
-   pas_Statement();
+  pas_Statement();
 
-   /* Restore the previous value of the with record */
+  /* Restore the previous value of the with record */
 
-   g_withRecord = saveWithRecord;
+  g_withRecord = saveWithRecord;
 }

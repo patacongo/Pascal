@@ -20,7 +20,7 @@ BEGIN
 
  WHILE exitflag = FALSE DO
  BEGIN
-  WRITELN('Enter in a digit [-1 to END]');
+  WRITELN('Enter in a digit [-1 to end]');
   READLN(digitcode);
   if digitcode = -1 THEN
    exitflag := TRUE

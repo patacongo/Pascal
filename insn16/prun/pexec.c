@@ -603,7 +603,7 @@ static inline int pexec8(struct pexec_s *st, uint8_t opcode)
     case oSTI  :
       POP(st, uparm1);
       POP(st, uparm2);
-      PUTSTACK(st, uparm1,uparm2);
+      PUTSTACK(st, uparm1, uparm2);
       break;
 
     case oSTIB :

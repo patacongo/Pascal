@@ -1535,8 +1535,15 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
         {
           int16_t tempOffset;
 
-          /* Now there are two cases to consider:  (1) the g_withRecord is a */
-          /* pointer to a RECORD, or (2) the g_withRecord is the RECORD itself */
+          /* Get the parent type and address offset of the record object */
+
+          typePtr          = varPtr->sParm.r.rParent;
+          varInfo->fOffset = varPtr->sParm.r.rOffset;
+
+          /* There are two cases to consider:  (1) the g_withRecord is a
+           * pointer to a RECORD, or (2) the g_withRecord is the RECORD
+           * itself.
+           */
 
           if (g_withRecord.wPointer)
             {
@@ -1545,16 +1552,39 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
 
               if (g_withRecord.wVarParm)
                 {
-                  factorFlags |= (FACTOR_INDEXED | FACTOR_DEREFERENCE |
-                                  FACTOR_LOAD_ADDRESS | FACTOR_VAR_PARM);
+                  /* In this case g_withRecord.wLevel is the level of the
+                   * procedure that receives the VAR parameterer, and
+                   * g_withRecord.wOffset is the (negative) offset to the
+                   * VAR parameter from the level of the procedure.
+                   */
+
+                  varPtr->sKind  = sVAR_PARM;
+                  factorFlags   |= (FACTOR_DEREFERENCE | FACTOR_FIELD_OFFSET |
+                                    FACTOR_VAR_PARM);
                 }
               else
                 {
-                  factorFlags |= (FACTOR_INDEXED | FACTOR_DEREFERENCE);
+                  /* In this case g_withRecord.wLevel is the level of the
+                   * pointer variable, and  g_withRecord.wOffset is the
+                   * (positive) offset to the pointer from that level.
+                   */
+
+                  varPtr->sKind  = sPOINTER;
+                  factorFlags   |= (FACTOR_DEREFERENCE | FACTOR_FIELD_OFFSET);
                 }
 
-              pas_GenerateDataOperation(opPUSH,
-                                        varPtr->sParm.r.rOffset + g_withRecord.wIndex);
+              /* Modify the variable so that it has the characteristics of the
+               * the pointer.
+               */
+
+              varPtr->sLevel          = g_withRecord.wLevel;
+              varPtr->sParm.v.vSize   = sPTR_SIZE;
+              varPtr->sParm.v.vOffset = g_withRecord.wOffset;
+              varPtr->sParm.v.vParent = typePtr;
+
+              pas_GenerateStackReference(opLDS, varPtr);
+
+              factorFlags |= FACTOR_FIELD_OFFSET;
               tempOffset   = g_withRecord.wOffset;
             }
           else
@@ -1568,8 +1598,6 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
            * associated with sRECORD_OBJECT is not the same as for
            * variables!
            */
-
-          typePtr                 = varPtr->sParm.r.rParent;
 
           varPtr->sKind           = typePtr->sParm.t.tType;
           varPtr->sLevel          = g_withRecord.wLevel;

@@ -1,26 +1,54 @@
 { Verifies compilation of a simple record using WITH selector }
 
-program simpleRecord;
-type
-letters =
-  record
-    a : char;
-    b : char;
-    c : char;
-  end;
+PROGRAM simpleRecord;
+TYPE
+  letters =
+    record
+      a : char;
+      b : char;
+      c : char;
+    END;
 
-var
+VAR
    abc : letters;
+   pabc : ^letters;
 
-begin
-   with abc do
-   begin
+PROCEDURE ghi(VAR vabc : letters);
+BEGIN
+   WITH vabc DO
+   BEGIN
+      a := 'G';
+      b := 'H';
+      c := 'I';
+
+      WRITELN('a = ', a);
+      WRITELN('b = ', b);
+      WRITELN('c = ', C)
+   END;
+END;
+
+BEGIN
+   WITH abc DO
+   BEGIN
       a := 'A';
-      b := 'B'; 
+      b := 'B';
       c := 'C';
 
-      writeln ('a = ', a);
-      writeln ('b = ', b);
-      writeln ('c = ', C)
-   end;
-end.
+      WRITELN('a = ', a);
+      WRITELN('b = ', b);
+      WRITELN('c = ', C)
+   END;
+
+   WITH pabc^ DO
+   BEGIN
+      a := 'D';
+      b := 'E';
+      c := 'F';
+
+      WRITELN('a = ', a);
+      WRITELN('b = ', b);
+      WRITELN('c = ', C)
+   END;
+
+   ghi(abc);
+END.
