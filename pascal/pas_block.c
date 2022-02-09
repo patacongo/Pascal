@@ -826,7 +826,10 @@ static symbol_t *pas_TypeIdentifier(void)
       typePtr = g_tknPtr;
       getToken();
 
-      /* Return the size of an allocated instance of this type. */
+      /* Return the size of an allocated instance of this type.
+       * NOTE:  This is NOT the size of a pointer to an allocated instance of
+       * this type!
+       */
 
       g_dwVarSize = typePtr->sParm.t.tAllocSize;
 
@@ -1326,7 +1329,12 @@ static symbol_t *pas_NewComplexType(char *typeName)
       typeIdPtr = pas_TypeIdentifier();
       if (typeIdPtr != NULL)
         {
-          typePtr = pas_AddTypeDefine(typeName, sPOINTER, g_dwVarSize,
+          /* NOTE:  pas_TypeIdentifier() returns that size of an allocated
+           * instance of the type in dwVarSize.  That is NOT the size of
+           * a pointer to an allocated instance which is always sPTR_SIZE.
+           */
+
+          typePtr = pas_AddTypeDefine(typeName, sPOINTER, sPTR_SIZE,
                                       typeIdPtr);
         }
       else if (g_token == tIDENT)
