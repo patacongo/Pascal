@@ -109,9 +109,10 @@ for file in `ls -1 src/*.pas`; do
     fi
 done
 
-# Multi-file tests are controlled by units.sh
+# Multi-file tests are controlled by testmulti.sh
 
 if [ "${DOLIST}" == "A" -o "${DOLIST}" == "5" ]; then
+    ./testmulti.sh DoIt.pas SayIt.pas
     ./testmulti.sh sinecos.pas "unit-cosine.pas unit-sine.pas unit-data.pas" sinecos.inp
     ./testmulti.sh worksched.pas DayIO.pas
 fi
