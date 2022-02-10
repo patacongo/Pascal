@@ -1540,6 +1540,22 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
           typePtr          = varPtr->sParm.r.rParent;
           varInfo->fOffset = varPtr->sParm.r.rOffset;
 
+          /* A record object is a different member of the union than a
+           * variable.  We will be calling functions below, pass varPtr
+           * as a pointer to a variable instance.  Let's set all of the
+           * unused variable fields to zero now so that they do not pick
+           * up garbage when the variable is aliased to the record object.
+           */
+
+          varPtr->sParm.v.vFlags    = 0;
+          varPtr->sParm.v.vXfrUnit  = 0;
+          varPtr->sParm.v.vSymIndex = 0;
+
+          /* Then let's set some fields that are common to both calls. */
+
+          varPtr->sLevel            = g_withRecord.wLevel;
+          varPtr->sParm.v.vParent   = typePtr;
+
           /* There are two cases to consider:  (1) the g_withRecord is a
            * pointer to a RECORD, or (2) the g_withRecord is the RECORD
            * itself.
@@ -1547,8 +1563,9 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
 
           if (g_withRecord.wPointer)
             {
-              /* If the pointer is really a VAR parameter, then other syntax */
-              /* rules will apply */
+              /* If the pointer is really a VAR parameter, then other syntax
+               * rules will apply
+               */
 
               if (g_withRecord.wVarParm)
                 {
@@ -1577,10 +1594,8 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
                * the pointer.
                */
 
-              varPtr->sLevel          = g_withRecord.wLevel;
-              varPtr->sParm.v.vSize   = sPTR_SIZE;
               varPtr->sParm.v.vOffset = g_withRecord.wOffset;
-              varPtr->sParm.v.vParent = typePtr;
+              varPtr->sParm.v.vSize   = sPTR_SIZE;
 
               pas_GenerateStackReference(opLDS, varPtr);
 
@@ -1600,10 +1615,8 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
            */
 
           varPtr->sKind           = typePtr->sParm.t.tType;
-          varPtr->sLevel          = g_withRecord.wLevel;
-          varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
           varPtr->sParm.v.vOffset = tempOffset;
-          varPtr->sParm.v.vParent = typePtr;
+          varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
 
           factorType = pas_SimpleFactor(varInfo, factorFlags);
         }
@@ -1667,20 +1680,32 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
             getToken();
           }
 
-        /* Is this going to be a pointer assignment?  Or a value? */
-
-        if (ptrDepth > 0)
-          {
-            factorFlags &= ~FACTOR_DEREFERENCE;
-            factorFlags |= FACTOR_PTREXPR;
-          }
-
         /* Now set the variable type to that of the parent and continue to
          * simplify the factor.
          */
 
         varPtr->sKind = parentTypePtr->sParm.t.tType;
-        factorType    = pas_SimpleFactor(varInfo, factorFlags);
+
+        /* Is this going to be a pointer assignment?  Or a value? */
+
+        if (ptrDepth > 0)
+          {
+            /* No more derererencing; we are assigning a pointer address. */
+
+            factorFlags &= ~FACTOR_DEREFERENCE;
+            factorFlags |= FACTOR_PTREXPR;
+          }
+        else
+          {
+            /* The size of the variable value is no longer the size of the
+             * pointer, but rather it is now the full allocation size of the
+             * parent type.
+             */
+
+            varPtr->sParm.v.vSize = parentTypePtr->sParm.t.tAllocSize;
+          }
+
+        factorType = pas_SimpleFactor(varInfo, factorFlags);
 
         /* Adjust the expression type if this is still a pointer */
 

@@ -1,4 +1,4 @@
-/**********************************************************************
+/****************************************************************************
  * pas_codegen.c
  * P-Code generation logic
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -60,9 +60,9 @@
 #include "pas_procedure.h" /* for pas_ActualParameterSize */
 #include "pas_codegen.h"   /* (to verify prototypes in this file) */
 
-/**********************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- **********************************************************************/
+ ****************************************************************************/
 
 #define UNDEFINED_LEVEL (-1)
 #define INVALID_PCODE   (-1)
@@ -70,11 +70,11 @@
 #define LEVEL_DEFINED(l)  ((int32_t)(l) >= 0)
 #define PCODE_VALID(p)    ((int32_t)(p) >= 0)
 
-/***********************************************************************
+/*****************************************************************************
  * Private Function Prototypes
- ***********************************************************************/
+ ****************************************************************************/
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a stack reference opcode to a global variable residing at
  * static nesting level zero.
  */
@@ -92,23 +92,32 @@ pas_GenerateLevel0StackReference(enum pcode_e eOpCode, symbol_t *varPtr)
     }
   else
     {
+      /* Get the program section offset (i.e., current size of the program
+       * section) in case we need to generate a relocation entry below.
+       */
+
+      uint32_t sectionOffset = poffGetProgSize(g_poffHandle);
+
       /* Generate the P-code */
 
       insn_GenerateDataOperation(eOpCode, varPtr->sParm.v.vOffset);
 
-      /* If the variable is undefined, also generate a relocation
-       * record.
+      /* If the variable is undefined, also generate a RLT_LDST relocation
+       * record.  This relocation record has the sectionOffset BEFORE
+       * optimization and is not useful in this state.  The optimizer will
+       * need to correct that when the final sectionOffset is known.
        */
 
       if ((varPtr->sParm.v.vFlags & SVAR_EXTERNAL) != 0)
         {
           (void)poffAddRelocation(g_poffHandle, RLT_LDST,
-                                  varPtr->sParm.v.vSymIndex, 0);
+                                  varPtr->sParm.v.vSymIndex,
+                                  sectionOffset);
         }
     }
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* There are some special P-codes for accessing stack data at static
  * nesting level 0.  Check if the specified opcode is one of those.  If
  * so, return the mapped opcode.  Otherwise, return INVALID_PCODE.
@@ -138,11 +147,11 @@ static int32_t pas_GetLevel0Opcode(enum pcode_e eOpCode)
     }
 }
 
-/***********************************************************************
+/****************************************************************************
  * Public Functions
- ***********************************************************************/
+ ****************************************************************************/
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate the most simple of all P-codes */
 
 void pas_GenerateSimple(enum pcode_e eOpCode)
@@ -150,7 +159,7 @@ void pas_GenerateSimple(enum pcode_e eOpCode)
   insn_GenerateSimple(eOpCode);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a P-code with a single data argument */
 
 void pas_GenerateDataOperation(enum pcode_e eOpCode, int32_t dwData)
@@ -158,7 +167,7 @@ void pas_GenerateDataOperation(enum pcode_e eOpCode, int32_t dwData)
   insn_GenerateDataOperation(eOpCode, dwData);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* This function is called just before a multiple register operation is
  * is generated.  This should generate logic to specify the size of the
  * multiple register operation (in bytes, not registers). This may translate
@@ -172,7 +181,7 @@ void pas_GenerateDataSize(int32_t dwDataSize)
   insn_GenerateDataSize(dwDataSize);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a floating point operation */
 
 void pas_GenerateFpOperation(uint8_t fpOpcode)
@@ -180,7 +189,7 @@ void pas_GenerateFpOperation(uint8_t fpOpcode)
   insn_GenerateFpOperation(fpOpcode);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a pseudo call to a built-in, set operator/functionon */
 
 void pas_GenerateSetOperation(uint8_t setOpcode)
@@ -188,7 +197,7 @@ void pas_GenerateSetOperation(uint8_t setOpcode)
   insn_GenerateSetOperation(setOpcode);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate an IO operation */
 
 void pas_GenerateIoOperation(uint16_t ioOpcode)
@@ -196,7 +205,7 @@ void pas_GenerateIoOperation(uint16_t ioOpcode)
   insn_GenerateIoOperation(ioOpcode);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a pseudo call to a built-in, standard pascal function */
 
 void pas_StandardFunctionCall(uint16_t libOpcode)
@@ -204,7 +213,7 @@ void pas_StandardFunctionCall(uint16_t libOpcode)
   insn_StandardFunctionCall(libOpcode);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a reference to data on the data stack using the specified
  * level and offset.
  */
@@ -231,7 +240,7 @@ void pas_GenerateLevelReference(enum pcode_e eOpCode, uint16_t wLevel,
   insn_GenerateLevelReference(eOpCode, wLevel, dwOffset);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a stack reference opcode, handling references to undefined
  * stack offsets.
  */
@@ -260,7 +269,7 @@ void pas_GenerateStackReference(enum pcode_e eOpCode, symbol_t *varPtr)
                               varPtr->sParm.v.vOffset);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a procedure call and an associated relocation record if the
  * called procedure is external.
  */
@@ -280,30 +289,22 @@ void pas_GenerateProcedureCall(symbol_t *pProc)
 
   insn_GenerateProcedureCall(level, pProc->sParm.p.pLabel);
 
-  /* If the variable is undefined, also generate a relocation
-   * record.
+  /* If the variable is undefined (i.e., the SVAR_EXTERNAL flag is set in the
+   * pFlags), we should also generate a RLT_PCAL relocation record via
+   * poffAddRelocation().  That is not done here;  Rather, that is done later
+   * in the Pascal optimizer when the PCAL instruction against an undefined
+   * label is encountered.
    */
-
-#if 0 /* Not yet */
-  if ((varPtr->sParm.p.pFlags & SVAR_EXTERNAL) != 0)
-    {
-      /* For now */
-# error "Don't know what last parameter should be"
-      (void)poffAddRelocation(g_poffHandle, RLT_PCAL,
-                              varPtr->sParm.p.pSymIndex,
-                              0);
-    }
-#endif
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 void pas_GenerateLineNumber(uint16_t wIncludeNumber, uint32_t dwLineNumber)
 {
   insn_GenerateLineNumber(wIncludeNumber, dwLineNumber);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
 {
@@ -336,7 +337,7 @@ void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
    poffReleaseDebugFuncContainer(pContainer);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate description of a level 0 stack variable that can be
  * exported by a unit.
  */
@@ -378,7 +379,7 @@ void pas_GenerateStackExport(symbol_t *varPtr)
   (void)poffAddSymbol(g_poffHandle, &symbol);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate description of a level 0 stack variable that must be
  * imported by a program or unit from a unit.
  */
@@ -420,7 +421,7 @@ void pas_GenerateStackImport(symbol_t *varPtr)
   varPtr->sParm.v.vSymIndex= poffAddSymbol(g_poffHandle, &symbol);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate description of a level 0 procedure or function that can be
  * exported by a unit.
  */
@@ -438,11 +439,15 @@ void pas_GenerateProcExport(symbol_t *pProc)
 
   /* Check for a function reference which must have a valid parent type */
 
-  if (pProc->sKind == sFUNC && typePtr != NULL);
+  if (pProc->sKind == sFUNC && typePtr != NULL)
+    {
+    }
 
   /* Check for a procedure reference which must not have a valid type */
 
-  else  if (pProc->sKind == sPROC && typePtr == NULL);
+  else  if (pProc->sKind == sPROC && typePtr == NULL)
+    {
+    }
 
   /* Anything else is an error */
 
@@ -485,7 +490,7 @@ void pas_GenerateProcExport(symbol_t *pProc)
   (void)poffAddSymbol(g_poffHandle, &symbol);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate description of a level 0 procedure or function that must be
  * imported by a program or unit from a unit.
  */
@@ -503,16 +508,22 @@ void pas_GenerateProcImport(symbol_t *pProc)
 
   /* Check for a function reference which must have a valid parent type */
 
-  if (pProc->sKind == sFUNC && typePtr != NULL);
+  if (pProc->sKind == sFUNC && typePtr != NULL)
+    {
+    }
 
   /* Check for a procedure reference which must not have a valid type */
 
-  else  if (pProc->sKind == sPROC && typePtr == NULL);
+  else  if (pProc->sKind == sPROC && typePtr == NULL)
+    {
+    }
 
   /* Anything else is an error */
 
   else
-    error(eSYMTABINTERNAL);
+    {
+      error(eSYMTABINTERNAL);
+    }
 
   /* The function / procedure should also be declared external and
    * only procedures declared at static nesting level zero can
@@ -548,7 +559,7 @@ void pas_GenerateProcImport(symbol_t *pProc)
   pProc->sParm.p.pSymIndex = poffAddSymbol(g_poffHandle, &symbol);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate the most simple of all long operations */
 
 void  pas_GenerateSimpleLongOperation(enum longops_e longOpCode)
@@ -556,7 +567,7 @@ void  pas_GenerateSimpleLongOperation(enum longops_e longOpCode)
   insn_GenerateSimpleLongOperation(longOpCode);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 /* Generate a long operation with a single data argument */
 
 void pas_GenerateDataLongOperation(enum longops_e longOpCode, int32_t dwData)

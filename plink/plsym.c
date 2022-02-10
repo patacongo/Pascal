@@ -1,8 +1,8 @@
-/**********************************************************************
+/****************************************************************************
  * plsym.c
  * Symbol management for the P-Code Linker
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -54,16 +54,16 @@
 #include "pas_error.h"
 #include "plsym.h"
 
-/**********************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- **********************************************************************/
+ ****************************************************************************/
 
 #define INITIAL_SYMBOL_LIST_SIZE (1024*sizeof(symContainer_t*))
 #define SYMBOL_LIST_INCREMENT    (256*sizeof(symContainer_t*))
 
-/**********************************************************************
+/****************************************************************************
  * Private Types
- **********************************************************************/
+ ****************************************************************************/
 
 /* This structure just contains a POFF library symbol */
 
@@ -75,9 +75,9 @@ struct symContainer_s
 };
 typedef struct symContainer_s symContainer_t;
 
-/**********************************************************************
+/****************************************************************************
  * Private Variables
- **********************************************************************/
+ ****************************************************************************/
 
 static symContainer_t  *symHead          = NULL;
 static symContainer_t  *symTail          = NULL;
@@ -87,10 +87,9 @@ static uint32_t         symListAlloc     = 0;
 static int              nUndefined       = 0;
 static int              nMultiplyDefined = 0;
 
-/**********************************************************************
+/****************************************************************************
  * Private Function Prototypes
-
- **********************************************************************/
+ ****************************************************************************/
 
 static void            offsetSymbolValue(poffLibSymbol_t *sym,
                                          uint32_t pcOffset);
@@ -98,11 +97,12 @@ static symContainer_t *insertSymbol(poffLibSymbol_t *sym);
 static void            addSymbolToList(symContainer_t *symbol,
                                        uint32_t index);
 
-/**********************************************************************
+/****************************************************************************
  * Public Functions
- **********************************************************************/
+ ****************************************************************************/
 
-uint32_t mergeSymbols(poffHandle_t inHandle, uint32_t pcOffset, uint32_t symOffset)
+uint32_t mergeSymbols(poffHandle_t inHandle, uint32_t pcOffset,
+                      uint32_t symOffset)
 {
   poffLibSymbol_t symbol;
   symContainer_t *container;
@@ -135,12 +135,14 @@ uint32_t mergeSymbols(poffHandle_t inHandle, uint32_t pcOffset, uint32_t symOffs
     }
   while (inIndex >= 0);
 
-  /* Return the offset to the last symbol inserted */
+  /* Return the offset to the next symbol symbol offset after the last one
+   * that was inserted.
+   */
 
-  return outIndex;
+  return outIndex + 1;
 }
 
-/***********************************************************************/
+/*****************************************************************************/
 
 void verifySymbols(void)
 {
@@ -166,7 +168,7 @@ void verifySymbols(void)
   if (nMultiplyDefined) fatal(eMULTIDEFSYMBOL);
 }
 
-/***********************************************************************/
+/*****************************************************************************/
 
 void writeSymbols(poffHandle_t outHandle)
 {
@@ -180,7 +182,7 @@ void writeSymbols(poffHandle_t outHandle)
     }
 }
 
-/***********************************************************************/
+/*****************************************************************************/
 
 poffLibSymbol_t *getSymbolByIndex(uint32_t symIndex)
 {
@@ -189,7 +191,7 @@ poffLibSymbol_t *getSymbolByIndex(uint32_t symIndex)
   return &symList[symIndex]->s;
 }
 
-/***********************************************************************/
+/*****************************************************************************/
 
 void releaseSymbols(void)
 {
@@ -222,7 +224,7 @@ void releaseSymbols(void)
   symList = NULL;
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
 static void offsetSymbolValue(poffLibSymbol_t *sym, uint32_t pcOffset)
 {
@@ -245,7 +247,7 @@ static void offsetSymbolValue(poffLibSymbol_t *sym, uint32_t pcOffset)
     }
 }
 
-/**********************************************************************/
+/****************************************************************************/
 
 static inline symContainer_t *makeSymContainer(poffLibSymbol_t *psym)
 {
@@ -416,7 +418,7 @@ static symContainer_t *insertSymbol(poffLibSymbol_t *sym)
   return newsym;
 }
 
-/***********************************************************************/
+/*****************************************************************************/
 /* Add a symbol to the linear symbol table list.  This list is necessary
  * to quickly mapped a symbol index value (as might be found in the
  * relocation data) to the unique representation of the symbol as
@@ -465,5 +467,5 @@ static void addSymbolToList(symContainer_t *symbol, uint32_t index)
   symList[index] = symbol;
 }
 
-/***********************************************************************/
+/*****************************************************************************/
 

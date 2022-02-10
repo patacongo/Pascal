@@ -2,7 +2,7 @@
  * popt_finalize.c
  * Finalization of optimized image
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -233,6 +233,7 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
           /* We are referencing something from the rodata section.
            * No special action need be taken.
            */
+
           break;
 
           /* Call to a procedure or function. */
@@ -309,7 +310,7 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
                  * a text section offset.  No relocation record
                  * is needed in this case.  The only relocation
                  * may be performed is a subsequent program data
-                 * sectioin offset.
+                 * section offset.
                  */
 
                 op.arg2 = (uint16_t)value;
@@ -322,10 +323,27 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
           }
           break;
 
+          /* References to stack from level 0 */
+
+        case oLD:    /* Load value */
+        case oLDB:
+        case oULDB:
+        case oLDM:
+        case oST:    /* Store value */
+        case oSTB:
+        case oSTM:
+        case oLDX:   /* Load value indexed */
+        case oLDXB:
+        case oULDXB:
+        case oLDXM:
+        case oSTX:   /* Store value indexed */
+        case oSTXB:
+        case oSTXM:
+        case oLA:    /* Load stack address */
+        case oLAX:
+
           /* References to stack via level offset */
 
-        case oLAS:   /* Load stack address */
-        case oLASX:
         case oLDS:   /* Load value */
         case oLDSB:
         case oULDSB:
@@ -340,12 +358,15 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
         case oSTSX:  /* Store value indexed */
         case oSTSXB:
         case oSTSXM:
+        case oLAS:   /* Load stack address */
+        case oLASX:
           {
 #warning REVISIT
           }
           break;
 
           /* Otherwise, it is not an interesting opcode */
+
         default:
           break;
         }

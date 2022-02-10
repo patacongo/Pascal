@@ -138,36 +138,40 @@ void applyRelocations(poffHandle_t outHandle)
       poffLibSymbol_t  *sym;
       uint32_t          progIndex;
 
+      /* Get the symbol referenced by the relocation.  At this point, we
+       * assume that the system has already verified that there are no
+       * undefined symbols.
+       */
+
+      sym = getSymbolByIndex(symIndex);
+
+      /* Get the index to the instruction */
+
+      progIndex = reloc->rl_offset;
+
+      /* Sanity checking */
+
+      if ((sym->flags & STF_UNDEFINED) != 0 || progIndex > progSize - 4)
+        {
+          fatal(ePOFFCONFUSION);
+        }
+
+      /* Perform the relocation */
+
       switch (relType)
         {
-        case RLT_PCAL:
-          /* Get the symbol referenced by the relocation.  At this
-           * point, we assume that the system has already verified
-           * that there are no undefined symbols.
-           */
-
-          sym = getSymbolByIndex(symIndex);
-
-          /* Get the index to the oPCAL instruction */
-
-          progIndex = reloc->rl_offset;
-
-          /* Sanity checking */
-
-          if (((sym->flags & STF_UNDEFINED) != 0) ||
-              (progIndex > progSize-4))
-            fatal(ePOFFCONFUSION);
-
-          /* Perform the relocation */
-
+        case RLT_PCAL :  /* PCAL to external proc/func */
           insn_FixupProcedureCall(&progData[progIndex], sym->value);
+          break;
+
+        case RLT_LDST :  /* LA or LAX to external stack loc */
+          insn_FixupFrameOffset(&progData[progIndex], sym->value);
           break;
 
         default:
           break;
         }
     }
-
 
   /* Return ownership of the program data to the container */
 
@@ -194,7 +198,8 @@ static void offsetRelocation(poffRelocation_t *reloc,
 
   switch (relType)
     {
-    case RLT_PCAL:
+    case RLT_PCAL :
+    case RLT_LDST :
       symIndex         += symOffset;
       reloc->rl_info    = RLI_MAKE(symIndex, relType);
       reloc->rl_offset += pcOffset;

@@ -70,6 +70,7 @@ void insn_GenerateDataLongOperation(enum longops_e longOpCode, int32_t data);
 
 int  insn_Relocate(opType_t *op, uint32_t pcOffset, uint32_t roOffset);
 void insn_FixupProcedureCall(uint8_t *progData, uint32_t symValue);
+void insn_FixupFrameOffset(uint8_t *progData, uint32_t symValue);
 
 /* POFF-wrapped INSNS access helpers */
 

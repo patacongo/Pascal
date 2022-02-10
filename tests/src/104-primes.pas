@@ -28,36 +28,38 @@ begin {initialize}
   empty          := false;
 
   with next do
-  repeat {find next prime}
-    while not (bitNumber in sieve[wordIndex]) do
-      bitNumber := succ(bitNumber);
+  begin
+    repeat {find next prime}
+      while not (bitNumber in sieve[wordIndex]) do
+        bitNumber := succ(bitNumber);
 
-    primes[wordIndex] := primes[wordIndex] + [bitNumber];
-    c                 := 2 * bitNumber + 1;
-    j                 := bitNumber;
-    k                 := wordIndex;
+      primes[wordIndex] := primes[wordIndex] + [bitNumber];
+      c                 := 2 * bitNumber + 1;
+      j                 := bitNumber;
+      k                 := wordIndex;
 
-    while k <= w do {eliminate}
-    begin sieve[k] := sieve[k] - [j];
-      k := k + wordIndex * 2;
-      j := j + c;
-      while j > maxbit do
-        begin
-          k := k + 1;
-          j := j - wdlength
-        end
-    end;
-
-    if sieve[wordIndex] = [] then
-      begin
-        empty     := true;
-        bitNumber := 0
+      while k <= w do {eliminate}
+      begin sieve[k] := sieve[k] - [j];
+        k := k + wordIndex * 2;
+        j := j + c;
+        while j > maxbit do
+          begin
+            k := k + 1;
+            j := j - wdlength
+          end
       end;
 
-    while empty and (wordIndex < w) do
-      begin
-        wordIndex := wordIndex + 1;
-        empty     := sieve[wordIndex] = []
-      end
-  until empty; {ends with}
+      if sieve[wordIndex] = [] then
+        begin
+          empty     := true;
+          bitNumber := 0
+        end;
+
+      while empty and (wordIndex < w) do
+        begin
+          wordIndex := wordIndex + 1;
+          empty     := sieve[wordIndex] = []
+        end
+    until empty; {ends with}
+  end
 end.

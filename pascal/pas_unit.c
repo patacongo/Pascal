@@ -488,7 +488,7 @@ static void pas_ExportedProcedureHeading(void)
   getToken();
 
   /* NOTE:  The level associated with the PROCEDURE symbol is the level
-   * At which the procedure was declared.  Everything declare within the
+   * At which the procedure was declared.  Everything declared within the
    * PROCEDURE is at the next level
    */
 
@@ -559,13 +559,13 @@ static void pas_ExportedFunctionHeading(void)
 
   funcPtr = pas_AddProcedure(g_tokenString, sFUNC, funcLabel, 0, NULL);
 
-  /* Mark the procedure as external */
+  /* Mark the function as external */
 
   funcPtr->sParm.p.pFlags |= SPROC_EXTERNAL;
 
   /* NOTE:  The level associated with the FUNCTION symbol is the level
-   * At which the procedure was declared.  Everything declare within the
-   * PROCEDURE is at the next level
+   * At which the procedure was declared.  Everything declared within the
+   * FUNCTION is at the next level
    */
 
   g_level++;

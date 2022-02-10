@@ -114,10 +114,14 @@ void insn_FixupProcedureCall(uint8_t *progData, uint32_t symValue)
   /* Sanity checking */
 
   if (progData[0] != oPCAL)
-    fatal(ePOFFCONFUSION);
+    {
+      fatal(ePOFFCONFUSION);
+    }
 
   if (symValue > 0xffff)
-    fatal(eBADSHORTINT);
+    {
+      fatal(eBADINTRANGE);
+    }
 
   /* Perform the relocation */
 
@@ -125,5 +129,32 @@ void insn_FixupProcedureCall(uint8_t *progData, uint32_t symValue)
   progData[3] = symValue & 0xff;
 }
 
-
 /***********************************************************************/
+
+void insn_FixupFrameOffset(uint8_t *progData, uint32_t symValue)
+{
+  int index;
+
+  /* Sanity checking */
+
+  /* Must be an instruction with arg16 equal to a 16-bit frame pointer
+   * offset.  The arg8 may or my not be present as a level offset.
+   */
+
+  if ((progData[0] & o16) == 0)
+    {
+      fatal(ePOFFCONFUSION);
+    }
+
+  if (symValue > 0xffff)
+    {
+      fatal(eBADINTRANGE);
+    }
+
+  /* Perform the relocation */
+
+  index = ((progData[0] & o8) == 0) ? 1 : 2;
+
+  progData[index]     = symValue >> 8;
+  progData[index + 1] = symValue & 0xff;
+}

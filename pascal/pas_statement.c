@@ -987,16 +987,19 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
              * the field but with level and offset associated with the record
              * NOTE:  We have to be careful here because the structure
              * associated with sRECORD_OBJECT is not the same as for
-             * variables!
+             * variables!  All variable fields need valid values.
              */
 
-            typePtr                 = varPtr->sParm.r.rParent;
+            typePtr                   = varPtr->sParm.r.rParent;
 
-            varPtr->sKind           = typePtr->sParm.t.tType;
-            varPtr->sLevel          = g_withRecord.wLevel;
-            varPtr->sParm.v.vSize   = typePtr->sParm.t.tAllocSize;
-            varPtr->sParm.v.vOffset = tempOffset;
-            varPtr->sParm.v.vParent = typePtr;
+            varPtr->sKind             = typePtr->sParm.t.tType;
+            varPtr->sLevel            = g_withRecord.wLevel;
+            varPtr->sParm.v.vFlags    = 0;
+            varPtr->sParm.v.vXfrUnit  = 0;
+            varPtr->sParm.v.vOffset   = tempOffset;
+            varPtr->sParm.v.vSize     = typePtr->sParm.t.tAllocSize;
+            varPtr->sParm.v.vSymIndex = 0;
+            varPtr->sParm.v.vParent   = typePtr;
 
             pas_SimpleAssignment(varPtr, assignFlags);
           }
@@ -1232,6 +1235,10 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
       getToken();
     }
 
+  /* Get the kind of the pointed-at object */
+
+  varPtr->sKind = parentTypePtr->sParm.t.tType;
+
   if (ptrDepth == 0)
     {
       /* Indicate that we are dereferencing a pointer.  This will cause
@@ -1241,6 +1248,13 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
       assignFlags &= ~ASSIGN_ADDRESS;
       assignFlags |= ASSIGN_LVALUE_ADDR;
+
+      /* The size of the variable value is no longer the size of the
+       * pointer, but rather it is now the full allocation size of the
+       * parent type.
+       */
+
+      varPtr->sParm.v.vSize = parentTypePtr->sParm.t.tAllocSize;
     }
   else
     {
@@ -1255,14 +1269,6 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
           assignFlags |= ASSIGN_PTR2PTR;
         }
     }
-
-  /* If the parent type is itself a typed pointer, then get the pointed-at
-   * type.
-   */
-
-  /* Get the kind of the pointed-at object */
-
-  varPtr->sKind = parentTypePtr->sParm.t.tType;
 
   /* And process the assignment (indirect recursion). */
 

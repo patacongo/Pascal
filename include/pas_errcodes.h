@@ -140,7 +140,7 @@
  * sSETRANGE            Value out of range for SET OF
  * sSETELEMENT          Invalid or missing set element
  * eSCALARTYPE          Illegal scalar type
- * eBADSHORTINT         Short integer is out of range
+ * eBADINTRANGE         Integer value is out of range
  * eSYMTABINTERNAL      Internal error in symbol table
  * eRECORDDECLARE       Error in RECORD declaration
  * eRECORDOBJECT        Expected a field of RECORD
@@ -286,7 +286,7 @@
 #define eSETRANGE        ((uint16_t) 0x58)
 #define eSETELEMENT      ((uint16_t) 0x59)
 #define eSCALARTYPE      ((uint16_t) 0x5a)
-#define eBADSHORTINT     ((uint16_t) 0x5b)
+#define eBADINTRANGE     ((uint16_t) 0x5b)
 #define eSYMTABINTERNAL  ((uint16_t) 0x5c)
 #define eRECORDDECLARE   ((uint16_t) 0x5d)
 #define eRECORDOBJECT    ((uint16_t) 0x5e)

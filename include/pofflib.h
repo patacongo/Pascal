@@ -2,7 +2,7 @@
  * pofflib.h
  * Interfaces to the POFF library
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@
 #include "poff.h"
 
 /***************************************************************************
- * Definitions
+ * Pre-processor Definitions
  ***************************************************************************/
 
 /***************************************************************************
@@ -108,6 +108,7 @@ struct poffLibSymbol_s
 
   uint32_t size;
 };
+
 typedef struct poffLibSymbol_s poffLibSymbol_t;
 
 /* The externally visible form of a line number structure.  Line numbers
@@ -130,6 +131,7 @@ struct poffLibLineNumber_s
 
    uint32_t offset;
 };
+
 typedef struct poffLibLineNumber_s poffLibLineNumber_t;
 
 /* The externally visible form of a debug function info structure.
@@ -167,6 +169,7 @@ struct poffLibDebugFuncInfo_s
 
   uint32_t argsize[1];
 };
+
 typedef struct poffLibDebugFuncInfo_s poffLibDebugFuncInfo_t;
 
 #define SIZEOFDEBUFINFO(n) (sizeof(poffLibDebugFuncInfo_t) + ((n)-1)*sizeof(uint32_t))
