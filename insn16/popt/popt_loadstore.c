@@ -60,14 +60,14 @@
  * (2) does not depend on prior stack content.
  */
 
-static inline bool popt_CheckDataOperation(int16_t index)
+static bool popt_CheckDataOperation(int16_t index)
 {
   return (g_opPtr[index]->op == oPUSH   || g_opPtr[index]->op == oPUSHB ||
           g_opPtr[index]->op == oUPUSHB ||
           g_opPtr[index]->op == oLD     || g_opPtr[index]->op == oLDB  ||
           g_opPtr[index]->op == oULDB   ||
           g_opPtr[index]->op == oLDS    || g_opPtr[index]->op == oLDSB ||
-          g_opPtr[index]->op == oULDSB ||
+          g_opPtr[index]->op == oULDSB  ||
           g_opPtr[index]->op == oLA     || g_opPtr[index]->op == oLAS   ||
           g_opPtr[index]->op == oLAC);
 }
@@ -93,10 +93,17 @@ int16_t popt_LoadOptimize(void)
     {
       switch (g_opPtr[i]->op)
         {
-          /* Eliminate duplicate loads */
+          /* Eliminate duplicate loads.  Limited to simple, un-indexed loads
+           * that result in 16-bit values on the stack.
+           */
 
+        case oLD    :
+        case oLDB   :
+        case oULDB  :
         case oLDS   :
-          if ((g_opPtr[i + 1]->op   == oLDS) &&
+        case oLDSB  :
+        case oULDSB :
+          if ((g_opPtr[i + 1]->op   == g_opPtr[i]->op) &&
               (g_opPtr[i + 1]->arg1 == g_opPtr[i]->arg1) &&
               (g_opPtr[i + 1]->arg2 == g_opPtr[i]->arg2))
             {
@@ -225,14 +232,25 @@ int16_t popt_StoreOptimize (void)
     {
       switch (g_opPtr[i]->op)
         {
-          /* Eliminate store followed by load */
+          /* Eliminate store followed by load.  Excludes multi-word access
+           * because they require additional stack information (the number
+           * of bytes to store).  Also excludes unsigned loads which could
+           * result in a different value when following a signed agnostic
+           * store.
+           */
 
+        case oST :
+        case oSTB :
         case oSTS :
-          if ((g_opPtr[i + 1]->op   == oLDS) &&
-              (g_opPtr[i + 1]->arg1 == g_opPtr[i]->arg1) &&
-              (g_opPtr[i + 1]->arg2 == g_opPtr[i]->arg2))
+        case oSTSB :
+          if (g_opPtr[i]->arg1 ==          g_opPtr[i + 1]->arg1         &&
+              g_opPtr[i]->arg2 ==          g_opPtr[i + 1]->arg2         &&
+             ((g_opPtr[i]->op  == oST   && g_opPtr[i + 1]->op == oLD)   ||
+              (g_opPtr[i]->op  == oSTB  && g_opPtr[i + 1]->op == oLDB)  ||
+              (g_opPtr[i]->op  == oSTS  && g_opPtr[i + 1]->op == oLDS)  ||
+              (g_opPtr[i]->op  == oSTSB && g_opPtr[i + 1]->op == oLDSB)))
             {
-              g_opPtr[i + 1]->op = oSTS;
+              g_opPtr[i + 1]->op = g_opPtr[i]->op;
               g_opPtr[i]->op     = oDUP;
               g_opPtr[i]->arg1   = 0;
               g_opPtr[i]->arg2   = 0;
