@@ -154,6 +154,7 @@ static void pass2(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
                    * encountered its LABEL marker in the pass1 processing
                    * and the following look up should not fail.
                    */
+
                   int32_t value = poffGetPcForDefinedLabel(symbol.value);
                   if (value < 0)
                     {
@@ -182,14 +183,13 @@ static void pass2(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
     }
   while (symIndex >= 0);
 
-  /* We any changes made to the symbol table in the temporary container? */
+  /* Were any changes made to the symbol table in the temporary container? */
 
   if (nchanges != 0)
     {
       /* Yes, update the symbol table */
 
       poffReplaceSymbolTable(poffHandle, poffSymHandle);
-
     }
 
   /* Release the symbol container. */
