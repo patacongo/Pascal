@@ -97,4 +97,3 @@ uint32_t poffGetProgSize(poffHandle_t handle)
   return poffInfo->progSection.sh_size;
 }
 
-/***********************************************************************/

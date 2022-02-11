@@ -526,4 +526,3 @@ void poffWriteFile(poffHandle_t handle, FILE *poffFile)
   poffWriteSectionData(handle, poffFile);
 }
 
-/***********************************************************************/

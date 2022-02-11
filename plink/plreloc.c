@@ -2,7 +2,7 @@
  * plreloc.c
  * Relocation management for the P-Code Linker
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,11 +64,7 @@
 #define RELOC_LIST_INCREMENT    (256*sizeof(poffRelocation_t*))
 
 /**********************************************************************
- * Private Types
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
+ * Private Data
  **********************************************************************/
 
 static poffRelocation_t *relocList      = NULL;
@@ -77,7 +73,6 @@ static uint32_t          nRelocs        = 0;
 
 /**********************************************************************
  * Private Function Prototypes
-
  **********************************************************************/
 
 static void offsetRelocation(poffRelocation_t *reloc,
@@ -88,17 +83,20 @@ static void addRelocToList(poffRelocation_t *reloc);
  * Public Functions
  **********************************************************************/
 
+/***********************************************************************/
+
 void mergeRelocations(poffHandle_t inHandle,
                       uint32_t pcOffset, uint32_t symOffset)
 {
   poffRelocation_t reloc;
   int32_t index;
 
+  poffResetRelocationTraversal(inHandle);
   do
     {
       /* Read each relocation record from the input File */
 
-      index = poffGetRawRelocation(inHandle, &reloc);
+      index = poffGetRelocation(inHandle, &reloc);
       if (index >= 0)
         {
           /* If the rellocation carries a "payload" that is a program

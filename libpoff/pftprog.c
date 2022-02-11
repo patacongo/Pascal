@@ -2,7 +2,7 @@
  * pftprog.c
  * Program data manipulations on POFF temporary object
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -142,7 +142,7 @@ uint16_t poffAddTmpProgByte(poffProgHandle_t handle, uint8_t progByte)
 /***********************************************************************/
 
 uint16_t poffWriteTmpProgBytes(uint8_t *buffer, uint32_t nbytes,
-                             poffProgHandle_t handle)
+                               poffProgHandle_t handle)
 
 {
   poffProgInfo_t *poffProgInfo = (poffProgInfo_t*)handle;
@@ -206,4 +206,3 @@ void poffReplaceProgData(poffHandle_t handle, poffProgHandle_t progHandle)
   poffProgInfo->progSectionAlloc = 0;
 }
 
-/***********************************************************************/

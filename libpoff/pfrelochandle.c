@@ -1,8 +1,8 @@
 /**********************************************************************
- * pofferr.c
- * Simple error handlers
+ *  pfrelochandle.c
+ *  POFF temporary relocation data support
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,56 +38,69 @@
  * Included Files
  **********************************************************************/
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
+#include <string.h>
 
-#include "pas_debug.h"
+#include "pas_debug.h"    /* Standard types */
+#include "pas_errcodes.h" /* Pascal error codes */
 
-#include "pas_error.h"
+#include "pfprivate.h"    /* POFF private definitions */
+#include "pofflib.h"      /* Public interfaces */
 
-/**********************************************************************
- * Pre-processor Definitions
- **********************************************************************/
+/***********************************************************************
+ * Public Functions
+ ***********************************************************************/
 
-/**********************************************************************
- * Private Variables
- **********************************************************************/
+/***********************************************************************/
+/* Create a handle to manage temporary relocation data */
 
-/**********************************************************************
- * Private Function Prototypes
- **********************************************************************/
-
-void errmsg(char *fmt, ...)
+poffRelocHandle_t poffCreateRelocHandle(void)
 {
-  va_list ap;
-  va_start(ap, fmt);
-  (void)vfprintf(stderr, fmt, ap);
-  va_end(ap);
+  poffRelocInfo_t *poffRelocInfo;
+
+  /* Create a new POFF handle */
+
+  poffRelocInfo = (poffRelocInfo_t*)malloc(sizeof(poffRelocInfo_t));
+  if (poffRelocInfo != NULL)
+    {
+      /* Set everthing to zero */
+
+      memset(poffRelocInfo, 0, sizeof(poffRelocInfo_t));
+    }
+
+  return poffRelocInfo;
 }
 
 /***********************************************************************/
 
-void warn(uint16_t errcode)
+void poffDestroyRelocHandle(poffRelocHandle_t handle)
 {
-  /* Write error record to the error and list files */
+  /* Free all of the allocated, in-memory data */
 
-  fprintf(stderr, "WARNING: %d\n", errcode);
+  poffResetRelocHandle(handle);
+
+  /* Free the container */
+
+  free(handle);
 }
 
 /***********************************************************************/
 
-void error(uint16_t errcode)
+void poffResetRelocHandle(poffRelocHandle_t handle)
 {
-   fatal(errcode);
+  poffRelocInfo_t *poffRelocInfo = (poffRelocInfo_t*)handle;
+
+  /* Free all of the allocated, in-memory data */
+
+  if (poffRelocInfo->relocTable != NULL)
+    {
+      free(poffRelocInfo->relocTable);
+    }
+
+  /* Reset everything to the initial state */
+
+  poffRelocInfo->relocTable = NULL;
+  poffRelocInfo->relocSize  = 0;
+  poffRelocInfo->relocAlloc = 0;
 }
-
-/***********************************************************************/
-
-void fatal(uint16_t errcode)
-{
-  fprintf(stderr, "Fatal Error %d -- Aborting\n", errcode);
-  exit(errcode);
-}
-

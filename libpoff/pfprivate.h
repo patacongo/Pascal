@@ -3,7 +3,7 @@
  * Contains command, internal, private definitions used by
  * the POFF library.  These were not intended for exportation.
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -151,6 +151,7 @@ struct poffInfo_s
   uint32_t            lineNumberIndex;
   uint32_t            debugFuncIndex;
 };
+
 typedef struct poffInfo_s poffInfo_t;
 
 struct poffProgInfo_s
@@ -159,6 +160,7 @@ struct poffProgInfo_s
   uint32_t            progSectionAlloc;
   uint8_t            *progSectionData;
 };
+
 typedef struct poffProgInfo_s poffProgInfo_t;
 
 struct poffSymInfo_s
@@ -167,11 +169,17 @@ struct poffSymInfo_s
   uint32_t            symbolTableAlloc;
   uint8_t            *symbolTable;
 };
+
 typedef struct poffSymInfo_s poffSymInfo_t;
 
-/***************************************************************************
- * Public Variables
- ***************************************************************************/
+struct poffRelocInfo_s
+{
+  uint32_t            relocSize;
+  uint32_t            relocAlloc;
+  uint8_t            *relocTable;
+};
+
+typedef struct poffRelocInfo_s poffRelocInfo_t;
 
 /***************************************************************************
  * Public Function Prototypes

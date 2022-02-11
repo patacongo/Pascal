@@ -188,4 +188,3 @@ void poffDumpSectionHeaders(poffHandle_t handle, FILE *outFile)
     }
 }
 
-/***********************************************************************/

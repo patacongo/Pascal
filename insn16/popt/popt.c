@@ -113,7 +113,6 @@ int main(int argc, char *argv[], char *envp[])
 
   writePoffFile(argv[1]);
   return 0;
-
 }
 
 /**********************************************************************
@@ -260,8 +259,8 @@ static void pass3 (void)
 
 static void writePoffFile(const char *filename)
 {
-  char    optname [FNAME_SIZE+1];
-  FILE   *optFile;
+  char  optname [FNAME_SIZE+1];
+  FILE *optFile;
 
   TRACE(stderr, "[writePoffFile]");
 

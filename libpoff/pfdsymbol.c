@@ -116,4 +116,3 @@ void poffDumpSymbolTable(poffHandle_t handle, FILE *outFile)
     }
 }
 
-/***********************************************************************/

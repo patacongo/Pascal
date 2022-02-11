@@ -104,4 +104,3 @@ void poffResetProgHandle(poffProgHandle_t handle)
   poffProgInfo->progSectionAlloc = 0;
 }
 
-/***********************************************************************/

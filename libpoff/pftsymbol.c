@@ -2,7 +2,7 @@
  * pftsymbol.c
  * Write symbol information to a temporary container
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@
  */
 
 uint32_t poffAddTmpSymbol(poffHandle_t handle, poffSymHandle_t symHandle,
-                        poffLibSymbol_t *symbol)
+                          poffLibSymbol_t *symbol)
 {
   poffSymInfo_t *poffSymInfo = (poffSymInfo_t*)symHandle;
   poffSymbol_t *psym;
@@ -101,7 +101,7 @@ uint32_t poffAddTmpSymbol(poffHandle_t handle, poffSymHandle_t symHandle,
       uint32_t newAlloc = poffSymInfo->symbolTableAlloc + SYMBOL_TABLE_INCREMENT;
       uint8_t *tmp;
 
-      /* Reallocate the file name buffer */
+      /* Reallocate the symbol table buffer */
 
       tmp = (uint8_t*)realloc(poffSymInfo->symbolTable, newAlloc);
       if (!tmp)
@@ -138,7 +138,7 @@ uint32_t poffAddTmpSymbol(poffHandle_t handle, poffSymHandle_t symHandle,
 
 void poffReplaceSymbolTable(poffHandle_t handle, poffSymHandle_t symHandle)
 {
-  poffInfo_t     *poffInfo     = (poffInfo_t*)handle;
+  poffInfo_t    *poffInfo    = (poffInfo_t*)handle;
   poffSymInfo_t *poffSymInfo = (poffSymInfo_t*)symHandle;
 
   /* Discard any existing symbol table */
@@ -148,7 +148,7 @@ void poffReplaceSymbolTable(poffHandle_t handle, poffSymHandle_t symHandle)
       free(poffInfo->symbolTable);
     }
 
-  /* Replace the symram section data with the tmp data */
+  /* Replace the symbol table section data with the tmp data */
 
   poffInfo->symbolTable                   = poffSymInfo->symbolTable;
   poffInfo->symbolTableSection.sh_size    = poffSymInfo->symbolTableSize;
@@ -166,4 +166,3 @@ void poffReplaceSymbolTable(poffHandle_t handle, poffSymHandle_t symHandle)
   poffSymInfo->symbolTableAlloc           = 0;
 }
 
-/***********************************************************************/

@@ -191,5 +191,3 @@ void poffResetAccess(poffHandle_t handle)
   poffInfo->debugFuncIndex   = 0;
 }
 
-/***********************************************************************/
-

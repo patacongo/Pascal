@@ -331,4 +331,3 @@ void poffReleaseLineNumberTable(void)
   prevLineNumberIndex  = 0;
 }
 
-/***********************************************************************/

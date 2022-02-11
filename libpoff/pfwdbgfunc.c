@@ -155,4 +155,3 @@ uint32_t poffAddDebugFuncInfo(poffHandle_t handle,
   return funcInfoIndex;
 }
 
-/***********************************************************************/

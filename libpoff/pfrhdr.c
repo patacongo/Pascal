@@ -99,4 +99,3 @@ uint32_t poffGetRoDataSize(poffHandle_t handle)
   return poffInfo->roDataSection.sh_size;
 }
 
-/***********************************************************************/

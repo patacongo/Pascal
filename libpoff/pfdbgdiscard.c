@@ -91,4 +91,3 @@ void poffDiscardDebugFuncInfo(poffHandle_t handle)
   poffInfo->debugFuncIndex           = 0;
 }
 
-/***********************************************************************/

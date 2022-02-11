@@ -123,4 +123,3 @@ uint32_t poffAddFileName(poffHandle_t handle, const char *name)
   return index;
 }
 
-/***********************************************************************/

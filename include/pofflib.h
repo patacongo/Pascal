@@ -60,6 +60,7 @@
 typedef void *poffHandle_t;
 typedef void *poffProgHandle_t;
 typedef void *poffSymHandle_t;
+typedef void *poffRelocHandle_t;
 
 /* This is a externally visible form of a symbol table entry that is
  * not entangled in the POFF internal string table logic.
@@ -229,7 +230,8 @@ int32_t      poffGetLineNumber(poffHandle_t handle,
                poffLibLineNumber_t *lineno);
 int32_t      poffGetRawLineNumber(poffHandle_t handle,
                poffLineNumber_t *lineno);
-int32_t      poffGetRawRelocation(poffHandle_t handle,
+void         poffResetRelocationTraversal(poffHandle_t handle);
+int32_t      poffGetRelocation(poffHandle_t handle,
                poffRelocation_t *reloc);
 poffLibDebugFuncInfo_t *poffGetDebugFuncInfo(poffHandle_t handle);
 poffLibDebugFuncInfo_t *poffCreateDebugInfoContainer(uint32_t nparms);
@@ -265,6 +267,23 @@ uint32_t     poffAddTmpSymbol(poffHandle_t handle, poffSymHandle_t symHandle,
                 poffLibSymbol_t *symbol);
 void         poffReplaceSymbolTable(poffHandle_t handle,
                 poffSymHandle_t symHandle);
+
+/* Functions used to manage modifications to a POFF file using a
+ * temporary container for the new/modified relocation data.
+ */
+
+poffRelocHandle_t poffCreateRelocHandle(void);
+void         poffDestroyRelocHandle(poffRelocHandle_t handle);
+void         poffResetRelocHandle(poffRelocHandle_t handle);
+void         poffCloneRelocations(poffHandle_t handle,
+                                  poffRelocHandle_t relocHandle);
+uint32_t     poffAddTmpRelocation(poffRelocHandle_t relocHandle,
+                                  const poffRelocation_t *reloc);
+int32_t      poffFindTmpRelocation(poffRelocHandle_t relocHandle,
+                                   uint32_t offset,
+                                   poffRelocation_t *reloc);
+void         poffReplaceRelocationTable(poffHandle_t handle,
+                                        poffRelocHandle_t relocHandle);
 
 /* Functions used to extract/insert whole data sections from/into a POFF
  * file container

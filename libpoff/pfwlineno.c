@@ -146,4 +146,3 @@ uint32_t poffAddLineNumber(poffHandle_t handle,
   return index;
 }
 
-/***********************************************************************/

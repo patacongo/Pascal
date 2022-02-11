@@ -1,8 +1,8 @@
 /**********************************************************************
- * pfrrawreloc.c
- * Read raw relocation data from a POFF file
+ * pfreloc.c
+ * Read relocation data from a POFF file
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,15 @@
 
 /***********************************************************************/
 
-int32_t poffGetRawRelocation(poffHandle_t handle, poffRelocation_t *lineno)
+void poffResetRelocationTraversal(poffHandle_t handle)
+{
+  poffInfo_t *poffInfo = (poffInfo_t*)handle;
+  poffInfo->relocIndex = 0;
+}
+
+/***********************************************************************/
+
+int32_t poffGetRelocation(poffHandle_t handle, poffRelocation_t *reloc)
 {
   poffInfo_t *poffInfo = (poffInfo_t*)handle;
   uint32_t    relocIndex;
@@ -69,14 +77,14 @@ int32_t poffGetRawRelocation(poffHandle_t handle, poffRelocation_t *lineno)
     {
       /* Return -1 to signal the end of the list */
 
-      memset(lineno, 0, sizeof(poffRelocation_t));
+      memset(reloc, 0, sizeof(poffRelocation_t));
       return -1;
     }
   else
     {
-      /* Copy the raw line number information to the user */
+      /* Copy the raw relocation information to the user */
 
-      memcpy(lineno, &poffInfo->relocTable[relocIndex], sizeof(poffRelocation_t));
+      memcpy(reloc, &poffInfo->relocTable[relocIndex], sizeof(poffRelocation_t));
 
       /* Set up for the next read */
 
@@ -84,5 +92,3 @@ int32_t poffGetRawRelocation(poffHandle_t handle, poffRelocation_t *lineno)
       return relocIndex;
     }
 }
-
-/***********************************************************************/

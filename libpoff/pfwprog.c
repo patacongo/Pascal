@@ -105,4 +105,3 @@ void poffAddProgByte(poffHandle_t handle, uint8_t progByte)
   poffInfo->progSection.sh_size++;
 }
 
-/***********************************************************************/

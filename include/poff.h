@@ -224,6 +224,7 @@ struct poffFileHeader_s
 
   uint32_t fh_shoff;
 };
+
 typedef struct poffFileHeader_s poffFileHeader_t;
 
 /* POFF section header */
@@ -275,6 +276,7 @@ struct poffSectionHeader_s
 
   uint32_t sh_size;
 };
+
 typedef struct poffSectionHeader_s poffSectionHeader_t;
 
 /* Structures which may appear as arrays in sections */
@@ -296,6 +298,7 @@ struct poffRelocation_s
 
    uint32_t rl_offset;           /* Offset to pcode */
 };
+
 typedef struct poffRelocation_s poffRelocation_t;
 
 /* Symbol section array entry structure */
@@ -344,6 +347,7 @@ struct poffSymbol_s
 
   uint32_t st_size;
 };
+
 typedef struct poffSymbol_s poffSymbol_t;
 
 /* The file table section just consists of a list of offsets
@@ -378,6 +382,7 @@ struct poffLineNumber_s
 
    uint32_t ln_poffset;
 };
+
 typedef struct poffLineNumber_s poffLineNumber_t;
 
 /* The debug info section consists of a list of poffDebugFuncInfo_t
@@ -408,6 +413,7 @@ struct poffDebugFuncInfo_s
 
   uint32_t df_nparms;
 };
+
 typedef struct poffDebugFuncInfo_s poffDebugFuncInfo_t;
 
 /* poffDebugArgInfo_t provides description of one function input
@@ -420,6 +426,7 @@ struct poffDebugArgInfo_s
 
   uint32_t da_size;
 };
+
 typedef struct poffDebugArgInfo_s poffDebugArgInfo_t;
 
 #endif /* __POFF_H */

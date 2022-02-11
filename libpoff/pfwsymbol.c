@@ -129,4 +129,3 @@ uint32_t poffAddSymbol(poffHandle_t handle, poffLibSymbol_t *symbol)
   return index / poffInfo->symbolTableSection.sh_entsize;
 }
 
-/***********************************************************************/

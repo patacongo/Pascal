@@ -89,4 +89,3 @@ int32_t poffGetSymbol(poffHandle_t handle, poffLibSymbol_t *symbol)
     }
 }
 
-/***********************************************************************/

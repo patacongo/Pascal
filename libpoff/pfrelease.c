@@ -91,4 +91,3 @@ void poffReleaseProgData(poffHandle_t handle)
   poffInfo->progSectionIndex    = 0;
 }
 
-/***********************************************************************/

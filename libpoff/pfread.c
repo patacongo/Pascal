@@ -346,4 +346,3 @@ uint16_t poffReadFile(poffHandle_t handle, FILE *poffFile)
   return retVal;
 }
 
-/***********************************************************************/

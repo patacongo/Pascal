@@ -143,4 +143,3 @@ uint32_t poffAddRelocation(poffHandle_t handle,
   return index;
 }
 
-/***********************************************************************/

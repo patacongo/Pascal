@@ -105,4 +105,3 @@ int32_t poffGetLineNumber(poffHandle_t handle, poffLibLineNumber_t *lineno)
     }
 }
 
-/***********************************************************************/

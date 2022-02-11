@@ -88,4 +88,3 @@ int32_t poffGetRawLineNumber(poffHandle_t handle, poffLineNumber_t *lineno)
     }
 }
 
-/***********************************************************************/

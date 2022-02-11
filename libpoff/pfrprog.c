@@ -72,4 +72,3 @@ int poffGetProgByte(poffHandle_t handle)
   return retval;
 }
 
-/***********************************************************************/

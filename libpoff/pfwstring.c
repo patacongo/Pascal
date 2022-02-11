@@ -195,4 +195,3 @@ uint32_t poffAddString(poffHandle_t handle, const char *string)
   return index;
 }
 
-/***********************************************************************/

@@ -94,4 +94,3 @@ int32_t poffGetFileName(poffHandle_t handle, const char **fname)
     }
 }
 
-/***********************************************************************/

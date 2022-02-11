@@ -53,7 +53,7 @@
  ***********************************************************************/
 
 /***********************************************************************/
-/* Set all global data structures to a known state */
+/* Create a handle to manage temporary symbol table data */
 
 poffSymHandle_t poffCreateSymHandle(void)
 {
@@ -68,6 +68,7 @@ poffSymHandle_t poffCreateSymHandle(void)
 
       memset(poffSymInfo, 0, sizeof(poffSymInfo_t));
     }
+
   return poffSymInfo;
 }
 
@@ -104,4 +105,3 @@ void poffResetSymHandle(poffSymHandle_t handle)
   poffSymInfo->symbolTableAlloc = 0;
 }
 
-/***********************************************************************/

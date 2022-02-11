@@ -93,4 +93,3 @@ void poffSetEntryPoint(poffHandle_t handle, uint32_t entryPoint)
   poffInfo->fileHeader.fh_entry = entryPoint;
 }
 
-/***********************************************************************/

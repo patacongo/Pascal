@@ -74,4 +74,3 @@ void poffInsertProgramData(poffHandle_t handle,
   poffInfo->progSectionIndex    = 0;
 }
 
-/***********************************************************************/
