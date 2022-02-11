@@ -86,6 +86,39 @@ void poffCloneRelocations(poffHandle_t handle,
 }
 
 /***********************************************************************/
+
+#if 0 /* Not used */
+void poffCloneTmpRelocations(poffRelocHandle_t parentHandle,
+                             poffRelocHandle_t cloneHandle)
+{
+  poffRelocInfo_t *parentRelocInfo = (poffRelocInfo_t*)parentHandle;
+  poffRelocInfo_t *cloneRelocInfo = (poffRelocInfo_t*)cloneHandle;
+
+  /* Discard any existing relocation data in the clone */
+
+  if (cloneRelocInfo->relocTable != NULL)
+    {
+      free(cloneRelocInfo->relocTable);
+    }
+
+  /* Duplicate the relocation data */
+
+  cloneRelocInfo->relocSize  = parentRelocInfo->relocSize;
+  cloneRelocInfo->relocAlloc = parentRelocInfo->relocAlloc;
+
+  cloneRelocInfo->relocTable = (uint8_t*)
+    malloc(parentRelocInfo->relocAlloc);
+  if (cloneRelocInfo->relocTable == NULL)
+    {
+      fatal(eNOMEMORY);
+    }
+
+  memcpy(cloneRelocInfo->relocTable, parentRelocInfo->relocTable,
+         parentRelocInfo->relocSize);
+}
+#endif
+
+/***********************************************************************/
 /* Add a relocation entry to the relocation table section data.  Returns
  * the index value associated with the relocation entry in the
  * relocation table section data.
@@ -105,7 +138,7 @@ uint32_t poffAddTmpRelocation(poffRelocHandle_t relocHandle,
       /* No, allocate it now */
 
       poffRelocInfo->relocTable = (uint8_t*)malloc(INITIAL_RELOC_TABLE_SIZE);
-      if (!poffRelocInfo->relocTable)
+      if (poffRelocInfo->relocTable == NULL)
         {
           fatal(eNOMEMORY);
         }

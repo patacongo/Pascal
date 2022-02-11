@@ -277,6 +277,10 @@ void         poffDestroyRelocHandle(poffRelocHandle_t handle);
 void         poffResetRelocHandle(poffRelocHandle_t handle);
 void         poffCloneRelocations(poffHandle_t handle,
                                   poffRelocHandle_t relocHandle);
+#if 0 /* Not used */
+void         poffCloneTmpRelocations(poffRelocHandle_t parentHandle,
+                                     poffRelocHandle_t cloneHandle);
+#endif
 uint32_t     poffAddTmpRelocation(poffRelocHandle_t relocHandle,
                                   const poffRelocation_t *reloc);
 int32_t      poffFindTmpRelocation(poffRelocHandle_t relocHandle,
