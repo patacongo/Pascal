@@ -65,6 +65,7 @@ extern poffRelocHandle_t g_tmpRelocationHandle;
  ***************************************************************************/
 
 void createRelocationHandles(poffHandle_t poffHandle);
+void destroyRelocationHandles(void);
 void swapRelocationHandles(void);
 
 #endif /* __POPT_RELOC_H */

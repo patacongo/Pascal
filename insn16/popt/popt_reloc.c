@@ -90,6 +90,14 @@ void createRelocationHandles(poffHandle_t poffHandle)
 }
 
 /****************************************************************************/
+
+void destroyRelocationHandles(void)
+{
+  poffDestroyTmpRelocHandle(g_prevTmpRelocationHandle);
+  poffDestroyTmpRelocHandle(g_tmpRelocationHandle);
+}
+
+/****************************************************************************/
 /* Swap temporary relocation container handlers.  At the end of each pass,
  * the data in the temporary relocation container becomes the previous
  * relocation for the next pass.  The temporary relocation container must be

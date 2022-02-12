@@ -282,8 +282,6 @@ int32_t      poffNextTmpRelocation(poffRelocHandle_t relocHandle,
                 poffRelocation_t *reloc);
 uint32_t     poffAddTmpRelocation(poffRelocHandle_t relocHandle,
                 const poffRelocation_t *reloc);
-int32_t      poffFindTmpRelocation(poffRelocHandle_t relocHandle,
-                uint32_t offset, poffRelocation_t *reloc);
 void         poffReplaceRelocationTable(poffHandle_t handle,
                 poffRelocHandle_t relocHandle);
 

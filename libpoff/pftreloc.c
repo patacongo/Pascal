@@ -152,59 +152,6 @@ uint32_t poffAddTmpRelocation(poffRelocHandle_t relocHandle,
 }
 
 /***********************************************************************/
-/* Check if there is relocation data for the provided section data
- * offset.  If so, return the relocation information for that offset.
- */
-
-int32_t poffFindTmpRelocation(poffRelocHandle_t relocHandle,
-                              uint32_t offset,
-                              poffRelocation_t *reloc)
-{
-  poffRelocInfo_t *poffRelocInfo = (poffRelocInfo_t*)relocHandle;
-  uint32_t index;
-
-  /* Check if we have allocated a relocation table buffer yet */
-
-  if (poffRelocInfo->relocTable != NULL)
-    {
-      /* No, allocate it now */
-
-      poffRelocInfo->relocTable = (uint8_t*)malloc(INITIAL_RELOC_TABLE_SIZE);
-      if (!poffRelocInfo->relocTable)
-        {
-          fatal(eNOMEMORY);
-        }
-
-      poffRelocInfo->relocSize  = 0;
-      poffRelocInfo->relocAlloc = INITIAL_RELOC_TABLE_SIZE;
-    }
-
-  /* Check each relocation entry or until we get a match */
-
-  for (index = 0;
-       index < poffRelocInfo->relocSize;
-       index += sizeof(poffRelocation_t))
-    {
-      poffRelocation_t *candidate = (poffRelocation_t *)
-        (&poffRelocInfo->relocTable + index);
-
-      /* Is this entry at the requested offset? */
-
-      if (candidate->rl_offset == offset)
-        {
-           /* Yes... return it */
-
-           memcpy(reloc, candidate, sizeof(poffRelocation_t));
-           return index;
-        }
-    }
-
-  /* No match */
-
-  return -1;
-}
-
-/***********************************************************************/
 
 void poffReplaceRelocationTable(poffHandle_t handle,
                                 poffRelocHandle_t relocHandle)

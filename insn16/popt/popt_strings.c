@@ -217,7 +217,7 @@ static void popt_PutBuffer(int ch, poffProgHandle_t poffProgHandle)
     {
       /* No PUSHS encountered.  Write byte directly to output */
 
-      popt_PutByte(poffProgHandle, (uint8_t)ch, g_outSectionOffset);
+      popt_PutByte(poffProgHandle, (uint8_t)ch, g_inSectionOffset);
     }
   else
     {
@@ -311,7 +311,7 @@ static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle)
        * buffer
        */
 
-      popt_PutByte(poffProgHandle, (uint8_t)ch, g_outSectionOffset);
+      popt_PutByte(poffProgHandle, (uint8_t)ch, g_inSectionOffset);
     }
 }
 
@@ -327,6 +327,9 @@ static void popt_FlushBuffer(poffProgHandle_t poffProgHandle)
         {
           /* Nested PUSHS encountered. Flush buffer into buffer associated
            * with the previous nesting level.
+           *
+           * REVISIT:  What happens to the inSectionOffset at the higher
+           * nesting level?
            */
 
           int dlvl = slvl - 1;
@@ -397,6 +400,10 @@ static void popt_DoPush(poffHandle_t poffHandle,
               fatal(eBUFTOOSMALL);
             }
 
+          /* REVISIT:  This offset is not used (only at level 0) */
+
+          g_nestLevel[g_currentLevel].inSectionOffset = g_inSectionOffset;
+
           /* Skip over the PUSHS and look for the POPS. */
 
           g_inCh = popt_GetByte(poffHandle);
@@ -445,6 +452,10 @@ static void popt_DoPop(poffHandle_t poffHandle,
                   fatal(eBUFTOOSMALL);
                 }
 
+              /* REVISIT:  This offset is not used (only at level 0) */
+
+              g_nestLevel[g_currentLevel].inSectionOffset = g_inSectionOffset;
+
               /* Skip over the PUSH and look for the matching POPS */
 
               g_inCh = popt_GetByte(poffHandle);
@@ -459,7 +470,8 @@ static void popt_DoPop(poffHandle_t poffHandle,
                 {
                   popt_DebugMessage("  Keep PUSH at %04x and POPS at %04x, "
                                     "level %d\n",
-                                    pushOffset, g_inSectionOffset - 2, g_currentLevel);
+                                    pushOffset, g_inSectionOffset - 2,
+                                    g_currentLevel);
 
                   /* Copy the POPS to the buffer */
 
@@ -622,7 +634,7 @@ void popt_StringStackOptimize(poffHandle_t poffHandle,
   /* Get the next relocation entry (before string optimization) */
 
   g_nextRelocationIndex  =
-    poffNextTmpRelocation(g_tmpRelocationHandle, &g_nextRelocation);
+    poffNextTmpRelocation(g_prevTmpRelocationHandle, &g_nextRelocation);
 
   /* And parse the input file to the output file, removing unnecessary string
    * stack operations.

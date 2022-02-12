@@ -291,5 +291,9 @@ int main(int argc, char *argv[], char *envp[])
   /* Write the POFF file */
 
   writePoffFile(argv[1]);
+
+  /* And clean up */
+
+  destroyRelocationHandles();
   return 0;
 }

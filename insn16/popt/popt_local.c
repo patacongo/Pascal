@@ -223,9 +223,10 @@ static void popt_PutPCodeFromTable(void)
 
       for (i = 1; i < WINDOW; i++)
         {
-          g_opTable[i - 1].op   = g_opTable[i].op ;
-          g_opTable[i - 1].arg1 = g_opTable[i].arg1;
-          g_opTable[i - 1].arg2 = g_opTable[i].arg2;
+          g_opTable[i - 1].op     = g_opTable[i].op ;
+          g_opTable[i - 1].arg1   = g_opTable[i].arg1;
+          g_opTable[i - 1].arg2   = g_opTable[i].arg2;
+          g_opTable[i - 1].offset = g_opTable[i].offset;
         }
 
       /* Then fill the end slot with a new P-Code from the input file */
@@ -314,7 +315,7 @@ static void popt_InitPTable(void)
   /* Get the first relocation entry */
 
   g_nextRelocationIndex  =
-    poffNextTmpRelocation(g_tmpRelocationHandle, &g_nextRelocation);
+    poffNextTmpRelocation(g_prevTmpRelocationHandle, &g_nextRelocation);
 
   /* Skip over leading pcodes.  NOTE:  assumes executable begins after
    * the first oLABEL pcode
@@ -349,7 +350,7 @@ static void popt_InitPTable(void)
           g_outSectionOffset += 2;
         }
     }
-  while ((g_opTable[0].op != oLABEL) && (g_opTable[0].op != oEND));
+  while (g_opTable[0].op != oLABEL && g_opTable[0].op != oEND);
 
   /* Fill the pcode window and setup pointers to working section */
 
