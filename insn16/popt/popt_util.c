@@ -46,6 +46,8 @@
 #include "paslib.h"
 #include "insn16.h"
 
+#include "popt.h"
+
 /**********************************************************************
  * Public Functions
  **********************************************************************/
@@ -53,7 +55,7 @@
 /***********************************************************************/
 /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
 
-void popt_ExpandPush(opType_t *opPtr)
+void popt_ExpandPush(opTypeR_t *opPtr)
 {
   if (opPtr != NULL)
     {
@@ -75,7 +77,7 @@ void popt_ExpandPush(opType_t *opPtr)
 /***********************************************************************/
 /* Optimize a PUSH instruction */
 
-void popt_OptimizePush(opType_t *opPtr)
+void popt_OptimizePush(opTypeR_t *opPtr)
 {
   if (opPtr != NULL)
     {

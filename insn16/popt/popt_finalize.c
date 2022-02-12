@@ -54,9 +54,10 @@
 #include "pofflib.h"
 
 #include "popt.h"
-#include "popt_finalize.h"
 #include "pas_insn.h"
 #include "pas_error.h"
+#include "popt_reloc.h"
+#include "popt_finalize.h"
 
 /**********************************************************************
  * Private Functions
@@ -360,9 +361,8 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
         case oSTSXM:
         case oLAS:   /* Load stack address */
         case oLASX:
-          {
-#warning REVISIT
-          }
+          /* Nothing needs to be done */
+
           break;
 
           /* Otherwise, it is not an interesting opcode */
@@ -446,6 +446,10 @@ void optFinalize(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
    */
 
   poffDiscardDebugFuncInfo(poffHandle);
+
+  /* Transfer the relocation data buffer in the last pass to the output file. */
+
+  poffReplaceRelocationTable(poffHandle, g_tmpRelocationHandle);
 
   /* Reset for next pass */
 

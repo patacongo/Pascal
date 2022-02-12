@@ -58,11 +58,11 @@
  * Public Data
  ****************************************************************************/
 
-extern opType_t  g_opTable[WINDOW];    /* Pcode Table */
-extern opType_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
+extern opTypeR_t  g_opTable[WINDOW];    /* Pcode Table */
+extern opTypeR_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
 
-extern int16_t   g_nOpPtrs;            /* No. Valid Pcode Pointers */
-extern bool      g_endOut;             /* true: oEND pcode has been output */
+extern int16_t    g_nOpPtrs;            /* No. Valid Pcode Pointers */
+extern bool       g_endOut;             /* true: oEND pcode has been output */
 
 /****************************************************************************
 * Public Function Prototypes

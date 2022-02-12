@@ -231,7 +231,7 @@ int32_t      poffGetLineNumber(poffHandle_t handle,
 int32_t      poffGetRawLineNumber(poffHandle_t handle,
                poffLineNumber_t *lineno);
 void         poffResetRelocationTraversal(poffHandle_t handle);
-int32_t      poffGetRelocation(poffHandle_t handle,
+int32_t      poffNextRelocation(poffHandle_t handle,
                poffRelocation_t *reloc);
 poffLibDebugFuncInfo_t *poffGetDebugFuncInfo(poffHandle_t handle);
 poffLibDebugFuncInfo_t *poffCreateDebugInfoContainer(uint32_t nparms);
@@ -272,22 +272,20 @@ void         poffReplaceSymbolTable(poffHandle_t handle,
  * temporary container for the new/modified relocation data.
  */
 
-poffRelocHandle_t poffCreateRelocHandle(void);
-void         poffDestroyRelocHandle(poffRelocHandle_t handle);
-void         poffResetRelocHandle(poffRelocHandle_t handle);
+poffRelocHandle_t poffCreateTmpRelocHandle(void);
+void         poffDestroyTmpRelocHandle(poffRelocHandle_t handle);
+void         poffResetTmpRelocHandle(poffRelocHandle_t handle);
 void         poffCloneRelocations(poffHandle_t handle,
-                                  poffRelocHandle_t relocHandle);
-#if 0 /* Not used */
-void         poffCloneTmpRelocations(poffRelocHandle_t parentHandle,
-                                     poffRelocHandle_t cloneHandle);
-#endif
+                poffRelocHandle_t relocHandle);
+void         poffResetTmpRelocationTraversal(poffRelocHandle_t relocHandle);
+int32_t      poffNextTmpRelocation(poffRelocHandle_t relocHandle,
+                poffRelocation_t *reloc);
 uint32_t     poffAddTmpRelocation(poffRelocHandle_t relocHandle,
-                                  const poffRelocation_t *reloc);
+                const poffRelocation_t *reloc);
 int32_t      poffFindTmpRelocation(poffRelocHandle_t relocHandle,
-                                   uint32_t offset,
-                                   poffRelocation_t *reloc);
+                uint32_t offset, poffRelocation_t *reloc);
 void         poffReplaceRelocationTable(poffHandle_t handle,
-                                        poffRelocHandle_t relocHandle);
+                poffRelocHandle_t relocHandle);
 
 /* Functions used to extract/insert whole data sections from/into a POFF
  * file container

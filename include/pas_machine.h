@@ -165,9 +165,9 @@
 
 struct opType_s
 {
-  uint8_t  op;
-  uint8_t  arg1;
-  uint16_t arg2;
+  uint8_t  op;    /* Instruction opcode */
+  uint8_t  arg1;  /* 8-bit instruction argument */
+  uint16_t arg2;  /* 16-bit instruction argument */
 };
 
 typedef struct opType_s opType_t;

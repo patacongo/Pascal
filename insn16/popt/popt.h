@@ -2,7 +2,7 @@
  * popt.h
  * External Declarations associated with popt.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,11 +42,31 @@
 ****************************************************************************/
 
 /***************************************************************************
+* Public Types
+****************************************************************************/
+
+/* This structure represents one opcode plus includes section offset
+ * information to handle relocations.  A pointer to this structure must be
+ * cast-compatible with opTypeR_t.
+ */
+
+struct opTypeR_s
+{
+  uint8_t  op;      /* Instruction opcode */
+  uint8_t  arg1;    /* 8-bit instruction argument */
+  uint16_t arg2;    /* 16-bit instruction argument */
+  uint32_t offset;  /* Program section offset on input */
+};
+
+typedef struct opTypeR_s opTypeR_t;
+
+
+/***************************************************************************
 * Public Function Prototypes
 ****************************************************************************/
 
 /***************************************************************************
- * Public Datas
+ * Public Data
  ****************************************************************************/
 
 #endif /* __POPT_H */

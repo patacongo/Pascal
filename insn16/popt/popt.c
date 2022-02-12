@@ -1,4 +1,4 @@
-/**********************************************************************
+/****************************************************************************
  * popt.c
  * P-Code Optimizer Main Logic
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -51,11 +51,12 @@
 #include "popt.h"
 #include "popt_strings.h"
 #include "popt_local.h"
+#include "popt_reloc.h"
 #include "popt_finalize.h"
 
 /**********************************************************************
  * Private Function Prototypes
- **********************************************************************/
+ ****************************************************************************/
 
 static void readPoffFile  (const char *filename);
 static void pass1         (void);
@@ -64,62 +65,16 @@ static void pass3         (void);
 static void writePoffFile (const char *filename);
 
 /**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
  * Private Variables
- **********************************************************************/
+ ****************************************************************************/
 
-static poffHandle_t poffHandle; /* Handle to POFF object */
+static poffHandle_t g_poffHandle; /* Handle to POFF object */
 
-/**********************************************************************
- * Public Functions
- **********************************************************************/
-
-/***********************************************************************/
-
-int main(int argc, char *argv[], char *envp[])
-{
-  TRACE(stderr, "[main]");
-
-  /* Check for existence of filename argument */
-
-  if (argc < 2)
-    {
-      fprintf(stderr, "ERROR: Filename Required\n");
-      exit (1);
-    }
-
-  /* Read the POFF file into memory */
-
-  readPoffFile(argv[1]);
-
-  /* Performs pass1 optimization */
-
-  pass1();
-
-  /* Performs pass2 optimization */
-
-  insn_ResetOpCodeRead(poffHandle);
-  pass2();
-
-  /* Create final section offsets and relocation entries */
-
-  insn_ResetOpCodeRead(poffHandle);
-  pass3();
-
-  /* Write the POFF file */
-
-  writePoffFile(argv[1]);
-  return 0;
-}
-
-/**********************************************************************
+/****************************************************************************
  * Private Functions
- **********************************************************************/
+ ****************************************************************************/
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void readPoffFile(const char *filename)
 {
@@ -140,8 +95,8 @@ static void readPoffFile(const char *filename)
 
   /* Get a handle to a POFF input object */
 
-  poffHandle = poffCreateHandle();
-  if (!poffHandle)
+  g_poffHandle = poffCreateHandle();
+  if (g_poffHandle == NULL)
     {
       fprintf(stderr, "ERROR: Could not get POFF handle\n");
       exit(1);
@@ -149,7 +104,7 @@ static void readPoffFile(const char *filename)
 
   /* Read the POFF file into memory */
 
-  errcode = poffReadFile(poffHandle, objFile);
+  errcode = poffReadFile(g_poffHandle, objFile);
   if (errcode != 0)
     {
       fprintf(stderr, "ERROR: Could not read POFF file, errcode=0x%02x\n",
@@ -162,7 +117,7 @@ static void readPoffFile(const char *filename)
   fclose(objFile);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void pass1(void)
 {
@@ -183,18 +138,18 @@ static void pass1(void)
 
   /* Clean up garbage left from the wasteful string stack logic */
 
-  popt_StringStackOptimize(poffHandle, poffProgHandle);
+  popt_StringStackOptimize(g_poffHandle, poffProgHandle);
 
   /* Replace the original program data with the new program data */
 
-  poffReplaceProgData(poffHandle, poffProgHandle);
+  poffReplaceProgData(g_poffHandle, poffProgHandle);
 
   /* Release the temporary POFF object */
 
   poffDestroyProgHandle(poffProgHandle);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void pass2(void)
 {
@@ -213,20 +168,27 @@ static void pass2(void)
       exit(1);
     }
 
+  /* Swap the relocation container handles.  The relocations accumulated
+   * in "current" container are now the relocations from the "previous" pass.
+   * The "current" container will be empty at the start of the pass.
+   */
+
+  swapRelocationHandles();
+
   /* Perform Local Optimizatin Initialization */
 
-  popt_LocalOptimization(poffHandle, poffProgHandle);
+  popt_LocalOptimization(g_poffHandle, poffProgHandle);
 
   /* Replace the original program data with the new program data */
 
-  poffReplaceProgData(poffHandle, poffProgHandle);
+  poffReplaceProgData(g_poffHandle, poffProgHandle);
 
   /* Release the temporary POFF object */
 
   poffDestroyProgHandle(poffProgHandle);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void pass3 (void)
 {
@@ -248,14 +210,14 @@ static void pass3 (void)
    * sections.
    */
 
-  optFinalize(poffHandle, poffProgHandle);
+  optFinalize(g_poffHandle, poffProgHandle);
 
   /* Release the temporary POFF object */
 
   poffDestroyProgHandle(poffProgHandle);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void writePoffFile(const char *filename)
 {
@@ -275,14 +237,59 @@ static void writePoffFile(const char *filename)
 
   /* Then write the new POFF file */
 
-  poffWriteFile(poffHandle, optFile);
+  poffWriteFile(g_poffHandle, optFile);
 
   /* Destroy the POFF object */
 
-  poffDestroyHandle(poffHandle);
+  poffDestroyHandle(g_poffHandle);
 
   /* Close the files used on writePoffFile */
 
   (void)fclose(optFile);
 }
 
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+
+int main(int argc, char *argv[], char *envp[])
+{
+  TRACE(stderr, "[main]");
+
+  /* Check for existence of filename argument */
+
+  if (argc < 2)
+    {
+      fprintf(stderr, "ERROR: Filename Required\n");
+      exit (1);
+    }
+
+  /* Read the POFF file into memory */
+
+  readPoffFile(argv[1]);
+
+  /* Initialize relocation support */
+
+  createRelocationHandles(g_poffHandle);
+
+  /* Performs pass1 optimization */
+
+  pass1();
+
+  /* Performs pass2 optimization */
+
+  insn_ResetOpCodeRead(g_poffHandle);
+  pass2();
+
+  /* Create final section offsets and relocation entries */
+
+  insn_ResetOpCodeRead(g_poffHandle);
+  pass3();
+
+  /* Write the POFF file */
+
+  writePoffFile(argv[1]);
+  return 0;
+}

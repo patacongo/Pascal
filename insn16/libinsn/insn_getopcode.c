@@ -72,9 +72,13 @@ uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
    */
 
   if (!g_bEndIn)
-    c = poffGetProgByte(handle);
+    {
+      c = poffGetProgByte(handle);
+    }
   else
-    c = EOF;
+    {
+      c = EOF;
+    }
 
   /* Check for end of file.  We may have previously parsed oEND which
    * is a 'logical' end of file for a pascal program (but not a unit)
@@ -82,12 +86,12 @@ uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
    * oEND (typical for a UNIT file).
    */
 
-  if ((g_bEndIn) || (c == EOF))
+  if (g_bEndIn || c == EOF)
     {
       ptr->op = oEND;
       ptr->arg1 = 0;
       ptr->arg2 = 0;
-    } /* end if */
+    }
   else
     {
       ptr->op = c;
@@ -107,13 +111,14 @@ uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
         {
           ptr->arg2  = (poffGetProgByte(handle) << 8);
           ptr->arg2 |= (poffGetProgByte(handle) & 0xff);
-          opsize += 2;
+          opsize    += 2;
         }
       else
         {
-          ptr->arg2 = 0;
+          ptr->arg2  = 0;
         }
     }
+
   return opsize;
 }
 
@@ -125,4 +130,3 @@ void insn_ResetOpCodeRead(poffHandle_t handle)
   g_bEndIn = 0;
 }
 
-/***********************************************************************/

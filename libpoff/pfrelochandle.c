@@ -55,7 +55,7 @@
 /***********************************************************************/
 /* Create a handle to manage temporary relocation data */
 
-poffRelocHandle_t poffCreateRelocHandle(void)
+poffRelocHandle_t poffCreateTmpRelocHandle(void)
 {
   poffRelocInfo_t *poffRelocInfo;
 
@@ -74,11 +74,11 @@ poffRelocHandle_t poffCreateRelocHandle(void)
 
 /***********************************************************************/
 
-void poffDestroyRelocHandle(poffRelocHandle_t handle)
+void poffDestroyTmpRelocHandle(poffRelocHandle_t handle)
 {
   /* Free all of the allocated, in-memory data */
 
-  poffResetRelocHandle(handle);
+  poffResetTmpRelocHandle(handle);
 
   /* Free the container */
 
@@ -87,7 +87,7 @@ void poffDestroyRelocHandle(poffRelocHandle_t handle)
 
 /***********************************************************************/
 
-void poffResetRelocHandle(poffRelocHandle_t handle)
+void poffResetTmpRelocHandle(poffRelocHandle_t handle)
 {
   poffRelocInfo_t *poffRelocInfo = (poffRelocInfo_t*)handle;
 

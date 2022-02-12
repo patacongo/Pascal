@@ -1,4 +1,4 @@
-/**********************************************************************
+/****************************************************************************
  * popt_local.c
  * P-Code Local Optimizer
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -48,45 +48,132 @@
 #include "pofflib.h"
 #include "paslib.h"
 #include "pas_insn.h"
+#include "pas_errcodes.h"
+#include "pas_error.h"
+#include "pas_machine.h"
+
+#include "popt.h"
+#include "popt_reloc.h"
 #include "popt_constants.h"
 #include "popt_longconst.h"
 #include "popt_loadstore.h"
 #include "popt_branch.h"
 #include "popt_local.h"
 
-/**********************************************************************
+/****************************************************************************
  * Private Function Prototypes
- **********************************************************************/
+ ****************************************************************************/
 
 static void popt_InitPTable        (void);
 static void popt_PutPCodeFromTable (void);
 static void popt_SetupPointer      (void);
 
-/**********************************************************************
+/****************************************************************************
  * Public Data
- **********************************************************************/
+ ****************************************************************************/
 
-opType_t  g_opTable[WINDOW];    /* Pcode Table */
-opType_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
+opTypeR_t  g_opTable[WINDOW];    /* Pcode Table */
+opTypeR_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
 
-int16_t   g_nOpPtrs = 0;        /* Number of valid Pcode pointers */
-bool      g_endOut  = 0;        /* 1 = oEND pcode has been output */
+int16_t    g_nOpPtrs = 0;        /* Number of valid Pcode pointers */
+bool       g_endOut  = 0;        /* 1 = oEND pcode has been output */
 
-/**********************************************************************
+/****************************************************************************
  * Private Variables
- **********************************************************************/
+ ****************************************************************************/
 
-static poffHandle_t     g_myPOoffHandle;    /* Handle to POFF object */
-static poffProgHandle_t g_myPoffProgHandle; /* Handle to temporary POFF object */
+static poffHandle_t     g_myPoffHandle;        /* Handle to POFF object */
+static poffProgHandle_t g_myPoffProgHandle;    /* Handle to temporary program data */
+static poffRelocation_t g_nextRelocation;
+static uint32_t         g_inSectionOffset;     /* Running input section offset */
+static uint32_t         g_outSectionOffset;    /* Running output section offset */
+static int32_t          g_nextRelocationIndex;
 
-/**********************************************************************
+/****************************************************************************
  * Private Functions
- **********************************************************************/
+ ****************************************************************************/
 
-/***********************************************************************/
+/****************************************************************************/
+
+static void popt_CheckRelocation(opTypeR_t *opCode)
+{
+  /* Check if the current section offset matches a relocation entry */
+
+  if (g_nextRelocationIndex >= 0 &&
+      g_nextRelocation.rl_offset == opCode->offset)
+    {
+      uint32_t saveRlIndex = g_nextRelocation.rl_offset;
+
+      /* Adjust the relocation section offset so that it will match the
+       * location in the file after this optimization pass.
+       */
+
+      g_nextRelocation.rl_offset -= (opCode->offset - g_outSectionOffset);
+
+      /* Add the modified relocation to the temporary, output file */
+
+      poffAddTmpRelocation(g_tmpRelocationHandle, &g_nextRelocation);
+
+      /* Get the next relocation entry from the previous pass */
+
+      g_nextRelocationIndex =
+        poffNextTmpRelocation(g_prevTmpRelocationHandle, &g_nextRelocation);
+
+      /* Sanity check */
+
+      if (g_nextRelocationIndex >= 0 &&
+          g_nextRelocation.rl_offset <= saveRlIndex)
+        {
+          /* There is no requirement of the format that relocations be
+           * ordered by section offset, however, this is how they are
+           * generated by the compiler and the current logic depends on
+           * this fact.
+           */
+
+          error(eBADRELOCDATA);
+        }
+    }
+}
+
+/****************************************************************************/
+
+static void popt_DiscardRelocation(opTypeR_t *opCode)
+{
+  /* Check if the current section offset matches a relocation entry */
+
+  if (g_nextRelocationIndex >= 0 &&
+      g_nextRelocation.rl_offset == opCode->offset)
+    {
+      uint32_t saveRlIndex = g_nextRelocation.rl_offset;
+
+      /* Discard this relocation and just get the next relocation entry from
+       * the previous pass
+       */
+
+      g_nextRelocationIndex =
+        poffNextTmpRelocation(g_prevTmpRelocationHandle, &g_nextRelocation);
+
+      /* Sanity check */
+
+      if (g_nextRelocationIndex >= 0 &&
+          g_nextRelocation.rl_offset <= saveRlIndex)
+        {
+          /* There is no requirement of the format that relocations be
+           * ordered by section offset, however, this is how they are
+           * generated by the compiler and the current logic depends on
+           * this fact.
+           */
+
+          error(eBADRELOCDATA);
+        }
+    }
+}
+
+/*****************************************************************************/
 
 static void popt_PutPCodeFromTable(void)
 {
+  uint32_t opCodeSize;
   int16_t i;
 
   TRACE(stderr, "[popt_PutPCodeFromTable]");
@@ -96,11 +183,19 @@ static void popt_PutPCodeFromTable(void)
     {
       if (g_opTable[0].op != oNOP && !g_endOut)
         {
+          /* Check for a relocation at this instruction */
+
+          popt_CheckRelocation(&g_opTable[0]);
+
+          /* Transfer the variable-length opcode */
+
           poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
+          g_outSectionOffset++;
 
           if (g_opTable[0].op & o8)
             {
               poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
+              g_outSectionOffset++;
             }
 
           if (g_opTable[0].op & o16)
@@ -109,9 +204,19 @@ static void popt_PutPCodeFromTable(void)
                                  (g_opTable[0].arg2 >> 8));
               poffAddTmpProgByte(g_myPoffProgHandle,
                                  (g_opTable[0].arg2 & 0xff));
+              g_outSectionOffset += 2;
             }
 
           g_endOut = (g_opTable[0].op == oEND);
+        }
+
+      /* What if we deleted an opcode that has a relocation associated with
+       * it?  At a minimum, we need to discard that relocation entry.
+       */
+
+      else
+        {
+          popt_DiscardRelocation(&g_opTable[0]);
         }
 
       /* Move all P-Codes down one slot */
@@ -125,7 +230,11 @@ static void popt_PutPCodeFromTable(void)
 
       /* Then fill the end slot with a new P-Code from the input file */
 
-      insn_GetOpCode(g_myPOoffHandle, &g_opTable[WINDOW-1]);
+      opCodeSize = insn_GetOpCode(g_myPoffHandle,
+                                  (opType_t *)&g_opTable[WINDOW - 1]);
+
+      g_opTable[WINDOW - 1].offset = g_inSectionOffset;
+      g_inSectionOffset += opCodeSize;
     }
   while (g_opTable[0].op == oNOP);
 
@@ -142,7 +251,7 @@ static void popt_SetupPointer(void)
 
   for (pindex = 0; pindex < WINDOW; pindex++)
     {
-      g_opPtr[pindex] = (opType_t *) NULL;
+      g_opPtr[pindex] = NULL;
     }
 
   g_nOpPtrs = 0;
@@ -194,9 +303,18 @@ static void popt_SetupPointer(void)
 
 static void popt_InitPTable(void)
 {
-  register int16_t i;
+  uint32_t opCodeSize;
+  int16_t i;
 
   TRACE(stderr, "[intPTable]");
+
+  g_inSectionOffset  = 0;
+  g_outSectionOffset = 0;
+
+  /* Get the first relocation entry */
+
+  g_nextRelocationIndex  =
+    poffNextTmpRelocation(g_tmpRelocationHandle, &g_nextRelocation);
 
   /* Skip over leading pcodes.  NOTE:  assumes executable begins after
    * the first oLABEL pcode
@@ -204,20 +322,32 @@ static void popt_InitPTable(void)
 
   do
     {
-      insn_GetOpCode(g_myPOoffHandle, &g_opTable[0]);
+      opCodeSize = insn_GetOpCode(g_myPoffHandle, (opType_t *)&g_opTable[0]);
+
+      g_opTable[0].offset = g_inSectionOffset;
+      g_inSectionOffset += opCodeSize;
+
+      /* Check for a relocation at this instruction */
+
+      popt_CheckRelocation(&g_opTable[0]);
+
+      /* Write the opcode to the temporary section data */
 
       (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
+      g_outSectionOffset++;
 
       if (g_opTable[0].op & o8)
         {
           (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
+          g_outSectionOffset++;
         }
 
       if (g_opTable[0].op & o16)
         {
           (void)poffAddTmpProgByte(g_myPoffProgHandle, (g_opTable[0].arg2 >> 8));
           (void)poffAddTmpProgByte(g_myPoffProgHandle, (g_opTable[0].arg2 & 0xff));
-        } /* end if */
+          g_outSectionOffset += 2;
+        }
     }
   while ((g_opTable[0].op != oLABEL) && (g_opTable[0].op != oEND));
 
@@ -225,17 +355,22 @@ static void popt_InitPTable(void)
 
   for (i = 0; i < WINDOW; i++)
     {
-      insn_GetOpCode(g_myPOoffHandle, &g_opTable[i]);
+      /* Read the next opcode into the optimization buffer */
+
+      opCodeSize = insn_GetOpCode(g_myPoffHandle, (opType_t *)&g_opTable[i]);
+
+      g_opTable[i].offset = g_inSectionOffset;
+      g_inSectionOffset += opCodeSize;
     }
 
   popt_SetupPointer();
 }
 
-/**********************************************************************
+/****************************************************************************
  * Public Functions
- **********************************************************************/
+ ****************************************************************************/
 
-/***********************************************************************/
+/*****************************************************************************/
 
 void popt_LocalOptimization(poffHandle_t poffHandle,
                             poffProgHandle_t poffProgHandle)
@@ -246,7 +381,7 @@ void popt_LocalOptimization(poffHandle_t poffHandle,
 
   /* Save the handles for use by other, private functions */
 
-  g_myPOoffHandle     = poffHandle;
+  g_myPoffHandle     = poffHandle;
   g_myPoffProgHandle = poffProgHandle;
 
   /* Initialization */
@@ -280,9 +415,18 @@ void popt_LocalOptimization(poffHandle_t poffHandle,
 
       popt_PutPCodeFromTable();
     }
+
+  /* All of the relocations should have been adjusted and copied to the
+   * optimized output.
+   */
+
+  if (g_nextRelocationIndex >= 0)
+    {
+      error(eEXTRARELOCS);
+    }
 }
 
-/***********************************************************************/
+/*****************************************************************************/
 
 void popt_DeletePCode(int16_t delIndex)
 {
@@ -354,19 +498,22 @@ void popt_DeletePCodeQuartet(int16_t delIndex1, int16_t delIndex2,
 
 void popt_SwapPCodePair(int16_t swapIndex1, int16_t swapIndex2)
 {
-  opType_t opCode;
+  opTypeR_t opCode;
 
-  opCode.op                 = g_opPtr[swapIndex2]->op;
-  opCode.arg1               = g_opPtr[swapIndex2]->arg1;
-  opCode.arg2               = g_opPtr[swapIndex2]->arg2;
+  opCode.op                   = g_opPtr[swapIndex2]->op;
+  opCode.arg1                 = g_opPtr[swapIndex2]->arg1;
+  opCode.arg2                 = g_opPtr[swapIndex2]->arg2;
+  opCode.offset               = g_opPtr[swapIndex2]->offset;
 
-  g_opPtr[swapIndex2]->op   = g_opPtr[swapIndex1]->op;
-  g_opPtr[swapIndex2]->arg1 = g_opPtr[swapIndex1]->arg1;
-  g_opPtr[swapIndex2]->arg2 = g_opPtr[swapIndex1]->arg2;
+  g_opPtr[swapIndex2]->op     = g_opPtr[swapIndex1]->op;
+  g_opPtr[swapIndex2]->arg1   = g_opPtr[swapIndex1]->arg1;
+  g_opPtr[swapIndex2]->arg2   = g_opPtr[swapIndex1]->arg2;
+  g_opPtr[swapIndex2]->offset = g_opPtr[swapIndex1]->offset;
 
-  g_opPtr[swapIndex1]->op   = opCode.op;
-  g_opPtr[swapIndex1]->arg1 = opCode.arg1;
-  g_opPtr[swapIndex1]->arg2 = opCode.arg2;
+  g_opPtr[swapIndex1]->op     = opCode.op;
+  g_opPtr[swapIndex1]->arg1   = opCode.arg1;
+  g_opPtr[swapIndex1]->arg2   = opCode.arg2;
+  g_opPtr[swapIndex1]->offset = opCode.offset;
 
   popt_SetupPointer();  /* Shouldn't be necessary */
 }

@@ -65,7 +65,7 @@ void poffResetRelocationTraversal(poffHandle_t handle)
 
 /***********************************************************************/
 
-int32_t poffGetRelocation(poffHandle_t handle, poffRelocation_t *reloc)
+int32_t poffNextRelocation(poffHandle_t handle, poffRelocation_t *reloc)
 {
   poffInfo_t *poffInfo = (poffInfo_t*)handle;
   uint32_t    relocIndex;

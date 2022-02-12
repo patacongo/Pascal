@@ -1,6 +1,6 @@
-/***************************************************************************
- * popt_util.h
- * External Declarations associated with popt_branch.c
+/****************************************************************************
+ * pftreloc.c
+ * Read temporary relocation data buffered in memory
  *
  *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,22 +34,62 @@
  *
  ***************************************************************************/
 
-#ifndef __POPT_UTIL_H
-#define __POPT_UTIL_H
-
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
-#include "pas_machine.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
-/***************************************************************************
- * Public Function Prototypes
- ***************************************************************************/
+#include "pas_debug.h"    /* Standard types */
+#include "pas_errcodes.h" /* error code definitions */
 
-void popt_ExpandPush(opTypeR_t *opPtr);
-void popt_OptimizePush(opTypeR_t *opPtr);
-int  popt_PowerOfTwo(uint32_t value);
+#include "pas_error.h"    /* error() */
+#include "pofflib.h"      /* POFF library interface */
+#include "pfprivate.h"    /* POFF private definitions */
 
-#endif /* __POPT_UTIL_H */
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+
+void poffResetTmpRelocationTraversal(poffRelocHandle_t relocHandle)
+{
+  poffRelocInfo_t *relocInfo = (poffRelocInfo_t*)relocHandle;
+  relocInfo->relocIndex = 0;
+}
+
+/****************************************************************************/
+
+int32_t poffNextTmpRelocation(poffRelocHandle_t relocHandle,
+                              poffRelocation_t *reloc)
+{
+  poffRelocInfo_t *relocInfo = (poffRelocInfo_t*)relocHandle;
+  uint32_t         relocIndex;
+
+  /* First, check if there is another relocation in the table to be had. */
+
+  relocIndex = relocInfo->relocIndex;
+  if (relocIndex >= relocInfo->relocSize)
+    {
+      /* Return -1 to signal the end of the list */
+
+      memset(reloc, 0, sizeof(poffRelocation_t));
+      return -1;
+    }
+  else
+    {
+      /* Copy the raw relocation information to the user */
+
+      memcpy(reloc, &relocInfo->relocTable[relocIndex], sizeof(poffRelocation_t));
+
+      /* Set up for the next read */
+
+      relocInfo->relocIndex +=  sizeof(poffRelocation_t);
+      return relocIndex;
+    }
+}

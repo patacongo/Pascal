@@ -17,7 +17,7 @@ LIBDIR      = $(PASCAL)/lib
 # Objects and targets
 
 LIBPOFFSRCS  = pfhandle.c pfproghandle.c pftprog.c pfsymhandle.c
-LIBPOFFSRCS += pftsymbol.c pfrelochandle.c pftreloc.c
+LIBPOFFSRCS += pftsymbol.c pfrelochandle.c pftreloc.c pftgetreloc.c
 LIBPOFFSRCS += pfwhdr.c pfwrodata.c pfwsymbol.c pfwfname.c
 LIBPOFFSRCS += pfwprog.c pfwlineno.c pfwdbgfunc.c pfwreloc.c pfwstring.c
 LIBPOFFSRCS += pfwrite.c pfrhdr.c pfrsymbol.c pfrfname.c

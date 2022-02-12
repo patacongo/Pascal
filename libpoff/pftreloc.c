@@ -60,63 +60,31 @@
 void poffCloneRelocations(poffHandle_t handle,
                           poffRelocHandle_t relocHandle)
 {
-  poffRelocation_t reloc;
-  int32_t          index;
-
-  /* Discard any existing relocation table */
-
-  poffResetRelocHandle(relocHandle);
-
-  /* Traverse the input file relocation table from the beginning */
-
-  poffResetRelocationTraversal(handle);
-  do
-    {
-      /* Read each relocation record from the input File */
-
-      index = poffGetRelocation(handle, &reloc);
-      if (index >= 0)
-        {
-          /* Add the relocation to the temporary relocation table */
-
-          poffAddTmpRelocation(relocHandle, &reloc);
-        }
-    }
-  while (index >= 0);
-}
-
-/***********************************************************************/
-
-#if 0 /* Not used */
-void poffCloneTmpRelocations(poffRelocHandle_t parentHandle,
-                             poffRelocHandle_t cloneHandle)
-{
-  poffRelocInfo_t *parentRelocInfo = (poffRelocInfo_t*)parentHandle;
-  poffRelocInfo_t *cloneRelocInfo = (poffRelocInfo_t*)cloneHandle;
+  poffInfo_t      *poffInfo  = (poffInfo_t*)handle;
+  poffRelocInfo_t *relocInfo = (poffRelocInfo_t*)relocHandle;
 
   /* Discard any existing relocation data in the clone */
 
-  if (cloneRelocInfo->relocTable != NULL)
+  if (relocInfo->relocTable != NULL)
     {
-      free(cloneRelocInfo->relocTable);
+      free(relocInfo->relocTable);
     }
 
   /* Duplicate the relocation data */
 
-  cloneRelocInfo->relocSize  = parentRelocInfo->relocSize;
-  cloneRelocInfo->relocAlloc = parentRelocInfo->relocAlloc;
+  relocInfo->relocSize  = poffInfo->relocSection.sh_size;
+  relocInfo->relocAlloc = poffInfo->relocAlloc;
+  relocInfo->relocIndex = 0;
 
-  cloneRelocInfo->relocTable = (uint8_t*)
-    malloc(parentRelocInfo->relocAlloc);
-  if (cloneRelocInfo->relocTable == NULL)
+  relocInfo->relocTable = (uint8_t*)malloc(poffInfo->relocAlloc);
+  if (relocInfo->relocTable == NULL)
     {
       fatal(eNOMEMORY);
     }
 
-  memcpy(cloneRelocInfo->relocTable, parentRelocInfo->relocTable,
-         parentRelocInfo->relocSize);
+  memcpy(relocInfo->relocTable, poffInfo->relocTable,
+         poffInfo->relocSection.sh_size);
 }
-#endif
 
 /***********************************************************************/
 /* Add a relocation entry to the relocation table section data.  Returns

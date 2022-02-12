@@ -96,7 +96,7 @@ void mergeRelocations(poffHandle_t inHandle,
     {
       /* Read each relocation record from the input File */
 
-      index = poffGetRelocation(inHandle, &reloc);
+      index = poffNextRelocation(inHandle, &reloc);
       if (index >= 0)
         {
           /* If the rellocation carries a "payload" that is a program

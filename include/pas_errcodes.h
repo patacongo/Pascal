@@ -150,6 +150,12 @@
  * eUNITNAME            File does not contain the expected UNIT
  * eARGIGNORED          An argument was provided, but ignored
  *
+ * ERRORS REPOORTED BY THE OPTIMIZER
+ * ---------------------------------
+ * eBUFTOOSMALL         Buffer is too small
+ * eBADRELOCDATA        Relocation data is not in the expected order
+ * eEXTRARELOCS         Relocation data remains afer all instructions processed
+ *
  * LINK TIME ERRORS
  * ----------------
  * eUNDEFINEDSYMBOL     A necessary symbol was not defined
@@ -300,6 +306,8 @@
 /* ERRORS REPOORTED BY THE OPTIMIZER */
 
 #define eBUFTOOSMALL     ((uint16_t) 0x70)
+#define eBADRELOCDATA    ((uint16_t) 0x71)
+#define eEXTRARELOCS     ((uint16_t) 0x72)
 
 /* LINK TIME ERRORS */
 

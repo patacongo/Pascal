@@ -1,4 +1,4 @@
-/**********************************************************************
+/****************************************************************************
  *  popt_strings.c
  *  String Stack Optimizaitons
  *
@@ -32,7 +32,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
 /* The statement generation logic generates a PUSHS and POPS around
  * every statement.  These instructions save and restore the string
@@ -42,9 +42,9 @@
  * actually required.
  */
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -62,11 +62,12 @@
 
 #include "popt.h"
 #include "pas_error.h"
+#include "popt_reloc.h"
 #include "popt_strings.h"
 
-/**********************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- **********************************************************************/
+ ****************************************************************************/
 
 /* PBUFFER_SIZE:  The size in bytes of one allocated buffer.  This
  * determines the largest span of instructions between a PUSHS and abort
@@ -86,47 +87,129 @@
 #  define popt_DebugMessage(fmt, ...)
 #endif
 
-/**********************************************************************
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+/* Represents one nested PUSHS/POPS sequence */
+
+struct nestLevel_s
+{
+  uint8_t  *pBuffer;
+  int       nBytesInBuffer;
+  uint32_t  inSectionOffset;
+};
+
+typedef struct nestLevel_s nestLevel_t;
+
+/****************************************************************************
  * Private Data
- **********************************************************************/
+ ****************************************************************************/
 
-static uint8_t *g_pBuffer[NPBUFFERS];
-static int      g_nBytesInBuffer[NPBUFFERS];
-static int      g_currentLevel = -1;
-static int      g_inCh;
+static nestLevel_t      g_nestLevel[NPBUFFERS];
+static poffRelocation_t g_nextRelocation;
+static uint32_t         g_inSectionOffset;
+static uint32_t         g_outSectionOffset;
+static int32_t          g_nextRelocationIndex;
+static int              g_currentLevel = -1;
+static int              g_inCh;
 
-#ifdef CONFIG_POPT_DEBUG
-static int      g_offset; // REMOVE ME
-#endif
-
-/**********************************************************************
+/****************************************************************************
  * Private Function Prototypes
- **********************************************************************/
+ ****************************************************************************/
 
 static int  popt_GetByte(poffHandle_t poffHandle);
-static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle);
+static void popt_PutByte(poffProgHandle_t poffProgHandle, uint8_t outCh,
+              uint32_t inSectionOffset);
+static inline void popt_DropOpcode8(void);
+static void popt_PutBuffer(int ch, poffProgHandle_t poffProgHandle);
 static void popt_PutOpCode(poffHandle_t poffHandle,
-                           poffProgHandle_t poffProgHandle);
-static void popt_FlushC(int c, poffProgHandle_t poffProgHandle);
+              poffProgHandle_t poffProgHandle);
+static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle);
 static void popt_FlushBuffer(poffProgHandle_t poffProgHandle);
 static void popt_DoPush(poffHandle_t poffHandle,
-                        poffProgHandle_t poffProgHandle);
+              poffProgHandle_t poffProgHandle);
 static void popt_DoPop(poffHandle_t poffHandle,
-                       poffProgHandle_t poffProgHandle);
+              poffProgHandle_t poffProgHandle);
 
-/**********************************************************************
- * Private Inline Functions
- **********************************************************************/
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+/****************************************************************************/
 
 static int popt_GetByte(poffHandle_t poffHandle)
 {
-#ifdef CONFIG_POPT_DEBUG
-  g_offset++;
-#endif
+  /* Bump the section offsets and get the next byte from the input stream */
+
+  g_inSectionOffset++;
   return poffGetProgByte(poffHandle);
 }
 
-static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle)
+/****************************************************************************/
+
+static void popt_PutByte(poffProgHandle_t poffProgHandle, uint8_t outCh,
+                         uint32_t inSectionOffset)
+{
+  uint16_t errCode;
+
+  /* Check if the current section offset matches a relocation entry */
+
+  if (g_nextRelocationIndex >= 0 &&
+      g_nextRelocation.rl_offset == inSectionOffset)
+    {
+      uint32_t saveRlIndex = g_nextRelocation.rl_offset;
+
+      /* Adjust the relocation section offset so that it will match the
+       * location in the file after this optimization pass.
+       */
+
+      g_nextRelocation.rl_offset -= (inSectionOffset - g_outSectionOffset);
+
+      /* Add the modified relocation to the temporary, output file */
+
+      poffAddTmpRelocation(g_tmpRelocationHandle, &g_nextRelocation);
+
+      /* Get the next relocation entry from the previous pass */
+
+      g_nextRelocationIndex =
+        poffNextTmpRelocation(g_prevTmpRelocationHandle, &g_nextRelocation);
+
+      /* Sanity check */
+
+      if (g_nextRelocationIndex >= 0 &&
+          g_nextRelocation.rl_offset <= saveRlIndex)
+        {
+          /* There is no requirement of the format that relocations be
+           * ordered by section offset, however, this is how they are
+           * generated by the compiler and the current logic depends on
+           * this fact.
+           */
+
+          error(eBADRELOCDATA);
+        }
+    }
+
+  errCode = poffAddTmpProgByte(poffProgHandle, outCh);
+  if (errCode != eNOERROR)
+    {
+      fprintf(stderr, "ERROR: Error writing to file: %d\n", errCode);
+      exit(1);
+    }
+
+  g_outSectionOffset++;
+}
+
+/****************************************************************************/
+
+static inline void popt_DropOpcode8(void)
+{
+  g_outSectionOffset--;
+}
+
+/****************************************************************************/
+
+static void popt_PutBuffer(int ch, poffProgHandle_t poffProgHandle)
 {
   int dlvl = g_currentLevel;
 
@@ -134,7 +217,7 @@ static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle)
     {
       /* No PUSHS encountered.  Write byte directly to output */
 
-      poffAddTmpProgByte(poffProgHandle, (uint8_t)c);
+      popt_PutByte(poffProgHandle, (uint8_t)ch, g_outSectionOffset);
     }
   else
     {
@@ -142,7 +225,7 @@ static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle)
        * nesting level.
        */
 
-      int idx                   = g_nBytesInBuffer[dlvl];
+      int idx = g_nestLevel[dlvl].nBytesInBuffer;
 
       if (idx >= PBUFFER_SIZE)
         {
@@ -150,13 +233,15 @@ static void popt_PutBuffer(int c, poffProgHandle_t poffProgHandle)
         }
       else
         {
-          uint8_t *dest          = g_pBuffer[dlvl] + idx;
+          uint8_t *dest = g_nestLevel[dlvl].pBuffer + idx;
 
-          *dest                  = c;
-          g_nBytesInBuffer[dlvl] = idx + 1;
+          *dest = ch;
+          g_nestLevel[dlvl].nBytesInBuffer = idx + 1;
         }
     }
 }
+
+/****************************************************************************/
 
 static void popt_PutOpCode(poffHandle_t poffHandle,
                            poffProgHandle_t poffProgHandle)
@@ -195,7 +280,9 @@ static void popt_PutOpCode(poffHandle_t poffHandle,
     }
 }
 
-static void popt_FlushC(int c, poffProgHandle_t poffProgHandle)
+/****************************************************************************/
+
+static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle)
 {
   if (g_currentLevel > 0)
     {
@@ -204,7 +291,7 @@ static void popt_FlushC(int c, poffProgHandle_t poffProgHandle)
        */
 
       int dlvl               = g_currentLevel - 1;
-      int idx                = g_nBytesInBuffer[dlvl];
+      int idx                = g_nestLevel[dlvl].nBytesInBuffer;
 
       if (idx >= PBUFFER_SIZE)
         {
@@ -212,10 +299,10 @@ static void popt_FlushC(int c, poffProgHandle_t poffProgHandle)
         }
       else
         {
-          uint8_t *dest          = g_pBuffer[dlvl] + idx;
+          uint8_t *dest          = g_nestLevel[dlvl].pBuffer + idx;
 
-          *dest                  = c;
-          g_nBytesInBuffer[dlvl] = idx + 1;
+          *dest                  = ch;
+          g_nestLevel[dlvl].nBytesInBuffer = idx + 1;
         }
     }
   else
@@ -224,16 +311,17 @@ static void popt_FlushC(int c, poffProgHandle_t poffProgHandle)
        * buffer
        */
 
-      poffAddTmpProgByte(poffProgHandle, (uint8_t)c);
+      popt_PutByte(poffProgHandle, (uint8_t)ch, g_outSectionOffset);
     }
 }
 
+/****************************************************************************/
+
 static void popt_FlushBuffer(poffProgHandle_t poffProgHandle)
 {
-  uint16_t errCode;
   int slvl = g_currentLevel;
 
-  if (g_nBytesInBuffer[slvl] > 0)
+  if (g_nestLevel[slvl].nBytesInBuffer > 0)
     {
       if (g_currentLevel > 0)
         {
@@ -243,42 +331,45 @@ static void popt_FlushBuffer(poffProgHandle_t poffProgHandle)
 
           int dlvl = slvl - 1;
 
-          if (g_nBytesInBuffer[dlvl] + g_nBytesInBuffer[slvl] >= PBUFFER_SIZE)
+          if (g_nestLevel[dlvl].nBytesInBuffer +
+              g_nestLevel[slvl].nBytesInBuffer >= PBUFFER_SIZE)
             {
               fatal(eBUFTOOSMALL);
             }
           else
             {
-              uint8_t *src  = g_pBuffer[slvl];
-              uint8_t *dest = g_pBuffer[dlvl] + g_nBytesInBuffer[dlvl];
+              uint8_t *src  = g_nestLevel[slvl].pBuffer;
+              uint8_t *dest = g_nestLevel[dlvl].pBuffer + g_nestLevel[dlvl].nBytesInBuffer;
 
-              memcpy(dest, src, g_nBytesInBuffer[slvl]);
-              g_nBytesInBuffer[dlvl] += g_nBytesInBuffer[slvl];
+              memcpy(dest, src, g_nestLevel[slvl].nBytesInBuffer);
+              g_nestLevel[dlvl].nBytesInBuffer += g_nestLevel[slvl].nBytesInBuffer;
             }
         }
       else
         {
+          uint32_t inSectionOffset;
+          int i;
+
           /* Only one PUSHS encountered.  Flush directly to the output
-           * buffer
+           * buffer.  poffWriteTmpProgBytes() could do this as a single
+           * operation.  However, we need to check byte-by-byte for
+           * relocation data.
            */
 
-          errCode = poffWriteTmpProgBytes(g_pBuffer[0], g_nBytesInBuffer[0],
-                                          poffProgHandle);
-
-          if (errCode != eNOERROR)
+          for (i = 0, inSectionOffset = g_nestLevel[0].inSectionOffset;
+               i < g_nestLevel[0].nBytesInBuffer;
+               i++, inSectionOffset++)
             {
-              fprintf(stderr, "ERROR: Error writing to file: %d\n", errCode);
-              exit(1);
+              popt_PutByte(poffProgHandle, g_nestLevel[0].pBuffer[i],
+                           inSectionOffset);
             }
         }
     }
 
-  g_nBytesInBuffer[slvl] = 0;
+  g_nestLevel[slvl].nBytesInBuffer = 0;
 }
 
-/**********************************************************************
- * Private Functions
- **********************************************************************/
+/****************************************************************************/
 
 static void popt_DoPush(poffHandle_t poffHandle,
                         poffProgHandle_t poffProgHandle)
@@ -315,11 +406,13 @@ static void popt_DoPush(poffHandle_t poffHandle,
     }
 }
 
+/****************************************************************************/
+
 static void popt_DoPop(poffHandle_t poffHandle,
                        poffProgHandle_t poffProgHandle)
 {
 #ifdef CONFIG_POPT_DEBUG
-  int pushOffset = g_offset - 2;
+  int pushOffset = g_inSectionOffset - 2;
 #endif
 
   /* REVISIT:  KeepOp is set true if we decide to keep the PUSHS/POPS.  If
@@ -366,7 +459,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
                 {
                   popt_DebugMessage("  Keep PUSH at %04x and POPS at %04x, "
                                     "level %d\n",
-                                    pushOffset, g_offset - 2, g_currentLevel);
+                                    pushOffset, g_inSectionOffset - 2, g_currentLevel);
 
                   /* Copy the POPS to the buffer */
 
@@ -374,7 +467,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
 
                   /* Flush the buffered data with the PUSHS */
 
-                  popt_FlushC(oPUSHS, poffProgHandle);
+                  popt_FlushCh(oPUSHS, poffProgHandle);
                   popt_FlushBuffer(poffProgHandle);
                 }
               else
@@ -383,11 +476,15 @@ static void popt_DoPop(poffHandle_t poffHandle,
 
                   popt_DebugMessage("  Drop PUSH at %04x and POPS at %04x, "
                                     "level %d\n",
-                                    pushOffset, g_offset - 2, g_currentLevel);
+                                    pushOffset, g_inSectionOffset - 2,
+                                    g_currentLevel);
+
+                  popt_DropOpcode8();
                   popt_FlushBuffer(poffProgHandle);
 
                   /* And discard the matching POPS */
 
+                  popt_DropOpcode8();
                   g_inCh = popt_GetByte(poffHandle);
                 }
             }
@@ -424,6 +521,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
                 {
                   popt_DebugMessage("  Keep PUSH at %04x, level %d\n",
                                     pushOffset, g_currentLevel);
+
                   /* Put the instruction in the buffer and remind ourselves
                    * to keep both the PUSHS and the POPS when we find the
                    * matching POPS.
@@ -489,9 +587,11 @@ static void popt_DoPop(poffHandle_t poffHandle,
     }
 }
 
-/**********************************************************************
+/****************************************************************************
  * Public Functions
- **********************************************************************/
+ ****************************************************************************/
+
+/****************************************************************************/
 
 void popt_StringStackOptimize(poffHandle_t poffHandle,
                               poffProgHandle_t poffProgHandle)
@@ -502,19 +602,27 @@ void popt_StringStackOptimize(poffHandle_t poffHandle,
 
   for (i = 0; i < NPBUFFERS; i++)
     {
-      g_pBuffer[i] = (uint8_t*)malloc(PBUFFER_SIZE);
-      if (g_pBuffer[i] == NULL)
+      g_nestLevel[i].pBuffer = (uint8_t*)malloc(PBUFFER_SIZE);
+      if (g_nestLevel[i].pBuffer == NULL)
         {
           fatal(eNOMEMORY);
         }
 
-      g_nBytesInBuffer[i] = 0;
+      g_nestLevel[i].nBytesInBuffer = 0;
     }
 
   /* Prime the search logic */
 
-  g_inCh = popt_GetByte(poffHandle);
-  g_currentLevel = -1;
+  g_inCh                 = popt_GetByte(poffHandle);
+  g_currentLevel         = -1;
+
+  g_inSectionOffset      = 0;
+  g_outSectionOffset     = 0;
+
+  /* Get the next relocation entry (before string optimization) */
+
+  g_nextRelocationIndex  =
+    poffNextTmpRelocation(g_tmpRelocationHandle, &g_nextRelocation);
 
   /* And parse the input file to the output file, removing unnecessary string
    * stack operations.
@@ -526,10 +634,17 @@ void popt_StringStackOptimize(poffHandle_t poffHandle,
 
   for (i = 0; i < NPBUFFERS; i++)
     {
-      free(g_pBuffer[i]);
-      g_pBuffer[i]        = NULL;
-      g_nBytesInBuffer[i] = 0;
+      free(g_nestLevel[i].pBuffer);
+      g_nestLevel[i].pBuffer        = NULL;
+      g_nestLevel[i].nBytesInBuffer = 0;
+    }
+
+  /* All of the relocations should have been adjusted and copied to the
+   * optimized output.
+   */
+
+  if (g_nextRelocationIndex >= 0)
+    {
+      error(eEXTRARELOCS);
     }
 }
-
-/**********************************************************************/

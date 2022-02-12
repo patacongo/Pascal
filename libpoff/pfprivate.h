@@ -176,6 +176,7 @@ struct poffRelocInfo_s
 {
   uint32_t            relocSize;
   uint32_t            relocAlloc;
+  uint32_t            relocIndex;
   uint8_t            *relocTable;
 };
 

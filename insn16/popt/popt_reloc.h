@@ -1,6 +1,6 @@
 /***************************************************************************
- * popt_util.h
- * External Declarations associated with popt_branch.c
+ * popt_reloch.h
+ * External Declarations associated with popt_reloc.c
  *
  *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,22 +34,37 @@
  *
  ***************************************************************************/
 
-#ifndef __POPT_UTIL_H
-#define __POPT_UTIL_H
+#ifndef __POPT_RELOC_H
+#define __POPT_RELOC_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
-#include "pas_machine.h"
+
+#include "pofflib.h"
+
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+/* This is the buffered relocation data from the last pass */
+
+extern poffRelocHandle_t g_prevTmpRelocationHandle;
+
+/* This accumulates new relocation data for the current pass.  After the
+ * final pass, this holds the final relocation data to be written to the
+ * optimized object file.
+ */
+
+extern poffRelocHandle_t g_tmpRelocationHandle;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void popt_ExpandPush(opTypeR_t *opPtr);
-void popt_OptimizePush(opTypeR_t *opPtr);
-int  popt_PowerOfTwo(uint32_t value);
+void createRelocationHandles(poffHandle_t poffHandle);
+void swapRelocationHandles(void);
 
-#endif /* __POPT_UTIL_H */
+#endif /* __POPT_RELOC_H */
