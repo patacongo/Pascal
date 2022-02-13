@@ -76,9 +76,9 @@ void insn_FixupFrameOffset(uint8_t *progData, uint32_t symValue);
 
 uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr);
 void insn_ResetOpCodeRead(poffHandle_t handle);
-void insn_AddOpCode(poffHandle_t handle, opType_t *ptr);
+uint32_t insn_AddOpCode(poffHandle_t handle, opType_t *ptr);
 void insn_ResetOpCodeWrite(poffHandle_t handle);
-void insn_AddTmpOpCode(poffProgHandle_t progHandle, opType_t *ptr);
+uint32_t insn_AddTmpOpCode(poffProgHandle_t progHandle, opType_t *ptr);
 void insn_ResetTmpOpCodeWrite(poffProgHandle_t progHandle);
 
 /* INSN-specific disassembler */

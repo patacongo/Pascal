@@ -2,7 +2,7 @@
  *  popt_strings.c
  *  String Stack Optimizaitons
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,8 @@
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "pas_errcodes.h"
+#include "pofflib.h"
+#include "pas_insn.h"
 #include "insn16.h"
 #include "pas_sysio.h"
 #include "pas_library.h"
@@ -69,16 +71,14 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* PBUFFER_SIZE:  The size in bytes of one allocated buffer.  This
- * determines the largest span of instructions between a PUSHS and abort
- * POPS instruction.
+/* NOPCODES_BUFFER:  The size in opcodes of one allocated code chunk.
  *
- * NPBUFFERS:  The number of buffers to allocate.  This determines the
- * number of nested PUSHS/POPS pairs that can be handled.
+ * MAX_NESTING:  This determines the maximum number of nested PUSHS/POPS
+ I pairs that can be handled.
  */
 
-#define PBUFFER_SIZE 4096
-#define NPBUFFERS       8
+#define NOPCODES_BUFFER 256
+#define MAX_NESTING     8
 
 #ifdef CONFIG_POPT_DEBUG
 #  define popt_DebugMessage(fmt, ...)
@@ -91,41 +91,59 @@
  * Private Types
  ****************************************************************************/
 
-/* Represents one nested PUSHS/POPS sequence */
+/* Represents on one buffer of instructions in a doubly linked list */
 
-struct nestLevel_s
+struct codeChunk_s
 {
-  uint8_t  *pBuffer;
-  int       nBytesInBuffer;
-  uint32_t  inSectionOffset;
+  struct codeChunk_s *next;           /* Supports a singly linked list */
+  int nOpCodes;                       /* Max+1 opcode index */
+  int firstOpCode;                    /* Index of first valid opcode */
+  opTypeR_t opCode[NOPCODES_BUFFER];  /* Buffered opcodes */
 };
 
-typedef struct nestLevel_s nestLevel_t;
+typedef struct codeChunk_s codeChunk_t;
+
+/* Represents one nested PUSHS/POPS sequence */
+
+struct nestLevelHead_s
+{
+  codeChunk_t *head;
+  codeChunk_t *tail;
+};
+
+typedef struct nestLevelHead_s nestLevelHead_t;
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 
-static nestLevel_t      g_nestLevel[NPBUFFERS];
-static poffRelocation_t g_nextRelocation;
-static uint32_t         g_inSectionOffset;
-static uint32_t         g_outSectionOffset;
-static int32_t          g_nextRelocationIndex;
+static nestLevelHead_t  g_nestLevel[MAX_NESTING];
+static codeChunk_t     *g_freeCodeChunk;
+static opTypeR_t        g_opCode;
 static int              g_currentLevel = -1;
-static int              g_inCh;
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static int  popt_GetByte(poffHandle_t poffHandle);
-static void popt_PutByte(poffProgHandle_t poffProgHandle, uint8_t outCh,
-              uint32_t inSectionOffset);
-static inline void popt_DropOpcode8(void);
-static void popt_PutBuffer(int ch, poffProgHandle_t poffProgHandle);
+static void popt_FreeCodeChunks(codeChunk_t *chunkHead);
+static codeChunk_t *popt_AllocateCodeChunk(void);
+static void popt_AddTailOpCode(nestLevelHead_t *levelHead,
+                               const opTypeR_t *opCode);
+static const opTypeR_t *popt_PeekHeadOpCode(nestLevelHead_t *levelHead);
+static void popt_DiscardHeadOpCode(nestLevelHead_t *levelHead);
+static void popt_MergeLevels(nestLevelHead_t *srcHead,
+                             nestLevelHead_t *destHead);
+
+static void popt_GetOpCode(poffHandle_t poffHandle);
+static void popt_WriteOpCode(poffProgHandle_t poffProgHandle,
+              const opTypeR_t *opCode);
+static void popt_PutBuffer(poffProgHandle_t poffProgHandle,
+              const opTypeR_t *opCode);
 static void popt_PutOpCode(poffHandle_t poffHandle,
               poffProgHandle_t poffProgHandle);
-static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle);
+static void popt_FlushOpCode(poffProgHandle_t poffProgHandle,
+              const opTypeR_t *opCode);
 static void popt_FlushBuffer(poffProgHandle_t poffProgHandle);
 static void popt_DoPush(poffHandle_t poffHandle,
               poffProgHandle_t poffProgHandle);
@@ -138,25 +156,176 @@ static void popt_DoPop(poffHandle_t poffHandle,
 
 /****************************************************************************/
 
-static int popt_GetByte(poffHandle_t poffHandle)
+static void popt_FreeCodeChunks(codeChunk_t *chunkHead)
 {
-  /* Bump the section offsets and get the next byte from the input stream */
+  codeChunk_t *curr;
+  codeChunk_t *next;
 
-  g_inSectionOffset++;
-  return poffGetProgByte(poffHandle);
+  for (curr = chunkHead; curr != NULL; curr = next)
+    {
+      next = curr->next;
+      free(curr);
+    }
 }
 
 /****************************************************************************/
 
-static void popt_PutByte(poffProgHandle_t poffProgHandle, uint8_t outCh,
-                         uint32_t inSectionOffset)
+static codeChunk_t *popt_AllocateCodeChunk(void)
 {
-  uint16_t errCode;
+  codeChunk_t *chunk;
 
+  /* Check if there is a code chunk in the free list */
+
+  if (g_freeCodeChunk != NULL)
+    {
+      chunk           = g_freeCodeChunk;
+      g_freeCodeChunk = chunk->next;
+    }
+  else
+    {
+      chunk = (codeChunk_t *)malloc(sizeof(codeChunk_t));
+      if (chunk == NULL)
+        {
+          fatal(eNOMEMORY);
+        }
+    }
+
+  return chunk;
+}
+
+/****************************************************************************/
+
+static void popt_AddTailOpCode(nestLevelHead_t *levelHead,
+                               const opTypeR_t *opCode)
+{
+  codeChunk_t *oldTail = levelHead->tail;
+
+  /* Is the list empty?  No? Is there space for another opcode in the last
+   * chunk?
+   */
+
+  if (oldTail == NULL || oldTail->nOpCodes >= NOPCODES_BUFFER)
+    {
+      codeChunk_t *newTail;
+
+      /* No, allocate a new tail chunk */
+
+      newTail              = popt_AllocateCodeChunk();
+      newTail->next        = NULL;
+      newTail->nOpCodes    = 0;
+      newTail->firstOpCode = 0;
+
+      /* And attach it to the end of the list */
+
+      levelHead->tail      = newTail;
+
+      /* Was the list previously empty? */
+
+      if (oldTail == NULL)
+        {
+          /* Yes, then this is the new head too */
+
+          levelHead->head  = newTail;
+
+        }
+      else
+        {
+          /* No, then it belongs right after the old tail */
+
+          oldTail->next    = newTail;
+        }
+
+      oldTail              = newTail;
+    }
+
+  /* Add the new opcode at the end of the tail chunk */
+
+  oldTail->opCode[oldTail->nOpCodes] = *opCode;
+  oldTail->nOpCodes++;
+}
+
+/****************************************************************************/
+
+static const opTypeR_t *popt_PeekHeadOpCode(nestLevelHead_t *levelHead)
+{
+  codeChunk_t *head = levelHead->head;
+
+  /* Remove and return the opcode from the chunk */
+
+  return &head->opCode[head->firstOpCode];
+}
+
+/****************************************************************************/
+
+static void popt_DiscardHeadOpCode(nestLevelHead_t *levelHead)
+{
+  codeChunk_t *oldHead = levelHead->head;
+
+  /* Bump the index to the first valid opcode in the chunk. */
+
+  oldHead->firstOpCode++;
+
+  /* Was that the last opcode in the chunk? */
+
+  if (oldHead->firstOpCode >= oldHead->nOpCodes)
+    {
+      /* Yes, remove and free the head chunk */
+
+      levelHead->head   = oldHead->next;
+      oldHead->next     = g_freeCodeChunk;
+      g_freeCodeChunk   = oldHead;
+
+      /* Is the chunk list now empty? */
+
+      if (levelHead->head == NULL)
+        {
+          /* Yes, then there is no tail either */
+
+          levelHead->tail = NULL;
+        }
+    }
+}
+
+/****************************************************************************/
+
+static void popt_MergeLevels(nestLevelHead_t *srcHead,
+                             nestLevelHead_t *destHead)
+{
+  if (srcHead->head != NULL)
+    {
+      destHead->tail->next = srcHead->head;
+      destHead->tail       = srcHead->tail;
+
+      srcHead->head        = NULL;
+      srcHead->tail        = NULL;
+    }
+}
+
+/****************************************************************************/
+
+static void popt_GetOpCode(poffHandle_t poffHandle)
+{
+  /* Get the next opcode from the input file */
+
+  uint32_t opSize    = insn_GetOpCode(poffHandle, (opType_t *)&g_opCode);
+
+  /* Save the input program section offset.  We need this to handle moving
+   * the relocation when instructions are deleted.
+   */
+
+  g_opCode.offset    = g_inSectionOffset;
+  g_inSectionOffset += opSize;
+}
+
+/****************************************************************************/
+
+static void popt_WriteOpCode(poffProgHandle_t poffProgHandle,
+                             const opTypeR_t *opCode)
+{
   /* Check if the current section offset matches a relocation entry */
 
   if (g_nextRelocationIndex >= 0 &&
-      g_nextRelocation.rl_offset == inSectionOffset)
+      g_nextRelocation.rl_offset == opCode->offset)
     {
       uint32_t saveRlIndex = g_nextRelocation.rl_offset;
 
@@ -164,7 +333,7 @@ static void popt_PutByte(poffProgHandle_t poffProgHandle, uint8_t outCh,
        * location in the file after this optimization pass.
        */
 
-      g_nextRelocation.rl_offset -= (inSectionOffset - g_outSectionOffset);
+      g_nextRelocation.rl_offset -= (opCode->offset - g_outSectionOffset);
 
       /* Add the modified relocation to the temporary, output file */
 
@@ -190,34 +359,23 @@ static void popt_PutByte(poffProgHandle_t poffProgHandle, uint8_t outCh,
         }
     }
 
-  errCode = poffAddTmpProgByte(poffProgHandle, outCh);
-  if (errCode != eNOERROR)
-    {
-      fprintf(stderr, "ERROR: Error writing to file: %d\n", errCode);
-      exit(1);
-    }
+  /* Write the opcode to the temporary program data */
 
-  g_outSectionOffset++;
+  g_outSectionOffset += insn_AddTmpOpCode(poffProgHandle, (opType_t *)opCode);
 }
 
 /****************************************************************************/
 
-static inline void popt_DropOpcode8(void)
+static void popt_PutBuffer(poffProgHandle_t poffProgHandle,
+                           const opTypeR_t *opCode)
 {
-  g_outSectionOffset--;
-}
+  int currentLevel = g_currentLevel;
 
-/****************************************************************************/
-
-static void popt_PutBuffer(int ch, poffProgHandle_t poffProgHandle)
-{
-  int dlvl = g_currentLevel;
-
-  if (dlvl < 0)
+  if (currentLevel < 0)
     {
-      /* No PUSHS encountered.  Write byte directly to output */
+      /* No PUSHS encountered.  Write opcode directly to output */
 
-      popt_PutByte(poffProgHandle, (uint8_t)ch, g_inSectionOffset);
+      popt_WriteOpCode(poffProgHandle, opCode);
     }
   else
     {
@@ -225,19 +383,7 @@ static void popt_PutBuffer(int ch, poffProgHandle_t poffProgHandle)
        * nesting level.
        */
 
-      int idx = g_nestLevel[dlvl].nBytesInBuffer;
-
-      if (idx >= PBUFFER_SIZE)
-        {
-          fatal(eBUFTOOSMALL);
-        }
-      else
-        {
-          uint8_t *dest = g_nestLevel[dlvl].pBuffer + idx;
-
-          *dest = ch;
-          g_nestLevel[dlvl].nBytesInBuffer = idx + 1;
-        }
+      popt_AddTailOpCode(&g_nestLevel[currentLevel], opCode);
     }
 }
 
@@ -246,43 +392,19 @@ static void popt_PutBuffer(int ch, poffProgHandle_t poffProgHandle)
 static void popt_PutOpCode(poffHandle_t poffHandle,
                            poffProgHandle_t poffProgHandle)
 {
-  int opCode;
+  /* Put the opCode into the buffer */
 
-  /* Put the opCode in the buffer */
-
-  popt_PutBuffer(g_inCh, poffProgHandle);
+  popt_PutBuffer(poffProgHandle, &g_opCode);
 
   /* Get the next byte from the input stream */
 
-  opCode = g_inCh;
-  g_inCh = popt_GetByte(poffHandle);
-
-  /* Check for an 8-bit argument */
-
-  if ((opCode & o8) != 0)
-    {
-      /* Buffer the 8-bit argument */
-
-      popt_PutBuffer(g_inCh, poffProgHandle);
-      g_inCh = popt_GetByte(poffHandle);
-    }
-
-  /* Check for a 16-bit argument */
-
-  if ((opCode & o16) != 0)
-    {
-      /* Buffer the 16-bit argument */
-
-      popt_PutBuffer(g_inCh, poffProgHandle);
-      g_inCh = popt_GetByte(poffHandle);
-      popt_PutBuffer(g_inCh, poffProgHandle);
-      g_inCh = popt_GetByte(poffHandle);
-    }
+  popt_GetOpCode(poffHandle);
 }
 
 /****************************************************************************/
 
-static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle)
+static void popt_FlushOpCode(poffProgHandle_t poffProgHandle,
+                             const opTypeR_t *opCode)
 {
   if (g_currentLevel > 0)
     {
@@ -290,20 +412,7 @@ static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle)
        * with the previous nesting level.
        */
 
-      int dlvl               = g_currentLevel - 1;
-      int idx                = g_nestLevel[dlvl].nBytesInBuffer;
-
-      if (idx >= PBUFFER_SIZE)
-        {
-          fatal(eBUFTOOSMALL);
-        }
-      else
-        {
-          uint8_t *dest          = g_nestLevel[dlvl].pBuffer + idx;
-
-          *dest                  = ch;
-          g_nestLevel[dlvl].nBytesInBuffer = idx + 1;
-        }
+      popt_AddTailOpCode(&g_nestLevel[g_currentLevel - 1], opCode);
     }
   else
     {
@@ -311,7 +420,7 @@ static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle)
        * buffer
        */
 
-      popt_PutByte(poffProgHandle, (uint8_t)ch, g_inSectionOffset);
+      popt_WriteOpCode(poffProgHandle, opCode);
     }
 }
 
@@ -319,57 +428,35 @@ static void popt_FlushCh(int ch, poffProgHandle_t poffProgHandle)
 
 static void popt_FlushBuffer(poffProgHandle_t poffProgHandle)
 {
-  int slvl = g_currentLevel;
+  int currentLevel = g_currentLevel;
 
-  if (g_nestLevel[slvl].nBytesInBuffer > 0)
+  if (currentLevel > 0)
     {
-      if (g_currentLevel > 0)
+      /* Nested PUSHS encountered. Flush buffer into buffer associated with
+       * the previous nesting level.
+       */
+
+      popt_MergeLevels(&g_nestLevel[currentLevel],
+                       &g_nestLevel[currentLevel - 1]);
+    }
+  else
+    {
+      /* Loop while there are still opcodes at level 0 */
+
+      while (g_nestLevel[0].head != NULL)
         {
-          /* Nested PUSHS encountered. Flush buffer into buffer associated
-           * with the previous nesting level.
-           *
-           * REVISIT:  What happens to the inSectionOffset at the higher
-           * nesting level?
+          /* Write the opcode directly from the code chunk to the output
+           * data.
            */
 
-          int dlvl = slvl - 1;
+          const opTypeR_t *opCode = popt_PeekHeadOpCode(&g_nestLevel[0]);
+          popt_WriteOpCode(poffProgHandle, opCode);
 
-          if (g_nestLevel[dlvl].nBytesInBuffer +
-              g_nestLevel[slvl].nBytesInBuffer >= PBUFFER_SIZE)
-            {
-              fatal(eBUFTOOSMALL);
-            }
-          else
-            {
-              uint8_t *src  = g_nestLevel[slvl].pBuffer;
-              uint8_t *dest = g_nestLevel[dlvl].pBuffer + g_nestLevel[dlvl].nBytesInBuffer;
+          /* Then discard the opcode */
 
-              memcpy(dest, src, g_nestLevel[slvl].nBytesInBuffer);
-              g_nestLevel[dlvl].nBytesInBuffer += g_nestLevel[slvl].nBytesInBuffer;
-            }
-        }
-      else
-        {
-          uint32_t inSectionOffset;
-          int i;
-
-          /* Only one PUSHS encountered.  Flush directly to the output
-           * buffer.  poffWriteTmpProgBytes() could do this as a single
-           * operation.  However, we need to check byte-by-byte for
-           * relocation data.
-           */
-
-          for (i = 0, inSectionOffset = g_nestLevel[0].inSectionOffset;
-               i < g_nestLevel[0].nBytesInBuffer;
-               i++, inSectionOffset++)
-            {
-              popt_PutByte(poffProgHandle, g_nestLevel[0].pBuffer[i],
-                           inSectionOffset);
-            }
+          popt_DiscardHeadOpCode(&g_nestLevel[0]);
         }
     }
-
-  g_nestLevel[slvl].nBytesInBuffer = 0;
 }
 
 /****************************************************************************/
@@ -377,11 +464,11 @@ static void popt_FlushBuffer(poffProgHandle_t poffProgHandle)
 static void popt_DoPush(poffHandle_t poffHandle,
                         poffProgHandle_t poffProgHandle)
 {
-  while (g_inCh != EOF)
+  while (g_opCode.op != oEND)
     {
       /* Search for a PUSHS opCode */
 
-      if (g_inCh != oPUSHS)
+      if (g_opCode.op != oPUSHS)
         {
           /* Its not PUSHS, just echo to the output file/buffer */
 
@@ -395,18 +482,14 @@ static void popt_DoPush(poffHandle_t poffHandle,
            */
 
           g_currentLevel++;
-          if (g_currentLevel >= NPBUFFERS)
+          if (g_currentLevel >= MAX_NESTING)
             {
               fatal(eBUFTOOSMALL);
             }
 
-          /* REVISIT:  This offset is not used (only at level 0) */
-
-          g_nestLevel[g_currentLevel].inSectionOffset = g_inSectionOffset;
-
           /* Skip over the PUSHS and look for the POPS. */
 
-          g_inCh = popt_GetByte(poffHandle);
+          popt_GetOpCode(poffHandle);
           popt_DoPop(poffHandle, poffProgHandle);
           g_currentLevel--;
         }
@@ -424,7 +507,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
 
   /* REVISIT:  KeepOp is set true if we decide to keep the PUSHS/POPS.  If
    * keepOp is set, we still continue buffering data until the matching POPS
-   * is found.  This requires substantial sizes for PBUFFER_SIZE (like 4096
+   * is found.  This requires substantial sizes for NOPCODES_BUFFER (like 4096
    * vs. 1024).
    */
 
@@ -436,9 +519,9 @@ static void popt_DoPop(poffHandle_t poffHandle,
 
   popt_DebugMessage("Consider PUSH at %04x, level %d\n",
                      pushOffset, g_currentLevel);
-  while (g_inCh != EOF)
+  while (g_opCode.op != oEND)
     {
-      switch (g_inCh)
+      switch (g_opCode.op)
         {
           /* Did we encounter another PUSHS? */
 
@@ -447,18 +530,14 @@ static void popt_DoPop(poffHandle_t poffHandle,
               /* Yes... recurse to handle it */
 
               g_currentLevel++;
-              if (g_currentLevel >= NPBUFFERS)
+              if (g_currentLevel >= MAX_NESTING)
                 {
                   fatal(eBUFTOOSMALL);
                 }
 
-              /* REVISIT:  This offset is not used (only at level 0) */
-
-              g_nestLevel[g_currentLevel].inSectionOffset = g_inSectionOffset;
-
               /* Skip over the PUSH and look for the matching POPS */
 
-              g_inCh = popt_GetByte(poffHandle);
+              popt_GetOpCode(poffHandle);
               popt_DoPop(poffHandle, poffProgHandle);
               g_currentLevel--;
             }
@@ -468,6 +547,8 @@ static void popt_DoPop(poffHandle_t poffHandle,
             {
               if (keepPop)
                 {
+                  opTypeR_t pushOpCode;
+
                   popt_DebugMessage("  Keep PUSH at %04x and POPS at %04x, "
                                     "level %d\n",
                                     pushOffset, g_inSectionOffset - 2,
@@ -479,7 +560,12 @@ static void popt_DoPop(poffHandle_t poffHandle,
 
                   /* Flush the buffered data with the PUSHS */
 
-                  popt_FlushCh(oPUSHS, poffProgHandle);
+                  pushOpCode.op     = oPUSHS;
+                  pushOpCode.arg1   = 0;
+                  pushOpCode.arg2   = 0;
+                  pushOpCode.offset = 0;
+
+                  popt_FlushOpCode(poffProgHandle, &pushOpCode);
                   popt_FlushBuffer(poffProgHandle);
                 }
               else
@@ -491,57 +577,43 @@ static void popt_DoPop(poffHandle_t poffHandle,
                                     pushOffset, g_inSectionOffset - 2,
                                     g_currentLevel);
 
-                  popt_DropOpcode8();
                   popt_FlushBuffer(poffProgHandle);
 
                   /* And discard the matching POPS */
 
-                  popt_DropOpcode8();
-                  g_inCh = popt_GetByte(poffHandle);
+                  popt_GetOpCode(poffHandle);
                 }
             }
             return;
 
           case oLIB :
             {
-              int arg16;
-              int arg16a;
-              int arg16b;
-
-              /* Get the 16-bit argument */
-
-              popt_PutBuffer(g_inCh, poffProgHandle);
-              arg16a = popt_GetByte(poffHandle);
-              popt_PutBuffer(arg16a, poffProgHandle);
-              arg16b = popt_GetByte(poffHandle);
-              popt_PutBuffer(arg16b, poffProgHandle);
-              arg16  = (arg16a << 8) | arg16b;
-              g_inCh = popt_GetByte(poffHandle);
-
               /* Is it LIB STRINIT? STRDUP? or other string library functions
                * that we should not optimize?  These functions all allocate
                * new memory from the string stack.
                */
 
-              if (arg16 == lbSTRINIT  ||
-                  arg16 == lbSSTRINIT ||
-                  arg16 == lbSTRTMP   ||
-                  arg16 == lbSTRDUP   ||
-                  arg16 == lbSSTRDUP  ||
-                  arg16 == lbMKSTKC   ||
-                  arg16 == lbBSTR2STR)
+              if (g_opCode.arg2 == lbSTRINIT  ||
+                  g_opCode.arg2 == lbSSTRINIT ||
+                  g_opCode.arg2 == lbSTRTMP   ||
+                  g_opCode.arg2 == lbSTRDUP   ||
+                  g_opCode.arg2 == lbSSTRDUP  ||
+                  g_opCode.arg2 == lbMKSTKC   ||
+                  g_opCode.arg2 == lbBSTR2STR)
                 {
                   popt_DebugMessage("  Keep PUSH at %04x, level %d\n",
                                     pushOffset, g_currentLevel);
 
-                  /* Put the instruction in the buffer and remind ourselves
-                   * to keep both the PUSHS and the POPS when we find the
-                   * matching POPS.
+                  /* Remind ourselves to keep both the PUSHS and the POPS
+                   * when we find the matching POPS.
                    */
 
-                  popt_PutOpCode(poffHandle, poffProgHandle);
                   keepPop = true;
                 }
+
+              /* Put the instruction in the buffer in any event. */
+
+              popt_PutOpCode(poffHandle, poffProgHandle);
             }
             break;
 
@@ -582,7 +654,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
             break;
 #endif
 
-          case EOF:
+          case oEND:
             /* What?  No matching POPS? */
 
             fatal(eHUH);
@@ -610,28 +682,13 @@ void popt_StringStackOptimize(poffHandle_t poffHandle,
 {
   int i;
 
-  /* Allocate an array of buffers to hold pcode data */
-
-  for (i = 0; i < NPBUFFERS; i++)
-    {
-      g_nestLevel[i].pBuffer = (uint8_t*)malloc(PBUFFER_SIZE);
-      if (g_nestLevel[i].pBuffer == NULL)
-        {
-          fatal(eNOMEMORY);
-        }
-
-      g_nestLevel[i].nBytesInBuffer = 0;
-    }
-
   /* Prime the search logic */
 
-  g_inCh                 = popt_GetByte(poffHandle);
   g_currentLevel         = -1;
-
   g_inSectionOffset      = 0;
   g_outSectionOffset     = 0;
 
-  /* Get the next relocation entry (before string optimization) */
+  /* Get the first relocation entry */
 
   g_nextRelocationIndex  =
     poffNextTmpRelocation(g_prevTmpRelocationHandle, &g_nextRelocation);
@@ -640,16 +697,23 @@ void popt_StringStackOptimize(poffHandle_t poffHandle,
    * stack operations.
    */
 
+  popt_GetOpCode(poffHandle);
   popt_DoPush(poffHandle, poffProgHandle);
 
   /* Release the buffers */
 
-  for (i = 0; i < NPBUFFERS; i++)
+  for (i = 0; i < MAX_NESTING; i++)
     {
-      free(g_nestLevel[i].pBuffer);
-      g_nestLevel[i].pBuffer        = NULL;
-      g_nestLevel[i].nBytesInBuffer = 0;
+      if (g_nestLevel[i].head != NULL)
+        {
+          popt_FreeCodeChunks(g_nestLevel[i].head);
+        }
+
+      g_nestLevel[i].head = NULL;
+      g_nestLevel[i].tail = NULL;
     }
+
+  popt_FreeCodeChunks(g_freeCodeChunk);
 
   /* All of the relocations should have been adjusted and copied to the
    * optimized output.

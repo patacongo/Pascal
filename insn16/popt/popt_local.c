@@ -84,10 +84,6 @@ bool       g_endOut  = 0;        /* 1 = oEND pcode has been output */
 
 static poffHandle_t     g_myPoffHandle;        /* Handle to POFF object */
 static poffProgHandle_t g_myPoffProgHandle;    /* Handle to temporary program data */
-static poffRelocation_t g_nextRelocation;
-static uint32_t         g_inSectionOffset;     /* Running input section offset */
-static uint32_t         g_outSectionOffset;    /* Running output section offset */
-static int32_t          g_nextRelocationIndex;
 
 /****************************************************************************
  * Private Functions
@@ -179,6 +175,7 @@ static void popt_PutPCodeFromTable(void)
   TRACE(stderr, "[popt_PutPCodeFromTable]");
 
   /* Transfer all buffered P-Codes (except NOPs) to the optimized file */
+
   do
     {
       if (g_opTable[0].op != oNOP && !g_endOut)
@@ -187,25 +184,10 @@ static void popt_PutPCodeFromTable(void)
 
           popt_CheckRelocation(&g_opTable[0]);
 
-          /* Transfer the variable-length opcode */
+          /* Write the opcode to the temporary program data */
 
-          poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
-          g_outSectionOffset++;
-
-          if (g_opTable[0].op & o8)
-            {
-              poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
-              g_outSectionOffset++;
-            }
-
-          if (g_opTable[0].op & o16)
-            {
-              poffAddTmpProgByte(g_myPoffProgHandle,
-                                 (g_opTable[0].arg2 >> 8));
-              poffAddTmpProgByte(g_myPoffProgHandle,
-                                 (g_opTable[0].arg2 & 0xff));
-              g_outSectionOffset += 2;
-            }
+          g_outSectionOffset +=
+            insn_AddTmpOpCode(g_myPoffProgHandle, (opType_t *)&g_opTable[0]);
 
           g_endOut = (g_opTable[0].op == oEND);
         }
@@ -334,21 +316,8 @@ static void popt_InitPTable(void)
 
       /* Write the opcode to the temporary section data */
 
-      (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].op);
-      g_outSectionOffset++;
-
-      if (g_opTable[0].op & o8)
-        {
-          (void)poffAddTmpProgByte(g_myPoffProgHandle, g_opTable[0].arg1);
-          g_outSectionOffset++;
-        }
-
-      if (g_opTable[0].op & o16)
-        {
-          (void)poffAddTmpProgByte(g_myPoffProgHandle, (g_opTable[0].arg2 >> 8));
-          (void)poffAddTmpProgByte(g_myPoffProgHandle, (g_opTable[0].arg2 & 0xff));
-          g_outSectionOffset += 2;
-        }
+      g_outSectionOffset +=
+        insn_AddTmpOpCode(g_myPoffProgHandle, (opType_t *)&g_opTable[0]);
     }
   while (g_opTable[0].op != oLABEL && g_opTable[0].op != oEND);
 

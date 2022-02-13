@@ -92,7 +92,7 @@ check_libs:
 	fi
 
 $(BINDIR)/popt: check_libs $(DEPS) $(OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) -lpoff -linsn -lpas
+	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 popt: $(BINDIR)/popt
 

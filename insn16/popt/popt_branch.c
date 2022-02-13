@@ -43,6 +43,7 @@
 
 #include "pas_debug.h"
 #include "pas_machine.h"
+#include "pofflib.h"
 #include "insn16.h"
 
 #include "popt.h"

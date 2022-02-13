@@ -60,13 +60,23 @@ struct opTypeR_s
 
 typedef struct opTypeR_s opTypeR_t;
 
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+/* Common working variables used in various optimization passes */
+
+extern poffRelocation_t g_nextRelocation;      /* Next relocation record from
+                                                * input */
+extern uint32_t         g_inSectionOffset;     /* Running input section
+                                                * offset */
+extern uint32_t         g_outSectionOffset;    /* Running output section
+                                                * offset */
+extern int32_t          g_nextRelocationIndex; /* Non-negative if
+                                                * g_nextRelocation is valid. */
 
 /***************************************************************************
 * Public Function Prototypes
 ****************************************************************************/
-
-/***************************************************************************
- * Public Data
- ****************************************************************************/
 
 #endif /* __POPT_H */

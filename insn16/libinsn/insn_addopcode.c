@@ -52,17 +52,21 @@
 
 /**********************************************************************/
 
-void insn_AddOpCode(poffHandle_t handle, opType_t *ptr)
+uint32_t insn_AddOpCode(poffHandle_t handle, opType_t *ptr)
 {
+  uint32_t opSize;
+
   /* Write the opcode which is always present */
 
   (void)poffAddProgByte(handle, ptr->op);
+  opSize = 1;
 
   /* Write the 8-bit argument if present */
 
   if (ptr->op & o8)
     {
       (void)poffAddProgByte(handle, ptr->arg1);
+      opSize++;
     }
 
   /* Write the 16-bit argument if present */
@@ -71,7 +75,10 @@ void insn_AddOpCode(poffHandle_t handle, opType_t *ptr)
     {
       (void)poffAddProgByte(handle, (ptr->arg2 >> 8));
       (void)poffAddProgByte(handle, (ptr->arg2 & 0xff));
+      opSize += 2;
     }
+
+  return opSize;
 }
 
 /**********************************************************************/

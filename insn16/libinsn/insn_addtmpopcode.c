@@ -47,38 +47,26 @@
 #include "pas_insn.h"
 
 /**********************************************************************
- * Private Function Prototypes
- **********************************************************************/
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-/**********************************************************************
- * Private Functions
- **********************************************************************/
-
-/**********************************************************************
  * Public Functions
  **********************************************************************/
 
 /**********************************************************************/
 
-void insn_AddTmpOpCode(poffProgHandle_t progHandle, opType_t *ptr)
+uint32_t insn_AddTmpOpCode(poffProgHandle_t progHandle, opType_t *ptr)
 {
+  uint32_t opSize;
+
   /* Write the opcode which is always present */
 
   (void)poffAddTmpProgByte(progHandle, ptr->op);
+  opSize = 1;
 
   /* Write the 8-bit argument if present */
 
   if (ptr->op & o8)
     {
       (void)poffAddTmpProgByte(progHandle, ptr->arg1);
+      opSize++;
     }
 
   /* Write the 16-bit argument if present */
@@ -87,7 +75,10 @@ void insn_AddTmpOpCode(poffProgHandle_t progHandle, opType_t *ptr)
     {
       (void)poffAddTmpProgByte(progHandle, (ptr->arg2 >> 8));
       (void)poffAddTmpProgByte(progHandle, (ptr->arg2 & 0xff));
+      opSize += 2;
     }
+
+  return opSize;
 }
 
 /**********************************************************************/

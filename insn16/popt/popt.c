@@ -65,11 +65,22 @@ static void pass3         (void);
 static void writePoffFile (const char *filename);
 
 /**********************************************************************
- * Private Variables
+ * Private Data
  ****************************************************************************/
 
 static poffHandle_t g_poffHandle; /* Handle to POFF object */
 
+/***************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+/* Common working variables used in various optimization passes */
+
+poffRelocation_t g_nextRelocation;      /* Next relocation record from input */
+uint32_t         g_inSectionOffset;     /* Running input section offset */
+uint32_t         g_outSectionOffset;    /* Running output section offset */
+int32_t          g_nextRelocationIndex; /* Non-negative if g_nextRelocation
+                                         * is valid. */
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
