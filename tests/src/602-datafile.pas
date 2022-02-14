@@ -1,28 +1,31 @@
-program DataFiles;
-type
+PROGRAM DataFiles;
+TYPE
    StudentRecord =
-   Record
-     s_name: String;
-     s_addr: String;
-     s_batchcode: String;
-   end;
+   RECORD
+      s_name: PACKED ARRAY[1..16] OF CHAR;
+      s_addr: PACKED ARRAY[1..32] OF CHAR;
+      s_batchcode: PACKED ARRAY[1..16] OF CHAR;
+   END;
 
-var
+VAR
    Student: StudentRecord;
-   f: file of StudentRecord;
+   f: FILE OF StudentRecord;
 
-begin
-   assign(f, 'students.dat');
-   reset(f);
+BEGIN
+   ASSIGN(f, 'students.dat');
+   RESET(f);
 
-   while not eof(f) do
-   begin
-      read(f, Student);
-      writeln('Name: ', Student.s_name);
-      writeln('Address: ', Student.s_addr);
-      writeln('Batch Code: ', Student.s_batchcode);
-   end;
+   WHILE NOT EOF(f) DO
+   BEGIN
+      READ(f, Student);
+      IF NOT EOF(f) THEN
+      BEGIN
+         WRITELN('Name: ', Student.s_name);
+         WRITELN('Address: ', Student.s_addr);
+         WRITELN('Batch Code: ', Student.s_batchcode);
+      END
+   END;
 
-   close(f);
-end.
+   CLOSE(f);
+END.
 

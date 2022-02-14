@@ -1,21 +1,21 @@
-program DataFiles;
-type
-   StudentRecord = Record
-      s_name: String;
-      s_addr: String;
-      s_batchcode: String;
-   end;
+PROGRAM DataFiles;
+TYPE
+   StudentRecord = RECORD
+      s_name: PACKED ARRAY[1..16] OF CHAR;
+      s_addr: PACKED ARRAY[1..32] OF CHAR;
+      s_batchcode: PACKED ARRAY[1..16] OF CHAR;
+   END;
 
-var
+VAR
    Student: StudentRecord;
-   f: file of StudentRecord;
+   f: FILE OF StudentRecord;
 
-begin
-   Assign(f,'students.dat');
-   Rewrite(f);
+BEGIN
+   ASSIGN(f,'students.dat');
+   REWRITE(f);
    Student.s_name := 'John Smith';
    Student.s_addr := 'United States of America';
    Student.s_batchcode := 'Computer Science';
-   Write(f,Student);
-   Close(f);
-end.
+   WRITE(f,Student);
+   CLOSE(f);
+END.

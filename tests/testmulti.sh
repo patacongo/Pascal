@@ -44,7 +44,7 @@ PLINK=${BINDIR}/plink
 PRUN=${BINDIR}/prun
 
 PASOPTS=
-PRUNOPTS="-t 1024"
+PRUNOPTS="-t 1024 -a 128 -n 256"
 
 MAIN=${1}
 UNITS=${2}

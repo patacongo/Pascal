@@ -345,13 +345,19 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
                 value = poffGetSymIndexForUndefinedLabel(op.arg2);
                 if (value >= 0)
                   {
+                    poffRelocation_t reloc;
+
                     /* Use the value zero now */
 
                     op.arg2 = 0;
 
-                    /* And generate a symbol-based relocation */
+                    /* And generate a symbol-based relocation in the temporary
+                     * relocation data.
+                     */
 
-                    (void)poffAddRelocation(poffHandle, RLT_PCAL, value, pc);
+                    reloc.rl_info    = RLI_MAKE(value, RLT_PCAL);
+                    reloc.rl_offset  = pc;
+                    poffAddTmpRelocation(g_tmpRelocationHandle, &reloc);
                   }
                 else
                   {

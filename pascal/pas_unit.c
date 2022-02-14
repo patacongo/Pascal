@@ -2,7 +2,7 @@
  * pas_unit.c
  * Parse a pascal unit file
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,214 +73,6 @@
 static void pas_InterfaceSection          (void);
 static void pas_ExportedProcedureHeading  (void);
 static void pas_ExportedFunctionHeading   (void);
-
-/***********************************************************************
- * Public Functions
- ***********************************************************************/
-/* This function is called only main() when the first token parsed out
- * the specified file is 'unit'.  In this case, we are parsing a unit file
- * and generating a unit binary.
- */
-
-void pas_UnitImplementation(void)
-{
-  char   *saveTknStart = g_tokenString;
-
-  TRACE(g_lstFile, "[pas_UnitImplementation]");
-
-  /* FORM: unit =
-   *       unit-heading ';' interface-section implementation-section
-   *       init-section '.'
-   * FORM: unit-heading = 'unit' identifer
-   * FORM: interface-section =
-   *       'interface' [ uses-section ] interface-declaration
-   * FORM: implementation-section =
-   *       'implementation' [ uses-section ] declaration-group
-   * FORM: init-section =
-   *       'initialization statement-sequence
-   *       ['finalization' statement-sequence] 'end' |
-   *       compound-statement | 'end'
-   *
-   * On entry, the 'unit' keyword has already been parsed.  The
-   * current token should point to the identifier following unit.
-   */
-
-  /* Skip over the unit identifier (the caller has already verified
-   * that we are processing the correct unit).
-   */
-
-  if (g_token != tIDENT) error(eIDENT);
-
-  /* Set a UNIT indication in the output poff file header */
-
-  poffSetFileType(g_poffHandle, FHT_UNIT, 0, g_tokenString);
-  poffSetArchitecture(g_poffHandle, FHA_PCODE);
-
-  /* Discard the unit name and get the next token */
-
-  g_stringSP = saveTknStart;
-  getToken();
-
-  /* Skip over the semicolon separating the unit-heading from the
-   * interface-section.
-   */
-
-  if (g_token != ';') error(eSEMICOLON);
-  else getToken();
-
-  /* Verify that the interface-section is present
-   * FORM: interface-section =
-   *       'interface' [ uses-section ] interface-declaration
-   */
-
-  pas_InterfaceSection();
-
-  /* Check for the presence of an implementation section */
-
-  if (g_token == tIMPLEMENTATION)
-    {
-      /* Verify that the implementation section is present
-       * FORM: implementation-section =
-       *       'implementation' [ uses-section ] declaration-group
-       */
-
-      /* Skip over the implementation key word */
-
-      FP->section = eIsImplementationSection;
-      getToken();
-
-      /* Check for the presence of an optional uses-section */
-
-      if (g_token == tUSES)
-        {
-          /* Process the uses-section */
-
-          getToken();
-          pas_UsesSection();
-        }
-
-      /* Now, process the declaration-group */
-
-      pas_DeclarationGroup(0);
-    }
-
-  /* Check for the presence of an initialization section
-   *
-   *   FORM: init-section = 'initialization' statement-sequence
-   *
-   * Or the Turbo Pascal form:
-   *
-   *   FORM: init-section = 'begin' statement-sequence
-   *
-   * No finalization section is supported in the Turbo Pascal form.
-   * The BEGIN will not be terminated with 'END;' if a FINALIZATION
-   * section is present.
-   */
-
-  if (g_token == tINITIALIZATION || g_token == tBEGIN)
-    {
-      FP->section = eIsInitializationSection;
-
-      /* Process statements until END or FINALIZATION encountered. */
-
-      do
-         {
-           getToken();
-           pas_Statement();
-         }
-      while (g_token == ';');
-    }
-
-  /* Check for the presence of an finalization section
-   *
-   * FORM: finalization-section = 'finalization' statement-sequence
-   */
-
-  if (g_token == tFINALIZATION)
-    {
-      FP->section = eIsInitializationSection;
-      getToken();
-
-      /* REVISIT:  Finalization section is not implemented */
-
-      error(eNOTYET);
-    }
-
-  /* And this shoud all be terminated with END and a period */
-
-  if (g_token != tEND) error(eEND);
-  else getToken();
-
-  FP->section = eIsOtherSection;
-
-  /* Verify that the unit file ends with a period */
-
-  if (g_token != '.') error(ePERIOD);
-}
-
-/***********************************************************************/
-/* This logic is called from usersSection after any a uses-section is
- * encountered in any file at any level.  In this case, we are only
- * going to parse the interface section from the unit file.
- */
-
-void pas_UnitInterface(void)
-{
-  int32_t savedDStack  = g_dStack;
-  TRACE(g_lstFile, "[pas_UnitInterface]");
-
-  /* FORM: unit =
-   *       unit-heading ';' interface-section implementation-section
-   *       init-section
-   * FORM: unit-heading = 'unit' identifer
-   *
-   * On entry, the 'unit' keyword has already been parsed.  The
-   * current token should point to the identifier following unit.
-   */
-
-  /* Skip over the unit identifier (the caller has already verified
-   * that we are processing the correct unit).
-   */
-
-  if (g_token != tIDENT) error(eIDENT);
-  else getToken();
-
-  /* Skip over the semicolon separating the unit-heading from the
-   * interface-section.
-   */
-
-  if (g_token != ';') error(eSEMICOLON);
-  else getToken();
-
-  /* Process the interface-section
-   * FORM: interface-section =
-   *       'interface' [ uses-section ] interface-declaration
-   */
-
-  pas_InterfaceSection();
-
-  /* Verify that the implementation section is present
-   * FORM: implementation-section =
-   *       'implementation' [ uses-section ] declaration-group
-   */
-
-  if (g_token != tIMPLEMENTATION) error(eIMPLEMENTATION);
-
-  /* Then just ignore the rest of the file.  We'll let the compilation
-   * of the unit file check the correctness of the implementation.
-   */
-
-  FP->section = eIsOtherSection;
-
-  /* If we are generating a program binary, then all variables declared
-   * by this logic a bonafide.  But if are generating UNIT binary, then
-   * all variables declared as imported with a relative stack offset.
-   * In this case, we must release any data stack allocated in this
-   * process.
-   */
-
-  g_dStack = savedDStack;
-}
 
 /***********************************************************************
  * Private Functions
@@ -639,4 +431,205 @@ static void pas_ExportedFunctionHeading(void)
   /* Restore the original level */
 
   g_level--;
+}
+
+/***********************************************************************
+ * Public Functions
+ ***********************************************************************/
+/* This function is called only main() when the first token parsed out
+ * the specified file is 'unit'.  In this case, we are parsing a unit file
+ * and generating a unit binary.
+ */
+
+void pas_UnitImplementation(void)
+{
+  char   *saveTknStart = g_tokenString;
+
+  TRACE(g_lstFile, "[pas_UnitImplementation]");
+
+  /* FORM: unit =
+   *       unit-heading ';' interface-section implementation-section
+   *       init-section '.'
+   * FORM: unit-heading = 'unit' identifer
+   * FORM: interface-section =
+   *       'interface' [ uses-section ] interface-declaration
+   * FORM: implementation-section =
+   *       'implementation' [ uses-section ] declaration-group
+   * FORM: init-section =
+   *       'initialization statement-sequence
+   *       ['finalization' statement-sequence] 'end' |
+   *       compound-statement | 'end'
+   *
+   * On entry, the 'unit' keyword has already been parsed.  The
+   * current token should point to the identifier following unit.
+   */
+
+  /* Skip over the unit identifier (the caller has already verified
+   * that we are processing the correct unit).
+   */
+
+  if (g_token != tIDENT) error(eIDENT);
+
+  /* Set a UNIT indication in the output poff file header */
+
+  poffSetFileType(g_poffHandle, FHT_UNIT, 0, g_tokenString);
+  poffSetArchitecture(g_poffHandle, FHA_PCODE);
+
+  /* Discard the unit name and get the next token */
+
+  g_stringSP = saveTknStart;
+  getToken();
+
+  /* Skip over the semicolon separating the unit-heading from the
+   * interface-section.
+   */
+
+  if (g_token != ';') error(eSEMICOLON);
+  else getToken();
+
+  /* Verify that the interface-section is present
+   * FORM: interface-section =
+   *       'interface' [ uses-section ] interface-declaration
+   */
+
+  pas_InterfaceSection();
+
+  /* Check for the presence of an implementation section */
+
+  if (g_token == tIMPLEMENTATION)
+    {
+      /* Verify that the implementation section is present
+       * FORM: implementation-section =
+       *       'implementation' [ uses-section ] declaration-group
+       */
+
+      /* Skip over the implementation key word */
+
+      FP->section = eIsImplementationSection;
+      getToken();
+
+      /* Check for the presence of an optional uses-section */
+
+      if (g_token == tUSES)
+        {
+          /* Process the uses-section */
+
+          getToken();
+          pas_UsesSection();
+        }
+
+      /* Now, process the declaration-group */
+
+      pas_DeclarationGroup(0);
+    }
+
+  /* Check for the presence of an initialization section
+   *
+   *   FORM: init-section = 'initialization' statement-sequence
+   *
+   * Or the Turbo Pascal form:
+   *
+   *   FORM: init-section = 'begin' statement-sequence
+   *
+   * No finalization section is supported in the Turbo Pascal form.
+   * The BEGIN will not be terminated with 'END;' if a FINALIZATION
+   * section is present.
+   */
+
+  if (g_token == tINITIALIZATION || g_token == tBEGIN)
+    {
+      FP->section = eIsInitializationSection;
+
+      /* Process statements until END or FINALIZATION encountered. */
+
+      do
+         {
+           getToken();
+           pas_Statement();
+         }
+      while (g_token == ';');
+    }
+
+  /* Check for the presence of an finalization section
+   *
+   * FORM: finalization-section = 'finalization' statement-sequence
+   */
+
+  if (g_token == tFINALIZATION)
+    {
+      FP->section = eIsInitializationSection;
+      getToken();
+
+      /* REVISIT:  Finalization section is not implemented */
+
+      error(eNOTYET);
+    }
+
+  /* And this shoud all be terminated with END and a period */
+
+  if (g_token != tEND) error(eEND);
+  else getToken();
+
+  FP->section = eIsOtherSection;
+
+  /* Verify that the unit file ends with a period */
+
+  if (g_token != '.') error(ePERIOD);
+}
+
+/***********************************************************************/
+/* This logic is called from pas_UsesSection after any uses-section is
+ * encountered in any file at any level.
+ *
+ * Since we are generating a program binary, then all variables declared
+ * by this logic a bonafide.  But if were generating UNIT binary, then
+ * all variables declared as imported with a relative stack offset.
+ * In this case, we must release any data stack allocated in this
+ * process.
+ */
+
+void pas_UnitInterface(void)
+{
+  /* FORM: unit =
+   *       unit-heading ';' interface-section implementation-section
+   *       init-section
+   * FORM: unit-heading = 'unit' identifer
+   *
+   * On entry, the 'unit' keyword has already been parsed.  The
+   * current token should point to the identifier following unit.
+   */
+
+  /* Skip over the unit identifier (the caller has already verified
+   * that we are processing the correct unit).
+   */
+
+  if (g_token != tIDENT) error(eIDENT);
+  else getToken();
+
+  /* Skip over the semicolon separating the unit-heading from the
+   * interface-section.
+   */
+
+  if (g_token != ';') error(eSEMICOLON);
+  else getToken();
+
+  /* Process the interface-section
+   * FORM: interface-section =
+   *       'interface' [ uses-section ] interface-declaration
+   */
+
+  pas_InterfaceSection();
+
+  /* Verify that the implementation section is present
+   * FORM: implementation-section =
+   *       'implementation' [ uses-section ] declaration-group
+   */
+
+  if (g_token != tIMPLEMENTATION) error(eIMPLEMENTATION);
+
+  /* Then just ignore the rest of the file.  We'll let the compilation
+   * of the unit file check the correctness of the implementation.
+   */
+
+  FP->section = eIsOtherSection;
 }
