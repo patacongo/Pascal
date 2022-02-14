@@ -225,28 +225,32 @@
 
 /* File I/O */
 
-#define txEOF            0x88
-#define txASSIGNFILE     0x89
-#define txRESET          0x8a
-#define txREWRITE        0x8b
-#define txAPPEND         0x8c
-#define txCLOSEFILE      0x8d
-#define txREAD           0x8e
-#define txREADLN         0x8f
-
-#define txWRITE          0x90
-#define txWRITELN        0x91
+#define txAPPEND         0x89
+#define txASSIGNFILE     0x8a
+#define txCLOSEFILE      0x8b
+#define txFILEPOS        0x8c
+#define txFILESIZE       0x8d
+#define txEOF            0x8e
+#define txREAD           0x8f
+#define txREADLN         0x90
+#define txRESET          0x91
+#define txREWRITE        0x92
+#define txSEEK           0x93
+#define txSEEKEOF        0x94
+#define txSEEKEOLN       0x95
+#define txWRITE          0x96
+#define txWRITELN        0x97
 
 /* SET operators */
 
-#define txINCLUDE        0x92
-#define txEXCLUDE        0x93
-#define txCARD           0x94
+#define txINCLUDE        0x98
+#define txEXCLUDE        0x99
+#define txCARD           0x9a
 
 /* Built-in, compile-time operations */
 
-#define txSIZEOF         0x95
-#define txLENGTH         0x96
+#define txSIZEOF         0x9b
+#define txLENGTH         0x9c
 
 /* "Less than standard" Procedures 0xc0-0xff */
 

@@ -1,26 +1,26 @@
-program exAppendfile;
-var
-   myfile: text;
-   info: string;
+PROGRAM AppendFile;
+VAR
+  myfile: TEXT;
+  info: STRING;
 
-begin
-   assign(myfile, 'contact.txt');
-   append(myfile);
-   
-   writeln(myfile, 'Contact Details');
-   writeln(myfile, 'webmaster@tutorialspoint.com');
-   close(myfile);
-   
-   (* let us read from this file *)
+BEGIN
+  ASSIGN(myfile, 'contact.txt');
+  APPEND(myfile);
 
-   assign(myfile, 'contact.txt');
-   reset(myfile);
+  WRITELN(myfile, 'Contact Details');
+  WRITELN(myfile, 'webmaster@tutorialspoint.com');
+  CLOSE(myfile);
 
-   while not eof(myfile) do
-   begin
-      readln(myfile, info);
-      writeln(info);
-   end;
+  (* let us read from this file *)
 
-   close(myfile);
-end.
+  ASSIGN(myfile, 'contact.txt');
+  RESET(myfile);
+
+  WHILE NOT EOF(myfile) DO
+  BEGIN
+    READLN(myfile, info);
+    WRITELN(info);
+  END;
+
+  CLOSE(myfile);
+END.

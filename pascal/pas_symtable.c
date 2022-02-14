@@ -91,12 +91,12 @@ unsigned int g_nConst        = 0;     /* Number constant table entries */
  ****************************************************************************/
 
 /* NOTES in the following:
- * (1) Standard Pascal reserved word
- * (2) Standard Pascal Function
- * (3) Standard Pascal Procedure
- * (4) Extended (or non-standard) Pascal reserved word
- * (5) Extended (or non-standard) Pascal function
- * (6) Extended (or non-standard) Pascal procedure
+ * (1) Standard or extended Pascal reserved word
+ * (2) Standard or extended Pascal function
+ * (3) Standard or extended Pascal procedure
+ * (4) Extended Pascal reserved word
+ * (5) Non-standard Pascal function
+ * (6) Non-standard Pascal procedure
  * (7) Built-In Function
  */
 
@@ -128,6 +128,8 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"EXIT",           tSTDPROC,        txEXIT},       /* (3) */
   {"EXP",            tSTDFUNC,        txEXP},        /* (2) */
   {"FILE",           tFILE,           txNONE},       /* (1) */
+  {"FILEPOS",        tSTDFUNC,        txFILEPOS},    /* (2) */
+  {"FILESIZE",       tSTDFUNC,        txFILESIZE},   /* (2) */
   {"FINALIZATION",   tFINALIZATION,   txNONE},       /* (4) */
   {"FOR",            tFOR,            txNONE},       /* (1) */
   {"FUNCTION",       tFUNCTION,       txNONE},       /* (1) */
@@ -136,11 +138,11 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"GOTO",           tGOTO,           txNONE},       /* (1) */
   {"HALT",           tSTDPROC,        txHALT},       /* (3) */
   {"IF",             tIF,             txNONE},       /* (1) */
-  {"IMPLEMENTATION", tIMPLEMENTATION, txNONE},       /* (4) */
+  {"IMPLEMENTATION", tIMPLEMENTATION, txNONE},       /* (1) */
   {"IN",             tIN,             txNONE},       /* (1) */
   {"INCLUDE",        tSTDFUNC,        txINCLUDE},    /* (2) */
-  {"INITIALIZATION", tINITIALIZATION, txNONE},       /* (4) */
-  {"INTERFACE",      tINTERFACE,      txNONE},       /* (4) */
+  {"INITIALIZATION", tINITIALIZATION, txNONE},       /* (1) */
+  {"INTERFACE",      tINTERFACE,      txNONE},       /* (1) */
   {"LABEL",          tLABEL,          txNONE},       /* (1) */
   {"LENGTH",         tBUILTIN,        txLENGTH},     /* (7) */
   {"LN",             tSTDFUNC,        txLN},         /* (2) */
@@ -165,6 +167,9 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"RESET",          tSTDPROC,        txRESET},      /* (3) */
   {"REWRITE",        tSTDPROC,        txREWRITE},    /* (3) */
   {"ROUND",          tSTDFUNC,        txROUND},      /* (2) */
+  {"SEEK",           tSTDPROC,        txSEEK},       /* (3) */
+  {"SEEKEOF",        tSTDFUNC,        txSEEKEOF},    /* (2) */
+  {"SEEKEOLN",       tSTDFUNC,        txSEEKEOLN},   /* (2) */
   {"SET",            tSET,            txNONE},       /* (1) */
   {"SHL",            tSHL,            txNONE},       /* (4) */
   {"SHR",            tSHR,            txNONE},       /* (4) */
@@ -177,10 +182,10 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"TO",             tTO,             txNONE},       /* (1) */
   {"TRUNC",          tSTDFUNC,        txTRUNC},      /* (2) */
   {"TYPE",           tTYPE,           txNONE},       /* (1) */
-  {"UNIT",           tUNIT,           txNONE},       /* (4) */
+  {"UNIT",           tUNIT,           txNONE},       /* (1) */
   {"UNPACK",         tSTDPROC,        txUNPACK},     /* (3) */
   {"UNTIL",          tUNTIL,          txNONE},       /* (1) */
-  {"USES",           tUSES,           txNONE},       /* (4) */
+  {"USES",           tUSES,           txNONE},       /* (1) */
   {"VAL",            tSTDPROC,        txVAL},        /* (6) */
   {"VAR",            tVAR,            txNONE},       /* (1) */
   {"WHILE",          tWHILE,          txNONE},       /* (1) */
@@ -193,14 +198,16 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
 
 static symbol_t *g_symbolTable;                      /* Symbol Table */
 
-/* The g_aliasTable[] allows support for different versions of
- * pascal source files that differ only in naming.
+/* The g_aliasTable[] allows support for different versions of pascal source
+ * files that differ only in naming.  This mapping also supports substituions
+ * in the case where features or types are not supported by the compiler.
  */
 
 static const symbolAlias_t g_aliasTable[] =
 {
   {"ASSIGN",   "ASSIGNFILE"},
   {"CLOSE",    "CLOSEFILE"},
+  {"INT64",    "LONGINTEGER"},
   {"LONGINT",  "LONGINTEGER"},
   {"SHORTINT", "SHORTINTEGER"},
   {"TEXT",     "TEXTFILE"},

@@ -52,6 +52,7 @@
 #include "pas_errcodes.h"
 #include "pas_error.h"
 
+#include "plongops.h"
 #include "psysio.h"
 
 /****************************************************************************
@@ -71,7 +72,6 @@ struct pexecFileTable_s
   bool text;
   bool eoln;
   uint16_t recordSize;
-  int16_t eof;
   FILE *stream;
   openMode_t openMode;
 };
@@ -126,8 +126,15 @@ static int      pexec_WriteReal(uint16_t fileNumber, double value,
                                 uint16_t fieldWidth);
 static int      pexec_WriteString(uint16_t fileNumber, const char *string,
                                   uint16_t size, uint16_t fieldWidth);
+static int      pexec_GetFileSize(FILE *stream, off_t *fileSize);
 static int      pexec_Eof(struct pexec_s *st, uint16_t fileNumber);
 static int      pexec_Eoln(struct pexec_s *st, uint16_t fileNumber);
+static int      pexec_FilePos(struct pexec_s *st, uint16_t fileNumber);
+static int      pexec_FileSize(struct pexec_s *st, uint16_t fileNumber);
+static int      pexec_Seek(struct pexec_s *st, uint16_t fileNumber,
+                           uint32_t filePos);
+static int      pexec_SeekEof(struct pexec_s *st, uint16_t fileNumber);
+static int      pexec_SeekEoln(struct pexec_s *st, uint16_t fileNumber);
 
 /****************************************************************************
  * Private Data
@@ -858,25 +865,93 @@ static int pexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
   return errorCode;
 }
 
+static int pexec_GetFileSize(FILE *stream, off_t *fileSize)
+{
+  int errorCode = eNOERROR;
+  off_t oldPos = 0;
+  off_t endPos;
+  int ret;
+
+  /* Get the current file position */
+
+  oldPos = ftell(stream);
+  if (oldPos < 0)
+    {
+      errorCode = eFTELLFAILED;
+    }
+  else
+    {
+      /* Seek to the end of the file */
+
+      ret = fseek(stream, 0, SEEK_END);
+      if (ret < 0)
+        {
+          errorCode = eFSEEKFAILED;
+        }
+      else
+        {
+          endPos = ftell(stream);
+          if (endPos < 0)
+            {
+              errorCode = eFTELLFAILED;
+            }
+
+          /* Restore the original position */
+
+          ret = fseek(stream, oldPos, SEEK_SET);
+          if (ret < 0)
+            {
+              errorCode = eFSEEKFAILED;
+            }
+        }
+    }
+
+  *fileSize = endPos;
+  return errorCode;
+}
+
 static int pexec_Eof(struct pexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
-  uint16_t eof;
+  uint16_t eof = PASCAL_FALSE;
 
   if (fileNumber >= MAX_OPEN_FILES)
     {
       errorCode = eBADFILE;
       eof       = PASCAL_TRUE;
     }
+  else if (g_fileTable[fileNumber].stream == NULL)
+    {
+      errorCode = eFILENOTOPEN;
+      eof       = PASCAL_TRUE;
+    }
+  else if (feof(g_fileTable[fileNumber].stream))
+    {
+      eof = PASCAL_TRUE;
+    }
   else
     {
-      if (feof(g_fileTable[fileNumber].stream))
+      off_t fileSize;
+      off_t filePos;
+
+      /* The C feof() function does not return true until we actually attempt
+       * to read past the end-of-file.  We need to check if we are at the end
+       * of file even if feof() returns false.
+       */
+
+      filePos = ftell(g_fileTable[fileNumber].stream);
+      if (filePos < 0)
         {
-          eof = PASCAL_TRUE;
+          errorCode = eFTELLFAILED;
+          eof       = PASCAL_TRUE;
         }
       else
         {
-          eof = PASCAL_FALSE;
+          errorCode = pexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
+          if (errorCode != eNOERROR || filePos >= fileSize)
+            {
+              eof = PASCAL_TRUE;
+            }
         }
     }
 
@@ -901,6 +976,208 @@ static int pexec_Eoln(struct pexec_s *st, uint16_t fileNumber)
     }
 
   PUSH(st, eoln);
+  return errorCode;
+}
+
+/* Return the current position in the file */
+
+static int pexec_FilePos(struct pexec_s *st, uint16_t fileNumber)
+{
+  int errorCode = eNOERROR;
+
+  /* FORM: function FilePos(var f : file ): Int64;
+   *
+   * Entry:
+   *   TOS(0)   - fileNumber
+   */
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream == NULL)
+    {
+      errorCode = eFILENOTOPEN;
+    }
+  else
+    {
+      off_t pos = ftell(g_fileTable[fileNumber].stream);
+      if (pos < 0)
+        {
+          errorCode = eFTELLFAILED;
+        }
+
+      /* REVISIT:  Int64 not yet implemented; substituting LongInteger. */
+
+       pexec_UPush32(st, (uint32_t)pos);
+    }
+
+  return errorCode;
+}
+
+/* Return the file size */
+
+static int pexec_FileSize(struct pexec_s *st, uint16_t fileNumber)
+{
+  int errorCode = eNOERROR;
+
+  /* FORM: function FileSize(var f : file ): Int64;
+   *
+   * Entry:
+   *   TOS(0)   - fileNumber
+   */
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream == NULL)
+    {
+      errorCode = eFILENOTOPEN;
+    }
+  else
+    {
+      off_t fileSize;
+
+      errorCode = pexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
+
+      /* REVISIT:  Int64 not yet implemented; substituting LongInteger. */
+
+      pexec_UPush32(st, (uint32_t)fileSize);
+    }
+
+  return errorCode;
+}
+
+/* Seek to a position in the file */
+
+static int pexec_Seek(struct pexec_s *st, uint16_t fileNumber, uint32_t filePos)
+{
+  int errorCode = eNOERROR;
+
+  /* FORM: procedure Seek(var f : file; Pos : Int64);
+   *
+   * Entry:
+   *   TOS(0)   - fileNumber
+   *   TOS(1-3) - filePos
+   *
+   * REVISIT:  Int64 not yet implemented; substituting LongInteger.
+   */
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream == NULL)
+    {
+      errorCode = eFILENOTOPEN;
+    }
+  else
+    {
+      int ret = fseek(g_fileTable[fileNumber].stream, filePos, SEEK_SET);
+      if (ret < 0)
+        {
+          errorCode = eFSEEKFAILED;
+        }
+    }
+
+  return errorCode;
+}
+
+/* Set file position to end of file */
+
+static int pexec_SeekEof(struct pexec_s *st, uint16_t fileNumber)
+{
+  int errorCode = eNOERROR;
+  uint16_t result = PASCAL_FALSE;
+
+  /* FORM: function SeekEOF(var t : TextFile) : Boolean;
+   *       function SeekEOF : Boolean;
+   */
+
+  /* Entry:
+   *   TOS(0) - fileNumber
+   * On Return:
+   *   TOS(0) - True:  EOF found
+   *            False: Non-white space character found before EOF.
+   */
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream == NULL)
+    {
+      errorCode = eFILENOTOPEN;
+    }
+  else
+    {
+      for (; ; )
+        {
+          int ch = fgetc(g_fileTable[fileNumber].stream);
+          if (ch == EOF)
+            {
+              result = PASCAL_TRUE;
+              break;
+            }
+          else if (!isspace(ch))
+            {
+              result = PASCAL_FALSE;
+              break;
+            }
+        }
+    }
+
+  PUSH(st, result);
+  return errorCode;
+}
+
+/* Set file position to end of line */
+
+static int pexec_SeekEoln(struct pexec_s *st, uint16_t fileNumber)
+{
+  int errorCode = eNOERROR;
+  uint16_t result = PASCAL_FALSE;
+
+
+  /* FORM: function SeekEOLn(var t : TextFile) : Boolean;
+   *       function SeekEOLn : Boolean;
+   */
+
+  /* Entry:
+   *   TOS(0) - fileNumber
+   * On Return:
+   *   TOS(0) - True:  EOLN found
+   *            False: Non-white space character found before EOLN.
+   */
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream == NULL)
+    {
+      errorCode = eFILENOTOPEN;
+    }
+  else
+    {
+      for (; ; )
+        {
+          int ch = fgetc(g_fileTable[fileNumber].stream);
+          if (ch == '\n')
+            {
+              result = PASCAL_TRUE;
+              break;
+            }
+          else if (!isspace(ch))
+            {
+              result = PASCAL_FALSE;
+              break;
+            }
+        }
+    }
+
+  PUSH(st, result);
   return errorCode;
 }
 
@@ -974,25 +1251,69 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
        PUSH(st, fileNumber);
        break;
 
-    /* FREEFILE: TOS = File number */
+    /* FREEFILE: TOS(0) = File number */
 
     case xFREEFILE :
        POP(st, fileNumber); /* File number */
        errorCode = pexec_FreeFile(fileNumber);
        break;
 
-    /* EOF: TOS = File number */
+    /* EOF: TOS(0) = File number */
 
     case xEOF :
       POP(st, fileNumber); /* File number */
       errorCode = pexec_Eof(st, fileNumber);
       break;
 
-    /* EOLN: TOS = File number */
+    /* EOLN: TOS(0) = File number */
 
     case xEOLN :
       POP(st, fileNumber); /* File number */
       errorCode = pexec_Eoln(st, fileNumber);
+      break;
+
+    /* FILEPOS: TOS(0) = File number. */
+
+    case xFILEPOS :
+      POP(st, fileNumber); /* File number */
+      errorCode = pexec_FilePos(st, fileNumber);
+      break;
+
+    /* FILESIZE: TOS(0) = File number */
+
+    case xFILESIZE :
+      POP(st, fileNumber); /* File number */
+      errorCode = pexec_FileSize(st, fileNumber);
+      break;
+
+    /* SEEK: TOS(0) = File number
+     *       TOS(2-3) = Int64 file position
+     *
+     * REVISIT:  Int64 not yet implemented; substituting LongInteger.
+     */
+
+    case xSEEK :
+      {
+        uint32_t filePos;
+
+        POP(st, fileNumber); /* File number */
+        filePos = pexec_UPop32(st);
+        errorCode = pexec_Seek(st, fileNumber, filePos);
+      }
+      break;
+
+    /* SEEKEOF: TOS(0) = File number */
+
+    case xSEEKEOF :
+      POP(st, fileNumber); /* File number */
+      errorCode = pexec_SeekEof(st, fileNumber);
+      break;
+
+    /* SEEKEOLN: TOS(0) = File number */
+
+    case xSEEKEOLN :
+      POP(st, fileNumber); /* File number */
+      errorCode = pexec_SeekEoln(st, fileNumber);
       break;
 
     /* ASSIGNFILE: TOS(0) = File name pointer
@@ -1010,7 +1331,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
                                    size);
       break;
 
-    /* RESET: TOS = File number */
+    /* RESET: TOS(0) = File number */
 
     case xRESET :
       POP(st, fileNumber);  /* File number from stack */
@@ -1028,7 +1349,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       errorCode = pexec_RecordSize(fileNumber, size);
       break;
 
-    /* REWRITE: TOS = File number */
+    /* REWRITE: TOS(0) = File number */
 
     case xREWRITE :
       POP(st, fileNumber);  /* File number from stack */
@@ -1046,21 +1367,21 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       errorCode = pexec_RecordSize(fileNumber, size);
       break;
 
-    /* APPEND: TOS = File number */
+    /* APPEND: TOS(0) = File number */
 
     case xAPPEND :
       POP(st, fileNumber);  /* File number from stack */
       errorCode = pexec_OpenFile(fileNumber, eOPEN_APPEND);
       break;
 
-    /* CLOSEFILE: TOS = File number */
+    /* CLOSEFILE: TOS(0) = File number */
 
     case xCLOSEFILE :
       POP(st, fileNumber);  /* File number from stack */
       errorCode = pexec_CloseFile(fileNumber);
       break;
 
-    /* READLN: TOS = File number */
+    /* READLN: TOS(0) = File number */
 
     case xREADLN :
       /* REVISIT:  Not implemented */
@@ -1149,14 +1470,14 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
                                  (uint16_t *)&st->dstack.b[address]);
       break;
 
-    /* WRITELN: TOS = File number */
+    /* WRITELN: TOS(0) = File number */
 
     case xWRITELN :
       POP(st, fileNumber);  /* File number from stack */
       errorCode = pexec_WriteChar(fileNumber, '\n', 0);
       break;
 
-    /* WRITE_PAGE: TOS = File number */
+    /* WRITE_PAGE: TOS(0) = File number */
 
     case xWRITE_PAGE :
       POP(st, fileNumber);  /* File number from stack */

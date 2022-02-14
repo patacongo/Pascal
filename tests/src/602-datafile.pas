@@ -18,12 +18,9 @@ BEGIN
    WHILE NOT EOF(f) DO
    BEGIN
       READ(f, Student);
-      IF NOT EOF(f) THEN
-      BEGIN
-         WRITELN('Name: ', Student.s_name);
-         WRITELN('Address: ', Student.s_addr);
-         WRITELN('Batch Code: ', Student.s_batchcode);
-      END
+      WRITELN('Name: ', Student.s_name);
+      WRITELN('Address: ', Student.s_addr);
+      WRITELN('Batch Code: ', Student.s_batchcode);
    END;
 
    CLOSE(f);

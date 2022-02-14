@@ -68,16 +68,17 @@
 
 /* Standard Pascal Functions */
 
-static exprType_t pas_AbsFunc(void);     /* Integer absolute value */
-static exprType_t pas_AddrFunc(void);    /* Address of variable, proc, func */
+static exprType_t pas_AbsFunc(void);      /* Integer absolute value */
+static exprType_t pas_AddrFunc(void);     /* Address of variable, proc, func */
 static exprType_t pas_PredFunc(void);
-static void       pas_OrdFunc(void);     /* Convert scalar to integer */
+static void       pas_OrdFunc(void);      /* Convert scalar to integer */
 static exprType_t pas_SqrFunc(void);
 static void       pas_RealFunc(uint8_t fpCode);
 static exprType_t pas_SuccFunc(void);
 static void       pas_OddFunc(void);
 static void       pas_ChrFunc(void);
-static void       pas_FileFunc(uint16_t opcode);
+static void       pas_FileFunc(uint16_t opCode);
+static void       pas_FilePosFunc(uint16_t opCode);
 static void       pas_SetFunc(uint16_t setOpcode);
 static void       pas_CardFunc(void);
 
@@ -85,7 +86,7 @@ static void       pas_CardFunc(void);
 
 /* Non-standard C-library interface functions */
 
-static exprType_t pas_GetEnvFunc (void); /* Get environment string value */
+static exprType_t pas_GetEnvFunc (void);  /* Get environment string value */
 
 /****************************************************************************
  * Private Functions
@@ -338,11 +339,19 @@ static void pas_ChrFunc(void)
 /****************************************************************************/
 /* EOF/EOLN function */
 
-static void pas_FileFunc(uint16_t opcode)
+static void pas_FileFunc(uint16_t opCode)
 {
   TRACE(g_lstFile,"[pas_FileFunc]");
 
-  /* FORM: EOF|EOLN {({<file number>})}
+  /* FORM: function Eof(var t : TextFile) : Boolean;
+   *       function Eof : Boolean;
+   * FORM: function Eoln(var t : TextFile) : Boolean;
+   *       function Eoln(var t : File of <type>) : Boolean;
+   *       function Eoln : Boolean;
+   * FORM: function SeekEOF(var t : TextFile) : Boolean;
+   *       function SeekEOF : Boolean;
+   * FORM: function SeekEOLn(var t : TextFile) : Boolean;
+   *       function SeekEOLn : Boolean;
    *
    * The optional <file number> parameter is a reference to a file variable.
    * If the optional parameter is supplied then the eof function tests the
@@ -362,7 +371,7 @@ static void pas_FileFunc(uint16_t opcode)
       /* FORM: EOF|EOLN ({<file number>}) */
       /* Generate the file operation */
 
-      pas_GenerateIoOperation(opcode);
+      pas_GenerateIoOperation(opCode);
       pas_CheckRParen();
     }
   else
@@ -372,8 +381,46 @@ static void pas_FileFunc(uint16_t opcode)
        */
 
       pas_GenerateStackReference(opLDS, g_inputFile);
-      pas_GenerateIoOperation(opcode);
+      pas_GenerateIoOperation(opCode);
     }
+}
+
+/****************************************************************************/
+/* Get position in file */
+
+static void pas_FilePosFunc(uint16_t opCode)
+{
+  uint32_t fileType;
+
+  /* FORM: function FileSize(var f : file) : Int64;
+   * FORM: function FilePos(var f : file) : Int64;
+   *
+   * If the parameter 'f' is not optional.
+   */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Push the file number argument on the stack */
+
+  getToken();
+  fileType = pas_GenerateFileNumber(NULL, NULL);
+  if (fileType == sFILE)
+    {
+      /* These should not be used with TEXTFILE types */
+
+      if (fileType == sTEXTFILE) warn(eINVFILE);
+      else error(eINVFILE);
+    }
+
+  /* Then generate the I/O operation */
+
+  pas_GenerateIoOperation(opCode);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
 }
 
 /****************************************************************************/
@@ -592,6 +639,26 @@ exprType_t pas_StandardFunction(void)
         case txEOLN :
           pas_FileFunc(xEOLN);
           funcType = exprBoolean;
+          break;
+
+        case txSEEKEOF :
+          pas_FileFunc(xSEEKEOF);
+          funcType = exprBoolean;
+          break;
+
+        case txSEEKEOLN :
+          pas_FileFunc(xSEEKEOLN);
+          funcType = exprBoolean;
+          break;
+
+        case txFILEPOS :
+          pas_FilePosFunc(xFILEPOS);
+          funcType = exprInt64;
+          break;
+
+        case txFILESIZE :
+          pas_FilePosFunc(xFILESIZE);
+          funcType = exprInt64;
           break;
 
           /* Functions returning REAL with REAL/INTEGER arguments */

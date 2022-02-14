@@ -106,6 +106,7 @@ static void     pas_ReadBinary(uint16_t fileSize);  /* READ binary file */
 static void     pas_OpenFileProc(uint16_t opcode1,  /* Open file */
                   uint16_t opcode2);
 static void     pas_FileProc(uint16_t opcode);      /* File procedure with 1 arg */
+static void     pas_SeekProc(void);                 /* Change position in file */
 static void     pas_AssignFileProc(void);           /* ASSIGNFILE procedure */
 static void     pas_WriteProc(void);                /* WRITE procedure */
 static void     pas_WritelnProc(void);              /* WRITELN procedure */
@@ -337,18 +338,26 @@ static uint16_t pas_SimplifyFileNumber(symbol_t *varPtr, uint8_t fileFlags,
 static uint16_t pas_DefaultFileNumber(symbol_t *defaultFilePtr,
                                       uint16_t *pFileSize)
 {
-  /* Push the default file number */
-
-  pas_GenerateStackReference(opLDS, defaultFilePtr);
-
-  /* Return the file type and size for a TEXTFILE */
-
-  if (pFileSize != NULL)
+  if (defaultFilePtr != NULL)
     {
-      *pFileSize = defaultFilePtr->sParm.v.vXfrUnit;
-    }
+      /* Push the default file number */
 
-  return defaultFilePtr->sKind;
+      pas_GenerateStackReference(opLDS, defaultFilePtr);
+
+      /* Return the file type and size for a TEXTFILE */
+
+      if (pFileSize != NULL)
+        {
+          *pFileSize = defaultFilePtr->sParm.v.vXfrUnit;
+        }
+
+      return defaultFilePtr->sKind;
+    }
+  else
+    {
+      error(eINVFILETYPE);
+      return sTEXTFILE;
+    }
 }
 
 /***********************************************************************/
@@ -835,8 +844,8 @@ static void pas_FileProc(uint16_t opcode)
 {
   TRACE(g_lstFile, "[pas_FileProc]");
 
-  /* FORM: function-name(<file number>)
-   * FORM: function-name = PAGE | APPEND | CLOSEFILE
+  /* FORM: procedure-name(<file number>)
+   * FORM: procedure-name = PAGE | APPEND | CLOSEFILE
    *
    * On entry, g_token refers to the reserved procedure name.  It may
    * be followed with a argument list.
@@ -868,6 +877,55 @@ static void pas_FileProc(uint16_t opcode)
       /* And generate the opcode */
 
       pas_GenerateIoOperation(opcode);
+    }
+}
+
+/****************************************************************************/
+/* Sets position in a file */
+
+static void pas_SeekProc(void)
+{
+  /* FORM: procedure Seek(var f : file; Pos : Int64);
+   *
+   * On entry, g_token refers to the reserved procedure name.  It may
+   * be followed with a argument list.
+   */
+
+  getToken();
+   if (g_token != '(') error(eLPAREN);
+    {
+      exprType_t exprType;
+
+      /* Get the first expression following the left parenthesis.  This must
+       * always be present, even if the default file is seek-able.
+       */
+
+      /* Push the file-number at the top of the stack */
+
+      getToken();
+      (void)pas_GenerateFileNumber(NULL, NULL);
+
+      /* Verify that the fileNumber is followed with a comma */
+
+      if (g_token != ',') error(eCOMMA);
+      else getToken();
+
+      /* The position argument should be an Int64 value. */
+
+      exprType = pas_Expression(exprInt64, NULL);
+      if (exprType != exprInt64)
+        {
+          error(eINVARG);
+        }
+
+      /* Generate the I/O operation */
+
+      pas_GenerateIoOperation(xSEEK);
+
+      /* Verify the closing right parenthesis */
+
+      if (g_token != ')') error(eRPAREN);
+      else getToken();
     }
 }
 
@@ -1998,6 +2056,10 @@ void pas_StandardProcedure(void)
 
         case txPAGE :
           pas_FileProc(xWRITE_PAGE);
+          break;
+
+        case txSEEK :
+          pas_SeekProc();
           break;
 
            /* Memory alloctor */

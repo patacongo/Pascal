@@ -1,59 +1,57 @@
-program addFiledata;
-const
-   MAX = 4;
-type
-   raindata = file of real;
+PROGRAM addFiledata;
+CONST
+  MAX = 4;
 
-var
-   rainfile: raindata;
-   filename: string;
+TYPE
+  raindata = FILE OF REAL;
 
-procedure writedata(var f: raindata);
+VAR
+  rainfile: raindata;
+  filename: STRING;
 
-var
-   data: real;
-   i: integer;
+PROCEDURE writedata(VAR f: raindata);
 
-begin
-   rewrite(f, sizeof(data));
+VAR
+  data: REAL;
+  i: INTEGER;
 
-   for i := 1 to MAX do
-   begin
-      writeln('Enter rainfall data: ');
-      readln(data);
-      write(f, data);
-   end;
+BEGIN
+  rewrite(f, sizeof(data));
 
-   close(f);
-end;
+  FOR i := 1 TO MAX DO
+  begin
+    WRITELN('Enter rainfall data: ');
+    READLN(data);
+    WRITE(f, data);
+  END;
 
-procedure computeAverage(var x: raindata);
-var
-   d, sum: real;
-   average: real;
+  CLOSE(f);
+END;
 
-begin
-   reset(x);
-   sum:= 0.0;
-
-   while not eof(x) do
-   begin
-      read(x, d);
-      if not eof(x) then
-      begin
-        sum := sum + d;
-      end
-   end;
-
-   average := sum/MAX;
-   close(x);
-   writeln('Average Rainfall: ', average:7:2);
-end;
+PROCEDURE computeAverage(VAR x: raindata);
+VAR
+  d, sum: REAL;
+  average: REAL;
 
 begin
-   writeln('Enter the File Name: ');
-   readln(filename);
-   assign(rainfile, filename);
-   writedata(rainfile);
-   computeAverage(rainfile);
-end.
+  RESET(x);
+  sum :=  0.0;
+
+  WHILE NOT EOF(x) DO
+  BEGIN
+    READ(x, d);
+    sum := sum + d;
+  END;
+
+  average := sum/MAX;
+  CLOSE(x);
+  WRITELN('Average Rainfall: ', average:7:2);
+END;
+
+BEGIN
+  WRITELN('Enter the File Name: ');
+  READLN(filename);
+  ASSIGN(rainfile, filename);
+  WRITEDATA(rainfile);
+  computeAverage(rainfile);
+END.

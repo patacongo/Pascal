@@ -468,17 +468,15 @@ static const struct
 static const char invXOp[] = "Invalid SYSIO";
 static const char *xName[MAX_XOP] =
 { /* SYSIO opcode mnemonics */
-/* 0x00 */ invXOp,      "ALLOCFILE",  "FREEFILE",  "EOF",
-/* 0x04 */ "EOLN",      "ASSIGNFILE", "RESET",     "RESETR",
-/* 0x08 */ "REWRITE",   "REWRITER",   "APPEND",    "CLOSEFILE",
-/* 0x0c */ invXOp,      invXOp,       invXOp,       invXOp,
-/* 0x10 */ "READLN",    "READPG",     "READBIN",    "READINT",
-/* 0x14 */ "READCHR",   "READSTR",    "READRL",     invXOp,
-/* 0x18 */ invXOp,      invXOp,       invXOp,       invXOp,
-/* 0x1c */ invXOp,      invXOp,       invXOp,       invXOp,
-/* 0x20 */ "WRITELN",   "WRITEPG",    "WRITEBIN",   "WRITEINT",
-/* 0x24 */ "WRITEWORD", "WRITELONG",  "WRITEULONG", "WRITECHR",
-/* 0x28 */ "WRITESTR",  "WRITESSTR",  "WRITERL"
+/* 0x00 */ invXOp,      "ALLOCFILE",  "FREEFILE",   "EOF",
+/* 0x04 */ "EOLN",      "FILEPOS",    "FILESIZE",   "SEEK",
+/* 0x08 */ "SEEKEOF",   "SEEKEOLN",   "ASSIGNFILE", "RESET",
+/* 0x0c */ "RESETR",    "REWRITE",    "REWRITER",   "APPEND",
+/* 0x10 */ "CLOSEFILE", "READLN",     "READPG",     "READBIN",
+/* 0x14 */ "READINT",   "READCHR",    "READSTR",    "READSSTR",
+/* 0x18 */ "READRL",    "WRITELN",    "WRITEPG",    "WRITEBIN",
+/* 0x1c */ "WRITEINT",  "WRITEWORD",  "WRITELONG",  "WRITEULONG",
+/* 0x20 */ "WRITECHR",  "WRITESTR",   "WRITESSTR",  "WRITERL"
 };
 
 static const char invSetOp[] = "Invalid SETOP";

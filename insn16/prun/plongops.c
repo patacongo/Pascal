@@ -60,7 +60,7 @@ union uWord_u
 typedef union uWord_u uWord_t;
 
 /****************************************************************************
- * Private Functions
+ * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
@@ -71,7 +71,7 @@ typedef union uWord_u uWord_t;
  *
  ****************************************************************************/
 
-static uint32_t pexec_UPop32(struct pexec_s *st)
+uint32_t pexec_UPop32(struct pexec_s *st)
 {
   uWord_t uWord;
 
@@ -88,7 +88,7 @@ static uint32_t pexec_UPop32(struct pexec_s *st)
  *
  ****************************************************************************/
 
-static void pexec_UPush32(struct pexec_s *st, uint32_t value)
+void pexec_UPush32(struct pexec_s *st, uint32_t value)
 {
   uWord_t uWord;
 
@@ -105,7 +105,7 @@ static void pexec_UPush32(struct pexec_s *st, uint32_t value)
  *
  ****************************************************************************/
 
-static uint32_t pexec_UGetTos32(struct pexec_s *st, int offset32)
+uint32_t pexec_UGetTos32(struct pexec_s *st, int offset32)
 {
   uWord_t uWord;
 
@@ -122,7 +122,7 @@ static uint32_t pexec_UGetTos32(struct pexec_s *st, int offset32)
  *
  ****************************************************************************/
 
-static void pexec_UPutTos32(struct pexec_s *st, uint32_t value, int offset32)
+void pexec_UPutTos32(struct pexec_s *st, uint32_t value, int offset32)
 {
   uWord_t uWord;
 
@@ -130,10 +130,6 @@ static void pexec_UPutTos32(struct pexec_s *st, uint32_t value, int offset32)
   TOS(st, offset32)      = uWord.word[1];
   TOS(st, offset32 + 1)  = uWord.word[0];
 }
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
 
 /****************************************************************************
  * Name: pexec_LongOperation8

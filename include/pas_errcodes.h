@@ -2,7 +2,7 @@
  * pas_errcodes.h
  * Definitions of error codes
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -171,17 +171,32 @@
  * RUN TIME ERRORS
  * ---------------
  * eBADPC               Program Counter is out-of-range
+ * eILLEGALOPCODE       Non-executable instruction found
  * eBADSP               Stack reference is out-of-range
  * eSTRSTKOVERFLOW      String stack overflow
  * eNEWFAILED           new() failed to allocate memory
- * eILLEGALOPCODE       Non-executable instruction found
  * eEXIT                oEND P-Code encountered
  * eBADSYSIOFUNC        Illegal SYSIO sub-function
  * eBADSYSLIBCALL       Illegal runtime library call
  * eBADFPOPCODE         Illegal FLOAT POINT op-code
  * eBADSETOPCODE        Illegal SET operator op-code
  * eINTEGEROVERFLOW     Integer overflow
+ * eVALUERANGE
+ * eNESTINGLEVEL
  * eFAILEDLIBCALL       Runtime library call returned failure
+ * eBADFILE
+ * eFILENOTINUSE
+ * eTOOMANYFILES
+ * eFILENOTOPEN
+ * eFILEALREADYOPEN
+ * eBADOPENMODE
+ * eOPENFAILED
+ * eNOTOPENFORREAD
+ * eREADFAILED
+ * eNOTOPENFORWRITE
+ * eWRITEFAILED
+ * eFSEEKFAILED         fseek() returned an error
+ * eFTELLFAILED         ftell() returned an error
  *
  **********************************************************************/
 
@@ -349,5 +364,7 @@
 #define eREADFAILED      ((uint16_t) 0xb8)
 #define eNOTOPENFORWRITE ((uint16_t) 0xb9)
 #define eWRITEFAILED     ((uint16_t) 0xba)
+#define eFSEEKFAILED     ((uint16_t) 0xbb)
+#define eFTELLFAILED     ((uint16_t) 0xbc)
 
 #endif /* __PAS_ERRCODES_H */

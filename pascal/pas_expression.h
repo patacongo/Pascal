@@ -150,6 +150,15 @@ enum exprType_e
 
 typedef enum exprType_e exprType_t;
 
+/* 64-bit integer types have not yet been implemented.  These definitions
+ * exist as part of the to substitute LongInteger types for the unimplemented
+ * Int64 types (see the alias table pas_symtable.c for the other part of the
+ * kludge.
+ */
+
+#define exprInt64    exprLongInteger
+#define exprInt64Ptr exprLongIntegerPtr
+
 /****************************************************************************
  * Public Datas
  ****************************************************************************/

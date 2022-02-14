@@ -2,7 +2,7 @@
  * pas_block.c
  * Process a Pascal Block
  *
- *   Copyright (C) 2008-2009, 2021-2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without

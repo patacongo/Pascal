@@ -78,7 +78,7 @@
  */
 
 #define NOPCODES_BUFFER 256
-#define MAX_NESTING     8
+#define MAX_NESTING     32
 
 #ifdef CONFIG_POPT_DEBUG
 #  define popt_DebugMessage(fmt, ...)
