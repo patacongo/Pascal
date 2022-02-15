@@ -1730,11 +1730,12 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
           pas_GenerateStackReference(opLDS, varPtr);
         }
 
-      factorFlags  |= (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
-                       FACTOR_VAR_PARM);
+      factorFlags          |= (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
+                               FACTOR_VAR_PARM);
 
-      varPtr->sKind = typePtr->sParm.t.tType;
-      factorType    = pas_SimpleFactor(varInfo, factorFlags);
+      varPtr->sKind         = typePtr->sParm.t.tType;
+      varPtr->sParm.v.vSize = typePtr->sParm.t.tAllocSize;
+      factorType            = pas_SimpleFactor(varInfo, factorFlags);
       break;
 
     case sARRAY :

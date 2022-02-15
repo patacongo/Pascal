@@ -1046,7 +1046,9 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_STORE_INDEXED |
                         ASSIGN_VAR_PARM);
 
-        varPtr->sKind = typePtr->sParm.t.tType;
+        varPtr->sKind         = typePtr->sParm.t.tType;
+        varPtr->sParm.v.vSize = typePtr->sParm.t.tAllocSize;
+
         pas_SimpleAssignment(varPtr, assignFlags);
       }
       break;

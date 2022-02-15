@@ -660,7 +660,7 @@ static void pdbg_printtracearray(struct pexec_s *st)
 
       /* Print the instruction executed at this traced address */
 
-      (void)pdbg_printpcode(st, g_tracearray[ index ].pc, 1);
+      (void)pdbg_printpcode(st, g_tracearray[index].pc, 1);
 
       if (g_nwatchpoints > 0)
         {
