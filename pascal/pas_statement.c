@@ -1015,27 +1015,40 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sVAR_PARM :
-      /* Dereference the VAR parameter and assign a value to the target
-       * address.  If the VAR parameter is an array, derefence first, then
-       * index to store value.
-       */
+      {
+        symbol_t *baseTypePtr;
+        uint16_t  baseType;
 
-      if (assignFlags != 0) error(eVARPARMTYPE);
+        /* Dereference the VAR parameter and assign a value to the target
+         * address.  If the VAR parameter is an array, derefence first, then
+         * index to store value.
+         */
 
-      /* Load the address provided by the VAR parameter now */
+        if (assignFlags != 0) error(eVARPARMTYPE);
 
-      if ((assignFlags & ASSIGN_DEREFERENCE) == 0)
-        {
-          pas_GenerateStackReference(opLDS, varPtr);
-        }
+        /* Load the address provided by the VAR parameter now.  An exception
+         * is for string assignments; they work differently:  The RValue is not
+         * simply stored to the LValue, rather the RValue string is copied to
+         * the LValue string reference through a run-time library call.
+         */
 
-      /* Set up to save the RValue to the VAR parmeter address */
+        baseTypePtr = pas_GetBaseTypePointer(typePtr);
+        baseType    = baseTypePtr->sParm.t.tType;
 
-      assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_STORE_INDEXED |
-                      ASSIGN_VAR_PARM);
+        if ((baseType != sSTRING && baseType != sSHORTSTRING) &&
+            (assignFlags & ASSIGN_DEREFERENCE) == 0)
+          {
+            pas_GenerateStackReference(opLDS, varPtr);
+          }
 
-      varPtr->sKind = typePtr->sParm.t.tType;
-      pas_SimpleAssignment(varPtr, assignFlags);
+        /* Set up to save the RValue to the VAR parmeter address */
+
+        assignFlags |= (ASSIGN_DEREFERENCE | ASSIGN_STORE_INDEXED |
+                        ASSIGN_VAR_PARM);
+
+        varPtr->sKind = typePtr->sParm.t.tType;
+        pas_SimpleAssignment(varPtr, assignFlags);
+      }
       break;
 
     case sARRAY :
