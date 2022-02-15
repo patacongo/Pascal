@@ -42,6 +42,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <getopt.h>
 #include <ctype.h>
 
@@ -63,6 +64,7 @@
 
 #define TRACE_ARRAY_SIZE       16
 #define MAX_BREAK_POINTS        8
+#define MAX_WATCH_POINTS        1
 #define DISPLAY_STACK_SIZE     16
 #define DISPLAY_INST_SIZE      16
 
@@ -80,6 +82,8 @@ enum command_e
   eCMD_GO,
   eCMD_BS,
   eCMD_BC,
+  eCMD_WS,
+  eCMD_WC,
   eCMD_DP,
   eCMD_DT,
   eCMD_DS,
@@ -94,7 +98,9 @@ struct trace_s
   paddr_t  pc;
   paddr_t  sp;
   ustack_t tos;
+  ustack_t wp;
 };
+
 typedef struct trace_s trace_t;
 
 /**********************************************************************
@@ -116,20 +122,19 @@ static void    pdbg_programstatus(struct pexec_s *st);
 static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems);
 static paddr_t pdbg_printstack(struct pexec_s *st, paddr_t sp, int16_t nitems);
 static void    pdbg_printregisters(struct pexec_s *st);
+static void    pdbg_printwatchpoint(struct pexec_s *st);
 static void    pdbg_printtracearray(struct pexec_s *st);
 static void    pdbg_addbreakpoint(paddr_t pc);
 static void    pdbg_deletebreakpoint(int16_t bpno);
 static void    pdbg_printbreakpoints(struct pexec_s *st);
 static void    pdbg_checkbreakpoint(struct pexec_s *st);
+static void    pdbg_addwatchpoint(ustack_t addr);
+static void    pdbg_clearwatchpoint(int16_t wpno);
 static void    pdbg_initdebugger(void);
 static void    pdbg_debugpcode(struct pexec_s *st);
 
 /**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
+ * Private Data
  **********************************************************************/
 
 /* Debugging variables */
@@ -143,10 +148,15 @@ static uint16_t g_ntracepoints;
 static paddr_t  g_breakpoint[MAX_BREAK_POINTS];
                         /* Contains address associated with all active */
                         /* break points. */
+static paddr_t  g_watchpoint[MAX_WATCH_POINTS];
+                        /* Contains address associated with all active */
+                        /* watch points. */
 static paddr_t  g_untilpoint;
                         /* The 'g_untilpoint' is a temporary breakpoint */
 static uint16_t g_nbreakpoints;
-                        /* Number of items in breakPoints[] */
+                        /* Number of items in g_breakPoints[] */
+static uint16_t g_nwatchpoints;
+                        /* Number of items in g_watchpoint[] */
 static paddr_t  g_displayloc;
                         /* P-code display location display */
 static bool     g_bstopexecution;
@@ -177,18 +187,19 @@ void dbg_run(struct pexec_s *st)
       switch (toupper(g_inline[0]))
         {
         case 'R' :
-          switch (toupper(g_inline[1])) {
-          case 'E' :  /* Reset */
-            pdbg_execcommand(st, eCMD_RESET, 0);
-            break;
-          case 'U' :  /* Run */
-            pdbg_execcommand(st, eCMD_RUN, 0);
-            break;
-          default :
-            printf("Unrecognized Command\n");
-            pdbg_execcommand(st, eCMD_HELP, 0);
-            break;
-          }
+          switch (toupper(g_inline[1]))
+            {
+              case 'E' :  /* Reset */
+                pdbg_execcommand(st, eCMD_RESET, 0);
+                break;
+              case 'U' :  /* Run */
+                pdbg_execcommand(st, eCMD_RUN, 0);
+                break;
+              default :
+                printf("Unrecognized Command\n");
+                pdbg_execcommand(st, eCMD_HELP, 0);
+                break;
+            }
           break;
         case 'S' :  /* Single Step (into) */
           pdbg_execcommand(st, eCMD_STEP, 0);
@@ -200,45 +211,67 @@ void dbg_run(struct pexec_s *st)
           pdbg_execcommand(st, eCMD_GO, 0);
           break;
         case 'B' :
-          switch (toupper(g_inline[1])) {
-          case 'S' :  /* Set Breakpoint */
-            pc = pdbg_readhex(&g_inline[2], st->pc);
-            pdbg_execcommand(st, eCMD_BS, pc);
-            break;
-          case 'C' :  /* Clear Breakpoint */
-            i =  pdbg_readdecimal(&g_inline[2]);
-            pdbg_execcommand(st, eCMD_BC, i);
-            break;
-          default :
-            printf("Unrecognized Command\n");
-            pdbg_execcommand(st, eCMD_HELP, 0);
-            break;
-          }
+          switch (toupper(g_inline[1]))
+            {
+              case 'S' :  /* Set Breakpoint */
+                pc = pdbg_readhex(&g_inline[2], st->pc);
+                pdbg_execcommand(st, eCMD_BS, pc);
+                break;
+              case 'C' :  /* Clear Breakpoint */
+                i =  pdbg_readdecimal(&g_inline[2]);
+                pdbg_execcommand(st, eCMD_BC, i);
+                break;
+              default :
+                printf("Unrecognized Command\n");
+                pdbg_execcommand(st, eCMD_HELP, 0);
+                break;
+            }
+          break;
+        case 'W' :
+          switch (toupper(g_inline[1]))
+            {
+              case 'S' :  /* Set Watchpoint */
+                pc = pdbg_readhex(&g_inline[2], st->pc);
+                pdbg_execcommand(st, eCMD_WS, pc);
+                break;
+              case 'F' :  /* Set Level 0 Frame Watchpoint */
+                pc = pdbg_readhex(&g_inline[2], st->pc) + st->spb;
+                pdbg_execcommand(st, eCMD_WS, pc);
+                break;
+              case 'C' :  /* Clear Watchpoint */
+                pdbg_execcommand(st, eCMD_WC, 0);
+                break;
+              default :
+                printf("Unrecognized Command\n");
+                pdbg_execcommand(st, eCMD_HELP, 0);
+                break;
+            }
           break;
         case 'D' :
-          switch (toupper(g_inline[1])) {
-          case 'P' :  /* Display Program Status */
-            pdbg_execcommand(st, eCMD_DP, 0);
-            break;
-          case 'T' :  /* Display Program Trace */
-            pdbg_execcommand(st, eCMD_DT, 0);
-            break;
-          case 'S' :  /* Display Stack */
-            pc = pdbg_readhex(&g_inline[2], st->sp);
-            pdbg_execcommand(st, eCMD_DS, pc);
-            break;
-          case 'I' :  /* Display Instructions */
-            pc = pdbg_readhex(&g_inline[2], st->pc);
-            pdbg_execcommand(st, eCMD_DI, pc);
-            break;
-          case 'B' :  /* Display Breakpoints */
-            pdbg_execcommand(st, eCMD_DB, pc);
-            break;
-          default :
-            printf("Unrecognized Command\n");
-            pdbg_execcommand(st, eCMD_HELP, 0);
-            break;
-          }
+          switch (toupper(g_inline[1]))
+            {
+              case 'P' :  /* Display Program Status */
+                pdbg_execcommand(st, eCMD_DP, 0);
+                break;
+              case 'T' :  /* Display Program Trace */
+                pdbg_execcommand(st, eCMD_DT, 0);
+                break;
+              case 'S' :  /* Display Stack */
+                pc = pdbg_readhex(&g_inline[2], st->sp);
+                pdbg_execcommand(st, eCMD_DS, pc);
+                break;
+              case 'I' :  /* Display Instructions */
+                pc = pdbg_readhex(&g_inline[2], st->pc);
+                pdbg_execcommand(st, eCMD_DI, pc);
+                break;
+              case 'B' :  /* Display Breakpoints */
+                pdbg_execcommand(st, eCMD_DB, pc);
+                break;
+              default :
+                printf("Unrecognized Command\n");
+                pdbg_execcommand(st, eCMD_HELP, 0);
+                break;
+            }
           break;
         case 'Q' :  /* Quit */
           pdbg_execcommand(st, eCMD_QUIT, pc);
@@ -274,6 +307,9 @@ static void pdbg_showcommands(void)
    printf("  G[o]      - Go\n");
    printf("  BS xxxx   - Set Breakpoint\n");
    printf("  BC n      - Clear Breakpoint\n");
+   printf("  WS xxxx   - [Re]set Watchpoint\n");
+   printf("  WF xxxx   - Level 0 Frame Watchpoint\n");
+   printf("  WC        - Clear Watchpoint\n");
    printf("  DP        - Display Program Status\n");
    printf("  DT        - Display Program Trace\n");
    printf("  DS [xxxx] - Display Stack\n");
@@ -349,7 +385,7 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
         }
       break;
     case eCMD_BC:     /* Clear Breakpoint */
-      if ((value >= 1) && (value <= g_nbreakpoints))
+      if (value >= 1 && value <= g_nbreakpoints)
         {
           pdbg_deletebreakpoint(value);
         }
@@ -359,6 +395,25 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
           g_lastcmd = eCMD_NONE;
         }
       pdbg_printbreakpoints(st);
+      break;
+    case eCMD_WS:     /* Set Breakpoint */
+      if (g_nbreakpoints >= MAX_WATCH_POINTS)
+        {
+          printf("Too many watchpoints\n");
+          g_lastcmd = eCMD_NONE;
+        }
+      else if (value >= st->stacksize)
+        {
+          printf("Invalid address for watchpoint\n");
+          g_lastcmd = eCMD_NONE;
+        }
+      else
+        {
+          pdbg_addwatchpoint(value);
+        }
+      break;
+    case eCMD_WC:     /* Clear Watchpoint */
+      pdbg_clearwatchpoint(value);
       break;
     case eCMD_DP:     /* Display Program Status */
       pdbg_programstatus(st);
@@ -460,6 +515,7 @@ static void pdbg_programstatus(struct pexec_s *st)
   (void)pdbg_printpcode(st, st->pc, 1);
   (void)pdbg_printstack(st, st->sp, 2);
   pdbg_printregisters(st);
+  pdbg_printwatchpoint(st);
 }
 
 /***********************************************************************/
@@ -480,7 +536,7 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
       op.arg2  = 0;
       opsize   = 1;
 
-      printf("PC:%04x  %02x", pc, op.op);
+      printf("PC:%04" PRIx16 "  %02x", pc, op.op);
 
       if ((op.op & o8) != 0)
         {
@@ -497,7 +553,7 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
         {
           op.arg2  = ((*address++) << 8);
           op.arg2 |= *address++;
-          printf("%04x", op.arg2);
+          printf("%04" PRIx16 "", op.arg2);
           opsize += 2;
         }
       else
@@ -526,8 +582,7 @@ static paddr_t pdbg_printpcode(struct pexec_s *st, paddr_t pc, int16_t nitems)
     }
 
   return pc;
-
-} /* end pdbg_printpcode */
+}
 
 /***********************************************************************/
 /* Print the stack value at SP */
@@ -539,60 +594,88 @@ static paddr_t pdbg_printstack(struct pexec_s *st, paddr_t sp, int16_t nitems)
   if ((st->sp < st->stacksize) && (sp <= st->sp))
     {
       isp = BTOISTACK(sp);
-      printf("SP:%04x  %04x\n", sp, st->dstack.i[isp]);
+      printf("SP:%04" PRIx16 "  %04" PRIx16 "\n",
+             sp, st->dstack.i[isp]);
 
       for (isp--, sp -= BPERI, nitems--;
            ((isp >= 0) && (nitems > 0));
            isp--, sp -= BPERI, nitems--)
-        printf("   %04x  %04x\n", sp, st->dstack.i[isp] & 0xffff);
+        {
+          printf("   %04" PRIx16 "  %04" PRIx16 "\n",
+                 sp, st->dstack.i[isp] & 0xffff);
+        }
     }
   else
     {
-      printf("SP:%04x  BAD\n", sp);
+      printf("SP:%04" PRIx16 "  BAD\n", sp);
     }
 
   return sp;
-} /* end pdbg_printstack */
+}
 
 /***********************************************************************/
 /* Print the base register */
 
 static void pdbg_printregisters(struct pexec_s *st)
 {
-   if (st->fp <= st->sp)
-      printf("FP:%04x ", st->fp);
+  if (st->fp <= st->sp)
+    {
+      printf("FP:%04" PRIx16 " ", st->fp);
+    }
 
-   printf("CSP:%04x\n", st->csp);
+  printf("CSP:%04" PRIx16 "\n", st->csp);
+}
 
-} /* end pdbg_printregisters */
+/***********************************************************************/
+/* Print the watchpoint SP */
+
+static void pdbg_printwatchpoint(struct pexec_s *st)
+{
+  if (g_nwatchpoints > 0)
+    {
+      int32_t isp = BTOISTACK(g_watchpoint[0]);
+      printf("WP:%04" PRIx16 "  %04" PRIx16 "\n",
+             g_watchpoint[0], st->dstack.i[isp]);
+    }
+}
 
 /***********************************************************************/
 /* Print the g_tracearray */
 
 static void pdbg_printtracearray(struct pexec_s *st)
 {
-   int nprinted;
-   int index;
+  int nprinted;
+  int index;
 
-   index = g_tracendx + TRACE_ARRAY_SIZE - g_ntracepoints;
-   if (index >= TRACE_ARRAY_SIZE)
-     index -= TRACE_ARRAY_SIZE;
+  index = g_tracendx + TRACE_ARRAY_SIZE - g_ntracepoints;
+  if (index >= TRACE_ARRAY_SIZE)
+    {
+      index -= TRACE_ARRAY_SIZE;
+    }
 
-   for (nprinted = 0; nprinted < g_ntracepoints; nprinted++) {
-
-      printf("SP:%04x  %04x  ",
-         g_tracearray[ index ].sp, g_tracearray[ index ].tos);
+  for (nprinted = 0; nprinted < g_ntracepoints; nprinted++)
+    {
+      printf("SP:%04" PRIx16 "  %04" PRIx16 "  ",
+             g_tracearray[index].sp, g_tracearray[index].tos);
 
       /* Print the instruction executed at this traced address */
+
       (void)pdbg_printpcode(st, g_tracearray[ index ].pc, 1);
 
+      if (g_nwatchpoints > 0)
+        {
+          printf("WP:%04" PRIx16 "  %04" PRIx16 "\n",
+                 g_watchpoint[0], g_tracearray[index].wp);
+        }
+
       /* Index to the next trace entry */
+
       if (++index >= TRACE_ARRAY_SIZE)
-         index = 0;
-
-   }
-
-} /* end pdbg_printtracearray */
+        {
+          index = 0;
+        }
+    }
+}
 
 /***********************************************************************/
 /* Add a breakpoint to the breakpoint array */
@@ -621,40 +704,39 @@ static void pdbg_addbreakpoint(paddr_t pc)
 
       g_breakpoint[g_nbreakpoints++] = pc;
     }
-
-} /* end pdbg_addbreakpoint */
+}
 
 /***********************************************************************/
 /* Remove a breakpoint from the breakpoint array */
 
 static void pdbg_deletebreakpoint(int16_t bpno)
 {
-   if ((bpno >= 1) && (bpno <= g_nbreakpoints)) {
-
+  if ((bpno >= 1) && (bpno <= g_nbreakpoints))
+    {
       for (; (bpno < g_nbreakpoints); bpno++)
-         g_breakpoint[bpno-1] = g_breakpoint[bpno];
+        {
+          g_breakpoint[bpno-1] = g_breakpoint[bpno];
+        }
 
       g_nbreakpoints--;
 
-   }
-
-} /* end pdbg_deletebreakpoint */
+    }
+}
 
 /***********************************************************************/
 /* Print the breakpoint array */
 
 static void pdbg_printbreakpoints(struct pexec_s *st)
 {
-   int i;
+  int i;
 
-   printf("BP:#  Address  P-Code\n");
-   for (i = 0; i < g_nbreakpoints; i++)
-     {
-       printf("BP:%d  ", (i+1));
-       (void)pdbg_printpcode(st, g_breakpoint[i], 1);
-     }
-
-} /* end pdbg_printbreakpoints */
+  printf("BP:#  Address  P-Code\n");
+  for (i = 0; i < g_nbreakpoints; i++)
+    {
+      printf("BP:%d  ", (i+1));
+      (void)pdbg_printpcode(st, g_breakpoint[i], 1);
+    }
+}
 
 /***********************************************************************/
 /* Check if a breakpoint is set at the current value of program counter.
@@ -680,6 +762,21 @@ static void pdbg_checkbreakpoint(struct pexec_s *st)
 }
 
 /***********************************************************************/
+
+static void pdbg_addwatchpoint(ustack_t addr)
+{
+  g_watchpoint[0] = addr;
+  g_nwatchpoints  = 1;
+}
+
+/***********************************************************************/
+
+static void pdbg_clearwatchpoint(int16_t wpno)
+{
+  g_nwatchpoints  = 0;
+}
+
+/***********************************************************************/
 /* Initialize Debugger variables */
 
 static void pdbg_initdebugger(void)
@@ -696,22 +793,43 @@ static void pdbg_initdebugger(void)
 
 static void pdbg_debugpcode(struct pexec_s *st)
 {
-   uint16_t errno;
+  uint16_t errno;
 
-   do {
+  do
+    {
       /* Trace the next instruction execution */
 
       g_tracearray[g_tracendx].pc  = st->pc;
       g_tracearray[g_tracendx].sp  = st->sp;
-      if (st->sp < st->stacksize)
-         g_tracearray[g_tracendx].tos = st->dstack.i[BTOISTACK(st->sp)];
+
+      if (g_nwatchpoints > 0)
+        {
+          int32_t isp = BTOISTACK(g_watchpoint[0]);
+          g_tracearray[g_tracendx].wp = st->dstack.i[isp];
+        }
       else
-         g_tracearray[g_tracendx].tos = 0;
+        {
+          g_tracearray[g_tracendx].wp = 0;
+        }
+
+      if (st->sp < st->stacksize)
+        {
+          g_tracearray[g_tracendx].tos = st->dstack.i[BTOISTACK(st->sp)];
+        }
+      else
+        {
+          g_tracearray[g_tracendx].tos = 0;
+        }
 
       if (++g_tracendx >= TRACE_ARRAY_SIZE)
-         g_tracendx = 0;
+        {
+           g_tracendx = 0;
+        }
+
       if (g_ntracepoints < TRACE_ARRAY_SIZE)
-         g_ntracepoints++;
+        {
+          g_ntracepoints++;
+        }
 
       /* Execute the instruction */
 
@@ -722,9 +840,14 @@ static void pdbg_debugpcode(struct pexec_s *st)
       if (errno != eNOERROR)
         {
           if (errno == eEXIT)
-            printf("Normal Termination\n");
+            {
+              printf("Normal Termination\n");
+            }
           else
-            printf("Runtime error 0x%02x -- Execution Stopped\n", errno);
+            {
+              printf("Runtime error 0x%02x -- Execution Stopped\n", errno);
+            }
+
           g_bstopexecution = true;
         }
 
@@ -735,18 +858,24 @@ static void pdbg_debugpcode(struct pexec_s *st)
           /* Check for attempt to execute code outside of legal range */
 
           if (st->pc >= st->maxpc)
-            g_bstopexecution = true;
+            {
+              g_bstopexecution = true;
+            }
 
           /* Check for a temporary breakpoint */
 
           else if ((g_untilpoint > 0) && (g_untilpoint == st->pc))
-            g_bstopexecution = true;
+            {
+              g_bstopexecution = true;
+            }
 
           /* Check if there is a breakpoint at the next instruction */
 
           else if (g_nbreakpoints > 0)
-            pdbg_checkbreakpoint(st);
+            {
+              pdbg_checkbreakpoint(st);
+            }
         }
-
-   } while (!g_bstopexecution);
+    }
+  while (!g_bstopexecution);
 }
