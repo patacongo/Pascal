@@ -1,8 +1,8 @@
 /**********************************************************************
- * pfdreloc.c
- * Dump contents of a POFF file reloc table
+ * pfdtreloc.c
+ * Dump contents of a temporary relocation buffer
  *
- *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,35 +52,35 @@
  * Private Constant Data
  **********************************************************************/
 
-static const char *poffRelocationTypes[RLT_NTYPES] =
+static const char *g_relocationTypeNames[RLT_NTYPES] =
 {
   "NULL",    /* Shouldn't happen */
   "PCAL",    /* Procedure/Function call */
-  "LDST",    /* Load from stack base */
+  "LDST"     /* Load from stack base */
 };
 
 /***********************************************************************
  * Public Functions
  ***********************************************************************/
 
-void poffDumpRelocTable(poffHandle_t handle, FILE *outFile)
+void poffDumpTmpRelocTable(poffRelocHandle_t relocHandle, FILE *outFile)
 {
-  poffInfo_t       *poffInfo = (poffInfo_t*)handle;
+  poffRelocInfo_t  *relocInfo = (poffRelocInfo_t*)relocHandle;
   poffRelocation_t *prel;
   uint32_t          index;
 
-  fprintf(outFile, "\nPOFF Relocation Table:\n");
+  fprintf(outFile, "\nTmp Relocation Buffer:\n");
   fprintf(outFile, "RELO   SYMBOL     SECTION\n");
   fprintf(outFile, "TYPE   TBL INDEX  DATA OFFSET\n");
 
   for (index = 0;
-       index < poffInfo->relocSection.sh_size;
-       index += poffInfo->relocSection.sh_entsize)
+       index < relocInfo->relocSize;
+       index += sizeof(poffRelocation_t))
     {
-      prel = (poffRelocation_t*)&poffInfo->relocTable[index];
+      prel = (poffRelocation_t*)&relocInfo->relocTable[index];
 
       fprintf(outFile, "%-6s 0x%08" PRIx32 " 0x%08" PRIx32 "\n",
-              poffRelocationTypes[RLI_TYPE(prel->rl_info)],
+              g_relocationTypeNames[RLI_TYPE(prel->rl_info)],
               RLI_SYM(prel->rl_info),
               prel->rl_offset);
     }

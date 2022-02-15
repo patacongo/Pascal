@@ -304,6 +304,8 @@ void         poffDumpFileHeader(poffHandle_t handle, FILE *outFile);
 void         poffDumpSectionHeaders(poffHandle_t handle, FILE *outFile);
 void         poffDumpSymbolTable(poffHandle_t handle, FILE *outFile);
 void         poffDumpRelocTable(poffHandle_t handle, FILE *outFile);
+void         poffDumpTmpRelocTable(poffRelocHandle_t relocHandle,
+                FILE *outFile);
 
 /* Helper functions to manage resolution of labels in POFF files.  These
  * just store and retrieve information by label number.

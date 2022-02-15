@@ -44,5 +44,5 @@ POFF_CSRCS += pfrprog.c pfrlineno.c pfrdbgfunc.c pfrrawlineno.c
 POFF_CSRCS += pfreloc.c pfrstring.c pfread.c pfrseek.c
 POFF_CSRCS += pfrelease.c pfdbgcontainer.c pfdbgdiscard.c
 POFF_CSRCS += pfxprog.c pfxrodata.c pfiprog.c pfirodata.c
-POFF_CSRCS += pfdhdr.c pfdsymbol.c pfdreloc.c pflabel.c
+POFF_CSRCS += pfdhdr.c pfdsymbol.c pfdreloc.c pfdtreloc.c pflabel.c
 POFF_CSRCS += pflineno.c pofferr.c pfdbginfo.c pfswap.c
