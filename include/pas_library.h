@@ -2,7 +2,7 @@
  * pas_library.h
  * Definitions of the arguments of the Pascal run-time library
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -81,12 +81,17 @@
 #define lbDISPOSE       (0x0002)
 
 /* Get an environment string.
- *   function getent(name : string) : cstring;
+ *
+ *   function getenv(name : string) : string;
+ *
  * ON INPUT:
- *   TOS(0) = length of string
- *   TOS(1) = pointer to string
- * ON RETURN:  actual parameters released
- *   TOS(0,1) = 32-bit absolute address of string
+ *   TOS(0) = Address of variable name string
+ *   TOS(1) = Length of variable name string
+ *   TOS(2) = Address of variable value string
+ *   TOS(3) = length of variable value string
+ * ON RETURN:
+ *   TOS(0) = Address of variable value string (unchanged)
+ *   TOS(1) = Updated length of variable value string
  */
 
 #define lbGETENV        (0x0003)
@@ -179,54 +184,6 @@
 #define lbSTR2SSTRX     (0x0012)
 #define lbSTR2SSTRX2    (0x0013)
 
-/* Copy C string to a pascal standard string.  Stack on entry must be:
- *
- *   procedure cstr2str(src : cstring; var dest : string)
- *
- * ON INPUT:
- *   TOS(0)   = address of dest standard string
- *   TOS(1,2) = 32-bit absolute address of C string (big-endian)
- *
- * And in the indxed case:
- *
- *   TOS(3)   = Dest standard string variable address offset
- *
- * ON RETURN: actual parameters released
- *
- * NOTE:  The alternate versions are equivalent but have the dest address
- * and source string reversed.
- */
-
-#define lbCSTR2STR      (0x0014)
-#define lbCSTR2STR2     (0x0015)
-
-#define lbCSTR2STRX     (0x0016)
-#define lbCSTR2STRX2    (0x0017)
-
-/* Copy C string to a pascal short string.  Stack on entry must be:
- *
- *   procedure cstr2sstr(src : cstring; var dest : shortstring)
- *
- * ON INPUT:
- *   TOS(0)   = address of dest short string
- *   TOS(1,2) = 32-bit absolute address of C string (big-endian)
- *
- * And in the indxed case:
- *
- *   TOS(3)   = Dest short string variable address offset
- *
- * ON RETURN: actual parameters released
- *
- * NOTE:  The alternate versions are equivalent but have the dest address
- * and source string reversed.
- */
-
-#define lbCSTR2SSTR     (0x0018)
-#define lbCSTR2SSTR2    (0x0019)
-
-#define lbCSTR2SSTRX    (0x001a)
-#define lbCSTR2SSTRX2   (0x001b)
-
 /* Copy binary file character array to a pascal string.  Used when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as a factor in an RVALUE.
  *
@@ -240,7 +197,7 @@
  *   TOS(1) = String size
  */
 
-#define lbBSTR2STR      (0x001c)
+#define lbBSTR2STR      (0x0014)
 
 /* Copy a pascal string into a binary file character array.  Use when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as the LVALUE in an assignment.
@@ -257,7 +214,7 @@
  *   All inputs consumbed
  */
 
-#define lbSTR2BSTR      (0x001d)
+#define lbSTR2BSTR      (0x0015)
 
 /* Copy a pascal string into a binary file character array.  Use when a non-
  * indexed PACKED ARRAY[] OF CHAR appears within an array element (using as
@@ -276,7 +233,7 @@
  *   All inputs consumbed
  */
 
-#define lbSTR2BSTRX     (0x001e)
+#define lbSTR2BSTRX     (0x0016)
 
 /* Convert a string to a numeric value
  *
@@ -305,7 +262,7 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x001f)
+#define lbVAL           (0x0017)
 
 /* Initialize a new string variable. Create a string buffer.  This is called
  * only at entrance into a new Pascal block.
@@ -317,7 +274,7 @@
  * ON RETURN
  */
 
-#define lbSTRINIT       (0x0020)
+#define lbSTRINIT       (0x0018)
 
 /* Initialize a new short string variable. Create a string buffer.  This is
  * called only at entrance into a new Pascal block.
@@ -332,7 +289,7 @@
  * ON RETURN
  */
 
-#define lbSSTRINIT      (0x0021)
+#define lbSSTRINIT      (0x0019)
 
 /* Initialize a temporary string variable on the stack. This is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
@@ -347,7 +304,7 @@
  *   TOS(1) = String size (zero)
  */
 
-#define lbSTRTMP        (0x0022)
+#define lbSTRTMP        (0x001a)
 
 /* Replace a standard string with a duplicate string residing in allocated
  * string stack.
@@ -362,7 +319,7 @@
  *   TOS(1) = length of new standard string
  */
 
-#define lbSTRDUP        (0x0023)
+#define lbSTRDUP        (0x001b)
 
 /* Replace a short string with a duplicate string residing in allocated
  * string stack.
@@ -379,10 +336,13 @@
  *   TOS(2) = length of new short string
  */
 
-#define lbSSTRDUP       (0x0024)
+#define lbSSTRDUP       (0x001c)
 
-/* Replace a character with a string residing in allocated string stack.
+/* Replace a character with a string residing in allocated string stack
+ * memory.
+ *
  *   function mkstkc(c : char) : string;
+ *
  * ON INPUT
  *   TOS(0) = Character value
  * ON RETURN
@@ -390,7 +350,22 @@
  *   TOS(1) = length of new string
  */
 
-#define lbMKSTKC        (0x0025)
+#define lbMKSTKC        (0x001d)
+
+/* Replace an RO string with a standard string residing in allocated string
+ * stack memory.
+ *
+ *   function mkstkc(rostring : string) : string;
+ *
+ * ON INPUT
+ *   TOS(0) = Address of RO string
+ *   TOS(1) = Length of RO string
+ * ON RETURN
+ *   TOS(0) = pointer to new allocated standard string
+ *   TOS(1) = Length of standard string (unchanged)
+ */
+
+#define lbMKSTKSTR      (0x001e)
 
 /* Concatenate a standard string to the end of a standard string.
  *
@@ -406,7 +381,7 @@
  *   TOS(1) = new length of dest standard string2
  */
 
-#define lbSTRCAT        (0x0026)
+#define lbSTRCAT        (0x001f)
 
 /* Concatenate a short string to the end of a short string.
  *
@@ -425,7 +400,7 @@
  *   TOS(2) = new length of dest short string2
  */
 
-#define lbSSTRCAT       (0x0027)
+#define lbSSTRCAT       (0x0020)
 
 /* Concatenate a standard string to the end of a short string.
  *
@@ -443,7 +418,7 @@
  *   TOS(2) = new length of dest short string1
  */
 
-#define lbSSTRCATSTR    (0x0028)
+#define lbSSTRCATSTR    (0x0021)
 
 /* Concatenate a short string to the end of a standard string.
  *
@@ -460,7 +435,7 @@
  *   TOS(1) = new length of dest standard string1
  */
 
-#define lbSTRCATSSTR    (0x0029)
+#define lbSTRCATSSTR    (0x0022)
 
 /* Concatenate a character to the end of a standard string.
  *
@@ -475,7 +450,7 @@
  *   TOS(1) = new length of standard string
  */
 
-#define lbSTRCATC       (0x002a)
+#define lbSTRCATC       (0x0023)
 
 /* Concatenate a character to the end of a short string.
  *
@@ -492,7 +467,7 @@
  *   TOS(2) = new length of short string
  */
 
-#define lbSSTRCATC      (0x002b)
+#define lbSSTRCATC      (0x0024)
 
 /* Compare two pascal standard strings
  *
@@ -507,7 +482,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x002c)
+#define lbSTRCMP        (0x0025)
 
 /* Compare two pascal short strings
  *
@@ -524,7 +499,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMP       (0x002d)
+#define lbSSTRCMP       (0x0026)
 
 /* Compare a pascal short string to a pascal standard string
  *
@@ -540,7 +515,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMPSTR    (0x002e)
+#define lbSSTRCMPSTR    (0x0027)
 
 /* Compare a pascal standard string to a pascal short string
  *
@@ -556,8 +531,8 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMPSSTR    (0x002f)
+#define lbSTRCMPSSTR    (0x0028)
 
-#define MAX_LBOP        (0x0030)
+#define MAX_LBOP        (0x0029)
 
 #endif /* __PAS_LIBRARY_H */

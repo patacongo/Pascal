@@ -1312,10 +1312,8 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
   if (g_token != tASSIGN) error (eASSIGN);
   else getToken();
 
-  /* Get the expression after assignment token. We'll take any kind
-   * of string expression.  This is a hack to handle calls to system
-   * functions that return exprCString pointers that must be converted
-   * to exprString records upon assignment.
+  /* Get the expression after assignment token.  We'll take any kind
+   * of string expression.
    */
 
   rValueExprType = pas_Expression(exprAnyString, typePtr);
@@ -1415,30 +1413,6 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 
           pas_StandardFunctionCall(libOpcode);
         }
-      else if (rValueExprType == exprCString)
-        {
-          /* It is a 32-bit C string point.  Current stack representation is:
-           *
-           *   TOS(0)=Address of dest standard string buffer
-           *   TOS(1)=MS 16-bits of 32-bit C source string pointer
-           *   TOS(2)=LS 16-bits of 32-bit C source string pointer
-           *
-           * And in the indexed case:
-           *
-           *   TOS(3)=Dest string variable address offset
-           */
-
-          if ((assignFlags & ASSIGN_INDEXED) != 0)
-            {
-              libOpcode = destFirst ? lbCSTR2STRX : lbCSTR2STRX2;
-            }
-          else
-            {
-              libOpcode = destFirst ? lbCSTR2STR : lbCSTR2STR2;
-            }
-
-          pas_StandardFunctionCall(libOpcode);
-        }
     }
   else /* (lValueTpe == sSHORTSTRING) */
     {
@@ -1493,30 +1467,6 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
           else
             {
               libOpcode = destFirst ? lbSSTRCPY : lbSSTRCPY2;
-            }
-
-          pas_StandardFunctionCall(libOpcode);
-        }
-      else if (rValueExprType == exprCString)
-        {
-          /* It is a 32-bit C string point.  Current stack representation is:
-           *
-           *   TOS(0)=Address of dest short string buffer
-           *   TOS(1)=MS 16-bits of 32-bit C source string pointer
-           *   TOS(2)=LS 16-bits of 32-bit C source string pointer
-           *
-           * And in the indexed case:
-           *
-           *   TOS(3)=Dest string variable address offset
-           */
-
-          if ((assignFlags & ASSIGN_INDEXED) != 0)
-            {
-              libOpcode = destFirst ? lbCSTR2SSTRX : lbCSTR2SSTRX2;
-            }
-          else
-            {
-              libOpcode = destFirst ? lbCSTR2SSTR : lbCSTR2SSTR2;
             }
 
           pas_StandardFunctionCall(libOpcode);

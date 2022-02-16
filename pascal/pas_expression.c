@@ -137,7 +137,6 @@ static bool       pas_GetSubSet(symbol_t *setTypePtr, bool first);
 static exprType_t pas_TypeCast(symbol_t *typePtr);
 static bool       pas_IsOrdinalExpression(exprType_t testExprType);
 static bool       pas_IsStringExpression(exprType_t testExprType);
-static bool       pas_IsStringReference(exprType_t testExprType);
 
 /****************************************************************************
  * Public Data
@@ -285,7 +284,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
 
       /* Skip over string types.  These will be handled below */
 
-      if (!pas_IsStringReference(term1Type))
+      if (!pas_IsStringExpression(term1Type))
         {
           /* Handle the case where the type of the terms differ. */
 
@@ -1031,9 +1030,9 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
     case tSTRING_CONST :
       {
-        /* Final stack representation is:
+        /* Final run-time stack representation is:
          *
-         *   TOS(0) : pointer to string
+         *   TOS(0) : pointer to string copied to
          *   TOS(1) : size in bytes
          *
          * Add the string to the RO data section of the output
@@ -1042,10 +1041,14 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
         uint32_t offset = poffAddRoDataString(g_poffHandle, g_tokenString);
 
-        /* Get the offset then size of the string on the stack */
+        /* Push the offset then size of the string on the stack */
 
         pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
         pas_GenerateDataOperation(opLAC, offset);
+
+        /* And copy the string to string memory */
+
+        pas_StandardFunctionCall(lbMKSTKSTR);
 
         /* Release the tokenized string */
 
@@ -3478,28 +3481,10 @@ static bool pas_IsOrdinalExpression(exprType_t testExprType)
 }
 
 /****************************************************************************/
-/* This is a hack to handle calls to system functions that return
- * exprCString pointers that must be converted to exprString
- * records upon assignment.
- */
 
 static bool pas_IsStringExpression(exprType_t testExprType)
 {
   if (testExprType == exprString      ||
-      testExprType == exprShortString ||
-      testExprType == exprCString)
-    {
-      return true;
-    }
-  else
-    {
-      return false;
-    }
-}
-
-static bool pas_IsStringReference(exprType_t testExprType)
-{
-  if (testExprType == exprString ||
       testExprType == exprShortString)
     {
       return true;
@@ -4113,9 +4098,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
    *    as well.
    *
    * 4. We were told to find any kind of string expression and
-   *    we found a string expression. This is a hack to handle
-   *    calls to system functions that return exprCString pointers
-   *    that must be converted to exprString records upon assignment.
+   *    we found a string expression.
    *
    * Special case:
    *
@@ -4139,8 +4122,8 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
        !pas_IsStringExpression(simple1Type)) &&
       (findExprType != exprAnyPointer ||
        !IS_POINTER_EXPRTYPE(simple1Type)) &&
-      (!pas_IsStringReference(findExprType) ||
-       !pas_IsStringReference(simple1Type)))
+      (!pas_IsStringExpression(findExprType) ||
+       !pas_IsStringExpression(simple1Type)))
     {
       /* Automatic conversions from INTEGER to REAL will be performed */
 
@@ -4173,6 +4156,41 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
         {
           error(eEXPRTYPE);
         }
+    }
+
+  /* Standard strings can be converted to whatever type of string the caller
+   * needs.  In this the TOS will be a pointer to the string in memory,
+   * preceded by the size of length of the string.
+   *
+   * Stack representation of the standard string:
+   *
+   *   TOS(0) : Address of the string in the string stack.
+   *   TOS(1) : Length of the string in bytes
+   *
+   * Stack representation of the short string:
+   *
+   *   TOS(0) - Size of the size string allocation
+   *   TOS(1) : Address of the string in the string stack.
+   *   TOS(2) : Length of the string in bytes
+   *
+   * In order to do a this conversation to a matching short string, the
+   * caller must have 1) explicitly asked for a short string, and 2) must
+   * have provided type information.  The type information is needed because
+   * we need to know the allocation size of the short string.
+   */
+
+  if (findExprType == exprShortString && simple1Type == exprString &&
+      typePtr != NULL)
+    {
+      symbol_t *baseTypePtr;
+
+      /* Convert the standard string to a short string by adding the size of
+       * short string at the top of the stack.
+       */
+
+      baseTypePtr = pas_GetBaseTypePointer(typePtr);
+      pas_GenerateDataOperation(opPUSH, baseTypePtr->sParm.t.tMaxValue);
+      simple1Type = exprShortString;
     }
 
   return simple1Type;

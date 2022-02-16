@@ -1,4 +1,4 @@
-/**********************************************************************
+/****************************************************************************
  * pas_error.c
  * Error Handlers
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ****************************************************************************/
 
-/**********************************************************************
+/****************************************************************************
  * Included Files
- **********************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -56,9 +56,9 @@
 #  include "pas_symtable.h"
 #endif
 
-/**********************************************************************
+/****************************************************************************
  * Pre-processor Definitions
- **********************************************************************/
+ ****************************************************************************/
 
 #if CONFIG_DEBUG
 #  define DUMPTABLES pas_DumpTables()
@@ -66,24 +66,78 @@
 #  define DUMPTABLES
 #endif
 
-/**********************************************************************
- * Private Variables
- **********************************************************************/
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+enum errLevel_s
+{
+  ERROR_LEVEL_WARNING = 0,
+  ERROR_LEVEL_ERROR,
+  ERROR_LEVEL_FATAL,
+  ERROR_NUM_LEVELS
+};
+
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
 
 static const char g_fmtErrNoToken[] =
-   "Line %d:%04" PRIu32 " Error %02x Token %02x\n";
+   "Line %d:%04" PRIu32 " %s %02x Token %02x\n";
 static const char g_fmtErrWithToken[] =
-   "Line %d:%04" PRIu32 " Error %02x Token %02x (%s)\n";
+   "Line %d:%04" PRIu32 " %s %02x Token %02x (%s)\n";
 static const char g_fmtErrAbort[] =
    "Fatal Error %d -- Compilation aborted\n";
 
-/**********************************************************************
+static const char *g_errLevelStrings[ERROR_NUM_LEVELS] =
+{
+  "Warning",
+  "Error",
+  "Fatal"
+};
+
+/****************************************************************************
  * Private Function Prototypes
- **********************************************************************/
+ ****************************************************************************/
 
-static void pas_PrintError(uint16_t errcode);
+static void pas_PrintError(uint16_t errCode, int errLevel);
 
-/***********************************************************************/
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+
+static void pas_PrintError(uint16_t errCode, int errLevel)
+{
+  /* Write error record to the error and list files */
+
+  const char *errLevelString = g_errLevelStrings[errLevel];
+
+  if ((g_tokenString) && (g_tokenString < g_stringSP))
+    {
+      fprintf (g_errFile, g_fmtErrWithToken,
+               FP->include, FP->line, errLevelString, errCode, g_token,
+               g_tokenString);
+      fprintf (g_lstFile, g_fmtErrWithToken,
+               FP->include, FP->line, errLevelString, errCode, g_token,
+               g_tokenString);
+      g_stringSP = g_tokenString; /* Clean up string stack */
+    }
+  else
+    {
+      fprintf (g_errFile, g_fmtErrNoToken,
+               FP->include, FP->line, errLevelString, errCode, g_token);
+      fprintf (g_lstFile, g_fmtErrNoToken,
+               FP->include, FP->line, errLevelString, errCode, g_token);
+    }
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
 
 void errmsg(char *fmt, ...)
 {
@@ -104,33 +158,35 @@ void errmsg(char *fmt, ...)
   va_end(ap);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
-void warn(uint16_t errcode)
+
+void warn(uint16_t errCode)
 {
-   TRACE(g_lstFile,"[warn:%04x]", errcode);
+   TRACE(g_lstFile,"[warn:%04x]", errCode);
 
    /* Write error record to the error and list files */
 
-   pas_PrintError(errcode);
+   pas_PrintError(errCode, ERROR_LEVEL_WARNING);
 
    /* Increment the count of warning */
 
    g_warnCount++;
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
-void error(uint16_t errcode)
+
+void error(uint16_t errCode)
 {
-   TRACE(g_lstFile,"[error:%04x]", errcode);
+   TRACE(g_lstFile,"[error:%04x]", errCode);
 
 #if CONFIG_DEBUG
-   fatal(errcode);
+   fatal(errCode);
 #else
    /* Write error record to the error and list files */
 
-   pas_PrintError(errcode);
+   pas_PrintError(errCode, ERROR_LEVEL_ERROR);
 
    /* Check if the error count has been execeeded the max allowable */
 
@@ -142,15 +198,16 @@ void error(uint16_t errcode)
 
 } /* end error */
 
-/***********************************************************************/
+/****************************************************************************/
 
-void fatal(uint16_t errcode)
+
+void fatal(uint16_t errCode)
 {
-   TRACE(g_lstFile,"[fatal:%04x]", errcode);
+   TRACE(g_lstFile,"[fatal:%04x]", errCode);
 
    /* Write error record to the error and list files */
 
-   pas_PrintError( errcode );
+   pas_PrintError(errCode, ERROR_LEVEL_FATAL);
 
    /* Dump the tables (if CONFIG_DEBUG) */
 
@@ -158,35 +215,10 @@ void fatal(uint16_t errcode)
 
    /* And say goodbye */
 
-   printf(g_fmtErrAbort, errcode);
-   fprintf(g_lstFile, g_fmtErrAbort, errcode);
+   printf(g_fmtErrAbort, errCode);
+   fprintf(g_lstFile, g_fmtErrAbort, errCode);
 
    exit(1);
 
 } /* end fatal */
-
-/***********************************************************************/
-
-static void pas_PrintError(uint16_t errcode)
-{
-   /* Write error record to the error and list files */
-
-   if ((g_tokenString) && (g_tokenString < g_stringSP))
-     {
-       fprintf (g_errFile, g_fmtErrWithToken,
-                FP->include, FP->line, errcode, g_token, g_tokenString);
-       fprintf (g_lstFile, g_fmtErrWithToken,
-                FP->include, FP->line, errcode, g_token, g_tokenString);
-       g_stringSP = g_tokenString; /* Clean up string stack */
-     }
-   else
-     {
-       fprintf (g_errFile, g_fmtErrNoToken,
-                FP->include, FP->line, errcode, g_token);
-       fprintf (g_lstFile, g_fmtErrNoToken,
-                FP->include, FP->line, errcode, g_token);
-     }
-}
-
-/***********************************************************************/
 

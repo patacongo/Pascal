@@ -2,7 +2,7 @@ PROGRAM VarValStrings;
 
 TYPE
   NameType = STRING[8];
-  NameArrayType = ARRAY[1..2] OF NameType;
+  NameArrayType = ARRAY[1..3] OF NameType;
 
 VAR
   Names : NameArrayType;
@@ -23,5 +23,6 @@ BEGIN
   SaveName1(Names, Name, 1);
   Name := 'Wilbur';
   SaveName2(Names, Name, 2);
-  WRITELN('Names: ', Names[1], ' and ', Names[2])
+  SaveName1(Names, 'Barry', 3);
+  WRITELN('Names: ', Names[1], ', ', Names[2], ', and ', Names[3])
 END.

@@ -1,15 +1,15 @@
 { Verifies that strings in arrays are initialized properly }
 
-program stringArray;
-var
-   lines : packed array[0..1] of string;
+PROGRAM StringArray;
+VAR
+   lines : PACKED ARRAY[0..1] OF STRING;
 
-begin
+BEGIN
    lines[0] := 'Now is the time';
    lines[0] := lines[0] + ' for all good men';
+   WRITELN(lines[0]);
+
    lines[1] := ' of their party.';
    lines[1] := 'To come to the aid' + lines[1];
-
-   writeln(lines[0]);
-   writeln(lines[1]);
-end.
+   WRITELN(lines[1]);
+END.

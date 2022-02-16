@@ -397,7 +397,7 @@ static void pdbg_execcommand(struct pexec_s *st, enum command_e cmd, uint32_t va
       pdbg_printbreakpoints(st);
       break;
     case eCMD_WS:     /* Set Breakpoint */
-      if (g_nbreakpoints >= MAX_WATCH_POINTS)
+      if (g_nwatchpoints >= MAX_WATCH_POINTS)
         {
           printf("Too many watchpoints\n");
           g_lastcmd = eCMD_NONE;

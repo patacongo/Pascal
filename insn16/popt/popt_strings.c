@@ -599,6 +599,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
                   g_opCode.arg2 == lbSTRDUP   ||
                   g_opCode.arg2 == lbSSTRDUP  ||
                   g_opCode.arg2 == lbMKSTKC   ||
+                  g_opCode.arg2 == lbMKSTKSTR ||
                   g_opCode.arg2 == lbBSTR2STR)
                 {
                   popt_DebugMessage("  Keep PUSH at %04x, level %d\n",

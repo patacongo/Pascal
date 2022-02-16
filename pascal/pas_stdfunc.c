@@ -523,7 +523,7 @@ static exprType_t pas_GetEnvFunc(void)
 
   TRACE(g_lstFile, "[pas_GetEnvFunc]");
 
-  /* FORM:  <string_var> = getenv(<string>) */
+  /* FORM:  <value-string> = getenv(<name-string>) */
 
   pas_CheckLParen();
 
@@ -540,7 +540,7 @@ static exprType_t pas_GetEnvFunc(void)
 
   pas_StandardFunctionCall(lbGETENV);
   pas_CheckRParen();
-  return exprCString;
+  return exprString;
 }
 
 /****************************************************************************

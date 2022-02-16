@@ -496,13 +496,12 @@ static const char *lbName[MAX_LBOP] =
 /* 0x08 */ "SSTRCPY",    "SSTRCPY2",   "SSTRCPYX",    "SSTRCPYX2",
 /* 0x0c */ "SSTR2STR",   "SSTR2STR2",  "SSTR2STRX",   "SSTR2STRX2",
 /* 0x10 */ "STR2SSTR",   "STR2SSTR2",  "STR2SSTRX",   "STR2SSTRX2",
-/* 0x14 */ "CSTR2STR",   "CSTR2STR2",  "CSTR2STRX",   "CSTR2STRX2",
-/* 0x18 */ "CSTR2SSTR",  "CSTR2SSTR2", "CSTR2SSTRX",  "CSTR2SSTRX2",
-/* 0x1c */ "BSTR2STR",   "STR2BSTR",   "STR2BSTRX",   "VAL",
-/* 0x20 */ "STRINIT",    "SSTRINIT",   "STRTMP",      "STRDUP",
-/* 0x24 */ "SSTRDUP",    "MKSTKC",     "STRCAT",      "SSTRCAT",
-/* 0x28 */ "SSTRCATSTR", "STRCATSSTR", "STRCATC",     "lbSSTRCATC",
-/* 0x2c */ "STRCMP",     "SSTRCMP",    "SSTRCMPSTR",  "STRCMPSSTR"
+/* 0x14 */ "BSTR2STR",   "STR2BSTR",   "STR2BSTRX",   "VAL",
+/* 0x18 */ "STRINIT",    "SSTRINIT",   "STRTMP",      "STRDUP",
+/* 0x1c */ "SSTRDUP",    "MKSTKC",     "MKSTKSTR",    "STRCAT",
+/* 0x20 */ "SSTRCAT",    "SSTRCATSTR", "STRCATSSTR",  "STRCATC",
+/* 0x24 */ "SSTRCATC",   "STRCMP",     "SSTRCMP",     "SSTRCMPSTR",
+/* 0x28 */ "STRCMPSSTR"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";
