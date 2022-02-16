@@ -87,11 +87,9 @@
  * ON INPUT:
  *   TOS(0) = Address of variable name string
  *   TOS(1) = Length of variable name string
- *   TOS(2) = Address of variable value string
- *   TOS(3) = length of variable value string
  * ON RETURN:
- *   TOS(0) = Address of variable value string (unchanged)
- *   TOS(1) = Updated length of variable value string
+ *   TOS(0) = Address of variable value string
+ *   TOS(1) = Length of variable value string
  */
 
 #define lbGETENV        (0x0003)
