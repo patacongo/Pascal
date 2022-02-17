@@ -2,7 +2,7 @@
  * popt_strings.h
  * External Declarations associated with popt_strings.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,7 +47,9 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void popt_StringStackOptimize(poffHandle_t poffHandle,
-                              poffProgHandle_t poffProgHandle);
+void popt_StringOptimization  (poffHandle_t poffHandle);
+
+void popt_StringStackOptimize (poffHandle_t poffHandle,
+                               poffProgHandle_t poffProgHandle);
 
 #endif /* __POPT_STRINGS_H */

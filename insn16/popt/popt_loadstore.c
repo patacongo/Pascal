@@ -48,8 +48,8 @@
 
 #include "paslib.h"
 #include "popt.h"
+#include "popt_peephole.h"
 #include "popt_local.h"
-#include "popt_loadstore.h"
 
 /****************************************************************************
  * Private Functions

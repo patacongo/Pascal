@@ -1,6 +1,6 @@
 /***************************************************************************
  * popt_util.h
- * External Declarations associated with popt_branch.c
+ * External Declarations associated with popt_util.c
  *
  *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>

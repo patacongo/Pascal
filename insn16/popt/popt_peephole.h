@@ -1,8 +1,8 @@
 /****************************************************************************
- *  popt_strings.c
- *  String-related Optimizations
+ * popt_peephole.h
+ * External Declarations associated with popt_peephole.c
  *
- *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,53 +34,51 @@
  *
  ****************************************************************************/
 
+#ifndef __POPT_PEEPHOLE_H
+#define __POPT_PEEPHOLE_H
+
 /****************************************************************************
- * Included Files
- ****************************************************************************/
+* Included Files
+*****************************************************************************/
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
+#include "paslib.h"
 #include "pas_debug.h"
+#include "pas_machine.h"
 #include "pofflib.h"
 
-#include "popt.h"
-#include "popt_strings.h"
+/****************************************************************************
+* Pre-processor Definitions
+*****************************************************************************/
+
+#define WINDOW             10           /* size of optimization window */
 
 /****************************************************************************
- * Public Functions
+ * Public Data
  ****************************************************************************/
 
-/****************************************************************************/
+extern opTypeR_t  g_opTable[WINDOW];    /* Pcode Table */
+extern opTypeR_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
 
-void popt_StringOptimization(poffHandle_t poffHandle)
-{
-  poffProgHandle_t poffProgHandle; /* Handle to temporary POFF object */
+extern int16_t    g_nOpPtrs;            /* No. Valid Pcode Pointers */
+extern bool       g_endOut;             /* true: oEND pcode has been output */
 
-  TRACE(stderr, "[popt_StringOptimize]");
+/****************************************************************************
+* Public Function Prototypes
+*****************************************************************************/
 
-  /* Create a handle to a temporary object to store new POFF program
-   * data.
-   */
+void popt_SetupPeephole      (poffHandle_t poffHandle,
+                              poffProgHandle_t poffProgHandle);
+void popt_UpdatePeephole     (void);
 
-  poffProgHandle = poffCreateProgHandle();
-  if (!poffProgHandle)
-    {
-      fprintf(stderr, "ERROR: Could not get POFF handle\n");
-      exit(1);
-    }
+void popt_DeletePCode        (int16_t delIndex);
+void popt_DeletePCodePair    (int16_t delIndex1, int16_t delIndex2);
+void popt_DeletePCodeTrio    (int16_t delIndex1, int16_t delIndex2,
+                              int16_t delIndex3);
+void popt_DeletePCodeQuartet (int16_t delIndex1, int16_t delIndex2,
+                              int16_t delIndex3, int16_t delIndex4);
+void popt_SwapPCodePair      (int16_t swapIndex1, int16_t swapIndex2);
 
-  /* Clean up garbage left from the wasteful string stack logic */
-
-  popt_StringStackOptimize(poffHandle, poffProgHandle);
-
-  /* Replace the original program data with the new program data */
-
-  poffReplaceProgData(poffHandle, poffProgHandle);
-
-  /* Release the temporary POFF object */
-
-  poffDestroyProgHandle(poffProgHandle);
-}
+#endif /* __POPT_PEEPHOLE_H */

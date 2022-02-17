@@ -44,38 +44,25 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "pas_debug.h"
-#include "pas_machine.h"
 #include "pofflib.h"
-
-/****************************************************************************
-* Definitions
-*****************************************************************************/
-
-#define WINDOW             10           /* size of optimization window */
 
 /****************************************************************************
  * Public Data
  ****************************************************************************/
 
-extern opTypeR_t  g_opTable[WINDOW];    /* Pcode Table */
-extern opTypeR_t *g_opPtr[WINDOW];      /* Valid Pcode Pointers */
-
-extern int16_t    g_nOpPtrs;            /* No. Valid Pcode Pointers */
-extern bool       g_endOut;             /* true: oEND pcode has been output */
-
 /****************************************************************************
 * Public Function Prototypes
 *****************************************************************************/
 
-void popt_LocalOptimization  (poffHandle_t poffHandle,
-                              poffProgHandle_t poffProgHandle);
-void popt_DeletePCode        (int16_t delIndex);
-void popt_DeletePCodePair    (int16_t delIndex1, int16_t delIndex2);
-void popt_DeletePCodeTrio    (int16_t delIndex1, int16_t delIndex2,
-                              int16_t delIndex3);
-void popt_DeletePCodeQuartet (int16_t delIndex1, int16_t delIndex2,
-                              int16_t delIndex3, int16_t delIndex4);
-void popt_SwapPCodePair      (int16_t swapIndex1, int16_t swapIndex2);
+void    popt_LocalOptimization  (poffHandle_t poffHandle);
 
-#endif /* __PLOCAL_H */
+int16_t popt_UnaryOptimize      (void);
+int16_t popt_BinaryOptimize     (void);
+int16_t popt_LongUnaryOptimize  (void);
+int16_t popt_LongBinaryOptimize (void);
+int16_t popt_BranchOptimize     (void);
+int16_t popt_LoadOptimize       (void);
+int16_t popt_StoreOptimize      (void);
+int16_t popt_ExchangeOptimize   (void);
+
+#endif /* __POPT_LOCAL_H */

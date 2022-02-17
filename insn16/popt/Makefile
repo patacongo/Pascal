@@ -57,9 +57,9 @@ CFLAGS   += $(EXTRA_INCLUDES)
 #
 # Objects and targets
 #
-POPTSRCS  = popt.c popt_strings.c popt_local.c popt_constants.c
-POPTSRCS += popt_longconst.c popt_branch.c popt_loadstore.c popt_reloc.c
-POPTSRCS += popt_finalize.c popt_util.c
+POPTSRCS  = popt.c popt_strings.c popt_strstack.c popt_local.c
+POPTSRCS += popt_constants.c popt_longconst.c popt_branch.c popt_loadstore.c
+POPTSRCS += popt_reloc.c popt_finalize.c popt_peephole.c popt_util.c
 POPTOBJS  = $(POPTSRCS:.c=.o)
 
 OBJS      = $(POPTOBJS)

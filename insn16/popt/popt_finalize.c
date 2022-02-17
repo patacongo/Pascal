@@ -510,8 +510,25 @@ static void pass4(poffHandle_t poffHandle)
  * Public Functions
  **********************************************************************/
 
-void optFinalize(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
+/****************************************************************************/
+/* Finalize program section, create relocation and line number sections. */
+
+void popt_Finalization(poffHandle_t poffHandle)
 {
+  poffProgHandle_t poffProgHandle; /* Handle to temporary POFF object */
+  TRACE(stderr, "[popt_Finalization]");
+
+  /* Create a handle to a temporary object to store new POFF program
+   * data.
+   */
+
+  poffProgHandle = poffCreateProgHandle();
+  if (!poffProgHandle)
+    {
+      fprintf(stderr, "ERROR: Could not get POFF handle\n");
+      exit(1);
+    }
+
   /* Swap the relocation container handles.  The relocations accumulated
    * in "current" container are now the relocations from the "previous" pass.
    * The "current" container will be empty at the start of the pass.
@@ -582,4 +599,8 @@ void optFinalize(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
     {
       error(eEXTRARELOCS);
     }
+
+  /* Release the temporary POFF object */
+
+  poffDestroyProgHandle(poffProgHandle);
 }

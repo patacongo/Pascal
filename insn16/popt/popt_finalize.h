@@ -2,7 +2,7 @@
  * popt_finalize.h
  * External Declarations associated with popt_finalize.c
  *
- *   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,8 +47,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void optFinalize(poffHandle_t poffHandle,
-                 poffProgHandle_t poffProgHandle);
+void popt_Finalization(poffHandle_t poffHandle);
 
 #endif /* __POPT_FINALIZE_H */
 

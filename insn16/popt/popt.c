@@ -59,9 +59,6 @@
  ****************************************************************************/
 
 static void readPoffFile  (const char *filename);
-static void pass1         (void);
-static void pass2         (void);
-static void pass3         (void);
 static void writePoffFile (const char *filename);
 
 /**********************************************************************
@@ -95,7 +92,7 @@ static void readPoffFile(const char *filename)
 
   TRACE(stderr, "[readPoffFile]");
 
-  /* Open the pass1 POFF object file -- Use .o1 extension */
+  /* Open the input, un-optimized POFF object file -- Use .o1 extension */
 
   (void)extension(filename, "o1", objname, 1);
   if (!(objFile = fopen(objname, "rb")))
@@ -126,106 +123,6 @@ static void readPoffFile(const char *filename)
   /* Close the input file */
 
   fclose(objFile);
-}
-
-/****************************************************************************/
-
-static void pass1(void)
-{
-  poffProgHandle_t poffProgHandle; /* Handle to temporary POFF object */
-
-  TRACE(stderr, "[pass1]");
-
-  /* Create a handle to a temporary object to store new POFF program
-   * data.
-   */
-
-  poffProgHandle = poffCreateProgHandle();
-  if (!poffProgHandle)
-    {
-      fprintf(stderr, "ERROR: Could not get POFF handle\n");
-      exit(1);
-    }
-
-  /* Clean up garbage left from the wasteful string stack logic */
-
-  popt_StringStackOptimize(g_poffHandle, poffProgHandle);
-
-  /* Replace the original program data with the new program data */
-
-  poffReplaceProgData(g_poffHandle, poffProgHandle);
-
-  /* Release the temporary POFF object */
-
-  poffDestroyProgHandle(poffProgHandle);
-}
-
-/****************************************************************************/
-
-static void pass2(void)
-{
-  poffProgHandle_t poffProgHandle; /* Handle to temporary POFF object */
-
-  TRACE(stderr, "[pass2]");
-
-  /* Create a handle to a temporary object to store new POFF program
-   * data.
-   */
-
-  poffProgHandle = poffCreateProgHandle();
-  if (!poffProgHandle)
-    {
-      fprintf(stderr, "ERROR: Could not get POFF handle\n");
-      exit(1);
-    }
-
-  /* Swap the relocation container handles.  The relocations accumulated
-   * in "current" container are now the relocations from the "previous" pass.
-   * The "current" container will be empty at the start of the pass.
-   */
-
-  swapRelocationHandles();
-
-  /* Perform Local Optimizatin Initialization */
-
-  popt_LocalOptimization(g_poffHandle, poffProgHandle);
-
-  /* Replace the original program data with the new program data */
-
-  poffReplaceProgData(g_poffHandle, poffProgHandle);
-
-  /* Release the temporary POFF object */
-
-  poffDestroyProgHandle(poffProgHandle);
-}
-
-/****************************************************************************/
-
-static void pass3 (void)
-{
-  poffProgHandle_t poffProgHandle; /* Handle to temporary POFF object */
-  TRACE(stderr, "[pass3]");
-
-  /* Create a handle to a temporary object to store new POFF program
-   * data.
-   */
-
-  poffProgHandle = poffCreateProgHandle();
-  if (!poffProgHandle)
-    {
-      fprintf(stderr, "ERROR: Could not get POFF handle\n");
-      exit(1);
-    }
-
-  /* Finalize program section, create relocation and line number
-   * sections.
-   */
-
-  optFinalize(g_poffHandle, poffProgHandle);
-
-  /* Release the temporary POFF object */
-
-  poffDestroyProgHandle(poffProgHandle);
 }
 
 /****************************************************************************/
@@ -285,19 +182,19 @@ int main(int argc, char *argv[], char *envp[])
 
   createRelocationHandles(g_poffHandle);
 
-  /* Performs pass1 optimization */
+  /* Performs string optimization optimization */
 
-  pass1();
+  popt_StringOptimization(g_poffHandle);
 
-  /* Performs pass2 optimization */
+  /* Performs local, "peephole" optimization */
 
   insn_ResetOpCodeRead(g_poffHandle);
-  pass2();
+  popt_LocalOptimization(g_poffHandle);
 
   /* Create final section offsets and relocation entries */
 
   insn_ResetOpCodeRead(g_poffHandle);
-  pass3();
+  popt_Finalization(g_poffHandle);
 
   /* Write the POFF file */
 
