@@ -39,6 +39,7 @@
  **********************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "pas_debug.h"
 #include "pas_pcode.h"
@@ -52,7 +53,7 @@
  * Public Data
  **********************************************************************/
 
-static int16_t g_bEndIn  = 0;  /* 1 = oEND pcode or EOF received */
+static bool g_bEndIn = false;  /* true = oEND pcode or EOF received */
 
 /**********************************************************************
  * Public Functions
@@ -88,13 +89,13 @@ uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
 
   if (g_bEndIn || c == EOF)
     {
-      ptr->op = oEND;
+      ptr->op   = oEND;
       ptr->arg1 = 0;
       ptr->arg2 = 0;
     }
   else
     {
-      ptr->op = c;
+      ptr->op  = c;
       g_bEndIn = (ptr->op == oEND);
 
       if (ptr->op & o8)
@@ -127,6 +128,5 @@ uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
 void insn_ResetOpCodeRead(poffHandle_t handle)
 {
   poffResetAccess(handle);
-  g_bEndIn = 0;
+  g_bEndIn = false;
 }
-

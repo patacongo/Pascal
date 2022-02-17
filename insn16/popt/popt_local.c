@@ -107,7 +107,7 @@ void popt_LocalOptimization(poffHandle_t poffHandle)
 
       do
         {
-          nchanges  = popt_UnaryOptimize ();
+          nchanges  = popt_UnaryOptimize();
           nchanges += popt_LongUnaryOptimize();
           nchanges += popt_BinaryOptimize();
           nchanges += popt_LongBinaryOptimize();

@@ -47,9 +47,11 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void popt_StringOptimization  (poffHandle_t poffHandle);
+void popt_StringOptimization      (poffHandle_t poffHandle);
 
-void popt_StringStackOptimize (poffHandle_t poffHandle,
-                               poffProgHandle_t poffProgHandle);
+void popt_StringLocalOptimization (poffHandle_t poffHandle,
+                                   poffProgHandle_t poffProgHandle);
+void popt_StringStackOptimize     (poffHandle_t poffHandle,
+                                   poffProgHandle_t poffProgHandle);
 
 #endif /* __POPT_STRINGS_H */

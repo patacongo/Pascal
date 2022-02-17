@@ -43,10 +43,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pas_debug.h"
 #include "pofflib.h"
+#include "pas_debug.h"
+#include "pas_machine.h"
+#include "pas_insn.h"
 
 #include "popt.h"
+#include "popt_reloc.h"
+#include "popt_peephole.h"
 #include "popt_strings.h"
 
 /****************************************************************************
@@ -71,6 +75,19 @@ void popt_StringOptimization(poffHandle_t poffHandle)
       fprintf(stderr, "ERROR: Could not get POFF handle\n");
       exit(1);
     }
+
+#if 0
+  /* Perform some early local, peephole string optimization before we get
+   * down to working on the string stack management.
+   */
+
+  popt_StringLocalOptimization(poffHandle, poffProgHandle);
+
+  /* Setup for string stack optimization */
+
+  swapRelocationHandles();
+  insn_ResetOpCodeRead(poffHandle);
+#endif
 
   /* Clean up garbage left from the wasteful string stack logic */
 
