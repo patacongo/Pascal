@@ -350,21 +350,6 @@
 
 #define lbMKSTKC        (0x001d)
 
-/* Replace an RO string with a standard string residing in allocated string
- * stack memory.
- *
- *   function mkstkc(rostring : string) : string;
- *
- * ON INPUT
- *   TOS(0) = Address of RO string
- *   TOS(1) = Length of RO string
- * ON RETURN
- *   TOS(0) = pointer to new allocated standard string
- *   TOS(1) = Length of standard string (unchanged)
- */
-
-#define lbMKSTKSTR      (0x001e)
-
 /* Concatenate a standard string to the end of a standard string.
  *
  *   function strcat(string1 : string, string2 : string) : string;
@@ -379,7 +364,7 @@
  *   TOS(1) = new length of dest standard string2
  */
 
-#define lbSTRCAT        (0x001f)
+#define lbSTRCAT        (0x001e)
 
 /* Concatenate a short string to the end of a short string.
  *
@@ -398,7 +383,7 @@
  *   TOS(2) = new length of dest short string2
  */
 
-#define lbSSTRCAT       (0x0020)
+#define lbSSTRCAT       (0x001f)
 
 /* Concatenate a standard string to the end of a short string.
  *
@@ -416,7 +401,7 @@
  *   TOS(2) = new length of dest short string1
  */
 
-#define lbSSTRCATSTR    (0x0021)
+#define lbSSTRCATSTR    (0x0020)
 
 /* Concatenate a short string to the end of a standard string.
  *
@@ -433,7 +418,7 @@
  *   TOS(1) = new length of dest standard string1
  */
 
-#define lbSTRCATSSTR    (0x0022)
+#define lbSTRCATSSTR    (0x0021)
 
 /* Concatenate a character to the end of a standard string.
  *
@@ -448,7 +433,7 @@
  *   TOS(1) = new length of standard string
  */
 
-#define lbSTRCATC       (0x0023)
+#define lbSTRCATC       (0x0022)
 
 /* Concatenate a character to the end of a short string.
  *
@@ -465,7 +450,7 @@
  *   TOS(2) = new length of short string
  */
 
-#define lbSSTRCATC      (0x0024)
+#define lbSSTRCATC      (0x0023)
 
 /* Compare two pascal standard strings
  *
@@ -480,7 +465,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x0025)
+#define lbSTRCMP        (0x0024)
 
 /* Compare two pascal short strings
  *
@@ -497,7 +482,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMP       (0x0026)
+#define lbSSTRCMP       (0x0025)
 
 /* Compare a pascal short string to a pascal standard string
  *
@@ -513,7 +498,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMPSTR    (0x0027)
+#define lbSSTRCMPSTR    (0x0026)
 
 /* Compare a pascal standard string to a pascal short string
  *
@@ -529,8 +514,8 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMPSSTR    (0x0028)
+#define lbSTRCMPSSTR    (0x0027)
 
-#define MAX_LBOP        (0x0029)
+#define MAX_LBOP        (0x0028)
 
 #endif /* __PAS_LIBRARY_H */

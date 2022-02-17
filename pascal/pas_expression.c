@@ -1048,7 +1048,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
         /* And copy the string to string memory */
 
-        pas_StandardFunctionCall(lbMKSTKSTR);
+        pas_StandardFunctionCall(lbSTRDUP);
 
         /* Release the tokenized string */
 

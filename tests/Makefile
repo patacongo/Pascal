@@ -8,9 +8,9 @@ all: clean
 clean:
 	rm -f core *~ *.stackdump
 	rm -f students.dat contact.txt raindata.dat
-	find . -name "*.err" -exec rm -f {} \;
-	find . -name "*.lst" -exec rm -f {} \;
-	find . -name "*.pex" -exec rm -f {} \;
-	find . -name "*.o1" -exec rm -f {} \;
-	find . -name "*.o" -exec rm -f {} \;
-	find . -name "*.d" -exec rm -f {} \;
+	rm -f src/*.err units/*.err
+	rm -f src/*.lst units/*.lst
+	rm -f src/*.pex units/*.pex
+	rm -f src/*.o1 units/*.o1
+	rm -f src/*.o units/*.o
+	rm -f src/*.d units/*.d

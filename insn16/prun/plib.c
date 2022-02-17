@@ -1097,10 +1097,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       addr1 = TOS(st, 0);     /* Original string data pointer */
       size  = TOS(st, 1);     /* Original string size */
 
-      /* Check if there is space on the string stack for the new string
-       * FIXME:  This logic does not handle strings with other than the
-       * default size!
-       */
+      /* Check if there is space on the string stack for the new string */
 
       if (st->csp + st->stralloc >= st->spb)
         {
@@ -1112,6 +1109,16 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
           addr2    = INT_ALIGNUP(st->csp);
           st->csp += st->stralloc;                    /* Allocate max size */
+
+          /* Limit the size to the maximum size of a standard string.  This
+           * can happen in cases where the string address lies in RO string
+           * memory.
+           */
+
+          if (size > st->stralloc)
+            {
+              size = st->stralloc;
+            }
 
           /* Copy the string into the string stack */
 
@@ -1179,55 +1186,6 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
           TOS(st, 0) = 1;                            /* String length */
           PUSH(st, addr2);                           /* String address */
-        }
-      break;
-
-      /* Replace an RO string with a standard string residing in allocated string
-       * stack memory.
-       *
-       *   function mkstkc(rostring : string) : string;
-       *
-       * ON INPUT
-       *   TOS(0) = Address of RO string
-       *   TOS(1) = Length of RO string
-       * ON RETURN
-       *   TOS(0) = pointer to new allocated standard string
-       *   TOS(1) = Length of standard string (unchanged)
-       */
-
-    case lbMKSTKSTR :
-      addr1 = TOS(st, 0);
-      size  = TOS(st, 1);
-
-      /* Check if there is space on the string stack for the new string */
-
-      if (st->csp + st->stralloc >= st->spb)
-        {
-          errorCode = eSTRSTKOVERFLOW;
-        }
-      else
-        {
-          /* Allocate space on the string stack for the new string */
-
-          addr2    = INT_ALIGNUP(st->csp);
-          st->csp += st->stralloc;               /* Allocate max size */
-
-          /* Limit the size to the maximum size of a standard string */
-
-          if (size > st->stralloc)
-            {
-              size = st->stralloc;
-            }
-
-          /* Copy the character into the string stack */
-
-          src  = (uint8_t *)ATSTACK(st, addr1);  /* Pointer to RO string */
-          dest = (uint8_t *)ATSTACK(st, addr2);  /* Pointer to new string */
-          memcpy(dest, src, size);
-
-          /* Update the string buffer address */
-
-          TOS(st, 0) = addr2;
         }
       break;
 
