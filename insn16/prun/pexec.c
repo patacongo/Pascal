@@ -72,24 +72,27 @@
 
 /* Size of frame info at the beginning of each frame:
  *
- *        |  Base Address  | + 3 * BPERI
+ *        |  Base Address  | + 4 * BPERI
  *        +----------------+
- *        |  Nesting Level | + 2 * BPERI
+ *        |  Nesting Level | + 3 * BPERI
  *        +----------------+
- *        | Return Address | + BPERI
+ *        | Return Address | + 2 * BPERI
  *        +----------------+
- *  FP -> |  Previous FP   | 0
+ *        |  Dynamic Link  | + BPERI
+ *        +----------------+
+ *  FP -> |  Static Link   | 0
  *        +----------------+
  */
 
 /* Offsets relative to the frame pointer */
 
-#define _FPTR   (0)
-#define _FRET   (BPERI)
-#define _FLEVEL (2 * BPERI)
+#define _FSLINK (0)
+#define _FDLINK (BPERI)
+#define _FRET   (2 * BPERI)
+#define _FLEVEL (3 * BPERI)
 
-#define _FBASE  (3 * BPERI)
-#define _FSIZE  (3 * BPERI)
+#define _FBASE  (4 * BPERI)
+#define _FSIZE  (4 * BPERI)
 
 /****************************************************************************
  * Private Function Prototypes
@@ -139,7 +142,7 @@ static int pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel)
 
   /* At this pointer st->fp refers to the calling frame. */
 
-  frameAddr = st->fp - _FPTR;
+  frameAddr = st->fp - _FSLINK;
 
   for (; ; )
     {
@@ -169,28 +172,31 @@ static int pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel)
           break;
         }
 
-      frameAddr = previous[BTOISTACK(_FPTR)] - _FPTR;
+      frameAddr = previous[BTOISTACK(_FSLINK)] - _FSLINK;
     }
 
   /* Set up the new FRAME info.
    *
-   *        |  Base Address  | + 3 * BPERI
+   *        |  Base Address  | + 4 * BPERI
    *        +----------------+
-   *      lsp  |  Nesting Level | + 2 * BPERI
+   *   lsp  |  Nesting Level | + 3 * BPERI
    *        +----------------+
-   *        | Return Address | + BPERI
+   *        | Return Address | + 2 * BPERI
    *        +----------------+
-   *  FP -> |  Previous FP   | 0
+   *        |  Dynamic Link  | + BPERI
+   *        +----------------+
+   *  FP -> |  Static Link   | 0
    *        +----------------+
    *  SP -> |  Caller TOS    |
    */
 
   st->sp                      += BPERI;
   current                      = &st->dstack.i[BTOISTACK(st->sp)];
-  newFP                        = st->sp + _FPTR;
+  newFP                        = st->sp + _FSLINK;
   st->sp                      += _FSIZE - BPERI;
 
-  current[BTOISTACK(_FPTR)]    = frameAddr;
+  current[BTOISTACK(_FSLINK)]  = frameAddr;
+  current[BTOISTACK(_FDLINK)]  = st->fp;
   current[BTOISTACK(_FRET)]    = st->pc + 4;
   current[BTOISTACK(_FLEVEL)]  = st->lsp << 8 | nestingLevel;
 
@@ -648,20 +654,23 @@ static inline int pexec8(struct pexec_s *st, uint8_t opcode)
     case oRET   :
       /*
        *        +----------------+
-       * TOS -> |  Nesting Level | + 2 * BPERI
+       * TOS -> |  Nesting Level | + 3 * BPERI
        *        +----------------+
-       *        | Return Address | + BPERI
+       *        | Return Address | + 2 * BPERI
        *        +----------------+
-       *  FP -> |  Previous FP   | 0
+       *        |  Dynamic Link  | + BPERI
+       *        +----------------+
+       *  FP -> |  Static Link   | 0
        *        +----------------+
        *        |   Caller TOS   |
        */
 
-      POP(st, uparm1);
+      POP(st, uparm1);        /* Restore the nesting level in the LSP */
       st->lsp = uparm1 >> 8;
 
-      POP(st, st->pc);
-      POP(st, st->fp);
+      POP(st, st->pc);        /* Set the PC to the return address */
+      POP(st, st->fp);        /* Set the FP back to the dynamic link */
+      DISCARD(st, 1);         /* Discard the static link */
       return eNOERROR;
 
       /* System Functions (No stack arguments) */
@@ -1503,20 +1512,22 @@ void pexec_Reset(struct pexec_s *st)
 
   st->csp   = 0;
   st->sp    = st->spb + _FBASE;
-  st->fp    = st->spb + _FPTR;
+  st->fp    = st->spb + _FSLINK;
   st->hsp   = st->hpb;
   st->pc    = st->entry;
   st->lsp   = 0;
 
   /* Initialize the P-Machine stack
    *
-   *         |  Base Address  | + 3 * BPERI
+   *         |  Base Address  | + 4 * BPERI
    *         +----------------+
-   *         |  Nesting Level | + 2 * BPERI
+   *         |  Nesting Level | + 3 * BPERI
    *         +----------------+
-   *         | Return Address | + BPERI
+   *         | Return Address | + 2 * BPERI
    *         +----------------+
-   *  FP  -> |  Previous FP   | 0
+   *         |  Dynamic Link  | + BPERI
+   *         +----------------+
+   *  FP  -> |  Static Link   | 0
    *         +----------------+
    */
 

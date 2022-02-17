@@ -359,17 +359,32 @@ static int pexec_FreeFile(uint16_t fileNumber)
 }
 
 static int pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
-                             uint16_t size)
+                            uint16_t size)
 {
   int errorCode = eNOERROR;
+
+  /* Verify the fileNumber */
 
   if (fileNumber >= MAX_OPEN_FILES)
     {
       errorCode = eBADFILE;
     }
+  else if (size >= MAX_FILE_NAME) /* include NUL terminator */
+    {
+      errorCode = eBADFILENAME;
+    }
   else
     {
-      strncpy(g_fileTable[fileNumber].fileName, fileName, MAX_FILE_NAME);
+      /* Copy the file name into the file table */
+
+      memcpy(g_fileTable[fileNumber].fileName, fileName, size);
+
+      /* NUL terminate the fileName so that we can use it like a C string */
+
+      g_fileTable[fileNumber].fileName[size] = '\0';
+
+      /* The set the file type */
+
       g_fileTable[fileNumber].text = text;
     }
 
