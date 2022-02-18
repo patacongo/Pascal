@@ -226,6 +226,7 @@ int          poffGetProgByte(poffHandle_t handle);
 int32_t      poffGetSymbol(poffHandle_t handle,
                poffLibSymbol_t *symbol);
 const char  *poffGetString(poffHandle_t handle, uint32_t index);
+void         poffResetLineNumberTraversal(poffHandle_t handle);
 int32_t      poffGetLineNumber(poffHandle_t handle,
                poffLibLineNumber_t *lineno);
 int32_t      poffGetRawLineNumber(poffHandle_t handle,
@@ -306,6 +307,7 @@ void         poffDumpSymbolTable(poffHandle_t handle, FILE *outFile);
 void         poffDumpRelocTable(poffHandle_t handle, FILE *outFile);
 void         poffDumpTmpRelocTable(poffRelocHandle_t relocHandle,
                 FILE *outFile);
+void         poffDumpLineNumberTable(poffHandle_t handle, FILE *outFile);
 
 /* Helper functions to manage resolution of labels in POFF files.  These
  * just store and retrieve information by label number.

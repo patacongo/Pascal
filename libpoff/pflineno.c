@@ -2,7 +2,7 @@
  * pflineno.c
  * Manage line number information
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,21 +58,13 @@
 #define LINENUMBER_TABLE_INCREMENT    512*sizeof(poffLibLineNumber_t)
 
 /**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
  * Private Variables
  **********************************************************************/
 
-static poffLibLineNumber_t *lineNumberTable;
-static uint32_t             nLineNumbers;
-static uint32_t             lineNumberTableAlloc;
-static uint32_t             prevLineNumberIndex;
-
-/***********************************************************************
- * Private Function Prototypes
- ***********************************************************************/
+static poffLibLineNumber_t *g_lineNumberTable;
+static uint32_t             g_nLineNumbers;
+static uint32_t             g_lineNumberTableAlloc;
+static uint32_t             g_prevLineNumberIndex;
 
 /***********************************************************************
  * Private Functions
@@ -82,20 +74,20 @@ static inline void poffCheckLineNumberAllocation(void)
 {
   /* Check if we have allocated a line number buffer yet */
 
-  if (!lineNumberTable)
+  if (!g_lineNumberTable)
     {
       /* No, allocate it now */
 
-      lineNumberTable = (poffLibLineNumber_t*)
+      g_lineNumberTable = (poffLibLineNumber_t*)
         malloc(INITIAL_LINENUMBER_TABLE_SIZE);
 
-      if (!lineNumberTable)
+      if (!g_lineNumberTable)
         {
           fatal(eNOMEMORY);
         }
 
-      lineNumberTableAlloc = INITIAL_LINENUMBER_TABLE_SIZE;
-      nLineNumbers         = 0;
+      g_lineNumberTableAlloc = INITIAL_LINENUMBER_TABLE_SIZE;
+      g_nLineNumbers         = 0;
     }
 }
 
@@ -103,23 +95,25 @@ static inline void poffCheckLineNumberAllocation(void)
 
 static inline void poffCheckLineNumberReallocation(void)
 {
-  if ((nLineNumbers +1) * sizeof(poffLibLineNumber_t) > lineNumberTableAlloc)
+  if ((g_nLineNumbers +1) * sizeof(poffLibLineNumber_t) >
+      g_lineNumberTableAlloc)
     {
-      uint32_t newAlloc = lineNumberTableAlloc + LINENUMBER_TABLE_INCREMENT;
+      uint32_t newAlloc;
       void *tmp;
 
       /* Reallocate the line number buffer */
 
-      tmp = realloc(lineNumberTable, newAlloc);
-      if (!tmp)
+      newAlloc = g_lineNumberTableAlloc + LINENUMBER_TABLE_INCREMENT;
+      tmp      = realloc(g_lineNumberTable, newAlloc);
+      if (tmp == NULL)
         {
           fatal(eNOMEMORY);
         }
 
       /* And set the new size */
 
-      lineNumberTableAlloc = newAlloc;
-      lineNumberTable      = (poffLibLineNumber_t*)tmp;
+      g_lineNumberTableAlloc = newAlloc;
+      g_lineNumberTable      = (poffLibLineNumber_t*)tmp;
     }
 }
 
@@ -140,8 +134,9 @@ static void poffAddLineNumberToTable(poffLibLineNumber_t *lineno)
 
   /* Save the line number information in the line number table */
 
-  memcpy(&lineNumberTable[nLineNumbers], lineno, sizeof(poffLibLineNumber_t));
-  nLineNumbers++;
+  memcpy(&g_lineNumberTable[g_nLineNumbers], lineno,
+         sizeof(poffLibLineNumber_t));
+  g_nLineNumbers++;
 }
 
 /***********************************************************************/
@@ -149,27 +144,28 @@ static void poffAddLineNumberToTable(poffLibLineNumber_t *lineno)
 
 static void poffDiscardUnusedAllocation(void)
 {
-  uint32_t newAlloc = nLineNumbers * sizeof(poffLibLineNumber_t);
+  uint32_t newAlloc;
   void *tmp;
 
   /* Was a line number table allocated? And, if so, are there unused
    * entries?
    */
 
-  if ((lineNumberTable) && (nLineNumbers < lineNumberTableAlloc))
+  newAlloc = g_nLineNumbers * sizeof(poffLibLineNumber_t);
+  if (g_lineNumberTable != NULL && g_nLineNumbers < g_lineNumberTableAlloc)
     {
       /* Reallocate the line number buffer */
 
-      tmp = realloc(lineNumberTable, newAlloc);
-      if (!tmp)
+      tmp = realloc(g_lineNumberTable, newAlloc);
+      if (tmp == NULL)
         {
           fatal(eNOMEMORY);
         }
 
       /* And set the new size */
 
-      lineNumberTableAlloc = newAlloc;
-      lineNumberTable      = (poffLibLineNumber_t*)tmp;
+      g_lineNumberTableAlloc = newAlloc;
+      g_lineNumberTable      = (poffLibLineNumber_t*)tmp;
     }
 }
 
@@ -201,7 +197,7 @@ void poffReadLineNumberTable(poffHandle_t handle)
 
   /* Initialize global variables */
 
-  prevLineNumberIndex = 0;
+  g_prevLineNumberIndex = 0;
 
   /* Create a table of line number information */
 
@@ -221,7 +217,7 @@ void poffReadLineNumberTable(poffHandle_t handle)
 
   /* Sort the table by offset */
 
-  qsort(lineNumberTable, nLineNumbers,
+  qsort(g_lineNumberTable, g_nLineNumbers,
         sizeof(poffLibLineNumber_t), poffCompareLineNumbers);
 }
 
@@ -235,7 +231,10 @@ poffLibLineNumber_t *poffFindLineNumber(uint32_t offset)
 
   /* Was a line number table allocated? */
 
-  if (!lineNumberTable) return NULL;
+  if (g_lineNumberTable == NULL)
+    {
+      return NULL;
+    }
 
   /* We used the last returned line number entry as a hint to speed
    * up the next search.  We don't know how the line numbers will
@@ -245,15 +244,15 @@ poffLibLineNumber_t *poffFindLineNumber(uint32_t offset)
    * trying to support fast random access.
    */
 
-  if (lineNumberTable[prevLineNumberIndex].offset <= offset)
+  if (g_lineNumberTable[g_prevLineNumberIndex].offset <= offset)
     {
-      firstLineNumberIndex = prevLineNumberIndex;
-      lastLineNumberIndex  = nLineNumbers - 1;
+      firstLineNumberIndex = g_prevLineNumberIndex;
+      lastLineNumberIndex  = g_nLineNumbers - 1;
     }
   else
     {
       firstLineNumberIndex = 0;
-      lastLineNumberIndex  = prevLineNumberIndex;
+      lastLineNumberIndex  = g_prevLineNumberIndex;
     }
 
   /* Search until firstLineNumberIndex and firstLineNumberIndex+1
@@ -278,26 +277,34 @@ poffLibLineNumber_t *poffFindLineNumber(uint32_t offset)
        * to the midpoint.
        */
 
-      if (lineNumberTable[lineNumberIndex].offset > offset)
-        lastLineNumberIndex = lineNumberIndex;
+      if (g_lineNumberTable[lineNumberIndex].offset > offset)
+        {
+          lastLineNumberIndex = lineNumberIndex;
+        }
 
       /* If we have an exact match, we break out of the loop now */
 
-      else if (lineNumberTable[lineNumberIndex].offset == offset)
-        break;
+      else if (g_lineNumberTable[lineNumberIndex].offset == offset)
+        {
+          break;
+        }
 
       /* If the next entry is an offset greater then the one we
        * are searching for, then we can break out of the loop now.
        * We know that lineNumberIndex+1 is a valid index (see above).
        */
 
-      else if (lineNumberTable[lineNumberIndex + 1].offset > offset)
-        break;
+      else if (g_lineNumberTable[lineNumberIndex + 1].offset > offset)
+        {
+          break;
+        }
 
       /* Otherwise, we safely do the following */
 
       else
-        firstLineNumberIndex = lineNumberIndex + 1;
+        {
+          firstLineNumberIndex = lineNumberIndex + 1;
+        }
     }
 
   /* Check that we terminated the loop with a valid line number
@@ -306,15 +313,15 @@ poffLibLineNumber_t *poffFindLineNumber(uint32_t offset)
    * could not find a match, return NULL.
    */
 
-  if (lineNumberTable[lineNumberIndex].offset > offset)
+  if (g_lineNumberTable[lineNumberIndex].offset > offset)
     {
-      prevLineNumberIndex = 0;
+      g_prevLineNumberIndex = 0;
       return NULL;
     }
   else
     {
-      prevLineNumberIndex = lineNumberIndex;
-      return &lineNumberTable[lineNumberIndex];
+      g_prevLineNumberIndex = lineNumberIndex;
+      return &g_lineNumberTable[lineNumberIndex];
     }
 }
 
@@ -322,12 +329,14 @@ poffLibLineNumber_t *poffFindLineNumber(uint32_t offset)
 
 void poffReleaseLineNumberTable(void)
 {
-  if (lineNumberTable)
-    free(lineNumberTable);
+  if (g_lineNumberTable)
+    {
+      free(g_lineNumberTable);
+    }
 
-  lineNumberTable      = NULL;
-  nLineNumbers         = 0;
-  lineNumberTableAlloc = 0;
-  prevLineNumberIndex  = 0;
+  g_lineNumberTable      = NULL;
+  g_nLineNumbers         = 0;
+  g_lineNumberTableAlloc = 0;
+  g_prevLineNumberIndex  = 0;
 }
 

@@ -1,8 +1,8 @@
 /****************************************************************************
- * pfrrawlineno.c
- * Read raw line number data from a POFF file
+ * pflineno.c
+ * Dump contents of a POFF file line number table
  *
- *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,59 +32,44 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ****************************************************************************/
+ ***************************************************************************/
 
-/****************************************************************************
+/***************************************************************************
  * Included Files
- ****************************************************************************/
+ ***************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
-#include <errno.h>
 
-#include "pas_debug.h"    /* Standard types */
-#include "pas_errcodes.h" /* error code definitions */
-
-#include "pas_error.h"    /* error() */
-#include "pofflib.h"      /* POFF library interface */
-#include "pfprivate.h"    /* POFF private definitions */
+#include "pas_debug.h" /* Standard types */
+#include "pfprivate.h" /* POFF private definitions */
+#include "pofflib.h"   /* Public interfaces */
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-/****************************************************************************/
-
-int32_t poffGetRawLineNumber(poffHandle_t handle, poffLineNumber_t *lineno)
+void poffDumpLineNumberTable(poffHandle_t handle, FILE *outFile)
 {
-  poffInfo_t *poffInfo = (poffInfo_t*)handle;
-  uint32_t    lineNumberIndex;
+  poffLibLineNumber_t lineInfo;
+  int32_t             index;
 
-  /* First, check if there is another line number in the table to be had.
-   * This check is a little sloppy in that it assumes the the size in
-   * in the header is an even multiple of line number table entries
-   */
+  fprintf(outFile, "\nPOFF Line Number Table:\n");
+  fprintf(outFile, "INDEX  LINE   PROGRAM    FILENAME\n");
+  fprintf(outFile, "       NUMBER OFFSET\n");
 
-  lineNumberIndex = poffInfo->lineNumberIndex;
-  if (lineNumberIndex >= poffInfo->lineNumberSection.sh_size)
+  for (; ; )
     {
-      /* Return -1 to signal the end of the list */
+      index = poffGetLineNumber(handle, &lineInfo);
+      if (index < 0)
+        {
+          break;
+        }
 
-      memset(lineno, 0, sizeof(poffLineNumber_t));
-      return -1;
-    }
-  else
-    {
-      /* Copy the raw line number information to the user */
-
-      memcpy(lineno, &poffInfo->lineNumberTable[lineNumberIndex],
-             sizeof(poffLineNumber_t));
-
-      /* Set up for the next read */
-
-      poffInfo->lineNumberIndex += poffInfo->lineNumberSection.sh_entsize;
-      return lineNumberIndex;
+      fprintf(outFile, "%-6" PRId32 " %-6" PRIu32 " 0x%08" PRIx32 " %s\n",
+              index, lineInfo.lineno, lineInfo.offset, lineInfo.filename);
     }
 }

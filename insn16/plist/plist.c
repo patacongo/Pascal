@@ -72,21 +72,23 @@
  * Private Data
  **********************************************************************/
 
-static char *poffFileName      = NULL;
-static int  showFileHeader     = 0;
-static int  showSectionHeaders = 0;
-static int  showSymbols        = 0;
-static int  showRelocs         = 0;
-static int  disassemble        = 0;
+static char *g_poffFileName       = NULL;
+static bool  g_showFileHeader     = false;
+static bool  g_showSectionHeaders = false;
+static bool  g_showSymbols        = false;
+static bool  g_showRelocs         = false;
+static bool  g_showLineNumbers    = false;
+static bool  g_disassemble        = false;
 
 /**********************************************************************
  * Private Constant Data
  **********************************************************************/
 
-static const struct option long_options[] =
+static const struct option g_longOptions[] =
 {
   {"all",              0, NULL, 'a'},
   {"file-header",      0, NULL, 'h'},
+  {"lineno",           0, NULL, 'l'},
   {"section-headers",  0, NULL, 'S'},
   {"symbols",          0, NULL, 's'},
   {"relocs",           0, NULL, 'r'},
@@ -99,9 +101,9 @@ static const struct option long_options[] =
  * Private Function Prototypes
  **********************************************************************/
 
-static void showUsage       (const char *progname);
-static void parseArgs       (int argc, char **argv);
-static void dumpProgramData (poffHandle_t poffHandle);
+static void plist_ShowUsage       (const char *progname);
+static void plist_ParseArgs       (int argc, char **argv);
+static void plist_DumpProgramData (poffHandle_t poffHandle);
 
 /**********************************************************************
  * Public Functions
@@ -116,11 +118,11 @@ int main (int argc, char *argv[], char *envp[])
 
   /* Parse the command line arguments */
 
-  parseArgs(argc, argv);
+  plist_ParseArgs(argc, argv);
 
   /* Open source POFF file -- Use .o or command line extension, if supplied */
 
-  (void) extension (poffFileName, "o", fileName, 0);
+  (void)extension(g_poffFileName, "o", fileName, 0);
   if (!(object = fopen (fileName, "rb")))
     {
       printf ("Error opening %s\n", fileName);
@@ -145,37 +147,44 @@ int main (int argc, char *argv[], char *envp[])
 
   /* Dump the File Header */
 
-  if (showFileHeader)
+  if (g_showFileHeader)
     {
       poffDumpFileHeader(poffHandle, stdout);
     }
 
   /* Dump the Section Headers */
 
-  if (showSectionHeaders)
+  if (g_showSectionHeaders)
     {
       poffDumpSectionHeaders(poffHandle, stdout);
     }
 
   /* Dump the symbol table */
 
-  if (showSymbols)
+  if (g_showSymbols)
     {
       poffDumpSymbolTable(poffHandle, stdout);
     }
 
   /* Dump the relocation table */
 
-  if (showRelocs)
+  if (g_showRelocs)
     {
       poffDumpRelocTable(poffHandle, stdout);
     }
 
+  /* Dump line number information */
+
+  if (g_showLineNumbers)
+    {
+      poffDumpLineNumberTable(poffHandle, stdout);
+    }
+
   /* Dump the program data section -- Main Loop */
 
-  if (disassemble)
+  if (g_disassemble)
     {
-      dumpProgramData(poffHandle);
+      plist_DumpProgramData(poffHandle);
     }
 
   /* Close files and release objects */
@@ -183,13 +192,13 @@ int main (int argc, char *argv[], char *envp[])
   poffDestroyHandle(poffHandle);
   (void)fclose(object);
   return 0;
-} /* end main */
+}
 
 /**********************************************************************
  * Private Functions
  **********************************************************************/
 
-static void showUsage(const char *progname)
+static void plist_ShowUsage(const char *progname)
 {
   fprintf(stderr, "Usage:\n");
   fprintf(stderr, "  %s [options] <poff-filename>\n",
@@ -197,6 +206,7 @@ static void showUsage(const char *progname)
   fprintf(stderr, "options:\n");
   fprintf(stderr, "  -a --all              Equivalent to: -h -S -s -r -d\n");
   fprintf(stderr, "  -h --file-header      Display the POFF file header\n");
+  fprintf(stderr, "  -l --section-headers  Display line number information\n");
   fprintf(stderr, "  -S --section-headers  Display the sections' header\n");
   fprintf(stderr, "  -s --symbols          Display the symbol table\n");
   fprintf(stderr, "  -r --relocs           Display the relocations\n");
@@ -207,9 +217,9 @@ static void showUsage(const char *progname)
 
 /***********************************************************************/
 
-static void parseArgs(int argc, char **argv)
+static void plist_ParseArgs(int argc, char **argv)
 {
-  int option_index;
+  int optionIndex;
   int c;
 
   /* Check for existence of filename argument */
@@ -217,56 +227,60 @@ static void parseArgs(int argc, char **argv)
   if (argc < 2)
     {
       fprintf(stderr, "ERROR: POFF filename required\n");
-      showUsage(argv[0]);
+      plist_ShowUsage(argv[0]);
     }
 
   /* Parse the command line options */
 
   do
     {
-      c = getopt_long (argc, argv, "ahSsrdH",
-                       long_options, &option_index);
+      c = getopt_long (argc, argv, "ahlSsrdH",
+                       g_longOptions, &optionIndex);
       if (c != -1)
         {
           switch (c)
             {
             case 'a' :
-              showFileHeader     = 1;
-              showSectionHeaders = 1;
-              showSymbols        = 1;
-              showRelocs         = 1;
-              disassemble        = 1;
+              g_showFileHeader     = true;
+              g_showSectionHeaders = true;
+              g_showSymbols        = true;
+              g_showRelocs         = true;
+              g_disassemble        = true;
               break;
 
             case 'h' :
-              showFileHeader     = 1;
+              g_showFileHeader     = true;
+              break;
+
+            case 'l' :
+              g_showLineNumbers    = true;
               break;
 
             case 'S' :
-              showSectionHeaders = 1;
+              g_showSectionHeaders = true;
               break;
 
             case 's' :
-              showSymbols        = 1;
+              g_showSymbols        = true;
               break;
 
             case 'r' :
-              showRelocs         = 1;
+              g_showRelocs         = true;
               break;
 
             case 'd' :
-              disassemble        = 1;
+              g_disassemble        = true;
               break;
 
             case 'H' :
-              showUsage(argv[0]);
+              plist_ShowUsage(argv[0]);
               break;
 
             default:
               /* Shouldn't happen */
 
               fprintf(stderr, "ERROR: Unrecognized option\n");
-              showUsage(argv[0]);
+              plist_ShowUsage(argv[0]);
             }
         }
     }
@@ -277,17 +291,17 @@ static void parseArgs(int argc, char **argv)
   if (optind != argc-1)
     {
       fprintf(stderr, "ERROR: POFF filename required as final argument\n");
-      showUsage(argv[0]);
+      plist_ShowUsage(argv[0]);
     }
 
   /* Save the POFF file name */
 
-  poffFileName = argv[argc-1];
+  g_poffFileName = argv[argc - 1];
 }
 
 /***********************************************************************/
 
-static void dumpProgramData(poffHandle_t poffHandle)
+static void plist_DumpProgramData(poffHandle_t poffHandle)
 {
   poffLibLineNumber_t *lastln;     /* Previous line number reference */
   poffLibLineNumber_t *ln;         /* Current line number reference */

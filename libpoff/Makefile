@@ -25,8 +25,8 @@ LIBPOFFSRCS += pfrprog.c pfrlineno.c pfrdbgfunc.c pfrrawlineno.c
 LIBPOFFSRCS += pfreloc.c pfrstring.c pfread.c pfrseek.c
 LIBPOFFSRCS += pfrelease.c pfdbgcontainer.c pfdbgdiscard.c
 LIBPOFFSRCS += pfxprog.c pfxrodata.c pfiprog.c pfirodata.c
-LIBPOFFSRCS += pfdhdr.c pfdsymbol.c pfdreloc.c pfdtreloc.c pflabel.c
-LIBPOFFSRCS += pflineno.c pofferr.c pfdbginfo.c pfswap.c
+LIBPOFFSRCS += pfdhdr.c pfdsymbol.c pfdreloc.c pfdtreloc.c pfdlineno.c
+LIBPOFFSRCS += pflabel.c pflineno.c pofferr.c pfdbginfo.c pfswap.c
 OBJS         = $(LIBPOFFSRCS:.c=.o)
 DEPS         = $(LIBPOFFSRCS:.c=.d)
 

@@ -2,7 +2,7 @@
  * plink.c
  * P-Code Linker
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,107 +58,41 @@
 #include "plink.h"
 
 /**********************************************************************
- * Definitions
+ * Pre-processor Definitions
  **********************************************************************/
 
 #define MAX_POFF_FILES  8
 
 /**********************************************************************
- * Private Type Definitions
- **********************************************************************/
-
-/**********************************************************************
- * Private Constant Data
- **********************************************************************/
-
-/**********************************************************************
  * Private Data
  **********************************************************************/
 
-static const char *outFileName;
-static const char *inFileName[MAX_POFF_FILES];
-static int         nPoffFiles      = 0;
+static const char *g_outFileName;
+static const char *g_inFileName[MAX_POFF_FILES];
+static int         g_nPoffFiles = 0;
 
 /**********************************************************************
  * Private Function Prototypes
  **********************************************************************/
 
-static void     showUsage        (const char *progname);
-static void     parseArgs        (int argc, char **argv);
-static void     loadInputFiles   (poffHandle_t outHandle);
-static void     checkFileHeader  (poffHandle_t inHandle, poffHandle_t outHandle,
-                                  uint32_t pcOffset, bool *progFound);
-static uint32_t mergeRoData      (poffHandle_t inHandle, poffHandle_t outHandle);
-static uint32_t mergeProgramData (poffHandle_t inHandle, poffHandle_t outHandle,
-                                  uint32_t pcOffset, uint32_t roOffset);
-static uint32_t mergeFileNames   (poffHandle_t inHandle, poffHandle_t outHandle);
-static uint32_t mergeLineNumbers (poffHandle_t inHandle, poffHandle_t outHandle,
-                                  uint32_t pcOffset, uint32_t fnOffset);
-static void     writeOutputFile  (poffHandle_t outHandle);
-
-/**********************************************************************
- * Public Data
- **********************************************************************/
-
-/**********************************************************************
- * Private Variables
- **********************************************************************/
-
-/**********************************************************************
- * Public Functions
- **********************************************************************/
-
-int main(int argc, char *argv[], char *envp[])
-{
-  poffHandle_t outHandle;
-
-  /* Parse the command line arguments */
-
-  parseArgs(argc, argv);
-
-  /* Create a handle to hold the output file data */
-
-  outHandle = poffCreateHandle();
-  if (outHandle == NULL) fatal(eNOMEMORY);
-
-  /* Load the POFF files specified on the command line */
-
-  loadInputFiles(outHandle);
-
-  /* Verify that all symbols were processed correctly */
-
-  verifySymbols();
-
-  /* Apply the relocation data to the program data */
-
-  applyRelocations(outHandle);
-
-  /* Write the symbol table information to the output file */
-
-  writeSymbols(outHandle);
-
-  /* Write the output file */
-
-  writeOutputFile(outHandle);
-
-  /* Release bufferred symbol/relocation informtion */
-
-  releaseSymbols();
-  releaseRelocations();
-
-  /* Release the input file data */
-
-  poffDestroyHandle(outHandle);
-
-  return 0;
-
-} /* end main */
+static void     plink_ShowUsage        (const char *progname);
+static void     plink_ParseArguments   (int argc, char **argv);
+static void     plink_LoadInputFiles   (poffHandle_t outHandle);
+static void     plink_CheckFileHeader  (poffHandle_t inHandle, poffHandle_t outHandle,
+                                        uint32_t pcOffset, bool *progFound);
+static uint32_t plink_MergeRoData      (poffHandle_t inHandle, poffHandle_t outHandle);
+static uint32_t plink_MergeProgramData (poffHandle_t inHandle, poffHandle_t outHandle,
+                                        uint32_t pcOffset, uint32_t roOffset);
+static uint32_t plink_MergeFileNames   (poffHandle_t inHandle, poffHandle_t outHandle);
+static uint32_t plink_MergeLineNumbers (poffHandle_t inHandle, poffHandle_t outHandle,
+                                        uint32_t pcOffset, uint32_t fnOffset);
+static void     plink_WirteOutputFile  (poffHandle_t outHandle);
 
 /**********************************************************************
  * Private Functions
  **********************************************************************/
 
-static void showUsage(const char *progname)
+static void plink_ShowUsage(const char *progname)
 {
   fprintf(stderr, "Usage:\n");
   fprintf(stderr, "  %s <in-file-name> {<in-file-name>} <out-file-name>\n",
@@ -167,7 +101,7 @@ static void showUsage(const char *progname)
 
 /***********************************************************************/
 
-static void parseArgs(int argc, char **argv)
+static void plink_ParseArguments(int argc, char **argv)
 {
   int i;
 
@@ -177,20 +111,20 @@ static void parseArgs(int argc, char **argv)
     {
       fprintf(stderr,
               "ERROR: <in-file-name> and one <out-file-name> required\n");
-      showUsage(argv[0]);
-    } /* end if */
+      plink_ShowUsage(argv[0]);
+    }
 
   /* Get the name of the p-code file(s) from the last argument(s) */
 
   for (i = 1; i < argc-1; i++)
     {
-      inFileName[nPoffFiles] = argv[i];
-      nPoffFiles++;
+      g_inFileName[g_nPoffFiles] = argv[i];
+      g_nPoffFiles++;
     }
 
   /* The last thing on the command line is the output file name */
 
-  outFileName = argv[argc-1];
+  g_outFileName = argv[argc-1];
 }
 
 /***********************************************************************/
@@ -199,11 +133,11 @@ static void parseArgs(int argc, char **argv)
  * to be used in the final link.
  */
 
-static void loadInputFiles(poffHandle_t outHandle)
+static void plink_LoadInputFiles(poffHandle_t outHandle)
 {
   poffHandle_t inHandle;
   FILE        *instream;
-  char         fileName[FNAME_SIZE+1];  /* Object file name */
+  char         fileName[FNAME_SIZE + 1];  /* Object file name */
   uint32_t     pcOffset = 0;
   uint32_t     fnOffset = 0;
   uint32_t     symOffset = 0;
@@ -217,7 +151,7 @@ static void loadInputFiles(poffHandle_t outHandle)
 
   /* Load the POFF files specified on the command line */
 
-  for (i = 0; i < nPoffFiles; i++)
+  for (i = 0; i < g_nPoffFiles; i++)
     {
       /* Create a handle to hold the input file data */
 
@@ -228,7 +162,7 @@ static void loadInputFiles(poffHandle_t outHandle)
        * input file name.
        */
 
-      (void)extension(inFileName[i], "o", fileName, 0);
+      (void)extension(g_inFileName[i], "o", fileName, 0);
 
       /* Open the input file */
 
@@ -252,29 +186,30 @@ static void loadInputFiles(poffHandle_t outHandle)
 
       /* Check file header for critical settings */
 
-      checkFileHeader(inHandle, outHandle, pcOffset, &progFound);
+      plink_CheckFileHeader(inHandle, outHandle, pcOffset, &progFound);
 
       /* Merge the read-only data sections */
 
-      roOffset = mergeRoData(inHandle, outHandle);
+      roOffset = plink_MergeRoData(inHandle, outHandle);
 
       /* Merge program section data from the new input file into the
        * output file container.
        */
 
-      pcEnd = mergeProgramData(inHandle, outHandle, pcOffset, roOffset);
+      pcEnd = plink_MergeProgramData(inHandle, outHandle, pcOffset,
+                                     roOffset);
 
       /* Merge the file name data from the new input file into the
        * output file container.
        */
 
-      fnEnd = mergeFileNames(inHandle, outHandle);
+      fnEnd = plink_MergeFileNames(inHandle, outHandle);
 
       /* Merge the line number data from the new input file into the
        * output file container.
        */
 
-      (void)mergeLineNumbers(inHandle, outHandle, pcOffset, fnOffset);
+      (void)plink_MergeLineNumbers(inHandle, outHandle, pcOffset, fnOffset);
 
       /* On this pass, we just want to collect all symbol table in a
        * local list where we can resolve all undefined symbols (later)
@@ -316,13 +251,13 @@ static void loadInputFiles(poffHandle_t outHandle)
       fprintf(stderr, "ERROR: No program file found in input files\n");
       exit(1);
     }
-
-} /* end loadInputFiles */
+}
 
 /***********************************************************************/
 
-static void checkFileHeader(poffHandle_t inHandle, poffHandle_t outHandle,
-                            uint32_t pcOffset, bool *progFound)
+static void plink_CheckFileHeader(poffHandle_t inHandle,
+                                  poffHandle_t outHandle,
+                                  uint32_t pcOffset, bool *progFound)
 {
   uint8_t fileType;
 
@@ -378,7 +313,8 @@ static void checkFileHeader(poffHandle_t inHandle, poffHandle_t outHandle,
 
 /***********************************************************************/
 
-static uint32_t mergeRoData(poffHandle_t inHandle, poffHandle_t outHandle)
+static uint32_t plink_MergeRoData(poffHandle_t inHandle,
+                                  poffHandle_t outHandle)
 {
   uint8_t *newRoData;
   uint32_t oldRoDataSize;
@@ -408,9 +344,9 @@ static uint32_t mergeRoData(poffHandle_t inHandle, poffHandle_t outHandle)
  * section references as they are encountered.
  */
 
-static uint32_t mergeProgramData(poffHandle_t inHandle,
-                               poffHandle_t outHandle,
-                               uint32_t pcOffset, uint32_t roOffset)
+static uint32_t plink_MergeProgramData(poffHandle_t inHandle,
+                                       poffHandle_t outHandle,
+                                       uint32_t pcOffset, uint32_t roOffset)
 {
   opType_t op;
   uint32_t pc;
@@ -450,8 +386,8 @@ static uint32_t mergeProgramData(poffHandle_t inHandle,
  * section references as they are encountered.
  */
 
-static uint32_t mergeFileNames(poffHandle_t inHandle,
-                             poffHandle_t outHandle)
+static uint32_t plink_MergeFileNames(poffHandle_t inHandle,
+                                     poffHandle_t outHandle)
 {
   int32_t inOffset;
   uint32_t outOffset;
@@ -484,10 +420,10 @@ static uint32_t mergeFileNames(poffHandle_t inHandle,
  * section references as they are encountered.
  */
 
-static uint32_t mergeLineNumbers(poffHandle_t inHandle,
-                               poffHandle_t outHandle,
-                               uint32_t pcOffset,
-                               uint32_t fnOffset)
+static uint32_t plink_MergeLineNumbers(poffHandle_t inHandle,
+                                       poffHandle_t outHandle,
+                                       uint32_t pcOffset,
+                                       uint32_t fnOffset)
 {
   poffLineNumber_t lineno;
   int32_t inOffset;
@@ -518,7 +454,7 @@ static uint32_t mergeLineNumbers(poffHandle_t inHandle,
 
 /***********************************************************************/
 
-static void writeOutputFile(poffHandle_t outHandle)
+static void plink_WirteOutputFile(poffHandle_t outHandle)
 {
   FILE *outstream;
   char  fileName[FNAME_SIZE+1];  /* Output file name */
@@ -527,7 +463,7 @@ static void writeOutputFile(poffHandle_t outHandle)
    * input file name.
    */
 
-  (void)extension(outFileName, "pex", fileName, 0);
+  (void)extension(g_outFileName, "pex", fileName, 0);
 
   /* Open the output file */
 
@@ -547,5 +483,51 @@ static void writeOutputFile(poffHandle_t outHandle)
 
   fclose(outstream);
 }
+/**********************************************************************
+ * Public Functions
+ **********************************************************************/
 
-/***********************************************************************/
+int main(int argc, char *argv[], char *envp[])
+{
+  poffHandle_t outHandle;
+
+  /* Parse the command line arguments */
+
+  plink_ParseArguments(argc, argv);
+
+  /* Create a handle to hold the output file data */
+
+  outHandle = poffCreateHandle();
+  if (outHandle == NULL) fatal(eNOMEMORY);
+
+  /* Load the POFF files specified on the command line */
+
+  plink_LoadInputFiles(outHandle);
+
+  /* Verify that all symbols were processed correctly */
+
+  verifySymbols();
+
+  /* Apply the relocation data to the program data */
+
+  applyRelocations(outHandle);
+
+  /* Write the symbol table information to the output file */
+
+  writeSymbols(outHandle);
+
+  /* Write the output file */
+
+  plink_WirteOutputFile(outHandle);
+
+  /* Release bufferred symbol/relocation informtion */
+
+  releaseSymbols();
+  releaseRelocations();
+
+  /* Release the input file data */
+
+  poffDestroyHandle(outHandle);
+
+  return 0;
+}

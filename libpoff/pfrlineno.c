@@ -2,7 +2,7 @@
  * pfrlineno.c
  * Read line number data from a POFF file
  *
- *   Copyright (C) 2008-2009 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,14 @@
 
 /***********************************************************************/
 
+void poffResetLineNumberTraversal(poffHandle_t handle)
+{
+  poffInfo_t *poffInfo = (poffInfo_t*)handle;
+  poffInfo->lineNumberIndex = 0;
+}
+
+/***********************************************************************/
+
 int32_t poffGetLineNumber(poffHandle_t handle, poffLibLineNumber_t *lineno)
 {
   poffInfo_t       *poffInfo = (poffInfo_t*)handle;
@@ -90,6 +98,7 @@ int32_t poffGetLineNumber(poffHandle_t handle, poffLibLineNumber_t *lineno)
         {
           fatal(ePOFFCONFUSION);
         }
+
       stringTableIndex = (uint32_t)poffInfo->fileNameTable[pln->ln_fileno];
 
       /* Return the line number information */
@@ -104,4 +113,3 @@ int32_t poffGetLineNumber(poffHandle_t handle, poffLibLineNumber_t *lineno)
       return lineNumberIndex;
     }
 }
-
