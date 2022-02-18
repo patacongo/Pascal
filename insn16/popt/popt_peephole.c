@@ -230,6 +230,7 @@ void popt_SetupPeephole(poffHandle_t poffHandle,
   g_poffProgHandle   = poffProgHandle;
   g_inSectionOffset  = 0;
   g_outSectionOffset = 0;
+  g_endOut           = false;
 
   /* Get the first relocation entry */
 

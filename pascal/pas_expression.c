@@ -1046,7 +1046,11 @@ static exprType_t pas_Factor(exprType_t findExprType)
         pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
         pas_GenerateDataOperation(opLAC, offset);
 
-        /* And copy the string to string memory */
+        /* And copy the string to string memory.  NOTE:  In many cases this
+         * STRDUP is not necessary.  It is not necessary when the string is
+         * not modified.  Logic in the optimizer will attempt to identifier
+         * such cases when the STRDUP is not needed and remove it.
+         */
 
         pas_StandardFunctionCall(lbSTRDUP);
 

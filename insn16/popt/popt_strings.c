@@ -76,7 +76,6 @@ void popt_StringOptimization(poffHandle_t poffHandle)
       exit(1);
     }
 
-#if 0
   /* Perform some early local, peephole string optimization before we get
    * down to working on the string stack management.
    */
@@ -87,7 +86,6 @@ void popt_StringOptimization(poffHandle_t poffHandle)
 
   swapRelocationHandles();
   insn_ResetOpCodeRead(poffHandle);
-#endif
 
   /* Clean up garbage left from the wasteful string stack logic */
 

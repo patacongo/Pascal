@@ -91,6 +91,7 @@ void popt_LocalOptimization(poffHandle_t poffHandle)
 
   /* Initialization */
 
+  insn_ResetOpCodeRead(poffHandle);
   popt_SetupPeephole(poffHandle, poffProgHandle);
 
   /* Outer loop traverse the file op-code by op-code until the oEND P-Code
