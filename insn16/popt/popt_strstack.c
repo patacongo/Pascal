@@ -593,13 +593,14 @@ static void popt_DoPop(poffHandle_t poffHandle,
                * new memory from the string stack.
                */
 
-              if (g_opCode.arg2 == lbSTRINIT  ||
-                  g_opCode.arg2 == lbSSTRINIT ||
-                  g_opCode.arg2 == lbSTRTMP   ||
-                  g_opCode.arg2 == lbSTRDUP   ||
-                  g_opCode.arg2 == lbSSTRDUP  ||
-                  g_opCode.arg2 == lbMKSTKC   ||
-                  g_opCode.arg2 == lbBSTR2STR)
+              if (g_opCode.arg2 == lbSTRINIT    ||
+                  g_opCode.arg2 == lbSSTRINIT   ||
+                  g_opCode.arg2 == lbSTRTMP     ||
+                  g_opCode.arg2 == lbSTRDUP     ||
+                  g_opCode.arg2 == lbSSTRDUP    ||
+                  g_opCode.arg2 == lbMKSTKC     ||
+                  g_opCode.arg2 == lbBSTR2STR   ||
+                  g_opCode.arg2 == lbCOPYSUBSTR)
                 {
                   popt_DebugMessage("  Keep PUSH at %04x, level %d\n",
                                     pushOffset, g_currentLevel);

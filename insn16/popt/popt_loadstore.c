@@ -76,6 +76,59 @@ static bool popt_CheckDataOperation(int16_t index)
  * Public Functions
  ****************************************************************************/
 
+
+/****************************************************************************/
+
+int16_t popt_StackOrderOptimize(void)
+{
+  int16_t  nchanges = 0;
+  register int16_t i;
+
+  TRACE(stderr, "[popt_StackOrderOptimize]");
+
+  /* At least three pcodes are needed to perform the following Store
+   * optimizations.
+   */
+
+  i = 2;
+  while (i < g_nOpPtrs)
+    {
+      /* Search for an exchange instruction */
+
+      switch (g_opPtr[i]->op)
+        {
+        case oXCHG :  /* (Two 16-bit stack arguments) */
+          if (popt_CheckDataOperation(i - 1) &&
+              popt_CheckDataOperation(i - 2))
+            {
+              popt_SwapPCodePair(i - 1, i - 2);
+              popt_DeletePCode(i);
+            }
+          else
+            {
+              i++;
+            }
+          break;
+
+        case oDISCARD :  /* (One 16-bit stack argument) */
+          if (popt_CheckDataOperation(i - 1))
+            {
+              popt_DeletePCodePair(i, i - 1);
+            }
+          else
+            {
+              i++;
+            }
+          break;
+
+        default :
+          i++;
+          break;
+        }
+    }
+
+  return nchanges;
+}
 /****************************************************************************/
 
 int16_t popt_LoadOptimize(void)
@@ -323,46 +376,6 @@ int16_t popt_StoreOptimize (void)
                 {
                   i++;
                 }
-            }
-          else
-            {
-              i++;
-            }
-          break;
-
-        default :
-          i++;
-          break;
-        }
-    }
-
-  return nchanges;
-}
-
-int16_t popt_ExchangeOptimize(void)
-{
-  int16_t  nchanges = 0;
-  register int16_t i;
-
-  TRACE(stderr, "[popt_ExchangeOptimize]");
-
-  /* At least three pcodes are needed to perform the following Store
-   * optimizations.
-   */
-
-  i = 2;
-  while (i < g_nOpPtrs)
-    {
-      /* Search for an exchange instruction */
-
-      switch (g_opPtr[i]->op)
-        {
-        case oXCHG :  /* (Two 16-bit stack arguments) */
-          if (popt_CheckDataOperation(i - 1) &&
-              popt_CheckDataOperation(i - 2))
-            {
-              popt_SwapPCodePair(i - 1, i - 2);
-              popt_DeletePCode(i);
             }
           else
             {

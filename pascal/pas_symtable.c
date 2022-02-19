@@ -98,6 +98,7 @@ unsigned int g_nConst        = 0;     /* Number constant table entries */
  * (5) Non-standard Pascal function
  * (6) Non-standard Pascal procedure
  * (7) Built-In Function
+ * (8) Borland-style string operations
  */
 
 static const reservedWord_t g_rsw[] =                /* Reserved word list */
@@ -114,8 +115,11 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"CASE",           tCASE,           txNONE},       /* (1) */
   {"CHR",            tSTDFUNC,        txCHR},        /* (2) */
   {"CLOSEFILE",      tSTDPROC,        txCLOSEFILE},  /* (3) */
+  {"CONCAT",         tSTDFUNC,        txCONCAT},     /* (8) */
   {"CONST",          tCONST,          txNONE},       /* (1) */
+  {"COPY",           tSTDFUNC,        txCOPY},       /* (8) */
   {"COS",            tSTDFUNC,        txCOS},        /* (2) */
+  {"DELETE",         tSTDPROC,        txDELETE},     /* (8) */
   {"DISPOSE",        tSTDPROC,        txDISPOSE},    /* (3) */
   {"DIV",            tDIV,            txNONE},       /* (1) */
   {"DO",             tDO,             txNONE},       /* (1) */
@@ -142,9 +146,10 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"IN",             tIN,             txNONE},       /* (1) */
   {"INCLUDE",        tSTDFUNC,        txINCLUDE},    /* (2) */
   {"INITIALIZATION", tINITIALIZATION, txNONE},       /* (1) */
+  {"INSERT",         tSTDPROC,        txINSERT},     /* (8) */
   {"INTERFACE",      tINTERFACE,      txNONE},       /* (1) */
   {"LABEL",          tLABEL,          txNONE},       /* (1) */
-  {"LENGTH",         tBUILTIN,        txLENGTH},     /* (7) */
+  {"LENGTH",         tBUILTIN,        txLENGTH},     /* (8) */
   {"LN",             tSTDFUNC,        txLN},         /* (2) */
   {"MOD",            tMOD,            txNONE},       /* (1) */
   {"NEW",            tSTDPROC,        txNEW},        /* (3) */
@@ -156,6 +161,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"PACK",           tSTDPROC,        txPACK},       /* (3) */
   {"PACKED",         tPACKED,         txNONE},       /* (1) */
   {"PAGE",           tSTDPROC,        txPAGE},       /* (3) */
+  {"POS",            tSTDFUNC,        txPOS},        /* (8) */
   {"PRED",           tSTDFUNC,        txPRED},       /* (2) */
   {"PROCEDURE",      tPROCEDURE,      txNONE},       /* (1) */
   {"PROGRAM",        tPROGRAM,        txNONE},       /* (1) */
@@ -177,6 +183,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"SIZEOF",         tBUILTIN,        txSIZEOF},     /* (7) */
   {"SQR",            tSTDFUNC,        txSQR},        /* (2) */
   {"SQRT",           tSTDFUNC,        txSQRT},       /* (2) */
+  {"STR",            tSTDPROC,        txSTR},        /* (8) */
   {"SUCC",           tSTDFUNC,        txSUCC},       /* (2) */
   {"THEN",           tTHEN,           txNONE},       /* (1) */
   {"TO",             tTO,             txNONE},       /* (1) */
@@ -186,7 +193,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"UNPACK",         tSTDPROC,        txUNPACK},     /* (3) */
   {"UNTIL",          tUNTIL,          txNONE},       /* (1) */
   {"USES",           tUSES,           txNONE},       /* (1) */
-  {"VAL",            tSTDPROC,        txVAL},        /* (6) */
+  {"VAL",            tSTDPROC,        txVAL},        /* (8) */
   {"VAR",            tVAR,            txNONE},       /* (1) */
   {"WHILE",          tWHILE,          txNONE},       /* (1) */
   {"WITH",           tWITH,           txNONE},       /* (1) */

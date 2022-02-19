@@ -358,7 +358,6 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
   uint8_t  *src;
   uint8_t  *dest;
   uint8_t  *name;
-  int32_t   value;
   int       errorCode = eNOERROR;
 
   switch (subfunc)
@@ -927,64 +926,6 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       errorCode = pas_Str2bstr(st, addr1, uparm1, addr2, uparm2, offset);
       break;
 
-      /* Convert a string to a numeric value
-       *   procedure val(const s : string; var v; var code : word);
-       *
-       * Description:
-       * val() converts the value represented in the string S to a numerical
-       * value, and stores this value in the variable V, which can be of type
-       * Longint, Real and Byte. If the conversion isn't succesfull, then the
-       * parameter Code contains the index of the character in S which
-       * prevented the conversion. The string S is allowed to contain spaces
-       * in the beginning.
-       *
-       * The string S can contain a number in decimal, hexadecimal, binary or
-       * octal format, as described in the language reference.
-       *
-       * Errors:
-       * If the conversion doesn't succeed, the value of Code indicates the
-       * position where the conversion went wrong.
-       *
-       * ON INPUT
-       *   TOS(0) = address of code
-       *   TOS(1) = address of value
-       *   TOS(2) = length of source string
-       *   TOS(3) = pointer to source string
-       * ON RETURN: actual parameters released
-       */
-
-    case lbVAL :
-
-      /* Get the string information */
-
-      size = TOS(st, 2);                         /* Number of bytes in string */
-      src  = (uint8_t *)ATSTACK(st, TOS(st, 3)); /* Pointer to string */
-
-      /* Make a C string out of the pascal string */
-
-      name = pexec_mkcstring(src, size);
-      if (name == NULL)
-        {
-          errorCode = eNOMEMORY;
-        }
-      else
-        {
-          /* Convert the string to an integer */
-
-          value = atoi((char *)name);
-          if ((value < MININT) || (value > MAXINT))
-            {
-              errorCode = eINTEGEROVERFLOW;
-            }
-          else
-            {
-              PUTSTACK(st, TOS(st, 0), 0);
-              PUTSTACK(st, TOS(st, 1), value);
-              DISCARD(st, 4);
-            }
-        }
-      break;
-
       /* Initialize a new string variable. Create a string buffer.
        *   procedure mkstk(VAR str : string);
        *
@@ -1484,6 +1425,192 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
     case lbSTRCMPSSTR :
       errorCode = eNOTYET;
+      break;
+
+      /* Copy a substring from a string.
+       *
+       *   Copy(from : string, from, howmuch: integer) : string
+       *
+       * ON INPUT
+       *   TOS(0) = Integer value that provides the length of the substring
+       *   TOS(1) = Integer value that provides the (1-based) string position
+       *   TOS(2) = Address of string data
+       *   TOS(3) = Length of the string
+       * ON OUTPUT
+       *   TOS(0) = Address of the substring data
+       *   TOS(1) = Length of the substring
+       */
+
+    case lbCOPYSUBSTR :
+      POP(st, size);
+      POP(st, offset);
+      addr1  = TOS(st, 0);
+      uparm1 = TOS(st, 1);
+
+      /* Initialize a temporary string on the stack.
+       *
+       * First, check if there is space on the string stack for the new string
+       * buffer.
+       */
+
+      if (st->csp + st->stralloc >= st->spb)
+        {
+          errorCode = eSTRSTKOVERFLOW;
+        }
+      else
+        {
+          /* Allocate and initialize a string buffer on the string stack for
+           * the new string.
+           */
+
+          addr2   = INT_ALIGNUP(st->csp);
+          st->csp = addr2 + st->stralloc;
+
+          TOS(st, 0) = addr2;
+          TOS(st, 1) = 0;
+
+          /* Limit the indices to fit within the string */
+
+          if (offset >= 1 && offset <= uparm1 && size > 0)
+            {
+              /* Make the character position a zero-based index */
+
+              offset--;
+
+              /* Limit the substring size if necesssary */
+
+              if (size > st->stralloc)
+                {
+                  size = st->stralloc;
+                }
+
+              if (offset + size > uparm1)
+                {
+                  size = uparm1 - offset;
+                }
+
+              /* And copy the substring */
+
+              src  = ATSTACK(st, addr1);
+              dest = ATSTACK(st, addr2);
+              memcpy(dest, &src[offset], size);
+
+              TOS(st, 1) = size;
+            }
+        }
+      break;
+
+      /* Find a substring in a string.  Returns the (1-based) character position of
+       * the substring or zero if the substring is not found.
+       *
+       *   Pos(substr, s : string) : integer
+       *
+       * ON INPUT
+       *   TOS(2) = Address of string data
+       *   TOS(3) = Length of the string
+       *   TOS(2) = Address of substring data
+       *   TOS(3) = Length of the substring
+       * ON OUTPUT
+       *   TOS(0) = Position of the substring (or zero if not present)
+       */
+
+    case lbFINDSUBSTR :
+      {
+        char *str;
+        char *substr;
+        char *result;
+
+        POP(st, addr1);
+        POP(st, uparm1);
+        POP(st, addr2);
+        POP(st, uparm2);
+
+        /* Find the substring in the string */
+
+        str    = (char *)ATSTACK(st, addr1);
+        substr = (char *)ATSTACK(st, addr2);
+        result = strstr(str, substr);
+
+        /* strstr will NULL if the stubstring is not found but, oddly, will
+         * return result == str if substr is 0.
+         */
+
+        if (result != NULL)
+          {
+            offset = (uintptr_t)result - (uintptr_t)str + 1;
+          }
+        else
+          {
+            /* Character position zero means that the substring was not
+             * found.
+             */
+
+            offset = 0;
+          }
+
+        PUSH(st, offset);
+      }
+      break;
+
+      /* Convert a string to a numeric value
+       *   procedure val(const s : string; var v; var code : word);
+       *
+       * Description:
+       * val() converts the value represented in the string S to a numerical
+       * value, and stores this value in the variable V, which can be of type
+       * LInteger, Longinteger, ShortInteger, or Real. If the conversion isn't
+       * succesfull, then the parameter Code contains the index of the character
+       * in S which prevented the conversion. The string S is allowed to contain
+       * spaces in the beginning.
+       *
+       * The string S can contain a number in decimal, hexadecimal, binary or
+       * octal format, as described in the language reference.
+       *
+       * Errors:
+       * If the conversion doesn't succeed, the value of Code indicates the
+       * position where the conversion went wrong.
+       *
+       * ON INPUT
+       *   TOS(0) = address of code
+       *   TOS(1) = address of value
+       *   TOS(2) = length of source string
+       *   TOS(3) = pointer to source string
+       * ON RETURN: actual parameters released
+       */
+
+    case lbVAL :
+      POP(st, addr1);                            /* Pointer to error code */
+      POP(st, addr2);                            /* Pointer to string value */
+      POP(st, size);                             /* Size of string */
+      POP(st, uparm1);                           /* Address of string buffer */
+
+      /* Make a C string out of the pascal string */
+
+      src       = (uint8_t *)ATSTACK(st, uparm1);
+      src[size] = '\0';
+      name      = pexec_mkcstring(src, size);
+      if (name == NULL)
+        {
+          errorCode = eNOMEMORY;
+        }
+      else
+        {
+          long longValue;
+          char *endptr;
+
+          /* Convert the string to an integer */
+
+          longValue = strtol((char *)name, &endptr, 0);
+          if (longValue < MININT || longValue > MAXINT)
+            {
+              errorCode = eINTEGEROVERFLOW;
+            }
+          else
+            {
+              PUTSTACK(st, (ustack_t)*endptr, addr1);
+              PUTSTACK(st, (ustack_t)longValue, addr2);
+            }
+        }
       break;
 
     default :

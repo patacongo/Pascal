@@ -289,11 +289,16 @@ void getToken(void)
       /* '.' digit is a real number */
 
       else if (isdigit(inChar))
-        unsignedRealNumber();
+        {
+          unsignedRealNumber();
+        }
 
       /* Otherwise, it is just a '.' */
 
-      else g_token = '.';
+      else
+        {
+          g_token = '.';
+        }
     }
 
   /* Process '<' or '<=' or '<>' or '<<' */
@@ -547,33 +552,60 @@ static void identifier(void)
 
 static void string(void)
 {
-  register int16_t count = 0;         /* # chars in string */
+  int16_t count = 0;         /* # chars in string */
 
   g_token = tSTRING_CONST;           /* indicate string constant type */
   getCharacter();                    /* skip over 1st single quote */
 
-  while (inChar != SQUOTE)           /* loop until next single quote */
-    {
-      if (inChar == '\n')            /* check for EOL in string */
-        {
-          error(eNOSQUOTE);          /* ERROR, terminate string */
-          break;
-        }
-      else
-        {
-          *g_stringSP++ = inChar;    /* concatenate character */
-          count++;                   /* bump count of chars */
-        }
-      getCharacter();                /* get the next character */
-    }
-  *g_stringSP++ = '\0';              /* terminate ASCIIZ string */
+  /* Outer loop handles quoted single quotes in the comment */
 
-  getCharacter();                    /* skip over last single quote */
-  if (count == 1)                    /* Check for char constant */
+  for (; ; )
     {
-      g_token    = tCHAR_CONST;      /* indicate char constant type */
-      g_tknUInt  = *g_tokenString;   /* (integer) value = single char */
-      g_stringSP = g_tokenString;    /* "pop" from string stack */
+      uint16_t prevChar;
+
+      /* The inner loop concatenates normal text characters until
+       * a single quote is encountered.
+       */
+
+      while (inChar != SQUOTE)        /* Loop until next single quote */
+        {
+          if (inChar == '\n')         /* Check for EOL in string */
+            {
+              error(eNOSQUOTE);       /* ERROR, terminate string */
+              break;
+            }
+          else
+            {
+              *g_stringSP++ = inChar; /* Concatenate character */
+              count++;                /* Bump count of chars */
+            }
+
+           getCharacter();            /* Get the next character */
+        }
+
+      prevChar = inChar;              /* Remember the terminating character */
+      getCharacter();                 /* Skip over the quote (or newline) */
+
+      /* Check for quoted singlel quote */
+
+      if (prevChar == SQUOTE && inChar == SQUOTE)
+        {
+          *g_stringSP++ = inChar;     /* Concatenate the single quote */
+          count++;                    /* Bump count of chars */
+          getCharacter();             /* Skip over the second single quote */
+          continue;                   /* And continue building the string */
+        }
+
+      break;
+    }
+
+  *g_stringSP++ = '\0';               /* terminate ASCIIZ string */
+
+  if (count == 1)                     /* Check for char constant */
+    {
+      g_token    = tCHAR_CONST;       /* indicate char constant type */
+      g_tknUInt  = *g_tokenString;    /* (integer) value = single char */
+      g_stringSP = g_tokenString;     /* "pop" from string stack */
     }
 }
 

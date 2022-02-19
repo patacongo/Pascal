@@ -604,6 +604,10 @@ static inline int pexec8(struct pexec_s *st, uint8_t opcode)
       POP(st, st->csp);
       break;
 
+    case oDISCARD :
+      DISCARD(st, 1);
+      break;
+
       /* Store (Two stack arguments) */
 
     case oSTI  :

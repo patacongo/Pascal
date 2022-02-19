@@ -102,7 +102,7 @@ function compile_source ()
 function test_program ()
 {
     echo "Using string stack size = ${STRSTKSZ}"
-    PRUNOPTS="-t ${STRSTKSZ} -a ${STKALLOC} -n ${HEAPSIZE}"
+    PRUNOPTS="-t ${STRSTKSZ} ${STKALLOC} -n ${HEAPSIZE}"
 
     if [ ! -f src/${PASBASENAME}.pex ]; then
         echo "No p-code executable"
@@ -118,7 +118,7 @@ function test_program ()
 
 # Parse command line
 
-STKALLOC=128
+unset STKALLOC
 STRSTKSZ=1024
 HEAPSIZE=256
 PASFILENAME=
@@ -126,7 +126,7 @@ PASFILENAME=
 while [ -n "$1" ]; do
     case "$1" in
     -a )
-        STKALLOC=$2
+        STKALLOC="-a $2"
         shift
         ;;
     -t )

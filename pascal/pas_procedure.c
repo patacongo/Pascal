@@ -122,22 +122,19 @@ static uint16_t pas_GenVarFileNumber(symbol_t *varPtr,
                   uint16_t *pFileSize,
                   symbol_t *defaultFilePtr);
 
-/* Helpers for less-than-standard procedures */
+/* Borlan-style string operation functions */
 
+static void     pas_StrProc(void);
+static void     pas_ConcatProc(void);
+static void     pas_InsertProc(void);
+static void     pas_DeleteProc(void);
+static void     pas_FillCharProc(void);
 static void     pas_ValProc(void);                  /* VAL procedure */
 
 /* Misc. helper functions */
 
 static void     pas_InitializeNewRecord(symbol_t *typePtr);
 static void     pas_InitializeNewArray(symbol_t *typePtr);
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-/* procedure val(const S : string; var V; var Code : word); */
-
-static symbol_t valSymbol[4];
 
 /****************************************************************************
  * Private Functions
@@ -1752,9 +1749,69 @@ static uint16_t pas_GenVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
 }
 
 /****************************************************************************/
+/* Converts a numeric value into a string.
+ *
+ *   Str(numvar : integer, VAR strvar : string)
+ *
+ * 'numvar' may include a fieldwidth and, for the case of real values, a
+ * precision.
+ */
+
+static void pas_StrProc(void)
+{
+  error(eNOTYET);
+}
+
+/****************************************************************************/
+/* Concatenate two or more strings.
+ *
+ *   concat(s1,s2,...,sn : string) : string
+ */
+
+static void pas_ConcatProc(void)
+{
+  error(eNOTYET);
+}
+
+/****************************************************************************/
+/* Insert a string inside another string from at the indexth character.
+ *
+ *   insert(source, target : string; index : integer)
+ */
+
+static void pas_InsertProc(void)
+{
+  error(eNOTYET);
+}
+
+/****************************************************************************/
+/* Deletes n characters from string s starting from index i.
+ *
+ *   delete(VAR s : string; i, n: integer)
+ */
+
+static void pas_DeleteProc(void)
+{
+  error(eNOTYET);
+}
+
+/****************************************************************************/
+/* Fill string s with character c until s is n-1 char long
+ *
+ *   fillchar(s : string; n : integer; c : char)
+ */
+
+static void pas_FillCharProc(void)
+{
+  error(eNOTYET);
+}
+
+/****************************************************************************/
 
 static void pas_ValProc(void)  /* VAL procedure */
 {
+  exprType_t exprType;
+
   TRACE(g_lstFile, "[pas_ValProc]");
 
   /* Declaration:
@@ -1763,26 +1820,85 @@ static void pas_ValProc(void)  /* VAL procedure */
    * Description:
    * val() converts the value represented in the string S to a numerical
    * value, and stores this value in the variable V, which can be of type
-   * Longint, Real and Byte. If the conversion isn��t succesfull, then the
-   * parameter Code contains the index of the character in S which
-   * prevented the conversion. The string S is allowed to contain spaces
-   * in the beginning.
+   * Integer, Longinteger, ShortInteger, or Real. If the conversion isn't
+   * succesful, then the parameter Code contains the index of the character
+   * in S which prevented the conversion. The string S is allowed to contain
+   * spaces in the beginning.
    *
    * The string S can contain a number in decimal, hexadecimal, binary or
    * octal format, as described in the language reference.
    *
    * Errors:
-   * If the conversion doesn��t succeed, the value of Code indicates the
+   * If the conversion doesn't succeed, the value of Code indicates the
    * position where the conversion went wrong.
    */
 
-  /* Skip over the 'val' identifer */
+  /* Skip over the 'val' identifier and verify that the parameter list
+   * begins with a left parenthesis.
+   */
+
+  getToken();                          /* Skip over 'val' */
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* The first argument must be an string value */
+
+  exprType = pas_Expression(exprAnyString, NULL);
+  if (exprType != exprShortString)
+    {
+      /* Short strings can be converted to read-only standard strings by
+       * simply discarding the allocation size at the top of the stack.
+       */
+
+      pas_GenerateSimple(opDISCARD);
+    }
+  else if (exprType != exprString)
+    {
+      error(eINVARG);
+    }
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* The second argument must be an Integer, Long/Short Integer, or Real
+   * variable.
+   */
+
+  if (g_token == sLONGINT || g_token == sSHORTINT || g_token == sREAL)
+    {
+      /* Long/ShortInteger and Real not yet supported. */
+
+      error(eNOTYET);
+    }
+  else if (g_token == sINT)
+    {
+      pas_GenerateStackReference(opLAS, g_tknPtr);
+    }
+  else
+    {
+      error(eINVARG);
+    }
 
   getToken();
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
 
-  /* Setup the actual-parameter-list */
+  /* The third argument must be an Integer variable. */
 
-  (void)pas_ActualParameterList(valSymbol);
+  if (g_token == sINT)
+    {
+      pas_GenerateStackReference(opLAS, g_tknPtr);
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  /* And this should conclue with a right parenthesis */
+
+  getToken();
+  if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
+  else getToken();
 
   /* Generate the built-in procedure call.  NOTE the procedure call
    * logic will release the parameters from the stack saving us from
@@ -2019,15 +2135,6 @@ static void pas_InitializeNewArray(symbol_t *typePtr)
 
 void pas_PrimeStandardProcedures(void)
 {
-  /* procedure val(const S : string; var V; var Code : word);  */
-
-  valSymbol[0].sParm.p.pNParms = 3;
-  valSymbol[1].sKind           = sSTRING;
-  valSymbol[1].sParm.p.pParent = g_parentString;
-  valSymbol[2].sKind           = sVAR_PARM;
-  valSymbol[2].sParm.p.pParent = g_parentInteger;
-  valSymbol[3].sKind           = sVAR_PARM;
-  valSymbol[3].sParm.p.pParent = g_parentInteger;
 }
 
 /***********************************************************************/
@@ -2082,13 +2189,33 @@ void pas_StandardProcedure(void)
           getToken();
           break;
 
-          /* less-than-standard procedures */
+          /* Borland-style string operator procedures */
+
+        case txSTR :
+          pas_StrProc();
+          break;
+
+        case txCONCAT :
+          pas_ConcatProc();
+          break;
+
+        case txINSERT :
+          pas_InsertProc();
+          break;
+
+        case txDELETE :
+          pas_DeleteProc();
+          break;
+
+        case txFILLCHAR :
+          pas_FillCharProc();
+          break;
 
         case txVAL :
           pas_ValProc();
           break;
 
-        /* File I/O */
+          /* File I/O */
 
         case txASSIGNFILE :
           pas_AssignFileProc();

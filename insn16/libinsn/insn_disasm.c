@@ -496,11 +496,12 @@ static const char *lbName[MAX_LBOP] =
 /* 0x08 */ "SSTRCPY",    "SSTRCPY2",   "SSTRCPYX",    "SSTRCPYX2",
 /* 0x0c */ "SSTR2STR",   "SSTR2STR2",  "SSTR2STRX",   "SSTR2STRX2",
 /* 0x10 */ "STR2SSTR",   "STR2SSTR2",  "STR2SSTRX",   "STR2SSTRX2",
-/* 0x14 */ "BSTR2STR",   "STR2BSTR",   "STR2BSTRX",   "VAL",
-/* 0x18 */ "STRINIT",    "SSTRINIT",   "STRTMP",      "STRDUP",
-/* 0x1c */ "SSTRDUP",    "MKSTKC",     "STRCAT",      "SSTRCAT",
-/* 0x20 */ "SSTRCATSTR", "STRCATSSTR", "STRCATC",     "SSTRCATC",
-/* 0x24 */ "STRCMP",     "SSTRCMP",    "SSTRCMPSTR",  "STRCMPSSTR"
+/* 0x14 */ "BSTR2STR",   "STR2BSTR",   "STR2BSTRX",   "STRINIT",
+/* 0x18 */ "SSTRINIT",   "STRTMP",     "STRDUP",      "SSTRDUP",
+/* 0x1c */ "MKSTKC",     "STRCAT",     "SSTRCAT",     "SSTRCATSTR",
+/* 0x20 */ "STRCATSSTR", "STRCATC",    "SSTRCATC",    "STRCMP",
+/* 0x24 */ "SSTRCMP",    "SSTRCMPSTR", "STRCMPSSTR",  "COPYSUBSTR",
+/* 0x28 */ "FINDSUBSTR", "VAL"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";

@@ -238,7 +238,7 @@ poffLibLineNumber_t *poffFindLineNumber(uint32_t offset)
 
   /* We used the last returned line number entry as a hint to speed
    * up the next search.  We don't know how the line numbers will
-   * be searched but most likely, they will be searched ina a sequence
+   * be searched but most likely, they will be searched in a sequence
    * of ascending offsets.  In that case, a dumb linear search
    * would be better than what we are trying to do here. we are
    * trying to support fast random access.

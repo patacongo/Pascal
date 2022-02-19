@@ -47,8 +47,8 @@
 
 /* Op-code bit definitions */
 
-#define o16    (0x80)
-#define o8     (0x40)
+#define o16     (0x80)
+#define o8      (0x40)
 
 /* Opcode Encoding Summary:
  *
@@ -102,7 +102,7 @@
  * xx10 1011  ---        ---            LDXM uoffs     LDSXM loff,offs
  * xx10 1100  PUSHS      ---            STX uoffs      STSX loff,offs
  * xx10 1101  POPS       ---            ---            ---
- * xx10 1110  ---        ---            STXB uoffs     STSXB loff,offs
+ * xx10 1110  DISCARD    ---            STXB uoffs     STSXB loff,offs
  * xx10 1111  RET        ---            STXM uoffs     STSXM loff,offs
  *
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS loff,offs
@@ -144,75 +144,74 @@
 
 /* Program control (No stack arguments) */
 
-#define oNOP    (0x00)
+#define oNOP     (0x00)
 
 /* Arithmetic & logical & and integer conversions (One 16-bit stack argument) */
 
-#define oNEG    (0x01)
-#define oABS    (0x02)
-#define oINC    (0x03)
-#define oDEC    (0x04)
-#define oNOT    (0x05)
+#define oNEG     (0x01)
+#define oABS     (0x02)
+#define oINC     (0x03)
+#define oDEC     (0x04)
+#define oNOT     (0x05)
 
 /* Arithmetic & logical (Two 16-bit stack arguments) */
 
-#define oADD    (0x06)
-#define oSUB    (0x07)
-#define oMUL    (0x08)
-#define oDIV    (0x09)
-#define oMOD    (0x0a)
-#define oSLL    (0x0b)
-#define oSRL    (0x0c)
-#define oSRA    (0x0d)
-#define oOR     (0x0e)
-#define oAND    (0x0f)
+#define oADD     (0x06)
+#define oSUB     (0x07)
+#define oMUL     (0x08)
+#define oDIV     (0x09)
+#define oMOD     (0x0a)
+#define oSLL     (0x0b)
+#define oSRL     (0x0c)
+#define oSRA     (0x0d)
+#define oOR      (0x0e)
+#define oAND     (0x0f)
 
 /* Comparisons (One 16-bit stack argument) */
 
-#define oEQUZ   (0x10)
-#define oNEQZ   (0x11)
-#define oLTZ    (0x12)
-#define oGTEZ   (0x13)
-#define oGTZ    (0x14)
-#define oLTEZ   (0x15)
+#define oEQUZ    (0x10)
+#define oNEQZ    (0x11)
+#define oLTZ     (0x12)
+#define oGTEZ    (0x13)
+#define oGTZ     (0x14)
+#define oLTEZ    (0x15)
 
 /* 0x16-0x17 -- unassigned */
 
 /* Comparisons (Two 16-bit stack arguments) */
 
-#define oEQU    (0x18)
-#define oNEQ    (0x19)
-#define oLT     (0x1a)
-#define oGTE    (0x1b)
-#define oGT     (0x1c)
-#define oLTE    (0x1d)
+#define oEQU     (0x18)
+#define oNEQ     (0x19)
+#define oLT      (0x1a)
+#define oGTE     (0x1b)
+#define oGT      (0x1c)
+#define oLTE     (0x1d)
 
 /* 0x1e - 0x1f -- unassigned */
 
 /* Load Immediate */
 
-#define oLDI    (0x20)    /* (One 16-bit stack argument) */
-#define oLDIB   (0x21)    /* (One 16-bit stack argument) */
-#define oULDIB  (0x22)    /* (One 16-bit stack argument) */
-#define oLDIM   (0x23)    /* (Two 16-bit stack arguments) */
+#define oLDI     (0x20)    /* (One 16-bit stack argument) */
+#define oLDIB    (0x21)    /* (One 16-bit stack argument) */
+#define oULDIB   (0x22)    /* (One 16-bit stack argument) */
+#define oLDIM    (0x23)    /* (Two 16-bit stack arguments) */
 
 /* Store Immediate */
 
-#define oSTI    (0x24)    /* (Two 16-bit stack arguments) */
-                          /* 0x25 -- unassigned */
-#define oSTIB   (0x26)    /* (Two 16-bit stack arguments) */
-#define oSTIM   (0x27)    /* (Two + n 16-bit stack arguments) */
+#define oSTI     (0x24)    /* (Two 16-bit stack arguments) */
+                           /* 0x25 -- unassigned */
+#define oSTIB    (0x26)    /* (Two 16-bit stack arguments) */
+#define oSTIM    (0x27)    /* (Two + n 16-bit stack arguments) */
 
 /* Data stack */
 
-#define oDUP    (0x28)   /* (One 16-bit stack argument */
+#define oDUP     (0x28)   /* (One 16-bit stack argument */
                           /* 0x29 -- unassigned */
-#define oXCHG   (0x2a)   /* (Two 16-bit stack arguments) */
+#define oXCHG    (0x2a)   /* (Two 16-bit stack arguments) */
                           /* 0x2a -- unassigned */
-#define oPUSHS  (0x2c)   /* No arguments */
-#define oPOPS   (0x2d)   /* (One 16-bit stack argument) */
-
-/* 0x2e -- unassigned */
+#define oPUSHS   (0x2c)   /* No arguments */
+#define oPOPS    (0x2d)   /* (One 16-bit stack argument) */
+#define oDISCARD (0x2e)   /* (One 16-bit stack argument) */
 
 /* Program control (No stack arguments)
  * Behavior:
@@ -222,27 +221,27 @@
  *   Set program counter (PC) to return address
  */
 
-#define oRET    (0x2f)
+#define oRET     (0x2f)
 
 /* 0x30 - 0x36 -- unassigned */
 
 /* Unsigned arithmetic and comparisons */
 
-#define oUMUL   (0x37)
-#define oUDIV   (0x38)
-#define oUMOD   (0x39)
-#define oULT    (0x3a)
-#define oUGTE   (0x3b)
-#define oUGT    (0x3c)
-#define oULTE   (0x3d)
+#define oUMUL    (0x37)
+#define oUDIV    (0x38)
+#define oUMOD    (0x39)
+#define oULT     (0x3a)
+#define oUGTE    (0x3b)
+#define oUGT     (0x3c)
+#define oULTE    (0x3d)
 
 /* Additional bitwise binary operator */
 
-#define oXOR    (0x3e)
+#define oXOR     (0x3e)
 
 /* System Functions (No stack arguments) */
 
-#define oEND    (0x3f)
+#define oEND     (0x3f)
 
 /** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ********************************/
 

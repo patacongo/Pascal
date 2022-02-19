@@ -233,35 +233,6 @@
 
 #define lbSTR2BSTRX     (0x0016)
 
-/* Convert a string to a numeric value
- *
- *   procedure val(const s : string; var v; var code : word);
- *
- * Description:
- * val() converts the value represented in the string S to a numerical
- * value, and stores this value in the variable V, which can be of type
- * Longint, Real and Byte. If the conversion isn¡Çt succesfull, then the
- * parameter Code contains the index of the character in S which
- * prevented the conversion. The string S is allowed to contain spaces
- * in the beginning.
- *
- * The string S can contain a number in decimal, hexadecimal, binary or
- * octal format, as described in the language reference.
- *
- * Errors:
- * If the conversion doesn't succeed, the value of Code indicates the
- * position where the conversion went wrong.
- *
- * ON INPUT
- *   TOS(0) = address of Code
- *   TOS(1) = address of v
- *   TOS(2) = length of source string
- *   TOS(3) = pointer to source string
- * ON RETURN: actual parameters released
- */
-
-#define lbVAL           (0x0017)
-
 /* Initialize a new string variable. Create a string buffer.  This is called
  * only at entrance into a new Pascal block.
  *
@@ -272,7 +243,7 @@
  * ON RETURN
  */
 
-#define lbSTRINIT       (0x0018)
+#define lbSTRINIT       (0x0017)
 
 /* Initialize a new short string variable. Create a string buffer.  This is
  * called only at entrance into a new Pascal block.
@@ -287,7 +258,7 @@
  * ON RETURN
  */
 
-#define lbSSTRINIT      (0x0019)
+#define lbSSTRINIT      (0x0018)
 
 /* Initialize a temporary string variable on the stack. This is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
@@ -302,7 +273,7 @@
  *   TOS(1) = String size (zero)
  */
 
-#define lbSTRTMP        (0x001a)
+#define lbSTRTMP        (0x0019)
 
 /* Replace a standard string with a duplicate string residing in allocated
  * string stack.
@@ -317,7 +288,7 @@
  *   TOS(1) = length of new standard string
  */
 
-#define lbSTRDUP        (0x001b)
+#define lbSTRDUP        (0x001a)
 
 /* Replace a short string with a duplicate string residing in allocated
  * string stack.
@@ -334,7 +305,7 @@
  *   TOS(2) = length of new short string
  */
 
-#define lbSSTRDUP       (0x001c)
+#define lbSSTRDUP       (0x001b)
 
 /* Replace a character with a string residing in allocated string stack
  * memory.
@@ -348,7 +319,7 @@
  *   TOS(1) = length of new string
  */
 
-#define lbMKSTKC        (0x001d)
+#define lbMKSTKC        (0x001c)
 
 /* Concatenate a standard string to the end of a standard string.
  *
@@ -364,7 +335,7 @@
  *   TOS(1) = new length of dest standard string2
  */
 
-#define lbSTRCAT        (0x001e)
+#define lbSTRCAT        (0x001d)
 
 /* Concatenate a short string to the end of a short string.
  *
@@ -383,7 +354,7 @@
  *   TOS(2) = new length of dest short string2
  */
 
-#define lbSSTRCAT       (0x001f)
+#define lbSSTRCAT       (0x001e)
 
 /* Concatenate a standard string to the end of a short string.
  *
@@ -401,7 +372,7 @@
  *   TOS(2) = new length of dest short string1
  */
 
-#define lbSSTRCATSTR    (0x0020)
+#define lbSSTRCATSTR    (0x001f)
 
 /* Concatenate a short string to the end of a standard string.
  *
@@ -418,7 +389,7 @@
  *   TOS(1) = new length of dest standard string1
  */
 
-#define lbSTRCATSSTR    (0x0021)
+#define lbSTRCATSSTR    (0x0020)
 
 /* Concatenate a character to the end of a standard string.
  *
@@ -433,7 +404,7 @@
  *   TOS(1) = new length of standard string
  */
 
-#define lbSTRCATC       (0x0022)
+#define lbSTRCATC       (0x0021)
 
 /* Concatenate a character to the end of a short string.
  *
@@ -450,7 +421,7 @@
  *   TOS(2) = new length of short string
  */
 
-#define lbSSTRCATC      (0x0023)
+#define lbSSTRCATC      (0x0022)
 
 /* Compare two pascal standard strings
  *
@@ -465,7 +436,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x0024)
+#define lbSTRCMP        (0x0023)
 
 /* Compare two pascal short strings
  *
@@ -482,7 +453,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMP       (0x0025)
+#define lbSSTRCMP       (0x0024)
 
 /* Compare a pascal short string to a pascal standard string
  *
@@ -498,7 +469,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSSTRCMPSTR    (0x0026)
+#define lbSSTRCMPSTR    (0x0025)
 
 /* Compare a pascal standard string to a pascal short string
  *
@@ -514,8 +485,71 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMPSSTR    (0x0027)
+#define lbSTRCMPSSTR    (0x0026)
 
-#define MAX_LBOP        (0x0028)
+/* Borland-style string operations ******************************************/
+
+/* Copy a substring from a string.
+ *
+ *   Copy(from : string, from, howmuch: integer) : string
+ *
+ * ON INPUT
+ *   TOS(0) = Integer value that provides the length of the substring
+ *   TOS(1) = Integer value that provides the (1-based) string position
+ *   TOS(2) = Address of string data
+ *   TOS(3) = Length of the string
+ * ON OUTPUT
+ *   TOS(0) = Address of the substring data
+ *   TOS(1) = Length of the substring
+ */
+
+#define lbCOPYSUBSTR    (0x0027)
+
+/* Find a substring in a string.  Returns the (1-based) character position of
+ * the substring or zero if the substring is not found.
+ *
+ *   Pos(substr, s : string) : integer
+ *
+ * ON INPUT
+ *   TOS(2) = Address of string data
+ *   TOS(3) = Length of the string
+ *   TOS(2) = Address of substring data
+ *   TOS(3) = Length of the substring
+ * ON OUTPUT
+ *   TOS(0) = Position of the substring (or zero if not present)
+ */
+
+#define lbFINDSUBSTR    (0x0028)
+
+/* Convert a string to a numeric value
+ *
+ *   procedure val(const s : string; var v : integer; var code : word);
+ *
+ * Description:
+ * val() converts the value represented in the string S to a numerical
+ * value, and stores this value in the variable V, which can be of type
+ * Integer, Longinteger, ShortInteger, or Real. If the conversion isn't
+ * succesful, then the parameter Code contains the index of the character
+ * in S which prevented the conversion. The string S is allowed to contain
+ * spaces in the beginning.
+ *
+ * The string S can contain a number in decimal, hexadecimal, binary or
+ * octal format, as described in the language reference.
+ *
+ * Errors:
+ * If the conversion doesn't succeed, the value of Code indicates the
+ * position where the conversion went wrong.
+ *
+ * ON INPUT
+ *   TOS(0) = address of Code
+ *   TOS(1) = address of v
+ *   TOS(2) = length of source string
+ *   TOS(3) = pointer to source string
+ * ON RETURN: actual parameters released
+ */
+
+#define lbVAL           (0x0029)
+
+#define MAX_LBOP        (0x002a)
 
 #endif /* __PAS_LIBRARY_H */

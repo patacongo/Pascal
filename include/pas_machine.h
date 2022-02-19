@@ -125,7 +125,7 @@
 #define sSTRING_SIZE        (sINT_SIZE + sPTR_SIZE)
 #define sSTRING_SIZE_OFFSET (0)         /* Byte offset to string size */
 #define sSTRING_DATA_OFFSET (sINT_SIZE) /* Byte offset to buffer pointer */
-#define STRING_BUFFER_SIZE  (256)       /* Default size of string buffer */
+#define STRING_BUFFER_SIZE  (80)        /* Default size of string buffer */
 
 /* ShortStrings are also supported.  ShortStrings differ in that they are
  * declared with a (usually smaller) maximum string size.  ShortStrings can 

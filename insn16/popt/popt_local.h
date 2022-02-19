@@ -61,8 +61,8 @@ int16_t popt_BinaryOptimize     (void);
 int16_t popt_LongUnaryOptimize  (void);
 int16_t popt_LongBinaryOptimize (void);
 int16_t popt_BranchOptimize     (void);
+int16_t popt_StackOrderOptimize (void);
 int16_t popt_LoadOptimize       (void);
 int16_t popt_StoreOptimize      (void);
-int16_t popt_ExchangeOptimize   (void);
 
 #endif /* __POPT_LOCAL_H */

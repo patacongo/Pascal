@@ -4,15 +4,15 @@ program stringRecord;
 type
   StringRecord =
     record
-      str    : string;
-      number : integer;
+      verbage : string;
+      number  : integer;
     end;
 
 var
    StringStuff : StringRecord;
 
 begin
-   StringStuff.str    := 'Some string';
-   StringStuff.number := 42;
-   writeln(StringStuff.number, ': ', StringStuff.str);
+   StringStuff.verbage := 'Some string';
+   StringStuff.number  := 42;
+   writeln(StringStuff.number, ': ', StringStuff.verbage);
 end.

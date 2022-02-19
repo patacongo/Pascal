@@ -113,9 +113,9 @@ void popt_LocalOptimization(poffHandle_t poffHandle)
           nchanges += popt_BinaryOptimize();
           nchanges += popt_LongBinaryOptimize();
           nchanges += popt_BranchOptimize();
+          nchanges += popt_StackOrderOptimize();
           nchanges += popt_LoadOptimize();
           nchanges += popt_StoreOptimize();
-          nchanges += popt_ExchangeOptimize();
         }
       while (nchanges);
 

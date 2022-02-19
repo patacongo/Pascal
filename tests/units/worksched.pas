@@ -70,7 +70,7 @@ PROGRAM a1 (input,output);
      * Procedure to read the next non-blank.  It skips leading blanks, then
      * reads the string up to the first blank or eoln.
      ***********************************************************************)
-    PROCEDURE ReadString(VAR Str: string);
+    PROCEDURE ReadString(VAR inString: string);
         VAR
             Ch: char;
         BEGIN
@@ -80,20 +80,20 @@ PROGRAM a1 (input,output);
 
             IF Ch = ' ' THEN
                 { There is no command on this line. }
-                Str := ''
+                inString := ''
             ELSE
                 BEGIN
                     { Read the beast. }
-                    Str := '';
+                    inString := '';
                     WHILE (Ch <> ' ') AND NOT eoln DO
                         BEGIN
-                            Str := Str + Ch;
+                            inString := inString + Ch;
                             read(Ch)
                         END;
 
                     IF Ch <> ' ' THEN
                         { Command ended at eoln. }
-                        Str := Str + Ch
+                        inString := inString + Ch
                 END
         END; { ReadString }
 

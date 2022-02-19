@@ -82,7 +82,11 @@ static void       pas_FilePosFunc(uint16_t opCode);
 static void       pas_SetFunc(uint16_t setOpcode);
 static void       pas_CardFunc(void);
 
-/* Enhanced Pascal functions */
+/* Borland style string operations */
+
+static void       pas_CopyFunc(void);
+static void       pas_PosFunc(void);
+static void       pas_ConcatFunc(void);
 
 /* Non-standard C-library interface functions */
 
@@ -515,6 +519,181 @@ static void pas_CardFunc(void)
 }
 
 /****************************************************************************/
+/* Copy(from : string, from, howmuch: integer) : string - Get a substring
+ * from a string.
+ */
+
+static void pas_CopyFunc(void)
+{
+  exprType_t exprType;
+
+  /* FORM: 'copy' '(' string-expression ',' integer-expression ','
+   *        integer-expression ')'
+   */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Get the string expression */
+
+  exprType = pas_Expression(exprString, NULL);
+
+  /* If this is a short string, then discard the string alloc size at the
+   * top of the stack in order to convert to a standard (but read-only)
+   * string.  The optimizer should remove these.
+   *
+   * This allows us to have a single lbCOPYSUBSTR or all string types.
+   */
+
+  if (exprType == exprShortString)
+    {
+      pas_GenerateSimple(opDISCARD);
+    }
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the first integer expression */
+
+  pas_Expression(exprInteger, NULL);
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the second integer expression */
+
+  pas_Expression(exprInteger, NULL);
+
+  /* Now we can generate the string operation */
+
+  pas_StandardFunctionCall(lbCOPYSUBSTR);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
+/* Pos(substr, s : string) : integer - Get the position of a substring from
+ * a string. If the substring is not found, it returns 0.
+ */
+
+static void pas_PosFunc(void)
+{
+  exprType_t exprType;
+
+  /* FORM: 'pos' '(' string-expression ',' string-expression ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Get the first string expression */
+
+  exprType = pas_Expression(exprString, NULL);
+
+  /* If this is a short string, then discard the string alloc size at the
+   * top of the stack in order to convert to a standard (but read-only)
+   * string.  The optimizer should remove these.
+   *
+   * This allows us to have a single lbFINDSUBSTR or all string types.
+   */
+
+  if (exprType == exprShortString)
+    {
+      pas_GenerateSimple(opDISCARD);
+    }
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the second string expression */
+
+  exprType = pas_Expression(exprString, NULL);
+  if (exprType == exprShortString)
+    {
+      pas_GenerateSimple(opDISCARD);
+    }
+
+  /* Now we can generate the string operation */
+
+  pas_StandardFunctionCall(lbFINDSUBSTR);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
+/* concatconcat(s1,s2,...,sn : string) : string – Concatenate two or more strings. */
+
+static void pas_ConcatFunc(void)
+{
+  exprType_t exprType;
+  uint16_t opCode;
+
+  /* FORM: 'concat' '(' string-list')'
+   *       string-list = string-expression [',' string-list ]
+   */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Create an empty string to catch the result of the concatenation */
+
+  pas_StandardFunctionCall(lbSTRTMP);
+
+  for (; ; )
+    {
+      /* Get the next string expression */
+
+      exprType = pas_Expression(exprString, NULL);
+
+      /* If this is a short string, then discard the string alloc size at the
+       * top of the stack in order to convert to a standard (but read-only)
+       * string.  The optimizer should remove these.
+       */
+
+      if (exprType == exprShortString)
+        {
+          pas_GenerateSimple(opDISCARD);
+        }
+
+      /* Concatenate this string to the temporary stack string */
+
+      if (exprType == exprShortString)
+        {
+          opCode = lbSTRCATSSTR;
+        }
+      else
+        {
+          opCode = lbSTRCAT;
+        }
+
+      pas_StandardFunctionCall(opCode);
+
+      /* A comma following the string means that there is another string to
+       * be concatenated.  Continue looping.
+       */
+
+      if (g_token != ',') break;
+      else getToken();
+    }
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
 /* C library getenv interface */
 
 static exprType_t pas_GetEnvFunc(void)
@@ -590,7 +769,26 @@ exprType_t pas_StandardFunction(void)
           funcType = pas_SuccFunc();
           break;
 
-        case txGETENV : /* Non-standard C library interfaces */
+          /* Borland-style string operations */
+
+        case txCOPY :
+          pas_CopyFunc();
+          funcType = exprString;
+          break;
+
+        case txPOS :
+          pas_PosFunc();
+          funcType = exprInteger;
+          break;
+
+        case txCONCAT :
+          pas_ConcatFunc();
+          funcType = exprString;
+          break;
+
+          /* Non-standard C library interfaces */
+
+        case txGETENV :
           funcType = pas_GetEnvFunc();
           break;
 

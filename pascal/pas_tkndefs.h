@@ -250,10 +250,17 @@
 /* Built-in, compile-time operations */
 
 #define txSIZEOF         0x9b
+
+/* Borland-style string procedures and functions */
+
 #define txLENGTH         0x9c
-
-/* "Less than standard" Procedures 0xc0-0xff */
-
-#define txVAL            0xc0
+#define txCOPY           0x9d
+#define txFILLCHAR       0x9e
+#define txPOS            0x9f
+#define txVAL            0xa0
+#define txSTR            0xa1
+#define txCONCAT         0xa2
+#define txINSERT         0xa3
+#define txDELETE         0xa4
 
 #endif /* __PTDEFS_H */

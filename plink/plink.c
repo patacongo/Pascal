@@ -411,7 +411,7 @@ static uint32_t plink_MergeFileNames(poffHandle_t inHandle,
    * output file
    */
 
-  return outOffset;
+  return outOffset + 1;
 }
 
 /***********************************************************************/
