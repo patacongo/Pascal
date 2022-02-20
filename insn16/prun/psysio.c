@@ -103,6 +103,7 @@ static int      pexec_AssignFile(uint16_t fileNumber, bool text,
 static int      pexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
 static int      pexec_CloseFile(uint16_t fileNumber);
 static int      pexec_RecordSize(uint16_t fileNumber, uint16_t size);
+static int      pexec_ReadLn(uint16_t fileNumber);
 static int      pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest,
                                  uint16_t size);
 static int      pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
@@ -460,6 +461,39 @@ static int pexec_RecordSize(uint16_t fileNumber, uint16_t size)
   else
     {
       g_fileTable[fileNumber].recordSize = size;
+    }
+
+  return errorCode;
+}
+
+/****************************************************************************/
+
+static int pexec_ReadLn(uint16_t fileNumber)
+{
+  int errorCode = eNOERROR;
+
+  if (fileNumber >= MAX_OPEN_FILES)
+    {
+      errorCode = eBADFILE;
+    }
+  else if (g_fileTable[fileNumber].stream    == NULL ||
+           g_fileTable[fileNumber].openMode != eOPEN_READ)
+    {
+      errorCode = eNOTOPENFORREAD;
+    }
+  else if (g_fileTable[fileNumber].eoln)
+    {
+      g_fileTable[fileNumber].eoln = false;
+    }
+  else
+    {
+      int ch;
+
+      do
+        {
+          ch = fgetc(g_fileTable[fileNumber].stream);
+        }
+      while (ch != EOF && ch != '\n');
     }
 
   return errorCode;
@@ -1422,8 +1456,9 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     /* READLN: TOS(0) = File number */
 
     case xREADLN :
-      /* REVISIT:  Not implemented */
       POP(st, fileNumber);  /* File number from stack */
+
+      errorCode = pexec_ReadLn(fileNumber);
       break;
 
     /* READ_BINARY: TOS(0) = Read address

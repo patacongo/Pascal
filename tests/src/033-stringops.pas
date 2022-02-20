@@ -80,7 +80,7 @@ BEGIN
   sstring1 := 'is ';
   sstring2 := 'Andy';
   string1  := CONCAT(string2, string3, sstring1, sstring2);
-  WRITELN('[', string1, '] Four strings cooncatenated');
+  WRITELN('[', string1, '] Four strings concatenated');
   WRITELN;
 
   { FILLCHAR }
