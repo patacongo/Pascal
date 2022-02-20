@@ -1552,6 +1552,139 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       }
       break;
 
+      /* Insert a string into another string.
+       *
+       *   Insert(source : string, VAR target : string, index: integer) : string
+       *
+       * ON INPUT
+       *   TOS(0) = Integer value that provides the (1-based) string position
+       *   TOS(1) = Address of the target string to be modified
+       *   TOS(2) = Address of source string data
+       *   TOS(3) = Length of the source string
+       * ON OUTPUT
+       */
+
+    case lbINSERTSTR :
+      {
+        ustack_t *dptr;
+        ustack_t ulimit1;
+        ustack_t ulimit2;
+        int i;
+        int j;
+
+        POP(st, offset);   /* One-based position of first character to delete */
+        POP(st, addr2);    /* Address of target string variable */
+
+        /* Get the string to be modified */
+
+        dptr     = (ustack_t *)ATSTACK(st, addr2);
+        addr1    = dptr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        uparm1   = dptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+
+        /* Get the source string to be inserted */
+
+        POP(st, addr2);
+        POP(st, uparm2);
+
+        /* Make the character position a zero-based index */
+
+        if (--offset < 0)
+          {
+            offset = 0;
+          }
+
+        /* Open up a space for the string by movi text at the end of the
+         * string.
+         */
+
+        dest = (uint8_t *)ATSTACK(st, addr1);
+
+        ulimit1 = uparm1 + uparm2;
+        if (ulimit1 > st->stralloc)
+          {
+            ulimit1 = st->stralloc;
+          }
+
+        for (i = ulimit1 - uparm2 - 1, j = ulimit1 - 1; i >= offset; i--, j--)
+          {
+            dest[j] = dest[i];
+          }
+
+        /* Copy the source string into this space. */
+
+        src = (uint8_t *)ATSTACK(st, addr2);
+
+        ulimit2 = uparm2 + offset;
+        if (ulimit2 > ulimit1)
+          {
+            ulimit1 = ulimit1;
+          }
+
+        for (i = 0, j = offset; j < ulimit2; i++, j++)
+          {
+            dest[j] = src[i];
+          }
+
+        /* Adjust the size of string */
+
+        dptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = ulimit1;
+      }
+      break;
+
+      /* Delete a substring from a string.
+       *
+       *   Delete(VAR from : string, from, howmuch: integer) : string
+       *
+       * ON INPUT
+       *   TOS(0) = Integer value that provides the length of the substring
+       *   TOS(1) = Integer value that provides the (1-based) string position
+       *   TOS(3) = Address of the string variable to modify
+       * ON OUTPUT
+       */
+
+    case lbDELSUBSTR :
+      {
+        ustack_t *sptr;
+        int i;
+        int j;
+
+        POP(st, size);     /* Number of characters to delete */
+        POP(st, offset);   /* One-based position of first character to delete */
+        POP(st, addr1);    /* Address of the string to be modified */
+
+        /* Get the string to be modified */
+
+        sptr     = (ustack_t *)ATSTACK(st, addr1);
+        addr2    = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        uparm2   = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+
+        /* Make the character position a zero-based index */
+
+        if (--offset < 0)
+          {
+            offset = 0;
+          }
+
+        /* Move text at the end of the string to fill the gap. */
+
+        dest = (uint8_t *)ATSTACK(st, addr2);
+
+        for (i = offset, j = offset + size; j < uparm2; i++, j++)
+          {
+            dest[i] = dest[j];
+          }
+
+        /* Adjust the size of string */
+
+        if (offset + size > uparm2)
+          {
+            size = uparm2 - offset;
+          }
+
+        sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] -= size;
+      }
+      break;
+
       /* Convert a string to a numeric value
        *   procedure val(const s : string; var v; var code : word);
        *

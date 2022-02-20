@@ -1776,12 +1776,76 @@ static void pas_ConcatProc(void)
 /****************************************************************************/
 /* Insert a string inside another string from at the indexth character.
  *
- *   insert(source, target : string; index : integer)
+ *   insert(source : string, VAR target : string; index : integer)
  */
 
 static void pas_InsertProc(void)
 {
-  error(eNOTYET);
+  exprType_t exprType;
+
+  /* FORM: 'inster' '(' string-expression ',' string-variable ','
+   *        integer-expression ')'
+   */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  getToken();                          /* Skip over 'delete' */
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* The first argument must be an string value */
+
+  exprType = pas_Expression(exprAnyString, NULL);
+  if (exprType == exprShortString)
+    {
+      /* Short strings can be converted to read-only standard strings by
+       * simply discarding the allocation size at the top of the stack.
+       */
+
+      pas_GenerateSimple(opDISCARD);
+    }
+  else if (exprType != exprString)
+    {
+      error(eINVARG);
+    }
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* The second parameter must be a standard string LValue */
+
+  if (g_token == sSTRING)
+    {
+      pas_GenerateStackReference(opLAS, g_tknPtr);
+    }
+  else if (g_token == sSHORTSTRING)
+    {
+      error(eNOTYET);
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  getToken();                          /* Skip over the string */
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the final integer expression */
+
+  pas_Expression(exprInteger, NULL);
+
+  /* Now we can generate the string operation */
+
+  pas_StandardFunctionCall(lbINSERTSTR);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  if (g_token != ')') error(eRPAREN);  /* Skip over '(' */
+  else getToken();
 }
 
 /****************************************************************************/
@@ -1792,7 +1856,59 @@ static void pas_InsertProc(void)
 
 static void pas_DeleteProc(void)
 {
-  error(eNOTYET);
+  /* FORM: 'delete' '(' string-variable ',' integer-expression ','
+   *        integer-expression ')'
+   */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  getToken();                          /* Skip over 'delete' */
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* The first parameter must be a standard string LValue */
+
+  if (g_token == sSTRING)
+    {
+      pas_GenerateStackReference(opLAS, g_tknPtr);
+    }
+  else if (g_token == sSHORTSTRING)
+    {
+      error(eNOTYET);
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  getToken();                          /* Skip over the string */
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the first integer expression */
+
+  pas_Expression(exprInteger, NULL);
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the second integer expression */
+
+  pas_Expression(exprInteger, NULL);
+
+  /* Now we can generate the string operation */
+
+  pas_StandardFunctionCall(lbDELSUBSTR);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  if (g_token != ')') error(eRPAREN);  /* Skip over '(' */
+  else getToken();
 }
 
 /****************************************************************************/
@@ -1844,7 +1960,7 @@ static void pas_ValProc(void)  /* VAL procedure */
   /* The first argument must be an string value */
 
   exprType = pas_Expression(exprAnyString, NULL);
-  if (exprType != exprShortString)
+  if (exprType == exprShortString)
     {
       /* Short strings can be converted to read-only standard strings by
        * simply discarding the allocation size at the top of the stack.

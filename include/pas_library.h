@@ -521,6 +521,36 @@
 
 #define lbFINDSUBSTR    (0x0028)
 
+/* Insert a string into another string.
+ *
+ *   Insert(source : string, VAR target : string, index: integer) : string
+ *
+ * ON INPUT
+ *   TOS(0) = Integer value that provides the (1-based) string position
+ *   TOS(1) = Address of the target string to be modified
+ *   TOS(2) = Address of source string data
+ *   TOS(3) = Length of the source string
+ * ON OUTPUT
+ */
+
+#define lbINSERTSTR    (0x0029)
+
+/* Delete a substring from a string.
+ *
+ *   Delete(VAR from : string, from, howmuch: integer) : string
+ *
+ * ON INPUT
+ *   TOS(0) = Integer value that provides the length of the substring
+ *   TOS(1) = Integer value that provides the (1-based) string position
+ *   TOS(2) = Address of string data
+ *   TOS(3) = Length of the string
+ * ON OUTPUT
+ *   TOS(0) = Address of the string data (unchanged)
+ *   TOS(1) = Modified length of the string
+ */
+
+#define lbDELSUBSTR    (0x002a)
+
 /* Convert a string to a numeric value
  *
  *   procedure val(const s : string; var v : integer; var code : word);
@@ -548,8 +578,8 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x0029)
+#define lbVAL           (0x002b)
 
-#define MAX_LBOP        (0x002a)
+#define MAX_LBOP        (0x002c)
 
 #endif /* __PAS_LIBRARY_H */
