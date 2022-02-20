@@ -40,6 +40,8 @@
 
 #include <sys/types.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,29 +53,33 @@
 
 #include "pexec.h"
 #include "pmmgr.h"
+#include "plongops.h"  /* For pexec_UPop32() */
+#include "psysio.h"    /* For pexec_GetFormat() */
 #include "plib.h"
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen);
-static int      pas_strinit(struct pexec_s *st, uint16_t strVarAddr,
-                            uint16_t strAllocSize);
-static void     pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
-                           uint16_t srcStringSize, uint16_t destVarAddr,
-                           uint16_t destBufferSize, uint16_t varOffset);
-static int      pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
-                             uint16_t arraySize);
-static int      pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
-                             uint16_t arraySize, uint16_t stringBufferAddress,
-                             uint16_t stringSize, uint16_t offset);
-static int      pas_strcat(struct pexec_s *st, uint16_t srcStringAddr,
-                           uint16_t srcStringSize, uint16_t destStringAddr,
-                           uint16_t *pDestStringSize, uint16_t destStrAlloc);
-static int      pas_strcatc(struct pexec_s *st, char srcChar,
-                            uint16_t destStringAddr, uint16_t *pDestStringSize,
-                            uint16_t destStrAlloc);
+static uint8_t *pexec_MkCString(uint8_t *buffer, int buflen);
+static int      pexec_StrInit(struct pexec_s *st, uint16_t strVarAddr,
+                   uint16_t strAllocSize);
+static void     pexec_StrCpy(struct pexec_s *st, uint16_t srcBufferAddr,
+                   uint16_t srcStringSize, uint16_t destVarAddr,
+                   uint16_t destBufferSize, uint16_t varOffset);
+static int      pexec_BStr2Str(struct pexec_s *st, uint16_t arrayAddress,
+                   uint16_t arraySize);
+static int      pexec_Str2BStr(struct pexec_s *st, uint16_t arrayAddress,
+                   uint16_t arraySize, uint16_t stringBufferAddress,
+                   uint16_t stringSize, uint16_t offset);
+static int      pexec_StrCat(struct pexec_s *st, uint16_t srcStringAddr,
+                   uint16_t srcStringSize, uint16_t destStringAddr,
+                   uint16_t *pDestStringSize, uint16_t destStrAlloc);
+static int      pexec_StrCatC(struct pexec_s *st, char srcChar,
+                   uint16_t destStringAddr, uint16_t *pDestStringSize,
+                   uint16_t destStrAlloc);
+static int      pexec_FillChar(struct pexec_s *st, ustack_t *sptr,
+                   uint16_t count, uint8_t value, uint16_t strAlloc);
 
 /****************************************************************************
  * Public Data
@@ -86,10 +92,10 @@ int16_t g_exitCode;
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_mkcstring
+ * Name: pexec_MkCString
  ****************************************************************************/
 
-static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen)
+static uint8_t *pexec_MkCString(uint8_t *buffer, int buflen)
 {
   uint8_t *string;
 
@@ -103,8 +109,8 @@ static uint8_t *pexec_mkcstring(uint8_t *buffer, int buflen)
   return string;
 }
 
-static int pas_strinit(struct pexec_s *st, uint16_t strVarAddr,
-                       uint16_t strAllocSize)
+static int pexec_StrInit(struct pexec_s *st, uint16_t strVarAddr,
+                         uint16_t strAllocSize)
 {
   uint16_t strAllocAddr = INT_ALIGNUP(st->csp);
   int errorCode = eNOERROR;
@@ -137,9 +143,9 @@ static int pas_strinit(struct pexec_s *st, uint16_t strVarAddr,
   return errorCode;
 }
 
-static void pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
-                       uint16_t srcStringSize, uint16_t destVarAddr,
-                       uint16_t destBufferSize, uint16_t varOffset)
+static void pexec_StrCpy(struct pexec_s *st, uint16_t srcBufferAddr,
+                         uint16_t srcStringSize, uint16_t destVarAddr,
+                         uint16_t destBufferSize, uint16_t varOffset)
 {
   /* Copy pascal string to a pascal string */
 
@@ -186,8 +192,8 @@ static void pas_strcpy(struct pexec_s *st, uint16_t srcBufferAddr,
     }
 }
 
-static int pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
-                        uint16_t arraySize)
+static int pexec_BStr2Str(struct pexec_s *st, uint16_t arrayAddress,
+                          uint16_t arraySize)
 {
   const char *src;
   char *dest;
@@ -244,9 +250,9 @@ static int pas_Bstr2str(struct pexec_s *st, uint16_t arrayAddress,
   return errorCode;
 }
 
-static int pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
-                        uint16_t arraySize, uint16_t stringBufferAddress,
-                        uint16_t stringSize, uint16_t offset)
+static int pexec_Str2BStr(struct pexec_s *st, uint16_t arrayAddress,
+                          uint16_t arraySize, uint16_t stringBufferAddress,
+                          uint16_t stringSize, uint16_t offset)
 {
   const char *src;
   char *dest;
@@ -275,9 +281,9 @@ static int pas_Str2bstr(struct pexec_s *st, uint16_t arrayAddress,
   return errorCode;
 }
 
-static int pas_strcat(struct pexec_s *st, uint16_t srcStringAddr,
-                      uint16_t srcStringSize, uint16_t destStringAddr,
-                      uint16_t *pDestStringSize, uint16_t destStrAlloc)
+static int pexec_StrCat(struct pexec_s *st, uint16_t srcStringAddr,
+                        uint16_t srcStringSize, uint16_t destStringAddr,
+                        uint16_t *pDestStringSize, uint16_t destStrAlloc)
 {
   uint16_t destStringSize = *pDestStringSize;
   const char *src;
@@ -306,9 +312,9 @@ static int pas_strcat(struct pexec_s *st, uint16_t srcStringAddr,
   return errorCode;
 }
 
-static int pas_strcatc(struct pexec_s *st, char srcChar,
-                       uint16_t destStringAddr, uint16_t *pDestStringSize,
-                       uint16_t destStrAlloc)
+static int pexec_StrCatC(struct pexec_s *st, char srcChar,
+                         uint16_t destStringAddr, uint16_t *pDestStringSize,
+                         uint16_t destStrAlloc)
 {
   uint16_t destStringSize = *pDestStringSize;
   char *dest;
@@ -333,6 +339,47 @@ static int pas_strcatc(struct pexec_s *st, char srcChar,
     }
 
   return errorCode;
+}
+
+/* Fill string s with character value until s is count-1 char long. */
+
+static int pexec_FillChar(struct pexec_s *st, ustack_t *sptr, uint16_t count,
+                          uint8_t value, uint16_t strAlloc)
+{
+  uint16_t  strAddr;
+  uint16_t  strSize;
+  uint16_t  limit;
+  uint8_t  *dest;
+  int i;
+
+  /* Get the existing size of the target string and a pointer to the
+   * target string allocation.
+   */
+
+  strAddr = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
+  strSize = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+
+  dest = (uint8_t *)ATSTACK(st, strAddr) + strSize;
+
+  /* Pad until the length is count - 1 characters long or until there is no
+   * available space in the allocated string memory.
+   */
+
+  limit = count;
+  if (limit > strAlloc)
+    {
+      limit = strAlloc;
+    }
+
+  for (i = strSize; i < limit; i++)
+    {
+      *dest++ = value;
+    }
+
+  /* Save the new size of the string */
+
+  sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = i;
+  return eNOERROR;
 }
 
 /****************************************************************************
@@ -435,7 +482,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
         /* Make a C string out of the pascal string */
 
         src = (uint8_t *)ATSTACK(st, addr1);
-        name = pexec_mkcstring(src, size);
+        name = pexec_MkCString(src, size);
         if (name == NULL)
           {
             errorCode = eNOMEMORY;
@@ -520,7 +567,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, 0);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
       break;
 
     case lbSTRCPY2 :
@@ -533,7 +580,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, 0);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
       break;
 
       /* Copy pascal standard string to a element of a pascal standard string
@@ -564,7 +611,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
       break;
 
     case lbSTRCPYX2 :
@@ -578,7 +625,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
       break;
 
       /* Copy pascal short string to a pascal short string
@@ -675,7 +722,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, 0);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
       break;
 
     case lbSSTR2STR2 :
@@ -689,7 +736,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, 0);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
       break;
 
       /* Copy pascal short string to an element of a pascal standard string
@@ -719,7 +766,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
       break;
 
     case lbSSTR2STRX2 :
@@ -734,7 +781,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the string copy */
 
-      pas_strcpy(st, addr2, size, addr1, st->stralloc, offset);
+      pexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
       break;
 
       /* Copy pascal standard string to a pascal short string
@@ -778,7 +825,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
         /* And perform the string copy */
 
-        pas_strcpy(st, addr2, size, addr1, strAlloc, 0);
+        pexec_StrCpy(st, addr2, size, addr1, strAlloc, 0);
       }
       break;
 
@@ -830,7 +877,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
         /* And perform the string copy */
 
-        pas_strcpy(st, addr2, size, addr1, strAlloc, offset);
+        pexec_StrCpy(st, addr2, size, addr1, strAlloc, offset);
       }
       break;
 
@@ -857,7 +904,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the copy */
 
-      errorCode = pas_Bstr2str(st, addr1, size);
+      errorCode = pexec_BStr2Str(st, addr1, size);
       break;
 
     /* Copy a pascal string into a binary file character array.  Use when a
@@ -888,7 +935,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the copy */
 
-      errorCode = pas_Str2bstr(st, addr1, uparm1, addr2, uparm2, 0);
+      errorCode = pexec_Str2BStr(st, addr1, uparm1, addr2, uparm2, 0);
       break;
 
     /* Copy a pascal string into a binary file character array.  Use when a
@@ -923,7 +970,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the copy */
 
-      errorCode = pas_Str2bstr(st, addr1, uparm1, addr2, uparm2, offset);
+      errorCode = pexec_Str2BStr(st, addr1, uparm1, addr2, uparm2, offset);
       break;
 
       /* Initialize a new string variable. Create a string buffer.
@@ -942,7 +989,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* And perform the variable initialization */
 
-      errorCode = pas_strinit(st, addr1, INT_ALIGNUP(st->stralloc));
+      errorCode = pexec_StrInit(st, addr1, INT_ALIGNUP(st->stralloc));
       break;
 
       /* Initialize a new short string variable. Create a string buffer.  This
@@ -968,7 +1015,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       /* And perform the variable initialization */
 
       size      = INT_ALIGNUP(size);
-      errorCode = pas_strinit(st, addr1, size);
+      errorCode = pexec_StrInit(st, addr1, size);
 
       /* And save the allocated size in the variable's memory */
 
@@ -1155,8 +1202,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Concatenate the strings */
 
-      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
-                             st->stralloc);
+      errorCode = pexec_StrCat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
+                               st->stralloc);
       break;
 
       /* Concatenate a short string to the end of a short string.
@@ -1188,8 +1235,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Concatenate the strings */
 
-      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
-                             TOS(st, 0));
+      errorCode = pexec_StrCat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
+                               TOS(st, 0));
       break;
 
       /* Concatenate a standard string to the end of a short string.
@@ -1219,8 +1266,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Concatenate the strings */
 
-      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
-                             TOS(st, 0));
+      errorCode = pexec_StrCat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
+                               TOS(st, 0));
       break;
 
       /* Concatenate a short string to the end of a standard string.
@@ -1250,8 +1297,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       /* Concatenate the strings */
 
-      errorCode = pas_strcat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
-                             st->stralloc);
+      errorCode = pexec_StrCat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
+                               st->stralloc);
       break;
 
       /* Concatenate a character  to the end of a string.
@@ -1274,8 +1321,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       POP(st, uparm1);    /* Character to concatenate */
 
-      errorCode = pas_strcatc(st, uparm1, TOS(st, 0), &TOS(st, 1),
-                              st->stralloc);
+      errorCode = pexec_StrCatC(st, uparm1, TOS(st, 0), &TOS(st, 1),
+                                st->stralloc);
       break;
 
       /* Concatenate a character to the end of a short string.
@@ -1301,8 +1348,8 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       POP(st, uparm1);    /* Character to concatenate */
 
-      errorCode = pas_strcatc(st, uparm1, TOS(st, 2), &TOS(st, 1),
-                              TOS(st, 0));
+      errorCode = pexec_StrCatC(st, uparm1, TOS(st, 2), &TOS(st, 1),
+                                TOS(st, 0));
       break;
 
       /* Compare two pascal standard strings
@@ -1685,6 +1732,246 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
       }
       break;
 
+      /* Fill string s with character value until s is count-1 char long.
+       *
+       *   fillchar(s : string; count : integer; value : shortword)
+       *
+       * ON INPUT
+       *   TOS(0) = Integer 'value' value
+       *   TOS(1) = Integer 'count' value
+       *   TOS(2) = Address of string (or short string) variable
+       * ON OUTPUT
+       */
+
+    case lbFILLCHAR :
+      {
+        ustack_t *sptr;
+
+        POP(st, uparm2);   /* Fill character value */
+        POP(st, uparm1);   /* Fill count value */
+        POP(st, addr1);    /* Address of the string to be filled */
+
+        /* Get the short string to be modified and its allocation size. */
+
+        sptr = (ustack_t *)ATSTACK(st, addr1);
+
+        /* Then let common logic do the actual fill */
+
+        errorCode = pexec_FillChar(st, sptr, uparm1, uparm2, st->stralloc);
+      }
+      break;
+
+    case lbSFILLCHAR :
+      {
+        ustack_t *sptr;
+
+        POP(st, uparm2);   /* Fill character value */
+        POP(st, size);     /* Fill count value */
+        POP(st, addr1);    /* Address of the string to be filled */
+
+        /* Get the short string to be modified and its allocation size. */
+
+        sptr   = (ustack_t *)ATSTACK(st, addr1);
+        uparm1 = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
+
+        /* Then let common logic do the actual fill */
+
+        errorCode = pexec_FillChar(st, sptr, size, uparm2, uparm1);
+      }
+      break;
+
+      /* Convert a numeric value to a string
+       *
+       * ON INPUT
+       *   TOS(0)   = Address of standard or short string
+       *   TOS(1)   = Field width
+       *   TOS(2-n) = Numeric value.  The actual length varies with type.
+       * ON OUTPUT
+       */
+
+    case lbINTSTR :
+    case lbINTSSTR :
+    case lbWORDSTR :
+    case lbWORDSSTR :
+      {
+        const char *fmt;
+        const char *fmtCh;
+        ustack_t   *sptr;
+        uint16_t    fieldWidth;
+        uint16_t    strAddr;
+        uint16_t    strAlloc;
+        uint16_t    strSize;
+        uint16_t    value;
+
+        POP(st, addr1);      /* Stack address of string */
+        POP(st, fieldWidth); /* Field width data */
+        POP(st, value);      /* Numeric value of the integer */
+
+        /* Get the physical address of the string to be modified and the
+         * allocation size.
+         */
+
+        sptr = (ustack_t *)ATSTACK(st, addr1);
+        if (subfunc == lbINTSSTR || subfunc == lbWORDSSTR)
+          {
+            strAlloc = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
+          }
+        else
+          {
+            strAlloc = st->stralloc;
+          }
+
+        /* Get the appropriate format string */
+
+        if (subfunc == lbINTSTR || subfunc == lbINTSSTR)
+          {
+            fmtCh = "d";
+          }
+        else
+          {
+            fmtCh = "u";
+          }
+
+        fmt = pexec_GetFormat(fmtCh, fieldWidth >> 8, 0);
+
+        /* Now we can perform the conversion */
+
+        strAddr  = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        strSize  = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+
+        if (strSize < strAlloc)
+          {
+            /* Convert the string at the end of the string */
+
+            dest     = (uint8_t *)ATSTACK(st, strAddr) + strSize;
+            strSize += snprintf((char *)dest, strAlloc - strSize, fmt, value);
+
+            /* Save the updated size of the string */
+
+            sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
+          }
+      }
+      break;
+
+    case lbLONGSTR :
+    case lbLONGSSTR :
+    case lbULONGSTR :
+    case lbULONGSSTR :
+      {
+        const char *fmt;
+        const char *fmtCh;
+        ustack_t   *sptr;
+        uint32_t    value;
+        uint16_t    fieldWidth;
+        uint16_t    strAddr;
+        uint16_t    strAlloc;
+        uint16_t    strSize;
+
+        POP(st, addr1);           /* Stack address of string */
+        POP(st, fieldWidth);      /* Field width data */
+        value = pexec_UPop32(st); /* Numeric value of the long integer */
+
+        /* Get the physical address of the string to be modified and the
+         * allocation size.
+         */
+
+        sptr = (ustack_t *)ATSTACK(st, addr1);
+        if (subfunc == lbLONGSSTR || subfunc == lbULONGSSTR)
+          {
+            strAlloc = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
+          }
+        else
+          {
+            strAlloc = st->stralloc;
+          }
+
+        /* Get the appropriate format string */
+
+        if (subfunc == lbLONGSTR || subfunc == lbLONGSSTR)
+          {
+            fmtCh = PRId32;
+          }
+        else
+          {
+            fmtCh = PRIu32;
+          }
+
+        fmt = pexec_GetFormat(fmtCh, fieldWidth >> 8, 0);
+
+        /* Now we can perform the conversion */
+
+        strAddr  = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        strSize  = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+
+        if (strSize < strAlloc)
+          {
+            /* Convert the string at the end of the string */
+
+            dest     = (uint8_t *)ATSTACK(st, strAddr) + strSize;
+            strSize += snprintf((char *)dest, strAlloc - strSize, fmt, value);
+
+            /* Save the updated size of the string */
+
+            sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
+          }
+      }
+      break;
+
+    case lbREALSTR :
+    case lbREALSSTR :
+      {
+        const char *fmt;
+        ustack_t   *sptr;
+        fparg_t     value;
+        uint16_t    fieldWidth;
+        uint16_t    strAddr;
+        uint16_t    strAlloc;
+        uint16_t    strSize;
+
+        POP(st, addr1);        /* Stack address of string */
+        POP(st, fieldWidth);   /* Field width data */
+        POP(st, value.hw[3]);  /* Numeric value of the real */
+        POP(st, value.hw[2]);
+        POP(st, value.hw[1]);
+        POP(st, value.hw[0]);
+
+        /* Get the physical address of the string to be modified and the
+         * allocation size.
+         */
+
+        sptr = (ustack_t *)ATSTACK(st, addr1);
+        if (subfunc == lbREALSSTR)
+          {
+            strAlloc = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
+          }
+        else
+          {
+            strAlloc = st->stralloc;
+          }
+
+        /* Get the appropriate format string */
+
+        fmt = pexec_GetFormat("f", fieldWidth >> 8, fieldWidth & 0xff);
+
+        /* Now we can perform the conversion */
+
+        strAddr  = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        strSize  = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+
+        if (strSize < strAlloc)
+          {
+            /* Convert the string at the end of the string */
+
+            dest     = (uint8_t *)ATSTACK(st, strAddr) + strSize;
+            strSize += snprintf((char *)dest, strAlloc - strSize, fmt, value.f);
+
+            /* Save the updated size of the string */
+
+            sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
+          }
+      }
+      break;
+
       /* Convert a string to a numeric value
        *   procedure val(const s : string; var v; var code : word);
        *
@@ -1721,7 +2008,7 @@ uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc)
 
       src       = (uint8_t *)ATSTACK(st, uparm1);
       src[size] = '\0';
-      name      = pexec_mkcstring(src, size);
+      name      = pexec_MkCString(src, size);
       if (name == NULL)
         {
           errorCode = eNOMEMORY;

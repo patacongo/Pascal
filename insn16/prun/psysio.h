@@ -73,5 +73,7 @@ typedef enum openMode_e openMode_t;
 
 void pexec_InitializeFile(void);
 int  pexec_sysio(struct pexec_s *st, uint16_t subfunc);
+const char *pexec_GetFormat(const char *baseFormat, uint8_t fieldWidth,
+                            uint8_t precision);
 
 #endif /* __PSYSIO_H */

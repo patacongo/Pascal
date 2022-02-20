@@ -647,7 +647,7 @@ static void pas_ConcatFunc(void)
 
   pas_CheckLParen();
 
-  /* Create an empty string to catch the result of the concatenation */
+  /* Create an empty standard string to catch the result of the concatenation */
 
   pas_StandardFunctionCall(lbSTRTMP);
 
@@ -657,25 +657,19 @@ static void pas_ConcatFunc(void)
 
       exprType = pas_Expression(exprString, NULL);
 
-      /* If this is a short string, then discard the string alloc size at the
-       * top of the stack in order to convert to a standard (but read-only)
-       * string.  The optimizer should remove these.
-       */
-
-      if (exprType == exprShortString)
-        {
-          pas_GenerateSimple(opDISCARD);
-        }
-
       /* Concatenate this string to the temporary stack string */
 
-      if (exprType == exprShortString)
+      if (exprType == exprString)
+        {
+          opCode = lbSTRCAT;
+        }
+      else if (exprType == exprShortString)
         {
           opCode = lbSTRCATSSTR;
         }
       else
         {
-          opCode = lbSTRCAT;
+          error(eEXPRTYPE);
         }
 
       pas_StandardFunctionCall(opCode);

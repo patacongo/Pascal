@@ -95,8 +95,6 @@ typedef union uWord_u uWord_t;
 
 static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
 static void     pexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
-static const char *pexec_GetFormat(char *baseFormat, uint8_t fieldWidth,
-                                   uint8_t precision);
 static void     pexec_CheckEoln(uint16_t fileNumber, char *buffer);
 static ustack_t pexec_AllocateFile(void);
 static int      pexec_FreeFile(uint16_t fileNumber);
@@ -266,29 +264,7 @@ static void pexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
   *dest   = result.hw[3];
 }
 
-static const char *pexec_GetFormat(char *baseFormat, uint8_t fieldWidth,
-                                   uint8_t precision)
-{
-  static char fmt[20];
-
-  if (fieldWidth > 0)
-    {
-      if (precision > 0)
-        {
-          snprintf(fmt, 20, "%%%u.%u%s", fieldWidth, precision, baseFormat);
-        }
-      else
-        {
-          snprintf(fmt, 20, "%%%u%s", fieldWidth, baseFormat);
-        }
-    }
-  else
-    {
-      snprintf(fmt, 20, "%%%s", baseFormat);
-    }
-
-  return fmt;
-}
+/****************************************************************************/
 
 static void pexec_CheckEoln(uint16_t fileNumber, char *buffer)
 {
@@ -313,6 +289,8 @@ static void pexec_CheckEoln(uint16_t fileNumber, char *buffer)
   g_fileTable[fileNumber].eoln = eoln;
 }
 
+/****************************************************************************/
+
 static ustack_t pexec_AllocateFile(void)
 {
   uint16_t fileNumber;
@@ -328,6 +306,8 @@ static ustack_t pexec_AllocateFile(void)
 
   return fileNumber;  /* Return the out-of-range file number */
 }
+
+/****************************************************************************/
 
 static int pexec_FreeFile(uint16_t fileNumber)
 {
@@ -357,6 +337,8 @@ static int pexec_FreeFile(uint16_t fileNumber)
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
                             uint16_t size)
@@ -390,6 +372,8 @@ static int pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
 {
@@ -440,6 +424,8 @@ static int pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_CloseFile(uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
@@ -461,6 +447,8 @@ static int pexec_CloseFile(uint16_t fileNumber)
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_RecordSize(uint16_t fileNumber, uint16_t size)
 {
   int errorCode = eNOERROR;
@@ -476,6 +464,8 @@ static int pexec_RecordSize(uint16_t fileNumber, uint16_t size)
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
 {
@@ -502,6 +492,8 @@ static int pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
 {
@@ -536,6 +528,8 @@ static int pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
 {
   int errorCode = eNOERROR;
@@ -568,6 +562,8 @@ static int pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
                             uint16_t *stringVarPtr, uint16_t readSize)
@@ -643,6 +639,8 @@ static int pexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
                              uint16_t size)
 {
@@ -670,6 +668,8 @@ static int pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_WriteInteger(uint16_t fileNumber, int16_t value,
                               uint16_t fieldWidth)
@@ -699,6 +699,8 @@ static int pexec_WriteInteger(uint16_t fileNumber, int16_t value,
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
                                   uint16_t fieldWidth)
 {
@@ -726,6 +728,8 @@ static int pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_WriteWord(uint16_t fileNumber, uint16_t value,
                            uint16_t fieldWidth)
@@ -755,6 +759,8 @@ static int pexec_WriteWord(uint16_t fileNumber, uint16_t value,
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
                                uint16_t fieldWidth)
 {
@@ -782,6 +788,8 @@ static int pexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_WriteChar(uint16_t fileNumber, uint8_t value,
                            uint16_t fieldWidth)
@@ -812,6 +820,8 @@ static int pexec_WriteChar(uint16_t fileNumber, uint8_t value,
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_WriteReal(uint16_t fileNumber, double value,
                            uint16_t fieldWidth)
 {
@@ -840,6 +850,8 @@ static int pexec_WriteReal(uint16_t fileNumber, double value,
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
                              uint16_t size, uint16_t fieldWidth)
@@ -879,6 +891,8 @@ static int pexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
 
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_GetFileSize(FILE *stream, off_t *fileSize)
 {
@@ -924,6 +938,8 @@ static int pexec_GetFileSize(FILE *stream, off_t *fileSize)
   *fileSize = endPos;
   return errorCode;
 }
+
+/****************************************************************************/
 
 static int pexec_Eof(struct pexec_s *st, uint16_t fileNumber)
 {
@@ -974,6 +990,8 @@ static int pexec_Eof(struct pexec_s *st, uint16_t fileNumber)
   return errorCode;
 }
 
+/****************************************************************************/
+
 static int pexec_Eoln(struct pexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
@@ -994,6 +1012,7 @@ static int pexec_Eoln(struct pexec_s *st, uint16_t fileNumber)
   return errorCode;
 }
 
+/****************************************************************************/
 /* Return the current position in the file */
 
 static int pexec_FilePos(struct pexec_s *st, uint16_t fileNumber)
@@ -1030,6 +1049,7 @@ static int pexec_FilePos(struct pexec_s *st, uint16_t fileNumber)
   return errorCode;
 }
 
+/****************************************************************************/
 /* Return the file size */
 
 static int pexec_FileSize(struct pexec_s *st, uint16_t fileNumber)
@@ -1064,6 +1084,7 @@ static int pexec_FileSize(struct pexec_s *st, uint16_t fileNumber)
   return errorCode;
 }
 
+/****************************************************************************/
 /* Seek to a position in the file */
 
 static int pexec_Seek(struct pexec_s *st, uint16_t fileNumber, uint32_t filePos)
@@ -1099,6 +1120,7 @@ static int pexec_Seek(struct pexec_s *st, uint16_t fileNumber, uint32_t filePos)
   return errorCode;
 }
 
+/****************************************************************************/
 /* Set file position to end of file */
 
 static int pexec_SeekEof(struct pexec_s *st, uint16_t fileNumber)
@@ -1147,6 +1169,7 @@ static int pexec_SeekEof(struct pexec_s *st, uint16_t fileNumber)
   return errorCode;
 }
 
+/****************************************************************************/
 /* Set file position to end of line */
 
 static int pexec_SeekEoln(struct pexec_s *st, uint16_t fileNumber)
@@ -1647,4 +1670,30 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     }
 
   return errorCode;
+}
+
+/****************************************************************************/
+
+const char *pexec_GetFormat(const char *baseFormat, uint8_t fieldWidth,
+                            uint8_t precision)
+{
+  static char fmt[20];
+
+  if (fieldWidth > 0)
+    {
+      if (precision > 0)
+        {
+          snprintf(fmt, 20, "%%%u.%u%s", fieldWidth, precision, baseFormat);
+        }
+      else
+        {
+          snprintf(fmt, 20, "%%%u%s", fieldWidth, baseFormat);
+        }
+    }
+  else
+    {
+      snprintf(fmt, 20, "%%%s", baseFormat);
+    }
+
+  return fmt;
 }

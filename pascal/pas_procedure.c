@@ -124,11 +124,10 @@ static uint16_t pas_GenVarFileNumber(symbol_t *varPtr,
 
 /* Borlan-style string operation functions */
 
-static void     pas_StrProc(void);
-static void     pas_ConcatProc(void);
-static void     pas_InsertProc(void);
-static void     pas_DeleteProc(void);
-static void     pas_FillCharProc(void);
+static void     pas_StrProc(void);                  /* Convert number */
+static void     pas_InsertProc(void);               /* Insert string */
+static void     pas_DeleteProc(void);               /* Delete substring */
+static void     pas_FillCharProc(void);             /* Pad to specific length */
 static void     pas_ValProc(void);                  /* VAL procedure */
 
 /* Misc. helper functions */
@@ -1759,18 +1758,93 @@ static uint16_t pas_GenVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
 
 static void pas_StrProc(void)
 {
-  error(eNOTYET);
-}
+  exprType_t exprType;
+  uint16_t fieldWidth;
+  uint16_t stdOpCode;
+  uint16_t shortOpCode;
+  uint16_t opCode;
 
-/****************************************************************************/
-/* Concatenate two or more strings.
- *
- *   concat(s1,s2,...,sn : string) : string
- */
+  /* FORM: 'str' '(' integer-expression ',' string-variable  ')'
+   *       'str' '(' real-expression ',' string-variable  ')'
+   */
 
-static void pas_ConcatProc(void)
-{
-  error(eNOTYET);
+  /* Verify that the argument list is enclosed in parentheses */
+
+  getToken();                          /* Skip over 'str' */
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* The first argument can be any signed or unsigned integer or a real type */
+
+  exprType = pas_Expression(exprUnknown, NULL);
+  if (exprType == exprInteger || exprType == exprShortInteger)
+    {
+      stdOpCode   = lbINTSTR;
+      shortOpCode = lbINTSSTR;
+    }
+  else if (exprType == exprWord || exprType == exprShortWord)
+    {
+      stdOpCode   = lbWORDSTR;
+      shortOpCode = lbWORDSSTR;
+    }
+  else if (exprType == exprLongInteger)
+    {
+      stdOpCode   = lbLONGSTR;
+      shortOpCode = lbLONGSSTR;
+    }
+  else if (exprType == exprLongWord)
+    {
+      stdOpCode   = lbULONGSTR;
+      shortOpCode = lbULONGSSTR;
+    }
+  else if (exprType == exprReal)
+    {
+      stdOpCode   = lbREALSTR;
+      shortOpCode = lbREALSSTR;
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  /* The expression may be followed by a field width and precision */
+
+  fieldWidth = pas_WriteFieldWidth();
+  pas_GenerateDataOperation(opPUSH, fieldWidth);
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* The second argument is a string variable LValue that receives the
+   * converted number.
+   */
+
+  if (g_token == sSTRING)
+    {
+      opCode = stdOpCode;
+    }
+  else if (g_token == sSHORTSTRING)
+    {
+      opCode = shortOpCode;
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  /* Push the address of the string variable onto the stack */
+
+  pas_GenerateStackReference(opLAS, g_tknPtr);
+
+  /* Now we can generate the string operation */
+
+  pas_StandardFunctionCall(opCode);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  getToken();                          /* Skip over second string argument */
+  if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
+  else getToken();
 }
 
 /****************************************************************************/
@@ -1783,13 +1857,13 @@ static void pas_InsertProc(void)
 {
   exprType_t exprType;
 
-  /* FORM: 'inster' '(' string-expression ',' string-variable ','
+  /* FORM: 'insert' '(' string-expression ',' string-variable ','
    *        integer-expression ')'
    */
 
   /* Verify that the argument list is enclosed in parentheses */
 
-  getToken();                          /* Skip over 'delete' */
+  getToken();                          /* Skip over 'insert' */
   if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
   else getToken();
 
@@ -1912,14 +1986,65 @@ static void pas_DeleteProc(void)
 }
 
 /****************************************************************************/
-/* Fill string s with character c until s is n-1 char long
+/* Fill string s with character value until s is count-1 char long
  *
- *   fillchar(s : string; n : integer; c : char)
+ *   fillchar(s : string; count : integer; value : shortword)
  */
 
 static void pas_FillCharProc(void)
 {
-  error(eNOTYET);
+  uint16_t opCode;
+
+  /* FORM: 'fillchar' '(' string-variable ',' integer-expression ','
+   *        integer-expression ')'
+   */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  getToken();                          /* Skip over 'fillchar' */
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* The first parameter must be a standard string LValue */
+
+  if (g_token == sSTRING || g_token == sSHORTSTRING)
+    {
+      opCode = (g_token == sSHORTSTRING) ? lbSFILLCHAR : lbFILLCHAR;
+      pas_GenerateStackReference(opLAS, g_tknPtr);
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  getToken();                          /* Skip over the string */
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the first integer expression */
+
+  pas_Expression(exprInteger, NULL);
+
+  /* A comma should separate the arguments */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the second integer expression */
+
+  pas_Expression(exprInteger, NULL);
+
+  /* Now we can generate the string operation */
+
+  pas_StandardFunctionCall(opCode);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  if (g_token != ')') error(eRPAREN);  /* Skip over '(' */
+  else getToken();
 }
 
 /****************************************************************************/
@@ -2309,10 +2434,6 @@ void pas_StandardProcedure(void)
 
         case txSTR :
           pas_StrProc();
-          break;
-
-        case txCONCAT :
-          pas_ConcatProc();
           break;
 
         case txINSERT :

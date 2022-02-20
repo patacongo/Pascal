@@ -947,6 +947,10 @@ static symbol_t *pas_TypeDenoter(char *typeName)
       /* Check for new-ordinal-type */
 
       typePtr = pas_NewSimpleType(typeName);
+      if (typePtr == NULL)
+        {
+          error(eINVTYPE);
+        }
     }
 
   /* Return the size of an allocated instance of this type. */

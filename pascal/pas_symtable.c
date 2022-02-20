@@ -134,6 +134,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"FILE",           tFILE,           txNONE},       /* (1) */
   {"FILEPOS",        tSTDFUNC,        txFILEPOS},    /* (2) */
   {"FILESIZE",       tSTDFUNC,        txFILESIZE},   /* (2) */
+  {"FILLCHAR",       tSTDPROC,        txFILLCHAR},   /* (8) */
   {"FINALIZATION",   tFINALIZATION,   txNONE},       /* (4) */
   {"FOR",            tFOR,            txNONE},       /* (1) */
   {"FUNCTION",       tFUNCTION,       txNONE},       /* (1) */

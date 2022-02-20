@@ -551,6 +551,44 @@
 
 #define lbDELSUBSTR    (0x002a)
 
+/* Fill string s with character value until s is count-1 char long.
+ *
+ *   fillchar(s : string; count : integer; value : shortword)
+ *
+ * ON INPUT
+ *   TOS(0) = Integer 'value' value
+ *   TOS(1) = Integer 'count' value
+ *   TOS(2) = Address of string (or short string) variable
+ * ON OUTPUT
+ */
+
+#define lbFILLCHAR     (0x002b)
+#define lbSFILLCHAR    (0x002c)
+
+/* Convert a numeric value to a string
+ *
+ * ON INPUT
+ *   TOS(0)   = Address of standard or short string
+ *   TOS(1)   = Field width
+ *   TOS(2-n) = Numeric value.  The actual length varies with type.
+ * ON OUTPUT
+ */
+
+#define lbINTSTR       (0x002d)
+#define lbINTSSTR      (0x002e)
+
+#define lbWORDSTR      (0x002f)
+#define lbWORDSSTR     (0x0030)
+
+#define lbLONGSTR      (0x0031)
+#define lbLONGSSTR     (0x0032)
+
+#define lbULONGSTR     (0x0033)
+#define lbULONGSSTR    (0x0034)
+
+#define lbREALSTR      (0x0035)
+#define lbREALSSTR     (0x0036)
+
 /* Convert a string to a numeric value
  *
  *   procedure val(const s : string; var v : integer; var code : word);
@@ -578,8 +616,8 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x002b)
+#define lbVAL           (0x0037)
 
-#define MAX_LBOP        (0x002c)
+#define MAX_LBOP        (0x0038)
 
 #endif /* __PAS_LIBRARY_H */
