@@ -720,10 +720,6 @@ static exprType_t pas_GetEnvFunc(void)
  * Public Functions
  ****************************************************************************/
 
-void pas_PrimeStandardFunctions(void)
-{
-}
-
 /****************************************************************************/
 /* Process a standard Pascal function call */
 

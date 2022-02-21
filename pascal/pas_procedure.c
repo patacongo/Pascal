@@ -2372,12 +2372,6 @@ static void pas_InitializeNewArray(symbol_t *typePtr)
  * Public Functions
  ****************************************************************************/
 
-/****************************************************************************/
-
-void pas_PrimeStandardProcedures(void)
-{
-}
-
 /***********************************************************************/
 
 void pas_StandardProcedure(void)

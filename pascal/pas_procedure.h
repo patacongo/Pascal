@@ -47,7 +47,6 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void     pas_PrimeStandardProcedures(void);
 void     pas_StandardProcedure(void);
 uint16_t pas_GenerateFileNumber(uint16_t *pFileSize,
                                 symbol_t *defaultFilePtr);

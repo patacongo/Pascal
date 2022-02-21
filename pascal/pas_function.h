@@ -47,7 +47,6 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-void pas_PrimeStandardFunctions(void);
 exprType_t pas_StandardFunction(void);
 void pas_StandardFunctionOfConstant(void);
 exprType_t pas_BuiltInFunction(void);
