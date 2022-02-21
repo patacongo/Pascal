@@ -970,7 +970,8 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
                   }
                 else
                   {
-                    assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE);
+                    assignFlags |= (ASSIGN_INDEXED | ASSIGN_DEREFERENCE |
+                                    ASSIGN_STORE_INDEXED);
                   }
 
                 pas_GenerateDataOperation(opPUSH,
@@ -2257,7 +2258,7 @@ static void pas_WithStatement(void)
 
           g_withRecord.wLevel   = withTypePtr->sLevel;
           g_withRecord.wPointer = true;
-          g_withRecord.wPointer = false;
+          g_withRecord.wVarParm = false;
           g_withRecord.wOffset  = withTypePtr->sParm.v.vOffset;
           g_withRecord.wParent  = baseTypePtr;
 

@@ -23,7 +23,7 @@ BEGIN
 
       WRITELN('a = ', a);
       WRITELN('b = ', b);
-      WRITELN('c = ', C)
+      WRITELN('c = ', c)
    END;
 END;
 
@@ -36,7 +36,7 @@ BEGIN
 
       WRITELN('a = ', a);
       WRITELN('b = ', b);
-      WRITELN('c = ', C)
+      WRITELN('c = ', c)
    END;
 
    WITH pabc^ DO
@@ -47,7 +47,7 @@ BEGIN
 
       WRITELN('a = ', a);
       WRITELN('b = ', b);
-      WRITELN('c = ', C)
+      WRITELN('c = ', c)
    END;
 
    ghi(abc);

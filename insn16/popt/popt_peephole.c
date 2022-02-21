@@ -73,6 +73,7 @@ bool       g_endOut  = 0;        /* 1 = oEND pcode has been output */
 
 static poffHandle_t     g_poffHandle;        /* Handle to POFF object */
 static poffProgHandle_t g_poffProgHandle;    /* Handle to temporary program data */
+static int16_t          g_nBufferedOpCodes;  /* Number of opcodes in Pcode table */
 
 /****************************************************************************
  * Private Functions
@@ -162,13 +163,13 @@ static void popt_SetupOpcodePointerList(void)
 
   TRACE(stderr, "[popt_SetupOpcodePointerList]");
 
-  for (pindex = 0; pindex < WINDOW; pindex++)
+  for (pindex = 0; pindex < g_nBufferedOpCodes; pindex++)
     {
       g_opPtr[pindex] = NULL;
     }
 
   g_nOpPtrs = 0;
-  for (pindex = 0; pindex < WINDOW; pindex++)
+  for (pindex = 0; pindex < g_nBufferedOpCodes; pindex++)
     {
       switch (g_opTable[pindex].op)
         {
@@ -222,6 +223,7 @@ void popt_SetupPeephole(poffHandle_t poffHandle,
                         poffProgHandle_t poffProgHandle)
 {
   uint32_t opCodeSize;
+  int16_t nOpCodes;
   int16_t i;
 
   TRACE(stderr, "[intPTable]");
@@ -261,16 +263,22 @@ void popt_SetupPeephole(poffHandle_t poffHandle,
 
   /* Fill the pcode window and setup pointers to working section */
 
-  for (i = 0; i < WINDOW; i++)
+  for (i = 0, nOpCodes = 0; i < WINDOW; i++)
     {
       /* Read the next opcode into the optimization buffer */
 
       opCodeSize = insn_GetOpCode(g_poffHandle, (opType_t *)&g_opTable[i]);
+      if (opCodeSize == EOF)
+        {
+          break;
+        }
 
       g_opTable[i].offset = g_inSectionOffset;
       g_inSectionOffset += opCodeSize;
+      nOpCodes++;
     }
 
+  g_nBufferedOpCodes = nOpCodes;
   popt_SetupOpcodePointerList();
 }
 
@@ -280,57 +288,67 @@ void popt_SetupPeephole(poffHandle_t poffHandle,
 void popt_UpdatePeephole(void)
 {
   uint32_t opCodeSize;
+  int16_t nOpCodes;
   int16_t i;
+  int16_t j;
 
   TRACE(stderr, "[popt_UpdatePeephole]");
 
-  /* Transfer all buffered P-Codes (except NOPs) to the optimized file */
+  /* Transfer one buffered P-Code (except NOPs) to the optimized file */
 
-  do
+  if (g_opTable[0].op != oNOP && !g_endOut)
     {
-      if (g_opTable[0].op != oNOP && !g_endOut)
-        {
-          /* Check for a relocation at this instruction */
+      /* Check for a relocation at this instruction */
 
-          popt_CheckRelocation(&g_opTable[0]);
+      popt_CheckRelocation(&g_opTable[0]);
 
-          /* Write the opcode to the temporary program data */
+      /* Write the opcode to the temporary program data */
 
-          g_outSectionOffset +=
-            insn_AddTmpOpCode(g_poffProgHandle, (opType_t *)&g_opTable[0]);
+      g_outSectionOffset +=
+        insn_AddTmpOpCode(g_poffProgHandle, (opType_t *)&g_opTable[0]);
 
-          g_endOut = (g_opTable[0].op == oEND);
-        }
-
-      /* What if we deleted an opcode that has a relocation associated with
-       * it?  At a minimum, we need to discard that relocation entry.
-       */
-
-      else
-        {
-          popt_DiscardRelocation(&g_opTable[0]);
-        }
-
-      /* Move all P-Codes down one slot */
-
-      for (i = 1; i < WINDOW; i++)
-        {
-          g_opTable[i - 1].op     = g_opTable[i].op ;
-          g_opTable[i - 1].arg1   = g_opTable[i].arg1;
-          g_opTable[i - 1].arg2   = g_opTable[i].arg2;
-          g_opTable[i - 1].offset = g_opTable[i].offset;
-        }
-
-      /* Then fill the end slot with a new P-Code from the input file */
-
-      opCodeSize = insn_GetOpCode(g_poffHandle,
-                                  (opType_t *)&g_opTable[WINDOW - 1]);
-
-      g_opTable[WINDOW - 1].offset = g_inSectionOffset;
-      g_inSectionOffset += opCodeSize;
+      g_endOut = (g_opTable[0].op == oEND);
     }
-  while (g_opTable[0].op == oNOP);
 
+  /* What if we deleted an opcode that has a relocation associated with
+   * it?  At a minimum, we need to discard that relocation entry.
+   */
+
+  else
+    {
+      popt_DiscardRelocation(&g_opTable[0]);
+    }
+
+  /* Move all of the remaining P-Codes (except oNOP's) down one slot */
+
+  for (i = 1, j = 0; i < WINDOW; i++)
+    {
+      if (g_opTable[i].op != oNOP)
+        {
+          g_opTable[j].op     = g_opTable[i].op ;
+          g_opTable[j].arg1   = g_opTable[i].arg1;
+          g_opTable[j].arg2   = g_opTable[i].arg2;
+          g_opTable[j].offset = g_opTable[i].offset;
+          j++;
+        }
+    }
+
+  /* Then fill the end slot(s) with a new P-Code from the input file */
+
+  for (i = j, nOpCodes = j; i < WINDOW; i++)
+    {
+      opCodeSize = insn_GetOpCode(g_poffHandle, (opType_t *)&g_opTable[i]);
+      if (opCodeSize == EOF)
+        {
+          break;
+        }
+
+      g_opTable[i].offset = g_inSectionOffset;
+      g_inSectionOffset  += opCodeSize;
+      nOpCodes++;
+    }
+
+  g_nBufferedOpCodes = nOpCodes;
   popt_SetupOpcodePointerList();
 }
 
@@ -424,4 +442,85 @@ void popt_SwapPCodePair(int16_t swapIndex1, int16_t swapIndex2)
   g_opPtr[swapIndex1]->offset = opCode.offset;
 
   popt_SetupOpcodePointerList();  /* Shouldn't be necessary */
+}
+
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+/* Check if the opcode at this peephole index:  (1) pushs some data on the
+ * stack and (2) does not depend on prior stack content.
+ */
+
+bool popt_CheckDataOperation(int16_t chkIndex)
+{
+  return (g_opPtr[chkIndex]->op == oPUSH   || g_opPtr[chkIndex]->op == oPUSHB ||
+          g_opPtr[chkIndex]->op == oUPUSHB ||
+          g_opPtr[chkIndex]->op == oLD     || g_opPtr[chkIndex]->op == oLDB  ||
+          g_opPtr[chkIndex]->op == oULDB   ||
+          g_opPtr[chkIndex]->op == oLDS    || g_opPtr[chkIndex]->op == oLDSB ||
+          g_opPtr[chkIndex]->op == oULDSB  ||
+          g_opPtr[chkIndex]->op == oLA     || g_opPtr[chkIndex]->op == oLAS   ||
+          g_opPtr[chkIndex]->op == oLAC);
+}
+
+/****************************************************************************/
+/* Check if the opcode at this peephole index loads an address on the stack.
+ * That address is in the 16-bit argument to the instruction (adjusted at
+ * run-time for indexing, memory organization, and static nesting level).
+ */
+
+bool popt_CheckAddressOperation(int16_t chkIndex)
+{
+  return (g_opPtr[chkIndex]->op == oLA  || g_opPtr[chkIndex]->op == oLAX ||
+          g_opPtr[chkIndex]->op == oLAS || g_opPtr[chkIndex]->op == oLASX  ||
+          g_opPtr[chkIndex]->op == oLAC);
+}
+
+/****************************************************************************/
+/* Check if the opcode at this peephole index is a binary operator.  This
+ * excludes the shift instructions (oSLL, oSRL, oSRA) which are really unary
+ * operators with an argument.
+ */
+
+bool popt_CheckBinaryOperator(int16_t chkIndex)
+{
+  return (g_opPtr[chkIndex]->op == oADD  || g_opPtr[chkIndex]->op == oSUB  ||
+          g_opPtr[chkIndex]->op == oMUL  || g_opPtr[chkIndex]->op == oDIV  ||
+          g_opPtr[chkIndex]->op == oMOD  || g_opPtr[chkIndex]->op == oOR   ||
+          g_opPtr[chkIndex]->op == oAND  || g_opPtr[chkIndex]->op == oEQU  ||
+          g_opPtr[chkIndex]->op == oNEQ  || g_opPtr[chkIndex]->op == oLT   ||
+          g_opPtr[chkIndex]->op == oGTE  || g_opPtr[chkIndex]->op == oGT   ||
+          g_opPtr[chkIndex]->op == oLTE  || g_opPtr[chkIndex]->op == oUMUL ||
+          g_opPtr[chkIndex]->op == oUDIV || g_opPtr[chkIndex]->op == oUMOD ||
+          g_opPtr[chkIndex]->op == oULT  || g_opPtr[chkIndex]->op == oUGTE ||
+          g_opPtr[chkIndex]->op == oUGT  || g_opPtr[chkIndex]->op == oULTE);
+}
+
+/****************************************************************************/
+/* Check if the opcode at this peephole index is a transitive binary
+ * operator (i.e., the optimizer can swap the order of the arguments and
+ * the result is the same).
+ */
+
+bool popt_CheckTransitiveOperator(int16_t chkIndex)
+{
+  return (g_opPtr[chkIndex]->op == oADD  || g_opPtr[chkIndex]->op == oMUL  ||
+          g_opPtr[chkIndex]->op == oOR   || g_opPtr[chkIndex]->op == oAND  ||
+          g_opPtr[chkIndex]->op == oEQU  || g_opPtr[chkIndex]->op == oNEQ  ||
+          g_opPtr[chkIndex]->op == oUMUL);
+}
+
+/****************************************************************************/
+/* Check if the opcode at this peephole index is a PUSH of a constant value
+ * onto the stack.
+ */
+
+bool popt_CheckPushConstant(int16_t chkIndex)
+{
+  return (g_opPtr[chkIndex]->op == oPUSH  ||
+          g_opPtr[chkIndex]->op == oPUSHB ||
+          g_opPtr[chkIndex]->op == oUPUSHB);
 }

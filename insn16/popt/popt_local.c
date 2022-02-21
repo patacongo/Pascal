@@ -108,6 +108,8 @@ void popt_LocalOptimization(poffHandle_t poffHandle)
 
       do
         {
+          /* Perform the local optimizations */
+
           nchanges  = popt_UnaryOptimize();
           nchanges += popt_LongUnaryOptimize();
           nchanges += popt_BinaryOptimize();
@@ -117,7 +119,9 @@ void popt_LocalOptimization(poffHandle_t poffHandle)
           nchanges += popt_LoadOptimize();
           nchanges += popt_StoreOptimize();
         }
-      while (nchanges);
+      while (nchanges > 0);
+
+      /* Flush and reload the peephole */
 
       popt_UpdatePeephole();
     }

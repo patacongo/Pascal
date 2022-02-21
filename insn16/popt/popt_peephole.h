@@ -53,7 +53,7 @@
 * Pre-processor Definitions
 *****************************************************************************/
 
-#define WINDOW             10           /* size of optimization window */
+#define WINDOW    16                    /* size of optimization window */
 
 /****************************************************************************
  * Public Data
@@ -69,16 +69,28 @@ extern bool       g_endOut;             /* true: oEND pcode has been output */
 * Public Function Prototypes
 *****************************************************************************/
 
-void popt_SetupPeephole      (poffHandle_t poffHandle,
-                              poffProgHandle_t poffProgHandle);
-void popt_UpdatePeephole     (void);
+/* Setup and teardown */
 
-void popt_DeletePCode        (int16_t delIndex);
-void popt_DeletePCodePair    (int16_t delIndex1, int16_t delIndex2);
-void popt_DeletePCodeTrio    (int16_t delIndex1, int16_t delIndex2,
-                              int16_t delIndex3);
-void popt_DeletePCodeQuartet (int16_t delIndex1, int16_t delIndex2,
-                              int16_t delIndex3, int16_t delIndex4);
-void popt_SwapPCodePair      (int16_t swapIndex1, int16_t swapIndex2);
+void popt_SetupPeephole          (poffHandle_t poffHandle,
+                                  poffProgHandle_t poffProgHandle);
+void popt_UpdatePeephole         (void);
+
+/* Peepole management */
+
+void popt_DeletePCode            (int16_t delIndex);
+void popt_DeletePCodePair        (int16_t delIndex1, int16_t delIndex2);
+void popt_DeletePCodeTrio        (int16_t delIndex1, int16_t delIndex2,
+                                  int16_t delIndex3);
+void popt_DeletePCodeQuartet     (int16_t delIndex1, int16_t delIndex2,
+                                  int16_t delIndex3, int16_t delIndex4);
+void popt_SwapPCodePair          (int16_t swapIndex1, int16_t swapIndex2);
+
+/* Peephole queries */
+
+bool popt_CheckDataOperation     (int16_t chkIndex);
+bool popt_CheckAddressOperation  (int16_t chkIndex);
+bool popt_CheckBinaryOperator    (int16_t chkIndex);
+bool popt_CheckTransitiveOperator(int16_t chkIndex);
+bool popt_CheckPushConstant      (int16_t chkIndex);
 
 #endif /* __POPT_PEEPHOLE_H */

@@ -52,30 +52,8 @@
 #include "popt_local.h"
 
 /****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-/****************************************************************************/
-/* Check if the opcode at this index:  (1) pushs some data on the stack and
- * (2) does not depend on prior stack content.
- */
-
-static bool popt_CheckDataOperation(int16_t index)
-{
-  return (g_opPtr[index]->op == oPUSH   || g_opPtr[index]->op == oPUSHB ||
-          g_opPtr[index]->op == oUPUSHB ||
-          g_opPtr[index]->op == oLD     || g_opPtr[index]->op == oLDB  ||
-          g_opPtr[index]->op == oULDB   ||
-          g_opPtr[index]->op == oLDS    || g_opPtr[index]->op == oLDSB ||
-          g_opPtr[index]->op == oULDSB  ||
-          g_opPtr[index]->op == oLA     || g_opPtr[index]->op == oLAS   ||
-          g_opPtr[index]->op == oLAC);
-}
-
-/****************************************************************************
  * Public Functions
  ****************************************************************************/
-
 
 /****************************************************************************/
 

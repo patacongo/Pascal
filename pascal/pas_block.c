@@ -2923,25 +2923,27 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
 
 static bool pas_IntAlignRequired(symbol_t *typePtr)
 {
-  bool returnValue = false;
+  bool returnValue = true;
 
-  /* Type CHAR and ARRAYS of CHAR do not require alignment (unless
-   * they are passed as value parameters).  Otherwise, alignment
-   * to type INTEGER boundaries is required.
+  /* Eight bit types (CHAR and SHORTINT/WORD) and ARRAYS of 8-bit types do
+   * not require alignment (unless they are passed as value parameters).
+   * Otherwise, alignment the stack to size of type INTEGER boundaries is
+   * required.  (Where we are assuming that the stack width is the size of an
+   * integer).
    */
 
   if (typePtr)
     {
-      if (typePtr->sKind == sCHAR)
+      if (typePtr->sParm.t.tAllocSize == 1)
         {
-          returnValue = true;
+          returnValue = false;
         }
       else if (typePtr->sKind == sARRAY)
         {
-          typePtr = typePtr->sParm.t.tParent;
-          if (typePtr != NULL && typePtr->sKind == sCHAR)
+          symbol_t *baseTypePtr = pas_GetBaseTypePointer(typePtr);
+          if (baseTypePtr != NULL && baseTypePtr->sParm.t.tAllocSize == 1)
             {
-              returnValue = true;
+              returnValue = false;
             }
         }
     }
