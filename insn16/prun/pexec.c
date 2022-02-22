@@ -44,6 +44,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "pas_debug.h"
 #include "pas_machine.h"
@@ -61,10 +62,6 @@
 #include "plib.h"
 #include "pmmgr.h"
 #include "pexec.h"
-
-#ifdef CONFIG_HAVE_LIBM
-#include <math.h>
-#endif
 
 /****************************************************************************
  * Pre-processor Definitions

@@ -1,7 +1,7 @@
 ############################################################################
 # insn16/plist/Makefile
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,12 +39,8 @@ PLISTDIR  = ${shell pwd}
 INSNDIR   = $(PLISTDIR)/..
 PASCAL    = $(PLISTDIR)/../..
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
-
-INCDIR    = $(PASCAL)/include
-LIBDIR    = $(PASCAL)/lib
-BINDIR    = $(PASCAL)/bin16
+include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
@@ -65,36 +61,44 @@ DEPS      = $(PLISTSRCS:.c=.d)
 SUFFIXES += .d
 
 all: plist
-.PHONY: all plist check_libs clean
+.PHONY: all plist check_libs clean distclean
 
 $(DEPS): %.d: %.c
-	$(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
 
 $(OBJS): %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
 check_libs:
-	@if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
 		echo "$(LIBDIR)/libpoff.a does not exist" ; \
 		exit 1 ; \
 	fi
-	@if [ ! -f $(LIBDIR)/libpas.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpas.a ] ; then \
 		echo "$(LIBDIR)/libpas.a does not exist" ; \
 		exit 1 ; \
 	fi
-	@if [ ! -f $(LIBDIR)/libinsn.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libinsn.a ] ; then \
 		echo "$(LIBDIR)/libinsn.a does not exist" ; \
 		exit 1 ; \
 	fi
 
 $(BINDIR)/plist: check_libs $(DEPS) $(OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) -lpoff -linsn -lpas
+	$(Q) echo "  plist$(HOSTEEXT)"
+	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -lpoff -linsn -lpas
 
 plist: $(BINDIR)/plist
 
 clean:
-	$(RM) plist *.o *.d core *~
+	$(Q) $(RM) plist *.o core *~
+
+distclean: clean
+	$(Q) $(RM) *.d
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include $(DEPS)
+endif
 endif

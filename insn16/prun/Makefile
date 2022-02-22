@@ -40,12 +40,8 @@ PRUNDIR = ${shell pwd}
 INSNDIR = $(PRUNDIR)/..
 PASCAL = $(PRUNDIR)/../..
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
-
-INCDIR    = $(PASCAL)/include
-LIBDIR    = $(PASCAL)/lib
-BINDIR    = $(PASCAL)/bin16
+include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
@@ -67,32 +63,40 @@ DEPS      = $(RUNSRCS:.c=.d)
 SUFFIXES += .d
 
 all: prun
-.PHONY: all prun check_libs clean
+.PHONY: all prun check_libs clean distclean
 
 $(DEPS): %.d: %.c
-	$(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
 
 $(OBJS): %.o: %.c
-	@$(CC) -c $(CFLAGS) $< -o $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
 check_libs:
-	@if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
 		echo "$(LIBDIR)/libpoff.a does not exist" ; \
 		exit 1 ; \
 	fi
-	@if [ ! -f $(LIBDIR)/libpas.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpas.a ] ; then \
 		echo "$(LIBDIR)/libpas.a does not exist" ; \
 		exit 1 ; \
 	fi
 
 $(BINDIR)/prun: check_libs $(DEPS) $(OBJS)
-	@$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
+	$(Q) echo "  prun$(HOSTEEXT)"
+	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
 
 prun: $(BINDIR)/prun
 
 clean:
-	$(RM) prun *.o *.d core *~
+	$(Q) $(RM) prun *.o core *~
+
+distclean: clean
+	$(Q) $(RM) *.d
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include $(DEPS)
+endif
 endif

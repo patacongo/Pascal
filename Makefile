@@ -1,97 +1,136 @@
-# ----------------------------------------------------------------------
+#############################################################################
 # Makefile
-# ----------------------------------------------------------------------
+# Top-level Pascal Makefile
+#
+#   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
+#   Author: Gregory Nutt <gnutt@nuttx.org>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in
+#    the documentation and/or other materials provided with the
+#    distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+#############################################################################
 
 # ----------------------------------------------------------------------
 # Directories
 
-PASCAL			= ${shell pwd}
+PASCAL   = ${shell pwd}
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
+-include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
-INCDIR			= $(PASCAL)/include
-LIBDIR			= $(PASCAL)/lib
-BINDIR			= $(PASCAL)/bin16
-LIBPOFFDIR		= $(PASCAL)/libpoff
-LIBPASDIR		= $(PASCAL)/libpas
-PASDIR			= $(PASCAL)/pascal
-PLINKDIR		= $(PASCAL)/plink
-TESTDIR			= $(PASCAL)/tests
-INSNDIR			= $(PASCAL)/insn16
-LIBINSNDIR		= $(INSNDIR)/libinsn
+# ----------------------------------------------------------------------
+# Tools
+
+MKCONFIG = $(PTOOLDIR)/mkconfig$(HOSTEEXT)
 
 # ----------------------------------------------------------------------
 # Objects and targets
 
-LIBS			= $(LIBDIR)/libpoff.a $(LIBDIR)/libpas.a \
-				  $(LIBDIR)/libinsn.a
+LIBS = $(LIBDIR)/libpoff.a $(LIBDIR)/libpas.a  $(LIBDIR)/libinsn.a
 
 all: pascal popt plink plist prun
-.PHONY: all config.h libpoff.a libpas.a libinsn.a pascal popt plink plist prun clean distclean
+.PHONY: all config.h mkconfig libpoff.a libpas.a libinsn.a pascal popt plink plist prun menuconfig clean distclean
 
-$(INCDIR)/config.h: Make.config
-	@$(MAKE) -f Make.config.h
+$(MKCONFIG) : $(PTOOLDIR)/mkconfig.c
+	$(Q) $(MAKE) -C $(PTOOLDIR) mkconfig$(HOSTEEXT)
+
+$(INCDIR)/config.h: .config $(MKCONFIG)
+	$(Q) $(MKCONFIG) . >$(INCDIR)/config.h
 
 config.h: $(INCDIR)/config.h
 
 $(LIBDIR):
-	mkdir $(LIBDIR)
+	$(Q) mkdir $(LIBDIR)
 
-$(LIBDIR)/libpoff.a: $(LIBDIR) config.h
-	@$(MAKE) -C $(LIBPOFFDIR) libpoff.a
+$(LIBDIR)/libpoff.a: $(LIBDIR) $(INCDIR)/config.h
+	$(Q) $(MAKE) -C $(LIBPOFFDIR) libpoff.a
 
 libpoff.a: $(LIBDIR)/libpoff.a
 
-$(LIBDIR)/libpas.a: $(LIBDIR) config.h
-	@$(MAKE) -C $(LIBPASDIR) libpas.a
+$(LIBDIR)/libpas.a: $(LIBDIR) $(INCDIR)/config.h
+	$(Q) $(MAKE) -C $(LIBPASDIR) libpas.a
 
 libpas.a: $(LIBDIR)/libpas.a
 
-$(LIBDIR)/libinsn.a: $(LIBDIR) config.h
-	@$(MAKE) -C $(LIBINSNDIR) libinsn.a
+$(LIBDIR)/libinsn.a: $(LIBDIR) $(INCDIR)/config.h
+	$(Q) $(MAKE) -C $(LIBINSNDIR) libinsn.a
 
 libinsn.a: $(LIBDIR)/libinsn.a
 
 $(BINDIR):
-	mkdir $(BINDIR)
+	$(Q) mkdir $(BINDIR)
 
-$(BINDIR)/pascal: $(BINDIR) config.h $(LIBS)
-	@$(MAKE) -C $(PASDIR)
+$(BINDIR)/pascal: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(PASDIR)
 
 pascal: $(BINDIR)/pascal
 
-$(BINDIR)/popt: $(BINDIR) config.h $(LIBS)
-	@$(MAKE) -C $(INSNDIR) popt
+$(BINDIR)/popt: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(INSNDIR) popt
 
 popt: $(BINDIR)/popt
 
-$(BINDIR)/plink: $(BINDIR) config.h $(LIBS)
-	@$(MAKE) -C $(PLINKDIR)
+$(BINDIR)/plink: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(PLINKDIR)
 
 plink: $(BINDIR)/plink
 
-$(BINDIR)/prun: $(BINDIR) config.h $(LIBS)
-	@$(MAKE) -C $(INSNDIR) prun
+$(BINDIR)/prun: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(INSNDIR) prun
 
 prun: $(BINDIR)/prun
 
-$(BINDIR)/plist: $(BINDIR) config.h $(LIBS)
-	@$(MAKE) -C $(INSNDIR) plist
+$(BINDIR)/plist: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(INSNDIR) plist
 
 plist: $(BINDIR)/plist
 
+menuconfig:
+	$(Q) kconfig-mconf Kconfig
+
 clean:
-	$(RM) -f core *~
-	$(RM) -rf $(LIBDIR)
-	$(RM) -rf bin16 bin32
-	$(MAKE) -f Make.config.h clean
-	$(MAKE) -C $(LIBPOFFDIR) clean
-	$(MAKE) -C $(LIBPASDIR) clean
-	$(MAKE) -C $(PASDIR) clean
-	$(MAKE) -C $(PLINKDIR) clean
-	$(MAKE) -C $(INSNDIR) clean
-	$(MAKE) -C $(TESTDIR) clean
+	$(Q) $(RM) core *~
+	$(Q) $(RM) -rf $(LIBDIR)
+	$(Q) $(RM) -rf bin16 bin32
+	$(Q) $(MAKE) -C $(LIBPOFFDIR) clean
+	$(Q) $(MAKE) -C $(LIBPASDIR) clean
+	$(Q) $(MAKE) -C $(PASDIR) clean
+	$(Q) $(MAKE) -C $(PLINKDIR) clean
+	$(Q) $(MAKE) -C $(INSNDIR) clean
+	$(Q) $(MAKE) -C $(TESTDIR) clean
+	$(Q) $(MAKE) -C $(PTOOLDIR) clean
 
 distclean: clean
-	rm -f .config include/config.h Make.config
+	$(Q) $(MAKE) -C $(LIBPOFFDIR) distclean
+	$(Q) $(MAKE) -C $(LIBPASDIR) distclean
+	$(Q) $(MAKE) -C $(PASDIR) distclean
+	$(Q) $(MAKE) -C $(PLINKDIR) distclean
+	$(Q) $(MAKE) -C $(INSNDIR) distclean
+	$(Q) $(MAKE) -C $(TESTDIR) distclean
+	$(Q) $(MAKE) -C $(PTOOLDIR) distclean
+	$(Q) $(RM) $(INCDIR)/config.h
+	$(Q) $(RM) .config .config.old

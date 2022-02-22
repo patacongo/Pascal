@@ -1,7 +1,8 @@
-############################################################################
-# Make.defs
+#############################################################################
+# Makefile
+# Host Tools Makefile
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,20 +32,24 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-############################################################################
-#
-# Tools
-#
-CC			= /usr/bin/gcc
-CPP			= /usr/bin/cpp
-LD			= /usr/bin/ld
-MAKE			= /usr/bin/make
-AR			= /usr/bin/ar
+#############################################################################
 
-RM			= /bin/rm -f
+HOSTCC     ?= cc
+HOSTCFLAGS ?= -O2 -Wall -Wstrict-prototypes -Wshadow
 
-DEFINES			=
-INCLUDES		= -I. -I$(INCDIR)
-CFLAGS			= -Wall -g $(DEFINES) $(INCLUDES)
-LDFLAGS			= -L$(LIBDIR)
-ARFLAGS			= -r
+# Targets
+
+all: mkconfig$(HOSTEEXT)
+
+.PHONY: clean
+
+# mkconfig - Convert a .config file into a C config.h file
+
+mkconfig$(HOSTEXEEXT): mkconfig.c
+	$(Q) echo "  mkconfig$(HOSTEEXT)"
+	$(Q) $(HOSTCC) $(HOSTCFLAGS) -o mkconfig$(HOSTEXEEXT) mkconfig.c
+
+clean:
+	$(Q) $(RM) *.o *.exe
+
+distclean: clean

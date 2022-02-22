@@ -38,12 +38,8 @@
 PLINKDIR  = ${shell pwd}
 PASCAL    = $(PLINKDIR)/..
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
-
-INCDIR    = $(PASCAL)/include
-LIBDIR    = $(PASCAL)/lib
-BINDIR    = $(PASCAL)/bin16
+include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
 #
 # Objects and targets
@@ -60,33 +56,41 @@ all: plink
 .PHONY: all plink check_libs clean
 
 $(DEPS): %.d: %.c
-	$(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
 
 $(OBJS): %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
 check_libs:
-	@if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
 		echo "$(LIBDIR)/libpoff.a does not exist" ; \
 		exit 1 ; \
 	fi
-	@if [ ! -f $(LIBDIR)/libpas.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpas.a ] ; then \
 		echo "$(LIBDIR)/libpas.a does not exist" ; \
 		exit 1 ; \
 	fi
-	@if [ ! -f $(LIBDIR)/libinsn.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libinsn.a ] ; then \
 		echo "$(LIBDIR)/libinsn.a does not exist" ; \
 		exit 1 ; \
 	fi
 
 $(BINDIR)/plink: check_libs $(DEPS) $(OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
+	$(Q) echo "  plink(HOSTEEXT)"
+	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 plink: $(BINDIR)/plink
 
 clean:
-	$(RM) plink *.o *.d core *~
+	$(Q) $(RM) plink *.o core *~
+
+distclean: clean
+	$(Q) $(RM) *.d
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include $(DEPS)
+endif
 endif

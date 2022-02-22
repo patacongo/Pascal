@@ -40,12 +40,8 @@ POPTDIR = ${shell pwd}
 INSNDIR = $(POPTDIR)/..
 PASCAL = $(POPTDIR)/../..
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
-
-INCDIR    = $(PASCAL)/include
-LIBDIR    = $(PASCAL)/lib
-BINDIR    = $(PASCAL)/bin16
+include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
@@ -70,36 +66,44 @@ LIBS      = libpoff.a libpas.a
 SUFFIXES += .d
 
 all: popt
-.PHONY: all check_libs popt check_libs clean
+.PHONY: all check_libs popt check_libs clean distclean
 
 $(DEPS): %.d: %.c
-	$(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
 
 $(OBJS): %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
 check_libs:
-	@if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
 		echo "$(LIBDIR)/libpoff.a does not exist" ; \
 		exit 1 ; \
 	fi
-	@if [ ! -f $(LIBDIR)/libpas.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libpas.a ] ; then \
 		echo "$(LIBDIR)/libpas.a does not exist" ; \
 		exit 1 ; \
 	fi
-	@if [ ! -f $(LIBDIR)/libinsn.a ] ; then \
+	$(Q) if [ ! -f $(LIBDIR)/libinsn.a ] ; then \
 		echo "$(LIBDIR)/libinsn.a does not exist" ; \
 		exit 1 ; \
 	fi
 
 $(BINDIR)/popt: check_libs $(DEPS) $(OBJS)
+	$(Q) echo "  popt$(HOSTEEXT)"
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 popt: $(BINDIR)/popt
 
 clean:
-	$(RM) popt *.o *.d core *~
+	$(Q) $(RM) popt *.o core *~
+
+distclean: clean
+	$(Q) $(RM) *.d
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include $(DEPS)
+endif
 endif

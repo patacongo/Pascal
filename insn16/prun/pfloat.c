@@ -44,6 +44,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "pas_debug.h"
 #include "pas_machine.h"
@@ -56,10 +57,6 @@
 #include "psysio.h"
 #include "plib.h"
 #include "pexec.h"
-
-#ifdef CONFIG_HAVE_LIBM
-#include <math.h>
-#endif
 
 /****************************************************************************
  * Private Function Prototypes
@@ -295,7 +292,6 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       PUSH(st, result.hw[3]);
       break;
 
-#ifdef CONFIG_HAVE_LIBM
     case fpABS :
       pexec_getfparguments(st, fpop, &arg1, NULL);
       result.f = fabs(arg1.f);
@@ -304,7 +300,6 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       PUSH(st, result.hw[2]);
       PUSH(st, result.hw[3]);
       break;
-#endif
 
     case fpSQR :
       pexec_getfparguments(st, fpop, &arg1, NULL);
@@ -315,7 +310,6 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       PUSH(st, result.hw[3]);
       break;
 
-#ifdef CONFIG_HAVE_LIBM
     case fpSQRT :
       pexec_getfparguments(st, fpop, &arg1, NULL);
       result.f = sqrt(arg1.f);
@@ -369,7 +363,6 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       PUSH(st, result.hw[2]);
       PUSH(st, result.hw[3]);
       break;
-#endif
 
     default :
       return eBADFPOPCODE;

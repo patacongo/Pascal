@@ -1,0 +1,23 @@
+# Configuration for using with kconfig-frontends
+
+config PASCAL
+	bool "Enable Pascal Support"
+	default n
+	---help---
+		Enable building of Pascal support
+
+if PASCAL
+
+config PASCAL_DEBUG
+	bool "Enable Debug Features"
+	default n
+	---help---
+		Enable DEBUG features in tools and run-time code.
+
+config PASCAL_TRACE
+	bool "Enable Function Tracing"
+	default n
+	---help---
+		Enable DEBUG output on entry into each function.
+
+endif

@@ -1,7 +1,7 @@
 ############################################################################
 # insn16/Makefile
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,45 +38,48 @@
 INSNDIR		= ${shell pwd}
 PASCAL		= $(INSNDIR)/..
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
+include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
-LIBDIR		= $(PASCAL)/lib
-BINDIR		= $(PASCAL)/bin16
-LIBINSNDIR	= $(INSNDIR)/libinsn
-POPTDIR		= $(INSNDIR)/popt
-PRUNDIR		= $(INSNDIR)/prun
-PLISTDIR	= $(INSNDIR)/plist
+POPTDIR     = $(INSNDIR)/popt
+PRUNDIR     = $(INSNDIR)/prun
+PLISTDIR    = $(INSNDIR)/plist
 
 #
 # Objects and targets
 #
 all: libinsn popt prun plist
-PHONY: all libinsn popt prun plist clean
+PHONY: all libinsn popt prun plist clean distclean
 
 $(LIBINSNDIR)/libinsn.a:
-	$(MAKE) -C $(LIBINSNDIR)
+	$(Q) $(MAKE) -C $(LIBINSNDIR)
 
 libinsn.a: $(LIBINSNDIR)/libinsn.a
 
 $(BINDIR)/popt:
-	$(MAKE) -C $(POPTDIR)
+	$(Q) $(MAKE) -C $(POPTDIR)
 
 popt: $(BINDIR)/popt
 
 $(BINDIR)/prun:
-	$(MAKE) -C $(PRUNDIR)
+	$(Q) $(MAKE) -C $(PRUNDIR)
 
 prun: $(BINDIR)/prun
 
 $(BINDIR)/plist:
-	$(MAKE) -C $(PLISTDIR)
+	$(Q) $(MAKE) -C $(PLISTDIR)
 
 plist: $(BINDIR)/plist
 
 clean:
-	$(RM) libinsn.a core *~
-	$(MAKE) -C $(LIBINSNDIR) clean
-	$(MAKE) -C $(POPTDIR) clean
-	$(MAKE) -C $(PRUNDIR) clean
-	$(MAKE) -C $(PLISTDIR) clean
+	$(Q) $(RM) libinsn.a core *~
+	$(Q) $(MAKE) -C $(LIBINSNDIR) clean
+	$(Q) $(MAKE) -C $(POPTDIR) clean
+	$(Q) $(MAKE) -C $(PRUNDIR) clean
+	$(Q) $(MAKE) -C $(PLISTDIR) clean
+
+distclean: clean
+	$(Q) $(MAKE) -C $(LIBINSNDIR) distclean
+	$(Q) $(MAKE) -C $(POPTDIR) distclean
+	$(Q) $(MAKE) -C $(PRUNDIR) distclean
+	$(Q) $(MAKE) -C $(PLISTDIR) distclean

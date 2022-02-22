@@ -38,11 +38,8 @@
 LIBPASDIR  = ${shell pwd}
 PASCAL     = $(LIBPASDIR)/..
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
-
-INCDIR     = $(PASCAL)/include
-LIBDIR     = $(PASCAL)/lib
+include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
 #
 # Objects and targets
@@ -56,22 +53,30 @@ DEPS       = $(LIBPASSRCS:.c=.d)
 SUFFIXES  += .d
 
 all: libpas.a
-.PHONY: all libpas.a clean
+.PHONY: all libpas.a clean distclean
 
 $(DEPS): %.d: %.c
-	$(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
 
 $(OBJS): %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
 $(LIBDIR)/libpas.a: $(OBJS)
-	$(AR) $(ARFLAGS) $@ $^
+	$(Q) echo "  $@"
+	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
 
 libpas.a: $(DEPS) $(LIBDIR)/libpas.a
 
 clean:
-	$(RM) libpas.a *.o *.d core *~
+	$(Q) $(RM) libpas.a *.o core *~
+
+distclean: clean
+	$(Q) $(RM) *.d
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include $(DEPS)
+endif
 endif

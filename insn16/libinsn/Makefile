@@ -39,11 +39,8 @@ LIBINSNDIR   = ${shell pwd}
 INSNDIR      = $(LIBINSNDIR)/..
 PASCAL       = $(LIBINSNDIR)/../..
 
-include $(PASCAL)/Make.config
-include $(PASCAL)/Make.defs
-
-INCDIR       = $(PASCAL)/include
-LIBDIR       = $(PASCAL)/lib
+include $(PASCAL)/.config
+include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
@@ -66,22 +63,30 @@ DEPS         = $(LIBINSNSRCS:.c=.d)
 SUFFIXES    += .d
 
 all: libinsn.a
-.PHONY: all libinsn.a check_libs clean
+.PHONY: all libinsn.a check_libs clean distclean
 
 $(DEPS): %.d: %.c
-	$(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
 
 $(OBJS): %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(Q) echo "  $@"
+	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
 $(LIBDIR)/libinsn.a: $(OBJS)
-	$(AR) $(ARFLAGS) $@ $^
+	$(Q) echo "  $@"
+	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
 
 libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
 
 clean:
-	$(RM) libinsn.a *.o *.d core *~
+	$(Q) $(RM) libinsn.a *.o core *~
+
+distclean: clean
+	$(Q) $(RM) *.d
 
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include $(DEPS)
+endif
 endif

@@ -9,6 +9,7 @@ core
 .gdbinit
 cscope.out
 /.config
+/.config.old
 /Make.config
 /lib
 /bin16
