@@ -35,10 +35,10 @@
 #
 # Directories
 #
+
 PASDIR   = ${shell pwd}
 PASCAL   = $(PASDIR)/..
 
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 #
@@ -55,6 +55,10 @@ OBJS     = $(PASOBJS)
 DEPS     = $(PASSRCS:.c=.d)
 
 SUFFIXES += .d
+
+#
+# Targets
+#
 
 all: pascal
 .PHONY: all pascal check_libs clean distclean
@@ -91,7 +95,7 @@ clean:
 	$(Q) $(RM) pascal *.o core *~
 
 distclean: clean
-	$(Q) $(RM) *.d
+	$(Q) $(RM) *.d .depend Make.dep
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

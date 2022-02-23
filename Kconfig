@@ -8,6 +8,77 @@ config PASCAL
 
 if PASCAL
 
+choice
+	prompt "Build Context"
+	default PASCAL_BUILD_LINUX
+
+config PASCAL_BUILD_LINUX
+	bool "Linux"
+
+config PASCAL_BUILD_NUTTX
+	bool "NuttX"
+
+endchoice
+
+config PASCAL_TARGET_TOOLS
+	bool "Build tools for target"
+	default n
+	depends on PASCAL_BUILD_NUTTX
+	---help---
+		Build Pascal tools (compiler, optimizer, linker, lister) for the
+		target platform.  Default:  Only the run-time components will be
+		built for the target.
+
+config PASCAL_PRIORITY
+	int "Compiler task priority"
+	depends on PASCAL_TARGET_TOOLS
+	default 100
+
+config PASCAL_STACKSIZE
+	int "Compiler stack size"
+	default DEFAULT_TASK_STACKSIZE
+	depends on PASCAL_TARGET_TOOLS
+
+config PASCAL_POPT_PRIORITY
+	int "Optimizer task priority"
+	depends on PASCAL_TARGET_TOOLS
+	default 100
+
+config PASCAL_POPT_STACKSIZE
+	int "Optimizer stack size"
+	default DEFAULT_TASK_STACKSIZE
+	depends on PASCAL_TARGET_TOOLS
+
+config PASCAL_PLINK_PRIORITY
+	int "Linker task priority"
+	depends on PASCAL_TARGET_TOOLS
+	default 100
+
+config PASCAL_PLINK_STACKSIZE
+	int "Linker stack size"
+	default DEFAULT_TASK_STACKSIZE
+	depends on PASCAL_TARGET_TOOLS
+
+config PASCAL_PLIST_PRIORITY
+	int "Lister task priority"
+	depends on PASCAL_TARGET_TOOLS
+	default 100
+
+config PASCAL_PLIST_STACKSIZE
+	int "Lister stack size"
+	default DEFAULT_TASK_STACKSIZE
+	depends on PASCAL_TARGET_TOOLS
+
+config PASCAL_PRUN_PRIORITY
+	int "Run-time task priority"
+	default 100
+	depends on PASCAL_BUILD_NUTTX
+
+config PASCAL_PRUN_STACKSIZE
+	int "Run-time stack size"
+	default DEFAULT_TASK_STACKSIZE
+	depends on PASCAL_BUILD_NUTTX
+
 config PASCAL_DEBUG
 	bool "Enable Debug Features"
 	default n

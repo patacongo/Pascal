@@ -1,8 +1,8 @@
 ############################################################################
-# libpoff/Make.defs
-# NuttX runtime makefile fragment
+# libpoff/NxMakefile
+# Part of the NuttX build system
 #
-#   Copyright (C) 2008, 2015, 2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,15 +34,10 @@
 #
 ############################################################################
 
-POFF_ASRCS  =
-POFF_CSRCS  = pfhandle.c pfproghandle.c pftprog.c pfsymhandle.c
-POFF_CSRCS += pftsymbol.c pfrelochandle.c pftreloc.c pftgetreloc.c
-POFF_CSRCS += pfwhdr.c pfwrodata.c pfwsymbol.c pfwfname.c
-POFF_CSRCS += pfwprog.c pfwlineno.c pfwdbgfunc.c pfwreloc.c pfwstring.c
-POFF_CSRCS += pfwrite.c pfrhdr.c pfrsymbol.c pfrfname.c
-POFF_CSRCS += pfrprog.c pfrlineno.c pfrdbgfunc.c pfrrawlineno.c
-POFF_CSRCS += pfreloc.c pfrstring.c pfread.c pfrseek.c
-POFF_CSRCS += pfrelease.c pfdbgcontainer.c pfdbgdiscard.c
-POFF_CSRCS += pfxprog.c pfxrodata.c pfiprog.c pfirodata.c
-POFF_CSRCS += pfdhdr.c pfdsymbol.c pfdreloc.c pfdtreloc.c pfdlineno.c
-POFF_CSRCS += pflabel.c pflineno.c pofferr.c pfdbginfo.c pfswap.c
+include $(APPDIR)/Make.defs
+PASCAL = $(APPDIR)/pascal
+include $(PASCAL)/tools/Config.mk
+
+CSRCS = pextension.c psignextend8.c psignextend16.c pswap.c
+
+include $(APPDIR)/Application.mk

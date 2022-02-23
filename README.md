@@ -1,6 +1,11 @@
 README
 ======
 
+Language Implementation
+-----------------------
+
+Refer to the PascalNotes.rtf file in the docs sub-directory.
+
 Configuring Pascal
 ------------------
 
@@ -10,8 +15,8 @@ these tools.  The kconfig-frontends are often available as an installable
 package under Linx distrubitions.  A source snapshot and build instructions
 are avaiable at https://bitbucket.org/nuttx/tools/src/master/
 
-    cd <pascal-directory>
-    make menuconfig
+    $ cd *pascal-directory*
+    $ make menuconfig
 
 Building Pascal Under Linux
 ---------------------------
@@ -21,8 +26,8 @@ environment, in particular, the Cygwin environment.  Because it is the same
 GNU environment, Linux should also build with no issues.  Not attempt has
 been made to verify the build under BSD environments (including macOS).
 
-    cd <pascal-directory>
-    make
+    $ cd *pascal-directory*
+    $ make
 
 Building Pascal Under NuttX
 ---------------------------
@@ -34,6 +39,12 @@ run-time code must always be built for the target MCU environment.  It is an
 option whether you want to host the build tools (compiler, optimizer, linker,
 lister, etc) on the host cross-development environment or on the target
 itself.
+
+1. *Before* configuring NuttX, create a symbolic link to the Pascal root
+   directory in the NuttX apps directory:
+
+    $ cd *nuttx-apps-directory*
+    $ ln -s *pascal-directory* pascal
 
 *More to be provided.*
 

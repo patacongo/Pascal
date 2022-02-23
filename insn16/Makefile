@@ -35,19 +35,33 @@
 #
 # Directories
 #
-INSNDIR		= ${shell pwd}
-PASCAL		= $(INSNDIR)/..
 
-include $(PASCAL)/.config
+INSNDIR    = ${shell pwd}
+PASCAL     = $(INSNDIR)/..
+
 include $(PASCAL)/tools/Config.mk
 
-POPTDIR     = $(INSNDIR)/popt
-PRUNDIR     = $(INSNDIR)/prun
-PLISTDIR    = $(INSNDIR)/plist
+POPTDIR    = $(INSNDIR)/popt
+PRUNDIR    = $(INSNDIR)/prun
+PLISTDIR   = $(INSNDIR)/plist
 
 #
-# Objects and targets
+# Definitions
 #
+
+DELIM     ?=  $(strip /)
+BUILDDIRS := $(dir $(wildcard *$(DELIM)Makefile))
+
+define Make_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
+
+endef
+
+#
+# Targets
+#
+
 all: libinsn popt prun plist
 PHONY: all libinsn popt prun plist clean distclean
 
@@ -71,15 +85,10 @@ $(BINDIR)/plist:
 
 plist: $(BINDIR)/plist
 
-clean:
-	$(Q) $(RM) libinsn.a core *~
-	$(Q) $(MAKE) -C $(LIBINSNDIR) clean
-	$(Q) $(MAKE) -C $(POPTDIR) clean
-	$(Q) $(MAKE) -C $(PRUNDIR) clean
-	$(Q) $(MAKE) -C $(PLISTDIR) clean
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))
 
-distclean: clean
-	$(Q) $(MAKE) -C $(LIBINSNDIR) distclean
-	$(Q) $(MAKE) -C $(POPTDIR) distclean
-	$(Q) $(MAKE) -C $(PRUNDIR) distclean
-	$(Q) $(MAKE) -C $(PLISTDIR) distclean
+clean: $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
+	$(Q) $(RM) libinsn.a core *~
+
+distclean: $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)

@@ -1,7 +1,8 @@
 ############################################################################
-# insn16/libinsn/Makefile
+# NxMakefile
+# Part of the NuttX build system
 #
-#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2015, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,67 +33,21 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-#
-# Directories
-#
 
-LIBINSNDIR   = ${shell pwd}
-INSNDIR      = $(LIBINSNDIR)/..
-PASCAL       = $(LIBINSNDIR)/../..
-
+include $(APPDIR)/Make.defs
+PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
-#
-# Tools
-#
+CSRCS  = pfhandle.c pfproghandle.c pftprog.c pfsymhandle.c
+CSRCS += pftsymbol.c pfrelochandle.c pftreloc.c pftgetreloc.c
+CSRCS += pfwhdr.c pfwrodata.c pfwsymbol.c pfwfname.c
+CSRCS += pfwprog.c pfwlineno.c pfwdbgfunc.c pfwreloc.c pfwstring.c
+CSRCS += pfwrite.c pfrhdr.c pfrsymbol.c pfrfname.c
+CSRCS += pfrprog.c pfrlineno.c pfrdbgfunc.c pfrrawlineno.c
+CSRCS += pfreloc.c pfrstring.c pfread.c pfrseek.c
+CSRCS += pfrelease.c pfdbgcontainer.c pfdbgdiscard.c
+CSRCS += pfxprog.c pfxrodata.c pfiprog.c pfirodata.c
+CSRCS += pfdhdr.c pfdsymbol.c pfdreloc.c pfdtreloc.c pfdlineno.c
+CSRCS += pflabel.c pflineno.c pofferr.c pfdbginfo.c pfswap.c
 
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES    += $(EXTRA_INCLUDES)
-CFLAGS      += $(EXTRA_INCLUDES)
-
-#
-# Objects and targets
-#
-
-LIBINSNSRCS  = insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
-LIBINSNSRCS += insn_dislongop.c insn_generate.c insn_genlongop.c
-LIBINSNSRCS += insn_getopcode.c insn_relocate.c
-LIBINSNOBJS  = $(LIBINSNSRCS:.c=.o)
-
-OBJS         = $(LIBINSNOBJS)
-DEPS         = $(LIBINSNSRCS:.c=.d)
-
-SUFFIXES    += .d
-
-#
-# Targets
-#
-
-all: libinsn.a
-.PHONY: all libinsn.a check_libs clean distclean
-
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
-
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-$(LIBDIR)/libinsn.a: $(OBJS)
-	$(Q) echo "  $@"
-	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
-
-libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
-
-clean:
-	$(Q) $(RM) libinsn.a *.o core *~
-
-distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
-endif
+include $(APPDIR)/Application.mk

@@ -35,15 +35,15 @@
 #
 # Directories
 #
+
 LIBPASDIR  = ${shell pwd}
 PASCAL     = $(LIBPASDIR)/..
-
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 #
 # Objects and targets
 #
+
 LIBPASSRCS = pextension.c psignextend8.c psignextend16.c pswap.c
 LIBPASOBJS = $(LIBPASSRCS:.c=.o)
 
@@ -51,6 +51,10 @@ OBJS       = $(LIBPASOBJS)
 DEPS       = $(LIBPASSRCS:.c=.d)
 
 SUFFIXES  += .d
+
+#
+# Targets
+#
 
 all: libpas.a
 .PHONY: all libpas.a clean distclean
@@ -73,7 +77,7 @@ clean:
 	$(Q) $(RM) libpas.a *.o core *~
 
 distclean: clean
-	$(Q) $(RM) *.d
+	$(Q) $(RM) *.d .depend Make.dep
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

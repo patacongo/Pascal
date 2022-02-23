@@ -1,8 +1,8 @@
 ############################################################################
-# libpoff/Make.defs
-# NuttX runtime makefile fragment
+# NxMakefile
+# Part of the NuttX build system
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,5 +34,26 @@
 #
 ############################################################################
 
-PAS_ASRCS		=
-PAS_CSRCS		= psignextend16.c pswap.c
+include $(APPDIR)/Make.defs
+
+ifneq ($(CONFIG_PASCAL_TARGET_TOOLS),)
+
+PASCAL = $(APPDIR)/pascal
+include $(PASCAL)/tools/Config.mk
+
+INSN_INCDIR = $(INSNDIR)/include
+CFLAGS += -I. -I$(INSN_INCDIR)
+
+# main entry point
+
+MAINSRC   = plist.c
+
+# Built-in application info
+
+PROGNAME  = plist
+PRIORITY  = $(CONFIG_PASCAL_PLIST_PRIORITY)
+STACKSIZE = $(CONFIG_PASCAL_PLIST_STACKSIZE)
+MODULE    = $(CONFIG_PASCAL_TARGET_TOOLS)
+endif
+
+include $(APPDIR)/Application.mk

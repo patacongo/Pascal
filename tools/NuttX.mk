@@ -1,6 +1,6 @@
 #############################################################################
-# Makefile
-# Top-Level Makefile
+# NuttX.mk
+# NuttX Makefile
 #
 #   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -35,11 +35,46 @@
 #############################################################################
 
 # ---------------------------------------------------------------------------
-# When built as part of the NuttX application framework, this Makefile will
-# be involved with both TOPDIR and APPDIR defined on the Make command line
+# Directories
 
-ifneq ($(APPDIR),)
-include tools/NuttX.mk
-else
-include tools/Unix.mk
-endif
+MENUDESC   = "Pascal Language Support"
+
+PASCAL    := ${shell pwd}
+include $(PASCAL)/tools/Config.mk
+
+DELIM     ?=  $(strip /)
+BUILDDIRS := $(dir $(wildcard *$(DELIM)NxMakefile))
+
+# ---------------------------------------------------------------------------
+# Definitions
+
+define Make_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) -f NxMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
+
+endef
+
+# ---------------------------------------------------------------------------
+# Targets
+
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),install)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),context)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),register)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),depend)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))
+
+all:       $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
+
+install:   $(foreach DIR, $(BUILDDIRS), $(DIR)_install)
+
+context:   $(foreach DIR, $(BUILDDIRS), $(DIR)_context)
+
+register:  $(foreach DIR, $(BUILDDIRS), $(DIR)_register)
+
+depend:    $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
+
+clean:     $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
+
+distclean: $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)

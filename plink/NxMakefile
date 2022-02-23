@@ -1,7 +1,8 @@
 ############################################################################
-# insn16/libinsn/Makefile
+# NxMakefile
+# Part of the NuttX build system
 #
-#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,67 +33,25 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-#
-# Directories
-#
 
-LIBINSNDIR   = ${shell pwd}
-INSNDIR      = $(LIBINSNDIR)/..
-PASCAL       = $(LIBINSNDIR)/../..
-
+include $(APPDIR)/Make.defs
+PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
-#
-# Tools
-#
+ifneq ($(CONFIG_PASCAL_TARGET_TOOLS),)
 
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES    += $(EXTRA_INCLUDES)
-CFLAGS      += $(EXTRA_INCLUDES)
+CSRCS     = plsym.c plreloc.c
 
-#
-# Objects and targets
-#
+# main entry point
 
-LIBINSNSRCS  = insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
-LIBINSNSRCS += insn_dislongop.c insn_generate.c insn_genlongop.c
-LIBINSNSRCS += insn_getopcode.c insn_relocate.c
-LIBINSNOBJS  = $(LIBINSNSRCS:.c=.o)
+MAINSRC   = plink.c
 
-OBJS         = $(LIBINSNOBJS)
-DEPS         = $(LIBINSNSRCS:.c=.d)
+# Built-in application info
 
-SUFFIXES    += .d
-
-#
-# Targets
-#
-
-all: libinsn.a
-.PHONY: all libinsn.a check_libs clean distclean
-
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
-
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-$(LIBDIR)/libinsn.a: $(OBJS)
-	$(Q) echo "  $@"
-	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
-
-libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
-
-clean:
-	$(Q) $(RM) libinsn.a *.o core *~
-
-distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
+PROGNAME  = plink
+PRIORITY  = $(CONFIG_PASCAL_PLINK_PRIORITY)
+STACKSIZE = $(CONFIG_PASCAL_PLINK_STACKSIZE)
+MODULE    = $(CONFIG_PASCAL_TARGET_TOOLS)
 endif
-endif
+
+include $(APPDIR)/Application.mk

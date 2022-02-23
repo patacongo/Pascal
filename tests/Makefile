@@ -7,7 +7,6 @@
 PASDIR   = ${shell pwd}
 PASCAL   = $(PASDIR)/..
 
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 all: clean

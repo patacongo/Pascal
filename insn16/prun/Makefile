@@ -36,16 +36,17 @@
 #
 # Directories
 #
+
 PRUNDIR = ${shell pwd}
 INSNDIR = $(PRUNDIR)/..
 PASCAL = $(PRUNDIR)/../..
 
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
 #
+
 EXTRA_INCLUDES = -I$(INSNDIR)/include
 INCLUDES += $(EXTRA_INCLUDES)
 CFLAGS   += $(EXTRA_INCLUDES)
@@ -53,6 +54,7 @@ CFLAGS   += $(EXTRA_INCLUDES)
 #
 # Objects and targets
 #
+
 RUNSRCS   = prun.c pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
 RUNSRCS  += plongops.c pmmgr.c
 RUNOBJS   = $(RUNSRCS:.c=.o)
@@ -61,6 +63,10 @@ OBJS      = $(RUNOBJS)
 DEPS      = $(RUNSRCS:.c=.d)
 
 SUFFIXES += .d
+
+#
+# Targets
+#
 
 all: prun
 .PHONY: all prun check_libs clean distclean
@@ -93,7 +99,7 @@ clean:
 	$(Q) $(RM) prun *.o core *~
 
 distclean: clean
-	$(Q) $(RM) *.d
+	$(Q) $(RM) *.d .depend Make.dep
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

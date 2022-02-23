@@ -793,7 +793,7 @@ static void pdbg_initdebugger(void)
 
 static void pdbg_debugpcode(struct pexec_s *st)
 {
-  uint16_t errno;
+  uint16_t errorCode;
 
   do
     {
@@ -833,19 +833,20 @@ static void pdbg_debugpcode(struct pexec_s *st)
 
       /* Execute the instruction */
 
-      errno = pexec_Execute(st);
+      errorCode = pexec_Execute(st);
 
       /* Check for exceptional stopping conditions */
 
-      if (errno != eNOERROR)
+      if (errorCode != eNOERROR)
         {
-          if (errno == eEXIT)
+          if (errorCode == eEXIT)
             {
               printf("Normal Termination\n");
             }
           else
             {
-              printf("Runtime error 0x%02x -- Execution Stopped\n", errno);
+              printf("Runtime error 0x%02x -- Execution Stopped\n",
+                     errorCode);
             }
 
           g_bstopexecution = true;

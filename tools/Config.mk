@@ -1,7 +1,7 @@
 ############################################################################
-# Make.defs
+# Config.mk
 #
-#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -49,20 +49,23 @@ endif
 # Directories (relative to PASCAL)
 #
 
-INCDIR     ?= $(PASCAL)/include
-LIBDIR     ?= $(PASCAL)/lib
-BINDIR     ?= $(PASCAL)/bin16
-LIBPOFFDIR ?= $(PASCAL)/libpoff
-LIBPASDIR  ?= $(PASCAL)/libpas
-PASDIR     ?= $(PASCAL)/pascal
-PLINKDIR   ?= $(PASCAL)/plink
-TESTDIR    ?= $(PASCAL)/tests
-PTOOLDIR   ?= $(PASCAL)/tools
-INSNDIR    ?= $(PASCAL)/insn16
-LIBINSNDIR ?= $(INSNDIR)/libinsn
+INCDIR     := $(PASCAL)/include
+LIBDIR     := $(PASCAL)/lib
+BINDIR     := $(PASCAL)/bin16
+LIBPOFFDIR := $(PASCAL)/libpoff
+LIBPASDIR  := $(PASCAL)/libpas
+PASDIR     := $(PASCAL)/pascal
+PLINKDIR   := $(PASCAL)/plink
+TESTDIR    := $(PASCAL)/tests
+PTOOLDIR   := $(PASCAL)/tools
+INSNDIR    := $(PASCAL)/insn16
+LIBINSNDIR := $(INSNDIR)/libinsn
+
+ALLDIRS     = $(LIBPOFFDIR) $(LIBPASDIR) $(PASDIR) $(PLINKDIR) $(INSNDIR)
+ALLDIRS    += $(TESTDIR) $(PTOOLDIR)
 
 #
-# Tools
+# Tools.  Most of these will be set in the NuttX build
 #
 CC        ?= /usr/bin/gcc
 CPP       ?= /usr/bin/cpp
@@ -80,7 +83,7 @@ HOSTAR    ?= /usr/bin/ar
 
 HOSTRM    ?= /bin/rm -f
 
-INCLUDES  ?= -I. -I$(INCDIR)
 CFLAGS    ?= -Wall -g $(DEFINES) $(INCLUDES)
-LDFLAGS   ?= -L$(LIBDIR)
+CFLAGS    += -I. -I$(INCDIR)
+LDFLAGS   += -L$(LIBDIR)
 ARFLAGS   ?= -r

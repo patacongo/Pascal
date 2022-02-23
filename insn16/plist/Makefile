@@ -35,16 +35,17 @@
 #
 # Directories
 #
+
 PLISTDIR  = ${shell pwd}
 INSNDIR   = $(PLISTDIR)/..
 PASCAL    = $(PLISTDIR)/../..
 
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
 #
+
 EXTRA_INCLUDES = -I$(INSNDIR)/include
 INCLUDES += $(EXTRA_INCLUDES)
 CFLAGS   += $(EXTRA_INCLUDES)
@@ -52,6 +53,7 @@ CFLAGS   += $(EXTRA_INCLUDES)
 #
 # Objects and targets
 #
+
 PLISTSRCS = plist.c
 PLISTOBJS = $(PLISTSRCS:.c=.o)
 
@@ -59,6 +61,10 @@ OBJS      = $(PLISTOBJS)
 DEPS      = $(PLISTSRCS:.c=.d)
 
 SUFFIXES += .d
+
+#
+# Targets
+#
 
 all: plist
 .PHONY: all plist check_libs clean distclean
@@ -95,7 +101,7 @@ clean:
 	$(Q) $(RM) plist *.o core *~
 
 distclean: clean
-	$(Q) $(RM) *.d
+	$(Q) $(RM) *.d .depend Make.dep
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

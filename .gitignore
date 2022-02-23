@@ -14,3 +14,5 @@ cscope.out
 /lib
 /bin16
 /bin32
+.depend
+Make.dep

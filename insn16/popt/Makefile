@@ -36,16 +36,17 @@
 #
 # Directories
 #
+
 POPTDIR = ${shell pwd}
 INSNDIR = $(POPTDIR)/..
 PASCAL = $(POPTDIR)/../..
 
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
 #
+
 EXTRA_INCLUDES	= -I$(INSNDIR)/include
 INCLUDES += $(EXTRA_INCLUDES)
 CFLAGS   += $(EXTRA_INCLUDES)
@@ -53,6 +54,7 @@ CFLAGS   += $(EXTRA_INCLUDES)
 #
 # Objects and targets
 #
+
 POPTSRCS  = popt.c popt_strings.c popt_strconst.c popt_strstack.c
 POPTSRCS += popt_local.c popt_constants.c popt_longconst.c popt_branch.c
 POPTSRCS += popt_loadstore.c popt_reloc.c popt_finalize.c popt_peephole.c
@@ -64,6 +66,10 @@ DEPS      = $(POPTSRCS:.c=.d)
 LIBS      = libpoff.a libpas.a
 
 SUFFIXES += .d
+
+#
+# Targets
+#
 
 all: popt
 .PHONY: all check_libs popt check_libs clean distclean
@@ -100,7 +106,7 @@ clean:
 	$(Q) $(RM) popt *.o core *~
 
 distclean: clean
-	$(Q) $(RM) *.d
+	$(Q) $(RM) *.d .depend Make.dep
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

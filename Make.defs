@@ -1,7 +1,8 @@
-############################################################################
-# insn16/libinsn/Makefile
+#############################################################################
+# Make.defs
+# Part of the NuttX build
 #
-#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -22,7 +23,7 @@
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
 # FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR AN:Y DIRECT, INDIRECT,
 # INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
 # BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
 # OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
@@ -31,68 +32,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-############################################################################
-#
-# Directories
-#
+#############################################################################
 
-LIBINSNDIR   = ${shell pwd}
-INSNDIR      = $(LIBINSNDIR)/..
-PASCAL       = $(LIBINSNDIR)/../..
-
-include $(PASCAL)/tools/Config.mk
-
-#
-# Tools
-#
-
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES    += $(EXTRA_INCLUDES)
-CFLAGS      += $(EXTRA_INCLUDES)
-
-#
-# Objects and targets
-#
-
-LIBINSNSRCS  = insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
-LIBINSNSRCS += insn_dislongop.c insn_generate.c insn_genlongop.c
-LIBINSNSRCS += insn_getopcode.c insn_relocate.c
-LIBINSNOBJS  = $(LIBINSNSRCS:.c=.o)
-
-OBJS         = $(LIBINSNOBJS)
-DEPS         = $(LIBINSNSRCS:.c=.d)
-
-SUFFIXES    += .d
-
-#
-# Targets
-#
-
-all: libinsn.a
-.PHONY: all libinsn.a check_libs clean distclean
-
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
-
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-$(LIBDIR)/libinsn.a: $(OBJS)
-	$(Q) echo "  $@"
-	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
-
-libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
-
-clean:
-	$(Q) $(RM) libinsn.a *.o core *~
-
-distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
+ifneq ($(CONFIG_PASCAL),)
+CONFIGURED_APPS += $(APPDIR)/pascal
 endif

@@ -1,5 +1,6 @@
 ############################################################################
-# insn16/libinsn/Makefile
+# NxMakefile
+# Part of the NuttX build system
 #
 #   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -32,67 +33,27 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-#
-# Directories
-#
 
-LIBINSNDIR   = ${shell pwd}
-INSNDIR      = $(LIBINSNDIR)/..
-PASCAL       = $(LIBINSNDIR)/../..
+include $(APPDIR)/Make.defs
 
+PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
-#
-# Tools
-#
+INSN_INCDIR = $(INSNDIR)/include
+CFLAGS += -I. -I$(INSN_INCDIR)
 
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES    += $(EXTRA_INCLUDES)
-CFLAGS      += $(EXTRA_INCLUDES)
+CSRCS     = pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
+CSRCS    += plongops.c pmmgr.c
 
-#
-# Objects and targets
-#
+# main entry point
 
-LIBINSNSRCS  = insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
-LIBINSNSRCS += insn_dislongop.c insn_generate.c insn_genlongop.c
-LIBINSNSRCS += insn_getopcode.c insn_relocate.c
-LIBINSNOBJS  = $(LIBINSNSRCS:.c=.o)
+MAINSRC   = prun.c
 
-OBJS         = $(LIBINSNOBJS)
-DEPS         = $(LIBINSNSRCS:.c=.d)
+# Built-in application info
 
-SUFFIXES    += .d
+PROGNAME  = prun
+PRIORITY  = $(CONFIG_PASCAL_PRUN_PRIORITY)
+STACKSIZE = $(CONFIG_PASCAL_PRUN_STACKSIZE)
+MODULE    =
 
-#
-# Targets
-#
-
-all: libinsn.a
-.PHONY: all libinsn.a check_libs clean distclean
-
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
-
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-$(LIBDIR)/libinsn.a: $(OBJS)
-	$(Q) echo "  $@"
-	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
-
-libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
-
-clean:
-	$(Q) $(RM) libinsn.a *.o core *~
-
-distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
-endif
+include $(APPDIR)/Application.mk

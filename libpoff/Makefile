@@ -6,8 +6,6 @@
 # Directories
 
 PASCAL      = ${shell pwd}/..
-
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 # ---------------------------------------------------------------------------
@@ -28,6 +26,10 @@ OBJS         = $(LIBPOFFSRCS:.c=.o)
 DEPS         = $(LIBPOFFSRCS:.c=.d)
 
 SUFFIXES    += .d
+
+#
+# Targets
+#
 
 all: libpoff.a
 .PHONY: all libpoff.a clean distclean
@@ -51,7 +53,7 @@ clean:
 	$(Q) $(RM) libpoff.a *.o core *~
 
 distclean: clean
-	$(Q) $(RM) *.d
+	$(Q) $(RM) *.d .depend Make.dep
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

@@ -1,8 +1,8 @@
 ############################################################################
-# insn16/prun/Make.defs
-# NuttX runtime makefile fragment
+# NxMakefile
+# Part of the NuttX build system
 #
-#   Copyright (C) 2008 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,5 +34,27 @@
 #
 ############################################################################
 
-PRUN_ASRCS  =
-PRUN_CSRCS  = pload.c pexec.c
+include $(APPDIR)/Make.defs
+PASCAL = $(APPDIR)/pascal
+include $(PASCAL)/tools/Config.mk
+
+ifneq ($(CONFIG_PASCAL_TARGET_TOOLS),)
+
+CSRCS     = pas_program.c pas_unit.c pas_block.c pas_initializer.c
+CSRCS    += pas_statement.c pas_expression.c pas_constexpr.c pas_procedure.c
+CSRCS    += pas_stdfunc.c pas_constfunc.c pas_builtin.c pas_codegen.c
+CSRCS    += pas_token.c pas_symtable.c pas_error.c
+
+# main entry point
+
+MAINSRC   = pas_main.c
+
+# Built-in application info
+
+PROGNAME  = pas
+PRIORITY  = $(CONFIG_PASCAL_PRIORITY)
+STACKSIZE = $(CONFIG_PASCAL_STACKSIZE)
+MODULE    = $(CONFIG_PASCAL_TARGET_TOOLS)
+endif
+
+include $(APPDIR)/Application.mk

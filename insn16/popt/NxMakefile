@@ -1,7 +1,8 @@
 ############################################################################
-# insn16/libinsn/Makefile
+# NxMakefile
+# Part of the NuttX build system
 #
-#   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,67 +33,31 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-#
-# Directories
-#
 
-LIBINSNDIR   = ${shell pwd}
-INSNDIR      = $(LIBINSNDIR)/..
-PASCAL       = $(LIBINSNDIR)/../..
+include $(APPDIR)/Make.defs
 
+ifneq ($(CONFIG_PASCAL_TARGET_TOOLS),)
+
+PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
-#
-# Tools
-#
+INSN_INCDIR = $(INSNDIR)/include
+CFLAGS += -I. -I$(INSN_INCDIR)
 
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES    += $(EXTRA_INCLUDES)
-CFLAGS      += $(EXTRA_INCLUDES)
+CSRCS  = popt_strings.c popt_strconst.c popt_strstack.c popt_local.c
+CSRCS += popt_constants.c popt_longconst.c popt_branch.c popt_loadstore.c
+CSRCS += popt_reloc.c popt_finalize.c popt_peephole.c popt_util.c
 
-#
-# Objects and targets
-#
+# main entry point
 
-LIBINSNSRCS  = insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
-LIBINSNSRCS += insn_dislongop.c insn_generate.c insn_genlongop.c
-LIBINSNSRCS += insn_getopcode.c insn_relocate.c
-LIBINSNOBJS  = $(LIBINSNSRCS:.c=.o)
+MAINSRC   = popt.c
 
-OBJS         = $(LIBINSNOBJS)
-DEPS         = $(LIBINSNSRCS:.c=.d)
+# Built-in application info
 
-SUFFIXES    += .d
-
-#
-# Targets
-#
-
-all: libinsn.a
-.PHONY: all libinsn.a check_libs clean distclean
-
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
-
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-$(LIBDIR)/libinsn.a: $(OBJS)
-	$(Q) echo "  $@"
-	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
-
-libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
-
-clean:
-	$(Q) $(RM) libinsn.a *.o core *~
-
-distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
+PROGNAME  = popt
+PRIORITY  = $(CONFIG_PASCAL_POPT_PRIORITY)
+STACKSIZE = $(CONFIG_PASCAL_POPT_STACKSIZE)
+MODULE    = $(CONFIG_PASCAL_TARGET_TOOLS)
 endif
-endif
+
+include $(APPDIR)/Application.mk

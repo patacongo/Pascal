@@ -35,15 +35,16 @@
 #
 # Directories
 #
+
 PLINKDIR  = ${shell pwd}
 PASCAL    = $(PLINKDIR)/..
 
-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
 #
 # Objects and targets
 #
+
 PLINKSRCS = plink.c plsym.c plreloc.c
 PLINKOBJS = $(PLINKSRCS:.c=.o)
 
@@ -51,6 +52,10 @@ OBJS      = $(PLINKOBJS)
 DEPS      = $(PLINKSRCS:.c=.d)
 
 SUFFIXES += .d
+
+#
+# Targets
+#
 
 all: plink
 .PHONY: all plink check_libs clean
@@ -78,7 +83,7 @@ check_libs:
 	fi
 
 $(BINDIR)/plink: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  plink(HOSTEEXT)"
+	$(Q) echo "  plink$(HOSTEEXT)"
 	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 plink: $(BINDIR)/plink
@@ -87,7 +92,7 @@ clean:
 	$(Q) $(RM) plink *.o core *~
 
 distclean: clean
-	$(Q) $(RM) *.d
+	$(Q) $(RM) *.d .depend Make.dep
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
