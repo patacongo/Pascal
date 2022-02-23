@@ -1,10 +1,10 @@
-# Pascal Notes 
+# Pascal Notes
 
-## General Information 
+## General Information
 
-### TYPES 
+### TYPES
 
-**Basic Types**.  All basic types I`NTEGER`, `BOOLEAN`, `CHAR`, `REAL`, `SCALAR`, `SUBRANGE`, `RECORD` and `SET` implemented along with some types from more contemporary Pascal types like `STRING` and short `STRING` types. 
+**Basic Types**.  All basic types I`NTEGER`, `BOOLEAN`, `CHAR`, `REAL`, `SCALAR`, `SUBRANGE`, `RECORD` and `SET` implemented along with some types from more contemporary Pascal types like `STRING` and short `STRING` types.
 
 **Integer Types**.  The standard Pascal `INTEGER` type is a signed, 16-bit integer value.  In addition to that standard `INTEGER` type, the following commonly support integer types are also available:
 
@@ -30,30 +30,30 @@
 
 ### Variables
 
-**Variable Initializers**.  Variable initializers are supported for most simple type. The compiler supports initializers of the form: 
+**Variable Initializers**.  Variable initializers are supported for most simple type. The compiler supports initializers of the form:
 
     VAR
       name : type = initial-value
 
 ### Sets
 
-`SET` is limit to 64-bits adjacent elements 
+`SET` is limit to 64-bits adjacent elements
 
-### Records 
+### Records
 
-- In `RECORD CASE`, there is no verification that the type of the tag is consistent with a case selector; the check is only if the case selector constants are of the same type as the tag type identifier. 
+- In `RECORD CASE`, there is no verification that the type of the tag is consistent with a case selector; the check is only if the case selector constants are of the same type as the tag type identifier.
 Pointer Limitations.
 - Can't pass pointers as `VAR` parameters
 - No pointers to functions
 - Supports pointers and pointers-to-pointers, but not pointers-to-pointers-to-pointers.
 
-### Arrays 
+### Arrays
 
-No `PACKED` types.  This is a bug and needs to be revisited in the future. 
+No `PACKED` types.  This is a bug and needs to be revisited in the future.
 
-- No range checks on array indices 
+- No range checks on array indices
 
-### Statements 
+### Statements
 
 - `WITH` statements cannot be nested.
 - Cannot reference "up the chain" in `WITH` statements.  Eg. suppose `RECORD` "a" contains `RECORD` "b" which contains "c" and that `RECORD` "a" also contains "d" so that we could write a.b.c OR a.d.  Then the following should work but is not yet supported:
@@ -70,7 +70,7 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 - `CASE` statement expects integer expression for the switch variable
 - `ELSE` in `CASE` statement
 
-## Standard Procedures and Functions 
+## Standard Procedures and Functions
 
 **Caveat**. Implements some functions/procedures that may not be standard, but are in common usage.
 **Limitation**.  No `PROCEDURE` call with `PROCEDURE`s or `FUNCTION`s as parameters
@@ -120,11 +120,11 @@ Borland style string operators
 - `concat(s1,s2,...,sn : string) : string` – Concatenate one or more strings.
 - `insert(source : string, VAR target : string; index : integer)` - Insert a string inside another string from at the indexth character.
 - `delete(VAR s : string; i, n: integer)` - Deletes `n` characters from string `s` starting from index `i`.
-- `fillchar(VAR s : string; count : integer; value : shortword)` -  Fill string s with character value until `s` is `count`-1 characters long 
+- `fillchar(VAR s : string; count : integer; value : shortword)` -  Fill string s with character value until `s` is `count`-1 characters long
 - `Val(str : string; VAR numvar : integer; VAR code : integer)` – Convert a string to a numeric value.  `strvar` is a string variable to be converted, numvar is any numeric variable either `Integer`, `Longinteger`, `ShortInteger`, or `Real`, and if the conversion isn't successful, then the parameter `code` contains the index of the character in `S` which prevented the conversion.
 
 #### File I/O
-- `Append` - Opens an existing file for appending data to end of file 
+- `Append` - Opens an existing file for appending data to end of file
 - `AssignFile` - Assign a name to a file (Assign is an alias)
 - `CloseFile` - Close opened file (Close is an alias)
 - `EOF` - Check for end of file
@@ -153,7 +153,7 @@ The following are not currently implemented:
 - `Rename` – Rename a filename
 - `SetTextBuf`  - Sets size of file buffer
 
-## Extended Pascal Features 
+## Extended Pascal Features
 
 - `PACKED ARRAY[..] OF CHAR` is not a string.  But `PACKED ARRAY[] OF CHA`R does have some legacy behavior that allow them some limited behavior like `STRINGS`
 - `SIZEOF` and `LENGTH` built-in are supported
@@ -167,19 +167,19 @@ I have seen initialization of file types like the following:
 There are some files that have Turbo-Pascal style constructions.  For example, use `BEGIN` rather than `INITIALIZATION` to introduce the initializers in a Unit file.  I have done a good faith effort to support Turbo-Pascal-isms wherever possible.
 
 ## NON-standard Pascal extensions/differences
-### Types 
+### Types
 
 - Hexadecimal constants like %89ab
 - INPUT and OUTPUT parameters in PROGRAM statement are pre-defined and optional.
 
-### OPERATORS 
+### OPERATORS
 
 - Binary shift operators -- << and >> like in C
-- '#', "<>", and "><" are all equivalent 
+- '#', "<>", and "><" are all equivalent
 
-### Expressions 
+### Expressions
 
-- Assumes sizeof(pointer) == sizeof(integer) 
+- Assumes sizeof(pointer) == sizeof(integer)
 
 ##Runtime
 
@@ -195,31 +195,31 @@ This problem is largely alleviated by using short strings that do not require su
 
 * The actual size of the string allocations is controlled by a command option to prun, -a.
 
-## BUGS, ISSUES, and QUIRKS 
+## BUGS, ISSUES, and QUIRKS
 
-### BUGS / MISSING FUNCTIONALITY 
+### BUGS / MISSING FUNCTIONALITY
 
 -See unimplemented standard procedures and functions..
 - In `FUNC`/`PROC` calls, if `simpleExpressio`n fails to find a parameter (eg., proc (,,), no error is detected.
 - There are cases where the string stack is not being managed correctly (e.g., `usesSection()`).
 - Need forward references for procedures.  Necessary to support co-routines.
 
-### PLANNED IMPROVEMENTS 
+### PLANNED IMPROVEMENTS
 
-- In tokenization, verify that the compiler string stack does not overflow when character added. 
+- In tokenization, verify that the compiler string stack does not overflow when character added.
 
-### Compile-Time Options 
+### Compile-Time Options
 
 - Option to turn on listing
 - Option to interleave assembly language with listing.  Source line numbers are already provided in the listing.
 - Option to select symbol table size (or let it grow dynamically)
 - List file should only be produced if option provided.
 
-### Debugger 
+### Debugger
 
 Provide instrumentation to use the line number data in the object files.  In debugger, display source line.  Allow stepping from source line to source line.
 
-### Strings 
+### Strings
 
 - All RO strings should be represented as short strings when converted to Pascal strings
 - Should check for duplicate strings in the RO string area.
@@ -232,14 +232,14 @@ Provide instrumentation to use the line number data in the object files.  In deb
 ### Run-Time
 ### Debugger
 
-## Register Model / Native Code Translation 
+## Register Model / Native Code Translation
 
 - Translation to 32-bit register model.  Support for this model was removed by commit 94a03ca1f2d138b5189924527331fedba2248caa only because I did not  have bandwidth to support it.  That would still be a good starting point.
 - Native code translator
 
 ### Pascal Object File Format (POFF)
 
-## ISSUES 
+## ISSUES
 
 **Issues with Default Files**.  There is an issue with using file types as the first argument of most standard file I/O procedures and functions.  This is a one-pass compiler and before we consume the input, we must be certain that that first argument this is going to resolve into a file type.
 
@@ -253,16 +253,16 @@ When such records are written to a file, only the container is written.  This is
 
 A work-around is to use `PACKED ARRAY[] OF CHAR` which lies entirely within the `RECORD`.
 
-**Type Identifiers in Constant Definitions**.  Types in constant definitions are not accepted.  This, for example, does not work: 
+**Type Identifiers in Constant Definitions**.  Types in constant definitions are not accepted.  This, for example, does not work:
 
-    names : array [color] of String[7] 
-              = ('red', 'blue', 'yellow', 'green', 'white', 'black', 'orange'); 
+    names : array [color] of String[7]
+              = ('red', 'blue', 'yellow', 'green', 'white', 'black', 'orange');
 
 **Name Collision Issue**.  All symbols are kept on a symbol table stack.  This means that all naming must be unique.  For example, you could not have a type with the same name as a variable.  You could not do this:
 
     FUNCTION Map24to12(HourType: HourType): INTEGER;
 
-Most of these are kinds of name occlusion are reasonable (if not 100% correct), but there are a couple of cases that are more problematic.  For example, record field name is treated like any other named thing by the compiler.  So you cannot have a RECORD field with the same name as a variable or type as in the following. 
+Most of these are kinds of name occlusion are reasonable (if not 100% correct), but there are a couple of cases that are more problematic.  For example, record field name is treated like any other named thing by the compiler.  So you cannot have a RECORD field with the same name as a variable or type as in the following.
 
     IF ptr^.stuff = stuff THEN ...
 
