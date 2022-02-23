@@ -4,7 +4,13 @@ README
 Language Implementation
 -----------------------
 
-Refer to the PascalNotes.rtf file in the docs sub-directory.
+This Pascal implementation is a traditional, Pascal compiler tool suite
+with many enhancement for compatibility with modern Pascal usage.  The
+tool suit include a compiler, optimizer, linker, lister, and run-time
+package.  It targets a 16-bit, emulated stack machine that is implemented
+as a virtual machine by the run-time logic.
+
+Refer to the PascalNotes.md file in the docs sub-directory.
 
 Configuring Pascal
 ------------------
@@ -23,7 +29,7 @@ Building Pascal Under Linux
 
 The build system has been well excercised under a GNU development
 environment, in particular, the Cygwin environment.  Because it is the same
-GNU environment, Linux should also build with no issues.  Not attempt has
+GNU environment, Linux should also build with no issues.  No attempt has
 been made to verify the build under BSD environments (including macOS).
 
     $ cd *pascal-directory*
@@ -46,5 +52,24 @@ itself.
     $ cd *nuttx-apps-directory*
     $ ln -s *pascal-directory* pascal
 
-*More to be provided.*
+2. Then configure NuttX using the board board configuration of your choice.
+   Make sure to enable Pascal support in the Application configuration menus.
 
+    $ cd *nuttx-directory*
+    $ make menuconfig
+
+   The most important decision to make in the configuration is if you want to
+   host the entire Pascal development toolchain on the target.  That does not
+   require as much memory as you might think, but neither is it for the
+   memory-limited embedded platform.
+
+   The run-time alone has value because you can code, compile, and link Pascal
+   programs on 
+
+3. And make in the *nuttx-directory*
+
+    $ cd *nuttx-directory*
+    $ make
+
+And you should have the Pascal components that you have selected in your
+board's flash image.
