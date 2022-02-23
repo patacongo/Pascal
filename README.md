@@ -64,7 +64,7 @@ itself.
    memory-limited embedded platform.
 
    The run-time alone has value because you can code, compile, and link Pascal
-   programs on 
+   programs on the host, then run them on the target.
 
 3. And make in the *nuttx-directory*
 
