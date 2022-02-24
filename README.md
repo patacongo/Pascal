@@ -53,7 +53,7 @@ itself.
     $ ln -s *pascal-directory* pascal
 
 2. Then configure NuttX using the board board configuration of your choice.
-   Make sure to enable Pascal support in the Application configuration menus.
+   Make sure to enable Pascal support in the *Application Configuration* menu.
 
     $ cd *nuttx-directory*
     $ make menuconfig

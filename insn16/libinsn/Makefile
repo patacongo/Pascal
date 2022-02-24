@@ -79,11 +79,11 @@ $(OBJS): %.o: %.c
 	$(Q) echo "  $@"
 	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
-$(LIBDIR)/libinsn.a: $(OBJS)
+$(PLIBDIR)/libinsn.a: $(OBJS)
 	$(Q) echo "  $@"
 	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
 
-libinsn.a: $(DEPS) $(LIBDIR)/libinsn.a
+libinsn.a: $(DEPS) $(PLIBDIR)/libinsn.a
 
 clean:
 	$(Q) $(RM) libinsn.a *.o core *~

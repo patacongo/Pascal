@@ -59,7 +59,6 @@
 #define MAX_SYM           (4096)
 #define MAX_STRINGS       (65536)
 #define MAX_INCL           3        /* Max number of nested include files */
-#define FNAME_SIZE         40       /* Max size file name */
 #define MAX_INCPATHES      8        /* Max number of include pathes */
 
 /* INPUT and OUtput file numbers.  input and output have file numbers of

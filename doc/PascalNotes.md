@@ -1,6 +1,6 @@
 # Pascal Notes
 
-## General Information
+## General Language Information
 
 ### TYPES
 

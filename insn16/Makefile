@@ -70,20 +70,20 @@ $(LIBINSNDIR)/libinsn.a:
 
 libinsn.a: $(LIBINSNDIR)/libinsn.a
 
-$(BINDIR)/popt:
+$(PBINDIR)/popt:
 	$(Q) $(MAKE) -C $(POPTDIR)
 
-popt: $(BINDIR)/popt
+popt: $(PBINDIR)/popt
 
-$(BINDIR)/prun:
+$(PBINDIR)/prun:
 	$(Q) $(MAKE) -C $(PRUNDIR)
 
-prun: $(BINDIR)/prun
+prun: $(PBINDIR)/prun
 
-$(BINDIR)/plist:
+$(PBINDIR)/plist:
 	$(Q) $(MAKE) -C $(PLISTDIR)
 
-plist: $(BINDIR)/plist
+plist: $(PBINDIR)/plist
 
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),clean)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))

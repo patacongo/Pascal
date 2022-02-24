@@ -1,8 +1,8 @@
-############################################################################
-# insn16/prun/Makefile
-# Host system makefile
+#############################################################################
+# Makefile
+# Top-Level Makefile
 #
-#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,77 +32,35 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-############################################################################
-#
-# Directories
-#
+#############################################################################
 
-PRUNDIR = ${shell pwd}
-INSNDIR = $(PRUNDIR)/..
-PASCAL = $(PRUNDIR)/../..
+# This logic is used only in the NuttX build.  This NuttX Makefile is
+# provided only so that the clean and distclean targets will work within
+# the NuttX build to remove garbage from the repository.
 
-include $(PASCAL)/tools/Config.mk
-
-#
-# Tools
-#
-
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES += $(EXTRA_INCLUDES)
-CFLAGS   += $(EXTRA_INCLUDES)
-
-#
-# Objects and targets
-#
-
-RUNSRCS   = prun.c pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
-RUNSRCS  += plongops.c pmmgr.c
-RUNOBJS   = $(RUNSRCS:.c=.o)
-
-OBJS      = $(RUNOBJS)
-DEPS      = $(RUNSRCS:.c=.d)
-
-SUFFIXES += .d
-
-#
 # Targets
-#
 
-all: prun
-.PHONY: all prun check_libs clean distclean
+all:
+.PHONY: all install context register depend clean distclean
 
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
+all:
 
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
+install:
 
-check_libs:
-	$(Q) if [ ! -f $(PLIBDIR)/libpoff.a ] ; then \
-		echo "$(PLIBDIR)/libpoff.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libpas.a ] ; then \
-		echo "$(PLIBDIR)/libpas.a does not exist" ; \
-		exit 1 ; \
-	fi
+context:
 
-$(PBINDIR)/prun: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  prun$(HOSTEEXT)"
-	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
+register:
 
-prun: $(PBINDIR)/prun
+depend:
 
 clean:
-	$(Q) $(RM) prun *.o core *~
+	$(Q) rm -f core *~ *.stackdump
+	$(Q) rm -f students.dat contact.txt raindata.dat
+	$(Q) rm -f src/*.err units/*.err
+	$(Q) rm -f src/*.lst units/*.lst
+	$(Q) rm -f src/*.pex units/*.pex
+	$(Q) rm -f src/*.o1 units/*.o1
+	$(Q) rm -f src/*.o units/*.o
+	$(Q) rm -f src/*.d units/*.d
 
 distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
-endif

@@ -37,11 +37,11 @@
 
 source ../.config
 
-BINDIR=../../bin16
-PASCAL=${BINDIR}/pascal
-POPT=${BINDIR}/popt
-PLINK=${BINDIR}/plink
-PRUN=${BINDIR}/prun
+PBINDIR=../../bin16
+PASCAL=${PBINDIR}/pascal
+POPT=${PBINDIR}/popt
+PLINK=${PBINDIR}/plink
+PRUN=${PBINDIR}/prun
 
 PASOPTS=
 PRUNOPTS="-t 1024 -n 256"

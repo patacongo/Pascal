@@ -1,4 +1,4 @@
-/**********************************************************************
+/***************************************************************************
  * pas_main.c
  * Main process
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ***************************************************************************/
 
-/**********************************************************************
+/***************************************************************************
  * Included Files
- **********************************************************************/
+ ***************************************************************************/
 
 #define _GNU_SOURCE
 #include <sys/types.h>
@@ -58,6 +58,7 @@
 
 #include "pofflib.h"       /* For poffInitializeForOutput() */
 #include "poff.h"          /* For POFF definitions */
+#include "pas_machine.h"   /* Characteristics of the virtual machine */
 
 #include "pas_main.h"
 #include "paslib.h"        /* For extension */
@@ -67,9 +68,9 @@
 #include "pas_unit.h"      /* for unit() */
 #include "pas_error.h"     /* for error() */
 
-/**********************************************************************
+/***************************************************************************
  * Public Data
- **********************************************************************/
+ ***************************************************************************/
 
 uint16_t    g_token;                 /* Current token */
 uint16_t    g_tknSubType;            /* Extended token type */
@@ -100,9 +101,9 @@ int16_t     g_errCount     = 0;      /* Error counter */
 int32_t     g_warnCount    = 0;      /* Warning counter */
 int32_t     g_dStack       = 0;      /* Data stack size */
 
-/**********************************************************************
+/***************************************************************************
  * Private Type Definitions
- **********************************************************************/
+ ***************************************************************************/
 
 struct outFileDesc_s
 {
@@ -112,9 +113,9 @@ struct outFileDesc_s
 };
 typedef struct outFileDesc_s outFileDesc_t;
 
-/**********************************************************************
+/***************************************************************************
  * Private Variables
- **********************************************************************/
+ ***************************************************************************/
 
 static const outFileDesc_t g_outFiles[] =
 {
@@ -128,18 +129,18 @@ static const outFileDesc_t g_outFiles[] =
 
 static const char *g_programName;
 
-/***********************************************************************
+/****************************************************************************
  * Private Function Prototypes
- ***********************************************************************/
+ ****************************************************************************/
 
 static void pas_CloseFiles(void);
 static void pas_OpenOutputFiles(void);
 static void pas_ShowUsage(void);
 static void pas_ParseArguments(int argc, char **argv);
 
-/***********************************************************************
+/****************************************************************************
  * Private Functions
- ***********************************************************************/
+ ****************************************************************************/
 
 static void pas_CloseFiles(void)
 {
@@ -168,7 +169,7 @@ static void pas_CloseFiles(void)
     }
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void pas_OpenOutputFiles(void)
 {
@@ -194,7 +195,7 @@ static void pas_OpenOutputFiles(void)
     }
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void signalHandler(int signo)
 {
@@ -210,20 +211,24 @@ static void signalHandler(int signo)
   exit(1);
 }
 
-/***********************************************************************/
+/****************************************************************************/
+/* NOTE that some signals are not available in the NuttX build */
 
 static void primeSignalHandlers(void)
 {
+#ifndef CONFIG_PASCAL_BUILD_NUTTX
   (void)signal(SIGHUP,  signalHandler);
-  (void)signal(SIGINT,  signalHandler);
-  (void)signal(SIGQUIT, signalHandler);
   (void)signal(SIGILL,  signalHandler);
   (void)signal(SIGABRT, signalHandler);
   (void)signal(SIGSEGV, signalHandler);
+#endif
+
+  (void)signal(SIGINT,  signalHandler);
+  (void)signal(SIGQUIT, signalHandler);
   (void)signal(SIGTERM, signalHandler);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void pas_ShowUsage(void)
 {
@@ -239,7 +244,7 @@ static void pas_ShowUsage(void)
   exit(1);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static void pas_ParseArguments(int argc, char **argv)
 {
@@ -293,9 +298,9 @@ static void pas_ParseArguments(int argc, char **argv)
   g_sourceFileName = argv[argc-1];
 }
 
-/***********************************************************************
+/****************************************************************************
  * Public Functions
- ***********************************************************************/
+ ****************************************************************************/
 
 int main(int argc, char *argv[])
 {
@@ -419,7 +424,7 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 void pas_OpenNestedFile(const char *fileName)
 {
@@ -502,7 +507,7 @@ void pas_OpenNestedFile(const char *fileName)
     }
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 void pas_CloseNestedFile(void)
 {
@@ -512,5 +517,3 @@ void pas_CloseNestedFile(void)
       g_includeIndex--;
     }
 }
-
-/***********************************************************************/

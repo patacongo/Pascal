@@ -1,5 +1,7 @@
 # Configuration for using with kconfig-frontends
 
+menu "Pascal Support"
+
 config PASCAL
 	bool "Enable Pascal Support"
 	default n
@@ -7,6 +9,8 @@ config PASCAL
 		Enable building of Pascal support
 
 if PASCAL
+
+comment "Pascal Build Environment"
 
 choice
 	prompt "Build Context"
@@ -19,6 +23,9 @@ config PASCAL_BUILD_NUTTX
 	bool "NuttX"
 
 endchoice
+
+menu "Pascal Target Tools"
+	depends on PASCAL_BUILD_NUTTX
 
 config PASCAL_TARGET_TOOLS
 	bool "Build tools for target"
@@ -36,7 +43,7 @@ config PASCAL_PRIORITY
 
 config PASCAL_STACKSIZE
 	int "Compiler stack size"
-	default DEFAULT_TASK_STACKSIZE
+	default 2048
 	depends on PASCAL_TARGET_TOOLS
 
 config PASCAL_POPT_PRIORITY
@@ -46,7 +53,7 @@ config PASCAL_POPT_PRIORITY
 
 config PASCAL_POPT_STACKSIZE
 	int "Optimizer stack size"
-	default DEFAULT_TASK_STACKSIZE
+	default 2048
 	depends on PASCAL_TARGET_TOOLS
 
 config PASCAL_PLINK_PRIORITY
@@ -56,7 +63,7 @@ config PASCAL_PLINK_PRIORITY
 
 config PASCAL_PLINK_STACKSIZE
 	int "Linker stack size"
-	default DEFAULT_TASK_STACKSIZE
+	default 2048
 	depends on PASCAL_TARGET_TOOLS
 
 config PASCAL_PLIST_PRIORITY
@@ -66,7 +73,7 @@ config PASCAL_PLIST_PRIORITY
 
 config PASCAL_PLIST_STACKSIZE
 	int "Lister stack size"
-	default DEFAULT_TASK_STACKSIZE
+	default 2048
 	depends on PASCAL_TARGET_TOOLS
 
 config PASCAL_PRUN_PRIORITY
@@ -76,8 +83,73 @@ config PASCAL_PRUN_PRIORITY
 
 config PASCAL_PRUN_STACKSIZE
 	int "Run-time stack size"
-	default DEFAULT_TASK_STACKSIZE
+	default 2048
 	depends on PASCAL_BUILD_NUTTX
+
+endmenu # Target tool options
+
+menu "Pascal Applications"
+
+config PASCAL_STARTUP
+	bool "Enable Pascal Start-Up Application"
+	default n
+	depends on PASCAL_BUILD_NUTTX
+	---help---
+		Enable building of the the Pascal Pascal initialization task for NuttX.
+
+if PASCAL_STARTUP
+
+choice
+	prompt "Pascal Start-Up Media"
+
+config PASCAL_STARTUP_FILE
+	bool "Pascal start-up resides in a file"
+
+#config PASCAL_STARTUP_INMEMORY
+#	bool "Pascal start-up resides in memory"
+
+endchoice # Pascal Start-Up Media
+
+#config PASCAL_STARTUP_FILENAME
+#	string "Pascal start-up file name"
+#	default "pstartup.pex"
+#	depends on PASCAL_STARTUP_FILE
+
+config PASCAL_STARTUP_FILENAME
+	string
+	default "pstartup.pex"
+
+#config PASCAL_STARTUP_INMEMORY
+#	string "Pascal start-up in-memory symbol name"
+#	default "g_pStartUpPex"
+#	depends on PASCAL_STARTUP_INMEMORY
+
+config PASCAL_STARTUP_DEBUG
+	bool "Enable P-Code debugger at startup"
+	default n
+	---help---
+		The start-up Pascal program with begin in the Pascal P-code debugger.
+
+config PASCAL_STARTUP_STRSIZE
+	string "Pascal start-up string stack size (total)"
+	default 1024
+	---help---
+		Total stack memory set aside for strings.
+
+config PASCAL_STARTUP_STRALLOC
+	string "Pascal start-up string stack alloc"
+	default 128
+	---help---
+		String memory allocation per standard string instantiation.
+
+config PASCAL_STARTUP_HEAPSIZE
+	string "Pascal start-up heap size"
+	default 256
+	---help---
+		Memory set aside for usage with new and dispose.
+
+endif # PASCAL_STARTUP
+endmenu # Pascal Applications
 
 config PASCAL_DEBUG
 	bool "Enable Debug Features"
@@ -91,4 +163,5 @@ config PASCAL_TRACE
 	---help---
 		Enable DEBUG output on entry into each function.
 
-endif
+endif # PASCAL
+endmenu # Pascal Support

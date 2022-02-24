@@ -37,8 +37,8 @@
 
 source ../.config
 
-BINDIR=bin16
-PLIST=../${BINDIR}/plist
+PBINDIR=bin16
+PLIST=../${PBINDIR}/plist
 PLISTOPTS="-d"
 
 PEXFILENAME=${1}

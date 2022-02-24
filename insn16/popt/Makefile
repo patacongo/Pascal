@@ -83,24 +83,24 @@ $(OBJS): %.o: %.c
 	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
 check_libs:
-	$(Q) if [ ! -f $(LIBDIR)/libpoff.a ] ; then \
-		echo "$(LIBDIR)/libpoff.a does not exist" ; \
+	$(Q) if [ ! -f $(PLIBDIR)/libpoff.a ] ; then \
+		echo "$(PLIBDIR)/libpoff.a does not exist" ; \
 		exit 1 ; \
 	fi
-	$(Q) if [ ! -f $(LIBDIR)/libpas.a ] ; then \
-		echo "$(LIBDIR)/libpas.a does not exist" ; \
+	$(Q) if [ ! -f $(PLIBDIR)/libpas.a ] ; then \
+		echo "$(PLIBDIR)/libpas.a does not exist" ; \
 		exit 1 ; \
 	fi
-	$(Q) if [ ! -f $(LIBDIR)/libinsn.a ] ; then \
-		echo "$(LIBDIR)/libinsn.a does not exist" ; \
+	$(Q) if [ ! -f $(PLIBDIR)/libinsn.a ] ; then \
+		echo "$(PLIBDIR)/libinsn.a does not exist" ; \
 		exit 1 ; \
 	fi
 
-$(BINDIR)/popt: check_libs $(DEPS) $(OBJS)
+$(PBINDIR)/popt: check_libs $(DEPS) $(OBJS)
 	$(Q) echo "  popt$(HOSTEEXT)"
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
-popt: $(BINDIR)/popt
+popt: $(PBINDIR)/popt
 
 clean:
 	$(Q) $(RM) popt *.o core *~

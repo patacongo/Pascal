@@ -67,11 +67,11 @@ $(OBJS): %.o: %.c
 	$(Q) echo "  $@"
 	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
-$(LIBDIR)/libpas.a: $(OBJS)
+$(PLIBDIR)/libpas.a: $(OBJS)
 	$(Q) echo "  $@"
 	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
 
-libpas.a: $(DEPS) $(LIBDIR)/libpas.a
+libpas.a: $(DEPS) $(PLIBDIR)/libpas.a
 
 clean:
 	$(Q) $(RM) libpas.a *.o core *~

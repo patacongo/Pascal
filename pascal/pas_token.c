@@ -951,7 +951,7 @@ static void unsignedHexadecimal(void)
         }
       else if ((inChar >= 'a') && (inChar <= 'f'))
         {
-          *g_stringSP++ = _toupper(inChar);
+          *g_stringSP++ = toupper(inChar);
         }
 
       /* Otherwise, that must be the end of the hex value */

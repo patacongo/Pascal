@@ -34,13 +34,14 @@
 #
 ############################################################################
 
+include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
 PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
 INSN_INCDIR = $(INSNDIR)/include
-CFLAGS += -I. -I$(INSN_INCDIR)
+CFLAGS += ${shell $(INCDIR) "$(CC)" "$(INSN_INCDIR)"}
 
 CSRCS  += insn_addopcode.c insn_addtmpopcode.c insn_disasm.c
 CSRCS  += insn_dislongop.c insn_generate.c insn_genlongop.c

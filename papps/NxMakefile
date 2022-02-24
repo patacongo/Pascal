@@ -1,6 +1,6 @@
 #############################################################################
-# Makefile
-# Top-Level Makefile
+# NxMakefile
+# Makefile for the NuttX environment
 #
 #   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,25 +33,48 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 #############################################################################
-#
-# Directories
-#
-PASDIR   = ${shell pwd}
-PASCAL   = $(PASDIR)/..
 
+# ---------------------------------------------------------------------------
+# Directories
+
+MENUDESC   = "Pascal Language Support"
+
+PASCAL    := ${shell pwd}/..
 include $(PASCAL)/tools/Config.mk
 
-all: clean
-.PHONY: clean distclean
+DELIM     ?=  $(strip /)
+BUILDDIRS := $(dir $(wildcard *$(DELIM)NxMakefile))
 
-clean:
-	$(Q) rm -f core *~ *.stackdump
-	$(Q) rm -f students.dat contact.txt raindata.dat
-	$(Q) rm -f src/*.err units/*.err
-	$(Q) rm -f src/*.lst units/*.lst
-	$(Q) rm -f src/*.pex units/*.pex
-	$(Q) rm -f src/*.o1 units/*.o1
-	$(Q) rm -f src/*.o units/*.o
-	$(Q) rm -f src/*.d units/*.d
+# ---------------------------------------------------------------------------
+# Definitions
 
-distclean: clean
+define Make_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) -f NxMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
+
+endef
+
+# ---------------------------------------------------------------------------
+# Targets
+
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),install)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),context)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),register)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),depend)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))
+
+all:       $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
+
+install:   $(foreach DIR, $(BUILDDIRS), $(DIR)_install)
+
+context:   $(foreach DIR, $(BUILDDIRS), $(DIR)_context)
+
+register:  $(foreach DIR, $(BUILDDIRS), $(DIR)_register)
+
+depend:    $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
+
+clean:     $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
+
+distclean: $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)

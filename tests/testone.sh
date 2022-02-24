@@ -37,11 +37,11 @@
 
 source ../.config
 
-BINDIR=bin16
-PASCAL=../${BINDIR}/pascal
-POPT=../${BINDIR}/popt
-PLINK=../${BINDIR}/plink
-PRUN=../${BINDIR}/prun
+PBINDIR=bin16
+PASCAL=../${PBINDIR}/pascal
+POPT=../${PBINDIR}/popt
+PLINK=../${PBINDIR}/plink
+PRUN=../${PBINDIR}/prun
 
 # Tell them how they are supposed to use this script
 

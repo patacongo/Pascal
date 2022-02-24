@@ -37,7 +37,7 @@
 
 source ../.config
 
-BINDIR=bin16
+PBINDIR=bin16
 
 # Tell them how they are supposed to use this script
 function show_usage ()
@@ -71,7 +71,7 @@ while [ -n "$1" ]; do
 done
 
 echo "Using string stack size = ${STRSTKSZ}"
-PRUN=../${BINDIR}/prun
+PRUN=../${PBINDIR}/prun
 PRUNOPTS="-d -t ${STRSTKSZ}"
 
 if [ -z "${PEXFILENAME}" ]; then

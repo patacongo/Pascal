@@ -34,6 +34,7 @@
 #
 ############################################################################
 
+include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
 ifneq ($(CONFIG_PASCAL_TARGET_TOOLS),)
@@ -42,7 +43,7 @@ PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
 INSN_INCDIR = $(INSNDIR)/include
-CFLAGS += -I. -I$(INSN_INCDIR)
+CFLAGS += ${shell $(INCDIR) "$(CC)" "$(INSN_INCDIR)"}
 
 # main entry point
 

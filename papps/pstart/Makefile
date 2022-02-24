@@ -1,8 +1,7 @@
 ############################################################################
-# insn16/prun/Makefile
-# Host system makefile
+# Makefile
 #
-#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,76 +32,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-#
-# Directories
-#
 
-PRUNDIR = ${shell pwd}
-INSNDIR = $(PRUNDIR)/..
-PASCAL = $(PRUNDIR)/../..
+# This logic is used only in the outside of the NuttX build.  This general
+# Makefile is provided only so that the clean and distclean targets will
+# work outside of the NuttX to remove garbage from the repository.
 
-include $(PASCAL)/tools/Config.mk
-
-#
-# Tools
-#
-
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES += $(EXTRA_INCLUDES)
-CFLAGS   += $(EXTRA_INCLUDES)
-
-#
-# Objects and targets
-#
-
-RUNSRCS   = prun.c pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
-RUNSRCS  += plongops.c pmmgr.c
-RUNOBJS   = $(RUNSRCS:.c=.o)
-
-OBJS      = $(RUNOBJS)
-DEPS      = $(RUNSRCS:.c=.d)
-
-SUFFIXES += .d
-
-#
-# Targets
-#
-
-all: prun
-.PHONY: all prun check_libs clean distclean
-
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
-
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-check_libs:
-	$(Q) if [ ! -f $(PLIBDIR)/libpoff.a ] ; then \
-		echo "$(PLIBDIR)/libpoff.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libpas.a ] ; then \
-		echo "$(PLIBDIR)/libpas.a does not exist" ; \
-		exit 1 ; \
-	fi
-
-$(PBINDIR)/prun: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  prun$(HOSTEEXT)"
-	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
-
-prun: $(PBINDIR)/prun
+all:
+.PHONY: all clean distclean
 
 clean:
-	$(Q) $(RM) prun *.o core *~
+	$(Q) $(RM) pascal *.o core *~
 
 distclean: clean
 	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
-endif

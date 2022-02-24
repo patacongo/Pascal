@@ -34,20 +34,21 @@
 #
 ############################################################################
 
+include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
 PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
 INSN_INCDIR = $(INSNDIR)/include
-CFLAGS += -I. -I$(INSN_INCDIR)
+CFLAGS += ${shell $(INCDIR) "$(CC)" "$(INSN_INCDIR)"}
 
-CSRCS     = pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
-CSRCS    += plongops.c pmmgr.c
+CSRCS   = pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
+CSRCS  += plongops.c pmmgr.c
 
 # main entry point
 
-MAINSRC   = prun.c
+MAINSRC = prun.c
 
 # Built-in application info
 

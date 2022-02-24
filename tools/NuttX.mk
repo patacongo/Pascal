@@ -49,13 +49,20 @@ BUILDDIRS := $(dir $(wildcard *$(DELIM)NxMakefile))
 # Definitions
 
 define Make_template
-$(1)_$(2):
+$(1)_$(2): $(PINCDIR)/config.h
 	+$(Q) $(MAKE) -C $(1) -f NxMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
 
 endef
 
 # ---------------------------------------------------------------------------
 # Targets
+
+$(TOPDIR)/include/nuttx/config.h:
+
+$(PINCDIR)/config.h:  $(TOPDIR)/include/nuttx/config.h
+	$(Q) cp $(TOPDIR)/include/nuttx/config.h $(PINCDIR)/config.h
+
+config.h: $(PINCDIR)/config.h
 
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),all)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),install)))
@@ -76,5 +83,10 @@ register:  $(foreach DIR, $(BUILDDIRS), $(DIR)_register)
 depend:    $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
 
 clean:     $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
+	$(Q) $(RM) core *~
+	$(Q) $(RM) -rf $(PLIBDIR)
+	$(Q) $(RM) -rf $(PBINDIR)
 
 distclean: $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)
+	$(Q) $(RM) $(PINCDIR)/config.h
+	$(Q) $(RM) .config .config.old

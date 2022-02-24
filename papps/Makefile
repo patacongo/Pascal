@@ -1,8 +1,8 @@
-############################################################################
-# insn16/prun/Makefile
-# Host system makefile
+#############################################################################
+# Makefile
+# Makefile for Unix-like environment
 #
-#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,77 +32,37 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-############################################################################
-#
+#############################################################################
+
+# ---------------------------------------------------------------------------
 # Directories
-#
 
-PRUNDIR = ${shell pwd}
-INSNDIR = $(PRUNDIR)/..
-PASCAL = $(PRUNDIR)/../..
+PASCAL    = ${shell pwd}/..
 
+-include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
-#
-# Tools
-#
+DELIM     ?=  $(strip /)
+BUILDDIRS := $(dir $(wildcard *$(DELIM)Makefile))
 
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES += $(EXTRA_INCLUDES)
-CFLAGS   += $(EXTRA_INCLUDES)
-
-#
+# ---------------------------------------------------------------------------
 # Objects and targets
-#
 
-RUNSRCS   = prun.c pdbg.c pload.c pexec.c pfloat.c psysio.c plib.c psetops.c
-RUNSRCS  += plongops.c pmmgr.c
-RUNOBJS   = $(RUNSRCS:.c=.o)
+define MAKE_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) $(2)
+endef
 
-OBJS      = $(RUNOBJS)
-DEPS      = $(RUNSRCS:.c=.d)
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),distclean)))
 
-SUFFIXES += .d
+all:    $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
 
-#
-# Targets
-#
+.PHONY: $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
+        $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
+        $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)
 
-all: prun
-.PHONY: all prun check_libs clean distclean
+clean: $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
 
-$(DEPS): %.d: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
-
-$(OBJS): %.o: %.c
-	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-check_libs:
-	$(Q) if [ ! -f $(PLIBDIR)/libpoff.a ] ; then \
-		echo "$(PLIBDIR)/libpoff.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libpas.a ] ; then \
-		echo "$(PLIBDIR)/libpas.a does not exist" ; \
-		exit 1 ; \
-	fi
-
-$(PBINDIR)/prun: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  prun$(HOSTEEXT)"
-	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas -lm
-
-prun: $(PBINDIR)/prun
-
-clean:
-	$(Q) $(RM) prun *.o core *~
-
-distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
-endif
+distclean: $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)

@@ -51,6 +51,7 @@
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
 #include "poff.h"            /* FHT_ definitions */
+#include "pas_machine.h"     /* Characteristics of the virtual machine */
 
 #include "pas_main.h"        /* for globals + pas_OpenNestedFile */
 #include "pas_block.h"       /* for pas_Block() */

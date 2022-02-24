@@ -49,20 +49,21 @@ endif
 # Directories (relative to PASCAL)
 #
 
-INCDIR     := $(PASCAL)/include
-LIBDIR     := $(PASCAL)/lib
-BINDIR     := $(PASCAL)/bin16
+PINCDIR    := $(PASCAL)/include
+PLIBDIR    := $(PASCAL)/lib
+PBINDIR    := $(PASCAL)/bin16
 LIBPOFFDIR := $(PASCAL)/libpoff
 LIBPASDIR  := $(PASCAL)/libpas
 PASDIR     := $(PASCAL)/pascal
 PLINKDIR   := $(PASCAL)/plink
-TESTDIR    := $(PASCAL)/tests
-PTOOLDIR   := $(PASCAL)/tools
 INSNDIR    := $(PASCAL)/insn16
 LIBINSNDIR := $(INSNDIR)/libinsn
+PAPPSDIR   := $(PASCAL)/papps
+TESTDIR    := $(PASCAL)/tests
+PTOOLDIR   := $(PASCAL)/tools
 
 ALLDIRS     = $(LIBPOFFDIR) $(LIBPASDIR) $(PASDIR) $(PLINKDIR) $(INSNDIR)
-ALLDIRS    += $(TESTDIR) $(PTOOLDIR)
+ALLDIRS    += $(PAPPSDIR) $(PTESTDIR) $(PTOOLDIR)
 
 #
 # Tools.  Most of these will be set in the NuttX build
@@ -84,6 +85,6 @@ HOSTAR    ?= /usr/bin/ar
 HOSTRM    ?= /bin/rm -f
 
 CFLAGS    ?= -Wall -g $(DEFINES) $(INCLUDES)
-CFLAGS    += -I. -I$(INCDIR)
-LDFLAGS   += -L$(LIBDIR)
+CFLAGS    += -I. -I$(PINCDIR)
+LDFLAGS   += -L$(PLIBDIR)
 ARFLAGS   ?= -r

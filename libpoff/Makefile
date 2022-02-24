@@ -42,12 +42,12 @@ $(OBJS): %.o: %.c
 	$(Q) echo "  $@"
 	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
-$(LIBDIR)/libpoff.a: $(OBJS)
+$(PLIBDIR)/libpoff.a: $(OBJS)
 	$(Q) echo "  $@"
 	$(Q) $(RM) $@
 	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
 
-libpoff.a: $(DEPS) $(LIBDIR)/libpoff.a
+libpoff.a: $(DEPS) $(PLIBDIR)/libpoff.a
 
 clean:
 	$(Q) $(RM) libpoff.a *.o core *~

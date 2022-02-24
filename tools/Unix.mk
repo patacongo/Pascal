@@ -37,7 +37,17 @@
 # ---------------------------------------------------------------------------
 # Directories
 
-PASCAL    = ${shell pwd}
+# Check if the system has been configured
+
+PASCAL = ${shell pwd}
+
+ifneq ($(MAKECMDGOALS),menuconfig)
+ifeq ($(wildcard $(PASCAL)/.config),)
+.DEFAULT default:
+	$(warning "== Pascal has not been configured! ==")
+	$(error   "Try:  'make menuconfig' to create a configuration");
+endif
+endif
 
 -include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
@@ -52,69 +62,74 @@ MKCONFIG = $(PTOOLDIR)/mkconfig$(HOSTEEXT)
 # ---------------------------------------------------------------------------
 # Objects and targets
 
-LIBS = $(LIBDIR)/libpoff.a $(LIBDIR)/libpas.a  $(LIBDIR)/libinsn.a
+LIBS = $(PLIBDIR)/libpoff.a $(PLIBDIR)/libpas.a  $(PLIBDIR)/libinsn.a
 
 define MAKE_template
 $(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) $(2)
 endef
 
-all: pascal popt plink plist prun
+all: pascal popt plink plist prun papps
 .PHONY: all config.h mkconfig libpoff.a libpas.a libinsn.a pascal popt plink plist prun menuconfig clean distclean
 
 $(MKCONFIG) : $(PTOOLDIR)/mkconfig.c
 	$(Q) $(MAKE) -C $(PTOOLDIR) mkconfig$(HOSTEEXT)
 
-$(INCDIR)/config.h: .config $(MKCONFIG)
-	$(Q) $(MKCONFIG) . >$(INCDIR)/config.h
+$(PINCDIR)/config.h: .config $(MKCONFIG)
+	$(Q) $(MKCONFIG) . >$(PINCDIR)/config.h
 
-config.h: $(INCDIR)/config.h
+config.h: $(PINCDIR)/config.h
 
-$(LIBDIR):
-	$(Q) mkdir $(LIBDIR)
+$(PLIBDIR):
+	$(Q) mkdir $(PLIBDIR)
 
-$(LIBDIR)/libpoff.a: $(LIBDIR) $(INCDIR)/config.h
+$(PLIBDIR)/libpoff.a: $(PLIBDIR) $(PINCDIR)/config.h
 	$(Q) $(MAKE) -C $(LIBPOFFDIR) libpoff.a
 
-libpoff.a: $(LIBDIR)/libpoff.a
+libpoff.a: $(PLIBDIR)/libpoff.a
 
-$(LIBDIR)/libpas.a: $(LIBDIR) $(INCDIR)/config.h
+$(PLIBDIR)/libpas.a: $(PLIBDIR) $(PINCDIR)/config.h
 	$(Q) $(MAKE) -C $(LIBPASDIR) libpas.a
 
-libpas.a: $(LIBDIR)/libpas.a
+libpas.a: $(PLIBDIR)/libpas.a
 
-$(LIBDIR)/libinsn.a: $(LIBDIR) $(INCDIR)/config.h
+$(PLIBDIR)/libinsn.a: $(PLIBDIR) $(PINCDIR)/config.h
 	$(Q) $(MAKE) -C $(LIBINSNDIR) libinsn.a
 
-libinsn.a: $(LIBDIR)/libinsn.a
+libinsn.a: $(PLIBDIR)/libinsn.a
 
-$(BINDIR):
-	$(Q) mkdir $(BINDIR)
+$(PBINDIR):
+	$(Q) mkdir $(PBINDIR)
 
-$(BINDIR)/pascal: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+$(PBINDIR)/pascal: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(PASDIR)
 
-pascal: $(BINDIR)/pascal
+pascal: $(PBINDIR)/pascal
 
-$(BINDIR)/popt: $(BINDIR) $(INCDIR)/config.h $(LIBS)
-	$(Q) $(MAKE) -C $(INSNDIR) popt
-
-popt: $(BINDIR)/popt
-
-$(BINDIR)/plink: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+$(PBINDIR)/plink: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(PLINKDIR)
 
-plink: $(BINDIR)/plink
+plink: $(PBINDIR)/plink
 
-$(BINDIR)/prun: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+$(PBINDIR)/popt: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(INSNDIR) popt
+
+popt: $(PBINDIR)/popt
+
+$(PBINDIR)/prun: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(INSNDIR) prun
 
-prun: $(BINDIR)/prun
+prun: $(PBINDIR)/prun
 
-$(BINDIR)/plist: $(BINDIR) $(INCDIR)/config.h $(LIBS)
+$(PBINDIR)/plist: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(INSNDIR) plist
 
-plist: $(BINDIR)/plist
+plist: $(PBINDIR)/plist
+
+$(PBINDIR)/papps: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(INSNDIR) all
+
+papps: $(PBINDIR)/papps
 
 menuconfig:
 	$(Q) kconfig-mconf Kconfig
@@ -124,9 +139,9 @@ $(foreach SDIR, $(CLEANDIRS), $(eval $(call MAKE_template,$(SDIR),distclean)))
 
 clean:  $(foreach SDIR, $(CLEANDIRS), $(SDIR)_clean)
 	$(Q) $(RM) core *~
-	$(Q) $(RM) -rf $(LIBDIR)
-	$(Q) $(RM) -rf $(BINDIR)
+	$(Q) $(RM) -rf $(PLIBDIR)
+	$(Q) $(RM) -rf $(PBINDIR)
 
 distclean:  $(foreach SDIR, $(CLEANDIRS), $(SDIR)_distclean)
-	$(Q) $(RM) $(INCDIR)/config.h
+	$(Q) $(RM) $(PINCDIR)/config.h
 	$(Q) $(RM) .config .config.old
