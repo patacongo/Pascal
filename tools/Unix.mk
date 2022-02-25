@@ -79,6 +79,23 @@ $(PINCDIR)/config.h: .config $(MKCONFIG)
 
 config.h: $(PINCDIR)/config.h
 
+Kconfig:
+	$(Q) echo "# Configuration for use with kconfig-frontends" >Kconfig
+	$(Q) echo "" >Kconfig
+	$(Q) echo "config PASCAL" >Kconfig
+	$(Q) echo "	bool" >Kconfig
+	$(Q) echo "	default y" >Kconfig
+	$(Q) echo "" >Kconfig
+	$(Q) echo "config PASCAL_BUILD_LINUX" >Kconfig
+	$(Q) echo "	bool" >Kconfig
+	$(Q) echo "	default y" >Kconfig
+	$(Q) echo "" >Kconfig
+	$(Q) echo "config PASCAL_BUILD_NUTTX" >Kconfig
+	$(Q) echo "	bool" >Kconfig
+	$(Q) echo "	default n" >Kconfig
+	$(Q) echo "" >Kconfig
+	$(Q) echo "source $(PASCAL)/tools/Kconfig.body" >Kconfig
+
 $(PLIBDIR):
 	$(Q) mkdir $(PLIBDIR)
 
@@ -135,17 +152,17 @@ $(PBINDIR)/papps: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 
 papps: $(PBINDIR)/papps
 
-menuconfig:
+menuconfig: Kconfig
 	$(Q) kconfig-mconf Kconfig
 
 $(foreach SDIR, $(CLEANDIRS), $(eval $(call MAKE_template,$(SDIR),clean)))
 $(foreach SDIR, $(CLEANDIRS), $(eval $(call MAKE_template,$(SDIR),distclean)))
 
-clean:  $(foreach SDIR, $(CLEANDIRS), $(SDIR)_clean)
+clean: $(foreach SDIR, $(CLEANDIRS), $(SDIR)_clean)
 	$(Q) $(RM) core *~
 	$(Q) $(RM) -rf $(PLIBDIR)
 	$(Q) $(RM) -rf $(PBINDIR)
 
-distclean:  $(foreach SDIR, $(CLEANDIRS), $(SDIR)_distclean)
+distclean: clean $(foreach SDIR, $(CLEANDIRS), $(SDIR)_distclean)
 	$(Q) $(RM) $(PINCDIR)/config.h
-	$(Q) $(RM) .config .config.old
+	$(Q) $(RM) Kconfig .config .config.old

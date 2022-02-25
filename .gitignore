@@ -10,7 +10,7 @@ core
 cscope.out
 /.config
 /.config.old
-/Make.config
+/Kconfig
 /lib
 /bin16
 /bin32

@@ -56,7 +56,7 @@ PASDIR     := $(PASCAL)/pascal
 PLINKDIR   := $(PASCAL)/plink
 INSNDIR    := $(PASCAL)/insn16
 PAPPSDIR   := $(PASCAL)/papps
-TESTDIR    := $(PASCAL)/tests
+PTESTDIR   := $(PASCAL)/tests
 PTOOLDIR   := $(PASCAL)/tools
 
 LIBPOFFDIR := $(PASCAL)/libpoff

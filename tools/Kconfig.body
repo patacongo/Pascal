@@ -1,29 +1,3 @@
-# Configuration for using with kconfig-frontends
-
-menu "Pascal Support"
-
-config PASCAL
-	bool "Enable Pascal Support"
-	default n
-	---help---
-		Enable building of Pascal support
-
-if PASCAL
-
-comment "Pascal Build Environment"
-
-choice
-	prompt "Build Context"
-	default PASCAL_BUILD_LINUX
-
-config PASCAL_BUILD_LINUX
-	bool "Linux"
-
-config PASCAL_BUILD_NUTTX
-	bool "NuttX"
-
-endchoice
-
 menu "Pascal Target Tools"
 	depends on PASCAL_BUILD_NUTTX
 
@@ -168,6 +142,3 @@ config PASCAL_TRACE
 	default n
 	---help---
 		Enable DEBUG output on entry into each function.
-
-endif # PASCAL
-endmenu # Pascal Support

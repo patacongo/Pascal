@@ -38,8 +38,8 @@
 # When built as part of the NuttX application framework, this Makefile will
 # be involved with both TOPDIR and APPDIR defined on the Make command line
 
-ifneq ($(APPDIR),)
-include tools/NuttX.mk
-else
+ifndef APPDIR
 include tools/Unix.mk
+else
+include tools/NuttX.mk
 endif
