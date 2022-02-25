@@ -1,8 +1,8 @@
 /***************************************************************************
- * pmmgr.h
- * External Declarations associated with the run-time memory manager
+ * libexec_sysio.h
+ * External Declarations associated with the run-time file table
  *
- *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,21 +34,46 @@
  *
  ***************************************************************************/
 
-#ifndef __PMMGR_H
-#define __PMMGR_H
+#ifndef __LIBEXEC_SYSIO_H
+#define __LIBEXEC_SYSIO_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
+#include <stdbool.h>
+#include "libexec.h"
+
+/***************************************************************************
+ * Pre-processor Definitions
+ ***************************************************************************/
+
+/* Maximum number of files that can be opened at run-time */
+
+#define MAX_OPEN_FILES 8
+
+/***************************************************************************
+ * Public Types
+ ***************************************************************************/
+
+enum openMode_e
+{
+  eOPEN_NONE = 0,
+  eOPEN_READ,
+  eOPEN_WRITE,
+  eOPEN_APPEND
+};
+
+typedef enum openMode_e openMode_t;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void pexec_InitializeHeap(struct pexec_s *st);
-int  pexec_New(struct pexec_s *st, uint16_t size);
-int  pexec_Dispose(struct pexec_s *st, uint16_t address);
+void libexec_InitializeFile(void);
+int  libexec_sysio(struct libexec_s *st, uint16_t subfunc);
+const char *libexec_GetFormat(const char *baseFormat, uint8_t fieldWidth,
+                            uint8_t precision);
 
-#endif /* __PMMGR_H */
+#endif /* __LIBEXEC_SYSIO_H */

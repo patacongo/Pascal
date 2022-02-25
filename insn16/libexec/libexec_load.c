@@ -1,5 +1,5 @@
 /****************************************************************************
- * pload.c
+ * libexec_load.c
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -42,22 +42,25 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "pofflib.h"
+#include "execlib.h"
+
 #include "pas_debug.h"
 #include "pas_errcodes.h"
-#include "pofflib.h"
 #include "pas_error.h"
-#include "pexec.h"
+
+#include "libexec.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
-                               paddr_t strsize, paddr_t stksize,
-                               paddr_t hpsize)
+EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t stralloc,
+                           pasSize_t strsize, pasSize_t stksize,
+                           pasSize_t hpsize)
 {
-  struct pexec_attr_s attr;
-  struct pexec_s *st;
+  struct libexec_attr_s attr;
+  struct libexec_s *st;
   poffHandle_t phandle;
   FILE        *exe;
   uint16_t     err;
@@ -132,7 +135,7 @@ struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
 
   /* Initialize the p-code interpreter */
 
-  st = pexec_Initialize(&attr);
+  st = libexec_Initialize(&attr);
   if (!st && attr.ispace)
     {
       /* Initialization failed, discard the allocated I-Space */
@@ -147,7 +150,7 @@ struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
       free(attr.rodata);
     }
 
-  return st;
+  return (EXEC_HANDLE_t)st;
 
  errout_with_file:
   (void)fclose(exe);

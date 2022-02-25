@@ -1,5 +1,5 @@
 /****************************************************************************
- * pfloat.c
+ * libexec_float.c
  *
  *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -54,23 +54,23 @@
 #include "pas_errcodes.h"
 
 #include "paslib.h"
-#include "psysio.h"
-#include "plib.h"
-#include "pexec.h"
+#include "libexec_sysio.h"
+#include "libexec_library.h"
+#include "libexec.h"
 
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
-static void pexec_getfparguments(struct pexec_s *st, uint8_t fpop,
-                                 fparg_t *arg1, fparg_t *arg2);
+static void libexec_GetFpArguments(struct libexec_s *st, uint8_t fpop,
+                                   fparg_t *arg1, fparg_t *arg2);
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_getfparguments
+ * Name: libexec_GetFpArguments
  *
  * Description:
  *   This function retrieves the floating point arguments and performs
@@ -78,8 +78,8 @@ static void pexec_getfparguments(struct pexec_s *st, uint8_t fpop,
  *
  ****************************************************************************/
 
-static void pexec_getfparguments(struct pexec_s *st, uint8_t fpop,
-                                 fparg_t *arg1, fparg_t *arg2)
+static void libexec_GetFpArguments(struct libexec_s *st, uint8_t fpop,
+                                   fparg_t *arg1, fparg_t *arg2)
 {
   int16_t sparm;
 
@@ -129,14 +129,14 @@ static void pexec_getfparguments(struct pexec_s *st, uint8_t fpop,
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_execfp
+ * Name: libexec_FloatOps
  *
  * Description:
  *   This function processes a floating point operation.
  *
  ****************************************************************************/
 
-int pexec_execfp(struct pexec_s *st, uint8_t fpop)
+int libexec_FloatOps(struct libexec_s *st, uint8_t fpop)
 {
   int16_t intValue;
   fparg_t arg1;
@@ -158,7 +158,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
 
     case fpTRUNC :
     case fpROUND :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       intValue = (int16_t)arg1.f;
       PUSH(st, intValue);
       break;
@@ -166,7 +166,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       /* Floating Point arithmetic instructions (Two FP stack arguments) */
 
     case fpADD :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       result.f = arg1.f + arg2.f;
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -175,7 +175,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpSUB :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       result.f = arg1.f - arg2.f;
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -184,7 +184,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpMUL :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       result.f = arg1.f * arg2.f;
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -193,7 +193,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpDIV :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       result.f = arg1.f / arg2.f;
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -204,7 +204,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
     case fpMOD :
       return eBADFPOPCODE;
 #if 0 /* Not yet */
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       result.f = arg1.f % arg2.f;
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -216,7 +216,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       /* Floating Point Comparisons (Two FP stack arguments) */
 
     case fpEQU :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       intValue = PASCAL_FALSE;
       if (arg1.f == arg2.f)
         {
@@ -227,7 +227,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpNEQ :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       intValue = PASCAL_FALSE;
       if (arg1.f != arg2.f)
         {
@@ -238,7 +238,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpLT :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       intValue = PASCAL_FALSE;
       if (arg1.f < arg2.f)
         {
@@ -249,7 +249,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpGTE :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       intValue = PASCAL_FALSE;
       if (arg1.f >= arg2.f)
         {
@@ -260,7 +260,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpGT :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       intValue = PASCAL_FALSE;
       if (arg1.f > arg2.f)
         {
@@ -271,7 +271,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpLTE :
-      pexec_getfparguments(st, fpop, &arg1, &arg2);
+      libexec_GetFpArguments(st, fpop, &arg1, &arg2);
       intValue = PASCAL_FALSE;
       if (arg1.f <= arg2.f)
         {
@@ -284,7 +284,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       /* Floating Point arithmetic instructions (One FP stack arguments) */
 
     case fpNEG :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = -arg1.f;
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -293,7 +293,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpABS :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = fabs(arg1.f);
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -302,7 +302,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpSQR :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = arg1.f * arg1.f;
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -311,7 +311,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpSQRT :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = sqrt(arg1.f);
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -320,7 +320,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpSIN :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = sin(arg1.f);
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -329,7 +329,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpCOS :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = cos(arg1.f);
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -338,7 +338,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpATAN :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = atan(arg1.f);
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -347,7 +347,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpLN :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = log(arg1.f);
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);
@@ -356,7 +356,7 @@ int pexec_execfp(struct pexec_s *st, uint8_t fpop)
       break;
 
     case fpEXP :
-      pexec_getfparguments(st, fpop, &arg1, NULL);
+      libexec_GetFpArguments(st, fpop, &arg1, NULL);
       result.f = exp(arg1.f);
       PUSH(st, result.hw[0]);
       PUSH(st, result.hw[1]);

@@ -62,13 +62,18 @@ endef
 # Targets
 #
 
-all: libinsn popt prun plist
-PHONY: all libinsn popt prun plist clean distclean
+all: libinsn libexec popt prun plist
+PHONY: all libinsn libexec popt prun plist clean distclean
 
 $(LIBINSNDIR)/libinsn.a:
 	$(Q) $(MAKE) -C $(LIBINSNDIR)
 
 libinsn.a: $(LIBINSNDIR)/libinsn.a
+
+$(LIBEXECDIR)/libexec.a:
+	$(Q) $(MAKE) -C $(LIBEXECDIR)
+
+libexec.a: $(LIBEXECDIR)/libexec.a
 
 $(PBINDIR)/popt:
 	$(Q) $(MAKE) -C $(POPTDIR)

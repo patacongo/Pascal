@@ -1,5 +1,5 @@
 /****************************************************************************
- * pexec.c
+ * libexec_run.c
  *
  *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -46,6 +46,9 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "paslib.h"
+#include "execlib.h"
+
 #include "pas_debug.h"
 #include "pas_machine.h"
 #include "insn16.h"
@@ -54,14 +57,13 @@
 #include "pas_sysio.h"
 #include "pas_errcodes.h"
 
-#include "paslib.h"
-#include "pfloat.h"
-#include "psysio.h"
-#include "psetops.h"
-#include "plongops.h"
-#include "plib.h"
-#include "pmmgr.h"
-#include "pexec.h"
+#include "libexec_float.h"
+#include "libexec_sysio.h"
+#include "libexec_setops.h"
+#include "libexec_longops.h"
+#include "libexec_library.h"
+#include "libexec_heap.h"
+#include "libexec.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -95,16 +97,16 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static int      pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel);
-static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t levelOffset,
-                                     int32_t stackOffset);
+static int      libexec_ProcedureCall(struct libexec_s *st, level_t nestingLevel);
+static ustack_t libexec_GetBaseAddress(struct libexec_s *st, level_t levelOffset,
+                                       int32_t stackOffset);
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_ProcedureCall
+ * Name: libexec_ProcedureCall
  *
  * Description:
  *   This function builds a new frame at the top of the stack as part of the
@@ -112,7 +114,7 @@ static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t levelOffset,
  *
  ****************************************************************************/
 
-static int pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel)
+static int libexec_ProcedureCall(struct libexec_s *st, level_t nestingLevel)
 {
   uint16_t *current;
   uint16_t *previous;
@@ -203,7 +205,7 @@ static int pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel)
 }
 
 /****************************************************************************
- * Name: pexec_GetBaseAddress
+ * Name: libexec_GetBaseAddress
  *
  * Description:
  *   This function binds the base address corresponding to a given level
@@ -216,8 +218,8 @@ static int pexec_ProcedureCall(struct pexec_s *st, level_t nestingLevel)
  *
  ****************************************************************************/
 
-static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t leveloffset,
-                                     int32_t stackOffset)
+static ustack_t libexec_GetBaseAddress(struct libexec_s *st, level_t leveloffset,
+                                       int32_t stackOffset)
  {
    /* Start with the base register of the current frame */
 
@@ -260,7 +262,7 @@ static ustack_t pexec_GetBaseAddress(struct pexec_s *st, level_t leveloffset,
  *
  ****************************************************************************/
 
-static inline int pexec8(struct pexec_s *st, uint8_t opcode)
+static inline int pexec8(struct libexec_s *st, uint8_t opcode)
 {
   sstack_t sparm;
   ustack_t uparm1;
@@ -695,7 +697,7 @@ static inline int pexec8(struct pexec_s *st, uint8_t opcode)
  *
  ****************************************************************************/
 
-static inline int pexec16(struct pexec_s *st, uint8_t opcode, uint8_t imm8)
+static inline int pexec16(struct libexec_s *st, uint8_t opcode, uint8_t imm8)
 {
   int ret = eNOERROR;
 
@@ -715,17 +717,17 @@ static inline int pexec16(struct pexec_s *st, uint8_t opcode, uint8_t imm8)
       /* Floating Point:  imm8 = FP op-code (varying number of stack arguments) */
 
     case oFLOAT  :
-      ret = pexec_execfp(st, imm8);
+      ret = libexec_FloatOps(st, imm8);
       break;
 
       /* Set operations:  imm8 = SET op-code (varying number of stack arguments) */
 
     case oSETOP :
-      ret = pexec_setops(st, imm8);
+      ret = libexec_setops(st, imm8);
       break;
 
     case oLONGOP8 :
-      ret = pexec_LongOperation8(st, (enum longOp8_e)imm8);
+      ret = libexec_LongOperation8(st, (enum longOp8_e)imm8);
       break;
 
     default :
@@ -744,7 +746,7 @@ static inline int pexec16(struct pexec_s *st, uint8_t opcode, uint8_t imm8)
  *
  ****************************************************************************/
 
-static inline int pexec24(struct pexec_s *st, uint8_t opcode,
+static inline int pexec24(struct libexec_s *st, uint8_t opcode,
                           uint16_t imm16)
 {
   sstack_t sparm1;
@@ -1090,7 +1092,7 @@ static inline int pexec24(struct pexec_s *st, uint8_t opcode,
        */
 
     case oLIB  :
-      ret = pexec_libcall(st, imm16);
+      ret = libexec_LibraryOps(st, imm16);
       break;
 
       /* System Functions:
@@ -1099,7 +1101,7 @@ static inline int pexec24(struct pexec_s *st, uint8_t opcode,
        */
 
     case oSYSIO :
-      ret = pexec_sysio(st, imm16);
+      ret = libexec_sysio(st, imm16);
       break;
 
       /* Program control:  imm16 = unsigned label (no stack arguments) */
@@ -1119,7 +1121,7 @@ static inline int pexec24(struct pexec_s *st, uint8_t opcode,
   return ret;
 
 branchOut:
-  st->pc = (paddr_t)imm16;
+  st->pc = (pasSize_t)imm16;
   return ret;
 }
 
@@ -1131,7 +1133,7 @@ branchOut:
  *
  ****************************************************************************/
 
-static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
+static int pexec32(struct libexec_s *st, uint8_t opcode, uint8_t imm8,
                    uint16_t imm16)
 {
   sstack_t sparm;
@@ -1145,25 +1147,25 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       /* Load:  imm8 = level; imm16 = signed frame offset (no stack arguments) */
 
     case oLDS :
-      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm1 = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETSTACK(st, uparm1));
       break;
 
     case oLDSB :
-      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm1 = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       uparm1 = GETBSTACK(st, uparm1);
       sparm  = signExtend8(uparm1);
       PUSH(st, (ustack_t)sparm);
       break;
 
     case oULDSB :
-      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm1 = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, GETBSTACK(st, uparm1));
       break;
 
     case oLDSM :
       POP(st, uparm1);
-      uparm2 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm2 = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       while (uparm1 > 0)
         {
           if (uparm1 >= BPERI)
@@ -1184,13 +1186,13 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       /* Load & store: imm8 = level; imm16 = signed frame offset (One stack argument) */
 
     case oSTS   :
-      uparm1  = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm1  = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       POP(st, uparm2);
       PUTSTACK(st, uparm2, uparm1);
       break;
 
     case oSTSB  :
-      uparm1  = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm1  = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       POP(st, uparm2);
       PUTBSTACK(st, uparm2, uparm1);
       break;
@@ -1198,7 +1200,7 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
     case oSTSM :
       POP(st, uparm1);            /* Size */
       uparm3 = uparm1;            /* Save for stack discard */
-      uparm2 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm2 = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       sparm = ROUNDBTOI(uparm1) - 1;
       while (uparm1 > 0)
         {
@@ -1223,12 +1225,12 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       break;
 
     case oLDSX  :
-      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16) + TOS(st, 0));
+      uparm1 = libexec_GetBaseAddress(st, imm8, signExtend16(imm16) + TOS(st, 0));
       TOS(st, 0) = GETSTACK(st, uparm1);
       break;
 
     case oLDSXB :
-      uparm1     = pexec_GetBaseAddress(st, imm8,
+      uparm1     = libexec_GetBaseAddress(st, imm8,
                                signExtend16(imm16) + TOS(st, 0));
       uparm1     = GETBSTACK(st, uparm1);
       sparm      = signExtend8(uparm1);
@@ -1236,7 +1238,7 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       break;
 
     case oULDSXB :
-      uparm1     = pexec_GetBaseAddress(st, imm8,
+      uparm1     = libexec_GetBaseAddress(st, imm8,
                                signExtend16(imm16) + TOS(st, 0));
       TOS(st, 0) = GETBSTACK(st, uparm1);
       break;
@@ -1244,7 +1246,7 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
     case oLDSXM  :
       POP(st, uparm1);
       POP(st, uparm2);
-      uparm2 += pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm2 += libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       while (uparm1 > 0)
         {
           if (uparm1 >= BPERI)
@@ -1267,14 +1269,14 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
     case oSTSX  :
       POP(st, uparm1);
       POP(st, uparm2);
-      uparm2 += pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm2 += libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUTSTACK(st, uparm1,uparm2);
       break;
 
     case oSTSXB :
       POP(st, uparm1);
       POP(st, uparm2);
-      uparm2 += pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm2 += libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUTBSTACK(st, uparm1, uparm2);
       break;
 
@@ -1284,7 +1286,7 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       sparm = ROUNDBTOI(uparm1);  /* Size in 16-bit words */
       uparm2 = TOS(st, sparm);    /* index */
       sparm--;
-      uparm2 += pexec_GetBaseAddress(st, imm8,  signExtend16(imm16));
+      uparm2 += libexec_GetBaseAddress(st, imm8,  signExtend16(imm16));
       while (uparm1 > 0)
         {
           if (uparm1 >= BPERI)
@@ -1308,13 +1310,13 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
       break;
 
     case oLAS  :
-      uparm1 = pexec_GetBaseAddress(st, imm8, signExtend16(imm16));
+      uparm1 = libexec_GetBaseAddress(st, imm8, signExtend16(imm16));
       PUSH(st, uparm1);
       break;
 
     case oLASX :
-      TOS(st, 0) = pexec_GetBaseAddress(st, imm8,
-                                        signExtend16(imm16) + TOS(st, 0));
+      TOS(st, 0) = libexec_GetBaseAddress(st, imm8,
+                                          signExtend16(imm16) + TOS(st, 0));
       break;
 
       /* Program Control:  imm8 = level; imm16 = unsigned label (No stack
@@ -1322,14 +1324,14 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
        */
 
     case oPCAL  :
-      ret    = pexec_ProcedureCall(st, imm8);
-      st->pc = (paddr_t)imm16;
+      ret    = libexec_ProcedureCall(st, imm8);
+      st->pc = (pasSize_t)imm16;
       return ret;
 
       /* Long branch operations:  imm8 = long opcode; imm16 = unsigned label. */
 
     case oLONGOP24 :
-      ret = pexec_LongOperation24(st, (enum longOp24_e)imm8, imm16);
+      ret = libexec_LongOperation24(st, (enum longOp24_e)imm8, imm16);
       return ret;
 
       /* Pseudo-operations:  (No stack arguments)
@@ -1353,22 +1355,22 @@ static int pexec32(struct pexec_s *st, uint8_t opcode, uint8_t imm8,
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_Initialize
+ * Name: libexec_Initialize
  ****************************************************************************/
 
-struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
+struct libexec_s *libexec_Initialize(struct libexec_attr_s *attr)
 {
-  struct pexec_s *st;
-  paddr_t stacksize;
-  paddr_t adjusted_strsize;
-  paddr_t adjusted_rosize;
-  paddr_t adjusted_stksize;
-  paddr_t adjusted_hpsize;
-  paddr_t adjusted_stralloc;
+  struct libexec_s *st;
+  pasSize_t stacksize;
+  pasSize_t adjusted_strsize;
+  pasSize_t adjusted_rosize;
+  pasSize_t adjusted_stksize;
+  pasSize_t adjusted_hpsize;
+  pasSize_t adjusted_stralloc;
 
   /* Allocate the p-machine state stucture */
 
-  st = (struct pexec_s *)malloc(sizeof(struct pexec_s));
+  st = (struct libexec_s *)malloc(sizeof(struct libexec_s));
   if (st == NULL)
     {
       return NULL;
@@ -1421,15 +1423,15 @@ struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr)
 
   /* Then perform a simulated reset */
 
-  pexec_Reset(st);
+  libexec_Reset(st);
   return st;
 }
 
 /****************************************************************************
- * Name: pexec_Execute
+ * Name: libexec_Execute
  ****************************************************************************/
 
-int pexec_Execute(struct pexec_s *st)
+int libexec_Execute(struct libexec_s *st)
 {
   uint8_t opcode;
   int ret;
@@ -1489,10 +1491,10 @@ int pexec_Execute(struct pexec_s *st)
 }
 
 /****************************************************************************
- * Name: pexec_Reset
+ * Name: libexec_Reset
  ****************************************************************************/
 
-void pexec_Reset(struct pexec_s *st)
+void libexec_Reset(struct libexec_s *st)
 {
   int dndx;
 
@@ -1541,19 +1543,20 @@ void pexec_Reset(struct pexec_s *st)
 
   /* [Re]-initialize the memory manager */
 
-  pexec_InitializeHeap(st);
+  libexec_InitializeHeap(st);
 
   /* [Re]-initialize the file I/O logic */
 
-  pexec_InitializeFile();
+  libexec_InitializeFile();
 }
 
 /****************************************************************************
- * Name: pexec_Release
+ * Name: libexec_Release
  ****************************************************************************/
 
-void pexec_Release(struct pexec_s *st)
+void libexec_Release(EXEC_HANDLE_t handle)
 {
+  struct libexec_s *st = (struct libexec_s *)handle;
   if (st)
     {
       if (st->dstack.i)

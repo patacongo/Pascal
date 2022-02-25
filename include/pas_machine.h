@@ -160,6 +160,9 @@
 /***********************************************************************
  * Public Structure/Types
  ***********************************************************************/
+/* Type big enough to hold a the largest memory object. */
+
+typedef uint16_t pasSize_t;  /* Addresses are 16-bits in length */
 
 /* Representation of one P-Code.  Depends on INSN */
 

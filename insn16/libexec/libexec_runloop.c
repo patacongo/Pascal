@@ -1,8 +1,7 @@
-/***************************************************************************
- * plib.h
- * External Declarations associated with the run-time library
+/****************************************************************************
+ * libexec_runloop.c
  *
- *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,27 +31,52 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************************/
-
-#ifndef __PLIB_H
-#define __PLIB_H
-
-/***************************************************************************
- * Included Files
- ***************************************************************************/
-
-#include <stdint.h>
-
-/****************************************************************************
- * Public Data
  ****************************************************************************/
 
-extern int16_t g_exitCode;
+/****************************************************************************
+ * Included Files
+ ****************************************************************************/
 
-/***************************************************************************
- * Public Function Prototypes
- ***************************************************************************/
+#include <stdio.h>
 
-uint16_t pexec_libcall(struct pexec_s *st, uint16_t subfunc);
+#include "execlib.h"
+#include "pas_errcodes.h"
 
-#endif /* __PLIB_H */
+#include "libexec.h"
+#include "libexec_library.h"
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: libexec_RunLoop
+ *
+ * Description:
+ *   This function executes the P-Code program until a stopping condition
+ *   is encountered.
+ *
+ ****************************************************************************/
+
+void libexec_RunLoop(EXEC_HANDLE_t handle)
+{
+  struct libexec_s *st = (struct libexec_s *)handle;
+  int errcode;
+
+  for (; ; )
+    {
+      /* Execute the instruction; Check for exceptional conditions */
+
+      errcode = libexec_Execute(st);
+      if (errcode != eNOERROR) break;
+    }
+
+  if (errcode == eEXIT)
+    {
+      printf("Exit with code %d\n", g_exitCode);
+    }
+  else
+    {
+      printf("Runtime error 0x%02x -- Execution Stopped\n", errcode);
+    }
+}

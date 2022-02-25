@@ -130,6 +130,12 @@ config PASCAL_STARTUP_DEBUG
 	---help---
 		The start-up Pascal program with begin in the Pascal P-code debugger.
 
+config PASCAL_STARTUP_STKSIZE
+	string "Pascal start-up stack size"
+	default 4096
+	---help---
+		Stack memory set aside for code execution.
+
 config PASCAL_STARTUP_STRSIZE
 	string "Pascal start-up string stack size (total)"
 	default 1024

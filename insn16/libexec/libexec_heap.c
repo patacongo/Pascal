@@ -1,5 +1,5 @@
 /****************************************************************************
- * pmmgr.c
+ * libexec_heap.c
  *
  *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -45,8 +45,8 @@
 #include "pas_debug.h"
 #include "pas_errcodes.h"
 #include "pas_error.h"
-#include "pexec.h"
-#include "pmmgr.h"
+#include "libexec.h"
+#include "libexec_heap.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -104,8 +104,8 @@ static freeChunk_t *g_freeChunks;
 
 /****************************************************************************/
 
-static void pexec_AddChunkToFreeList(struct pexec_s *st,
-                                     freeChunk_t *newChunk)
+static void libexec_AddChunkToFreeList(struct libexec_s *st,
+                                       freeChunk_t *newChunk)
 {
   freeChunk_t *prevChunk;
   freeChunk_t *freeChunk;
@@ -190,8 +190,8 @@ static void pexec_AddChunkToFreeList(struct pexec_s *st,
 
 /****************************************************************************/
 
-static void pexec_RemoveChunkFromFreeList(struct pexec_s *st,
-                                          freeChunk_t *freeChunk)
+static void libexec_RemoveChunkFromFreeList(struct libexec_s *st,
+                                            freeChunk_t *freeChunk)
 {
   /* Check if this is the first chunk in the list */
 
@@ -224,7 +224,7 @@ static void pexec_RemoveChunkFromFreeList(struct pexec_s *st,
 
 /****************************************************************************/
 
-static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
+static void libexec_DisposeChunk(struct libexec_s *st, freeChunk_t *newChunk)
 {
   freeChunk_t *prevChunk = NULL;
   freeChunk_t *nextChunk = NULL;
@@ -262,7 +262,7 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
            * from the free list.
            */
 
-          pexec_RemoveChunkFromFreeList(st, prevChunk);
+          libexec_RemoveChunkFromFreeList(st, prevChunk);
 
           prevChunk->chunk.forward  += newChunk->chunk.forward;
           if (nextChunk != NULL)
@@ -272,7 +272,7 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
 
           /* Then put the larger chunk back into the free list. */
 
-          pexec_AddChunkToFreeList(st, prevChunk);
+          libexec_AddChunkToFreeList(st, prevChunk);
           newChunk                   = prevChunk;
           prevChunk                  = NULL;
           merged                     = true;
@@ -293,7 +293,7 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
            * from the free list.
            */
 
-          pexec_RemoveChunkFromFreeList(st, nextChunk);
+          libexec_RemoveChunkFromFreeList(st, nextChunk);
 
           /* Then merge it into the newChunk */
 
@@ -318,7 +318,7 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
 
           /* Then put the larger chunk back into the free list. */
 
-          pexec_AddChunkToFreeList(st, newChunk);
+          libexec_AddChunkToFreeList(st, newChunk);
           merged                   = true;
         }
     }
@@ -327,7 +327,7 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
 
   if (!merged)
     {
-      pexec_AddChunkToFreeList(st, newChunk);
+      libexec_AddChunkToFreeList(st, newChunk);
     }
 }
 
@@ -337,7 +337,7 @@ static void pexec_DisposeChunk(struct pexec_s *st, freeChunk_t *newChunk)
 
 /****************************************************************************/
 
-void pexec_InitializeHeap(struct pexec_s *st)
+void libexec_InitializeHeap(struct libexec_s *st)
 {
   /* We can't use the memory manager if no heap was specified */
 
@@ -372,7 +372,7 @@ void pexec_InitializeHeap(struct pexec_s *st)
 
 /****************************************************************************/
 
-int pexec_New(struct pexec_s *st, uint16_t size)
+int libexec_New(struct libexec_s *st, uint16_t size)
 {
   freeChunk_t *freeChunk;
 
@@ -408,7 +408,7 @@ int pexec_New(struct pexec_s *st, uint16_t size)
 
       if (chunkSize >= size)
         {
-          pexec_RemoveChunkFromFreeList(st, freeChunk);
+          libexec_RemoveChunkFromFreeList(st, freeChunk);
 
           /* Divide the chunk into an in-use and an available chunk if we did
            * not need the whole thing.
@@ -446,7 +446,7 @@ int pexec_New(struct pexec_s *st, uint16_t size)
 
               /* Add the smaller sub-chunk to the ordered free list */
 
-              pexec_DisposeChunk(st, subChunk);
+              libexec_DisposeChunk(st, subChunk);
             }
 
           /* Return the address of the allocated memory */
@@ -468,7 +468,7 @@ int pexec_New(struct pexec_s *st, uint16_t size)
 
 /****************************************************************************/
 
-int pexec_Dispose(struct pexec_s *st, uint16_t address)
+int libexec_Dispose(struct libexec_s *st, uint16_t address)
 {
   freeChunk_t *freeChunk;
 
@@ -489,6 +489,6 @@ int pexec_Dispose(struct pexec_s *st, uint16_t address)
   freeChunk->next    = 0;
   freeChunk->prev    = 0;
 
-  pexec_DisposeChunk(st, freeChunk);
+  libexec_DisposeChunk(st, freeChunk);
   return eNOERROR;
 }

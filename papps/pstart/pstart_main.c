@@ -41,46 +41,7 @@
 #include <stdlib.h>
 
 #include "paslib.h"
-#include "pas_errcodes.h"
-
-#include "pexec.h"
-#include "plib.h"
-#include "pdbg.h"
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: pstart_execute
- *
- * Description:
- *   This function executes the P-Code program until a stopping condition
- *   is encountered.
- *
- ****************************************************************************/
-
-static void pstart_execute(struct pexec_s *st)
-{
-  int errcode;
-
-  for (; ; )
-    {
-      /* Execute the instruction; Check for exceptional conditions */
-
-      errcode = pexec_Execute(st);
-      if (errcode != eNOERROR) break;
-    }
-
-  if (errcode == eEXIT)
-    {
-      printf("Exit with code %d\n", g_exitCode);
-    }
-  else
-    {
-      printf("Runtime error 0x%02x -- Execution Stopped\n", errcode);
-    }
-}
+#include "execlib.h"
 
 /****************************************************************************
  * Public Functions
@@ -97,19 +58,23 @@ static void pstart_execute(struct pexec_s *st)
 
 int main(int argc, char *argv[], char *envp[])
 {
-  struct pexec_s *st;
+  EXEC_HANDLE_t handle;
   char fileName[FNAME_SIZE + 1];  /* Object file name */
 
-  /* Load the POFF files specified on the command line */
-  /* Use .o or command line extension, if supplied */
+  /* Load the POFF files specified on the command line.
+   * Use .pex or command line extension, if supplied.
+   */
 
-  (void)extension(CONFIG_PASCAL_STARTUP_FILENAME, "o", fileName, 0);
+  (void)extension(CONFIG_PASCAL_STARTUP_FILENAME, "pex", fileName, 0);
 
   /* Initialize the P-machine and load the POFF file */
 
-  st = pexec_Load(fileName, g_strallocsize, g_strstacksize, g_passtacksize,
-                  g_hpstacksize);
-  if (st == NULL)
+  handle = libexec_Load(fileName,
+                        CONFIG_PASCAL_STARTUP_STRALLOC,
+                        CONFIG_PASCAL_STARTUP_STRSIZE,
+                        CONFIG_PASCAL_STARTUP_STKSIZE,
+                        CONFIG_PASCAL_STARTUP_HEAPSIZE);
+  if (handle == NULL)
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);
       exit(1);
@@ -120,13 +85,13 @@ int main(int argc, char *argv[], char *envp[])
   /* And start program execution in the specified mode */
 
 #ifdef CONFIG_PASCAL_STARTUP_DEBUG
-  dbg_run(st);
+  libexec_DebugLoop(handle);
 #else
-  pstart_execute(st);
+  libexec_RunLoop(handle);
 #endif
 
   /* Clean up resources used by the interpreter */
 
-  pexec_Release(st);
+  libexec_Release(handle);
   return 0;
 }

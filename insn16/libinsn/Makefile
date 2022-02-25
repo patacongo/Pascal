@@ -1,5 +1,5 @@
 ############################################################################
-# insn16/libinsn/Makefile
+# Makefile
 #
 #   Copyright (C) 2008, 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -69,7 +69,7 @@ SUFFIXES    += .d
 #
 
 all: libinsn.a
-.PHONY: all libinsn.a check_libs clean distclean
+.PHONY: all libinsn.a clean distclean
 
 $(DEPS): %.d: %.c
 	$(Q) echo "  $@"
@@ -79,7 +79,7 @@ $(OBJS): %.o: %.c
 	$(Q) echo "  $@"
 	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
-$(PLIBDIR)/libinsn.a: $(OBJS)
+$(PLIBDIR)/libinsn.a: $(DEPS) $(OBJS)
 	$(Q) echo "  $@"
 	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
 

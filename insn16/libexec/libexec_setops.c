@@ -1,5 +1,5 @@
 /****************************************************************************
- * psetops.c
+ * libexec_setops.c
  *
  *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -51,7 +51,7 @@
 #include "pas_errcodes.h"
 #include "pas_error.h"
 
-#include "psetops.h"
+#include "libexec_setops.h"
 
 /****************************************************************************
  * Private Function Prototypes
@@ -59,37 +59,38 @@
 
 /* Receive two sets, return one */
 
-static int pexec_intersection(const uint16_t *src, uint16_t *dest);
-static int pexec_union(const uint16_t *src, uint16_t *dest);
-static int pexec_difference(const uint16_t *src, uint16_t *dest);
-static int pexec_symmetricdiff(const uint16_t *src, uint16_t *dest);
+static int libexec_intersection(const uint16_t *src, uint16_t *dest);
+static int libexec_union(const uint16_t *src, uint16_t *dest);
+static int libexec_difference(const uint16_t *src, uint16_t *dest);
+static int libexec_symmetricdiff(const uint16_t *src, uint16_t *dest);
 
 /* Receive two sets, returns a boolean */
 
-static int pexec_equality(const uint16_t *src1, const uint16_t *src2,
-                          uint16_t *result);
-static int pexec_nonequality(const uint16_t *src1, const uint16_t *src2,
-                             uint16_t *result);
-static int pexec_contains(const uint16_t *src1, const uint16_t *src2,
+static int libexec_equality(const uint16_t *src1, const uint16_t *src2,
+             uint16_t *result);
+static int libexec_nonequality(const uint16_t *src1, const uint16_t *src2,
+             uint16_t *result);
+static int libexec_contains(const uint16_t *src1, const uint16_t *src2,
                           uint16_t *result);
 
 /* Receive a set member and one set, returns a boolean */
 
-static int pexec_member(int16_t member, const uint16_t *src,
+static int libexec_member(int16_t member, const uint16_t *src,
                         uint16_t *result);
 
 /* Receive one set and a set member, returns the modified set */
 
-static int pexec_include(int16_t member, uint16_t *dest);
-static int pexec_exclude(int16_t member, uint16_t *dest);
-static int pexec_card(const uint16_t *src, uint16_t *dest);
-static int pexec_singleton(int16_t minValue, int16_t member, uint16_t *dest);
-static int pexec_subrange(int16_t minValue, int16_t member1, int16_t member2,
-                          uint16_t *dest);
+static int libexec_include(int16_t member, uint16_t *dest);
+static int libexec_exclude(int16_t member, uint16_t *dest);
+static int libexec_card(const uint16_t *src, uint16_t *dest);
+static int libexec_singleton(int16_t minValue, int16_t member,
+             uint16_t *dest);
+static int libexec_subrange(int16_t minValue, int16_t member1,
+             int16_t member2, uint16_t *dest);
 
-static uint16_t pexec_BitsInWord(uint16_t word);
-static uint16_t pexec_BitsInByte(uint8_t byte);
-static uint16_t pexec_BitsInNibble(uint8_t nibble);
+static uint16_t libexec_BitsInWord(uint16_t word);
+static uint16_t libexec_BitsInByte(uint8_t byte);
+static uint16_t libexec_BitsInNibble(uint8_t nibble);
 
 /****************************************************************************
  * Private Data
@@ -105,7 +106,7 @@ static uint8_t g_bitsInNibble[16] =
  * Private Functions
  ****************************************************************************/
 
-static int pexec_intersection(const uint16_t *src, uint16_t *dest)
+static int libexec_intersection(const uint16_t *src, uint16_t *dest)
 {
   dest[0] &= src[0];
   dest[1] &= src[1];
@@ -114,7 +115,7 @@ static int pexec_intersection(const uint16_t *src, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_union(const uint16_t *src, uint16_t *dest)
+static int libexec_union(const uint16_t *src, uint16_t *dest)
 {
   dest[0] |= src[0];
   dest[1] |= src[1];
@@ -123,7 +124,7 @@ static int pexec_union(const uint16_t *src, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_difference(const uint16_t *src, uint16_t *dest)
+static int libexec_difference(const uint16_t *src, uint16_t *dest)
 {
   dest[0] &= ~src[0];
   dest[1] &= ~src[1];
@@ -132,7 +133,7 @@ static int pexec_difference(const uint16_t *src, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_symmetricdiff(const uint16_t *src, uint16_t *dest)
+static int libexec_symmetricdiff(const uint16_t *src, uint16_t *dest)
 {
   dest[0] ^= src[0];
   dest[1] ^= src[1];
@@ -141,8 +142,8 @@ static int pexec_symmetricdiff(const uint16_t *src, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_equality(const uint16_t *src1, const uint16_t *src2,
-                          uint16_t *result)
+static int libexec_equality(const uint16_t *src1, const uint16_t *src2,
+                            uint16_t *result)
 {
   uint16_t same = PASCAL_FALSE;
 
@@ -158,8 +159,8 @@ static int pexec_equality(const uint16_t *src1, const uint16_t *src2,
   return eNOERROR;
 }
 
-static int pexec_nonequality(const uint16_t *src1, const uint16_t *src2,
-                             uint16_t *result)
+static int libexec_nonequality(const uint16_t *src1, const uint16_t *src2,
+                               uint16_t *result)
 {
   uint16_t different = PASCAL_FALSE;
 
@@ -175,8 +176,8 @@ static int pexec_nonequality(const uint16_t *src1, const uint16_t *src2,
   return eNOERROR;
 }
 
-static int pexec_contains(const uint16_t *src1, const uint16_t *src2,
-                          uint16_t *result)
+static int libexec_contains(const uint16_t *src1, const uint16_t *src2,
+                            uint16_t *result)
 {
   uint16_t contains = PASCAL_FALSE;
 
@@ -192,8 +193,8 @@ static int pexec_contains(const uint16_t *src1, const uint16_t *src2,
   return eNOERROR;
 }
 
-static int pexec_member(int16_t member, const uint16_t *src,
-                        uint16_t *result)
+static int libexec_member(int16_t member, const uint16_t *src,
+                          uint16_t *result)
 {
   int errorCode = eNOERROR;
 
@@ -213,7 +214,7 @@ static int pexec_member(int16_t member, const uint16_t *src,
   return errorCode;
 }
 
-static int pexec_include(int16_t member, uint16_t *dest)
+static int libexec_include(int16_t member, uint16_t *dest)
 {
   uint16_t wordIndex = member >> 4;
   uint16_t bitIndex  = member & 0x0f;
@@ -222,7 +223,7 @@ static int pexec_include(int16_t member, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_exclude(int16_t member, uint16_t *dest)
+static int libexec_exclude(int16_t member, uint16_t *dest)
 {
   uint16_t wordIndex = member >> 4;
   uint16_t bitIndex  = member & 0x0f;
@@ -231,14 +232,14 @@ static int pexec_exclude(int16_t member, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_card(const uint16_t *src, uint16_t *dest)
+static int libexec_card(const uint16_t *src, uint16_t *dest)
 {
-  *dest = pexec_BitsInWord(src[0]) + pexec_BitsInWord(src[1]) +
-          pexec_BitsInWord(src[2]) + pexec_BitsInWord(src[3]);
+  *dest = libexec_BitsInWord(src[0]) + libexec_BitsInWord(src[1]) +
+          libexec_BitsInWord(src[2]) + libexec_BitsInWord(src[3]);
   return eNOERROR;
 }
 
-static int pexec_singleton(int16_t minValue, int16_t member, uint16_t *dest)
+static int libexec_singleton(int16_t minValue, int16_t member, uint16_t *dest)
 {
   int wordIndex;
   int bitIndex;
@@ -265,7 +266,7 @@ static int pexec_singleton(int16_t minValue, int16_t member, uint16_t *dest)
   return eNOERROR;
 }
 
-static int pexec_subrange(int16_t minValue, int16_t member1, int16_t member2,
+static int libexec_subrange(int16_t minValue, int16_t member1, int16_t member2,
                           uint16_t *dest)
 {
   uint16_t leadMask;
@@ -345,17 +346,17 @@ static int pexec_subrange(int16_t minValue, int16_t member1, int16_t member2,
   return eNOERROR;
 }
 
-static uint16_t pexec_BitsInWord(uint16_t word)
+static uint16_t libexec_BitsInWord(uint16_t word)
 {
-  return pexec_BitsInByte(word >> 8) + pexec_BitsInByte(word & 0xff);
+  return libexec_BitsInByte(word >> 8) + libexec_BitsInByte(word & 0xff);
 }
 
-static uint16_t pexec_BitsInByte(uint8_t byte)
+static uint16_t libexec_BitsInByte(uint8_t byte)
 {
-  return pexec_BitsInNibble(byte >> 4) + pexec_BitsInNibble(byte & 0x0f);
+  return libexec_BitsInNibble(byte >> 4) + libexec_BitsInNibble(byte & 0x0f);
 }
 
-static uint16_t pexec_BitsInNibble(uint8_t nibble)
+static uint16_t libexec_BitsInNibble(uint8_t nibble)
 {
   return (uint16_t)g_bitsInNibble[nibble & 0x0f];
 }
@@ -365,14 +366,14 @@ static uint16_t pexec_BitsInNibble(uint8_t nibble)
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_setops
+ * Name: libexec_setops
  *
  * Description:
  *   This function handles operations on SETs.
  *
  ****************************************************************************/
 
-int pexec_setops(struct pexec_s *st, uint8_t subfunc)
+int libexec_setops(struct libexec_s *st, uint8_t subfunc)
 {
   const uint16_t *src1;
   const uint16_t *src2;
@@ -406,28 +407,28 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
       case setINTERSECTION :
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
-        errorCode = pexec_intersection(src1, dest);
+        errorCode = libexec_intersection(src1, dest);
         DISCARD(st, sSET_WORDS);
         break;
 
       case setUNION :
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
-        errorCode = pexec_union(src1, dest);
+        errorCode = libexec_union(src1, dest);
         DISCARD(st, sSET_WORDS);
         break;
 
       case setDIFFERENCE :
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
-        errorCode = pexec_difference(src1, dest);
+        errorCode = libexec_difference(src1, dest);
         DISCARD(st, sSET_WORDS);
         break;
 
       case setSYMMETRICDIFF :
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
-        errorCode = pexec_symmetricdiff(src1, dest);
+        errorCode = libexec_symmetricdiff(src1, dest);
         DISCARD(st, sSET_WORDS);
         break;
 
@@ -444,7 +445,7 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         src2 = (const uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
-        errorCode = pexec_equality(src1, src2, dest);
+        errorCode = libexec_equality(src1, src2, dest);
         DISCARD(st, 2 * sSET_WORDS  - 1);
         break;
 
@@ -452,7 +453,7 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         src2 = (const uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
-        errorCode = pexec_nonequality(src1, src2, dest);
+        errorCode = libexec_nonequality(src1, src2, dest);
         DISCARD(st, 2 * sSET_WORDS  - 1);
         break;
 
@@ -460,7 +461,7 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         src2 = (const uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, 2 * sSET_WORDS - 1);
-        errorCode = pexec_contains(src1, src2, dest);
+        errorCode = libexec_contains(src1, src2, dest);
         DISCARD(st, 2 * sSET_WORDS  - 1);
         break;
 
@@ -479,8 +480,8 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
         src1      = (const uint16_t *)&TOS(st, sSET_WORDS);
         member1   = TOS(st, sSET_WORDS + 1);
         dest      = (uint16_t *)&TOS(st, sSET_WORDS + 1);
-        errorCode = pexec_member((int16_t)member1 - (int16_t)offset,
-                                 src1, dest);
+        errorCode = libexec_member((int16_t)member1 - (int16_t)offset,
+                                   src1, dest);
         DISCARD(st, sSET_WORDS + 1);
         break;
 
@@ -496,13 +497,13 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
       case setINCLUDE :
         POP(st, member1);
         dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
-        errorCode = pexec_include(member1, dest);
+        errorCode = libexec_include(member1, dest);
         break;
 
       case setEXCLUDE :
         POP(st, member1);
         dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
-        errorCode = pexec_exclude(member1, dest);
+        errorCode = libexec_exclude(member1, dest);
         break;
 
       /* Reveives on set, returns the cardinality of the set.
@@ -516,7 +517,7 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
       case setCARD :
         src1 = (const uint16_t *)&TOS(st, sSET_WORDS - 1);
         dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
-        errorCode = pexec_card(src1, dest);
+        errorCode = libexec_card(src1, dest);
         DISCARD(st, sSET_WORDS  - 1);
         break;
 
@@ -534,7 +535,7 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
         POP(st, member1);
         st->sp += sSET_SIZE;
         dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
-        errorCode = pexec_singleton(minValue, member1, dest);
+        errorCode = libexec_singleton(minValue, member1, dest);
         break;
 
       /* Receives two integer values, returns a set representing the subrange:
@@ -553,7 +554,7 @@ int pexec_setops(struct pexec_s *st, uint8_t subfunc)
         POP(st, member1);
         st->sp += sSET_SIZE;
         dest = (uint16_t *)&TOS(st, sSET_WORDS - 1);
-        errorCode = pexec_subrange(minValue, member1, member2, dest);
+        errorCode = libexec_subrange(minValue, member1, member2, dest);
         break;
 
       case setINVALID :

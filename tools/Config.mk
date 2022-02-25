@@ -52,15 +52,17 @@ endif
 PINCDIR    := $(PASCAL)/include
 PLIBDIR    := $(PASCAL)/lib
 PBINDIR    := $(PASCAL)/bin16
-LIBPOFFDIR := $(PASCAL)/libpoff
-LIBPASDIR  := $(PASCAL)/libpas
 PASDIR     := $(PASCAL)/pascal
 PLINKDIR   := $(PASCAL)/plink
 INSNDIR    := $(PASCAL)/insn16
-LIBINSNDIR := $(INSNDIR)/libinsn
 PAPPSDIR   := $(PASCAL)/papps
 TESTDIR    := $(PASCAL)/tests
 PTOOLDIR   := $(PASCAL)/tools
+
+LIBPOFFDIR := $(PASCAL)/libpoff
+LIBPASDIR  := $(PASCAL)/libpas
+LIBINSNDIR := $(INSNDIR)/libinsn
+LIBEXECDIR := $(INSNDIR)/libexec
 
 ALLDIRS     = $(LIBPOFFDIR) $(LIBPASDIR) $(PASDIR) $(PLINKDIR) $(INSNDIR)
 ALLDIRS    += $(PAPPSDIR) $(PTESTDIR) $(PTOOLDIR)

@@ -41,14 +41,6 @@
 
 PASCAL = ${shell pwd}
 
-ifneq ($(MAKECMDGOALS),menuconfig)
-ifeq ($(wildcard $(PASCAL)/.config),)
-.DEFAULT default:
-	$(warning "== Pascal has not been configured! ==")
-	$(error   "Try:  'make menuconfig' to create a configuration");
-endif
-endif
-
 -include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
@@ -62,7 +54,8 @@ MKCONFIG = $(PTOOLDIR)/mkconfig$(HOSTEEXT)
 # ---------------------------------------------------------------------------
 # Objects and targets
 
-LIBS = $(PLIBDIR)/libpoff.a $(PLIBDIR)/libpas.a  $(PLIBDIR)/libinsn.a
+LIBS  = $(PLIBDIR)/libpoff.a $(PLIBDIR)/libpas.a $(PLIBDIR)/libinsn.a 
+LIBS += $(PLIBDIR)/libexec.a
 
 define MAKE_template
 $(1)_$(2):
@@ -70,7 +63,13 @@ $(1)_$(2):
 endef
 
 all: pascal popt plink plist prun papps
-.PHONY: all config.h mkconfig libpoff.a libpas.a libinsn.a pascal popt plink plist prun menuconfig clean distclean
+.PHONY: all check_config mkconfig config.h libpoff.a libpas.a libinsn.a libexec.a pascal popt plink plist prun menuconfig clean distclean
+
+check_config:
+ifeq ($(wildcard $(PASCAL)/.config),)
+	$(warning "== Pascal has not been configured! ==")
+	$(error   "Try:  'make menuconfig' to create a configuration");
+endif
 
 $(MKCONFIG) : $(PTOOLDIR)/mkconfig.c
 	$(Q) $(MAKE) -C $(PTOOLDIR) mkconfig$(HOSTEEXT)
@@ -83,50 +82,55 @@ config.h: $(PINCDIR)/config.h
 $(PLIBDIR):
 	$(Q) mkdir $(PLIBDIR)
 
-$(PLIBDIR)/libpoff.a: $(PLIBDIR) $(PINCDIR)/config.h
+$(PLIBDIR)/libpoff.a: check_config $(PLIBDIR) $(PINCDIR)/config.h
 	$(Q) $(MAKE) -C $(LIBPOFFDIR) libpoff.a
 
 libpoff.a: $(PLIBDIR)/libpoff.a
 
-$(PLIBDIR)/libpas.a: $(PLIBDIR) $(PINCDIR)/config.h
+$(PLIBDIR)/libpas.a: check_config $(PLIBDIR) $(PINCDIR)/config.h
 	$(Q) $(MAKE) -C $(LIBPASDIR) libpas.a
 
 libpas.a: $(PLIBDIR)/libpas.a
 
-$(PLIBDIR)/libinsn.a: $(PLIBDIR) $(PINCDIR)/config.h
+$(PLIBDIR)/libinsn.a: check_config $(PLIBDIR) $(PINCDIR)/config.h
 	$(Q) $(MAKE) -C $(LIBINSNDIR) libinsn.a
 
 libinsn.a: $(PLIBDIR)/libinsn.a
 
+$(PLIBDIR)/libexec.a: check_config $(PLIBDIR) $(PINCDIR)/config.h
+	$(Q) $(MAKE) -C $(LIBEXECDIR) libexec.a
+
+libexec.a: $(PLIBDIR)/libexec.a
+
 $(PBINDIR):
 	$(Q) mkdir $(PBINDIR)
 
-$(PBINDIR)/pascal: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+$(PBINDIR)/pascal: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(PASDIR)
 
 pascal: $(PBINDIR)/pascal
 
-$(PBINDIR)/plink: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+$(PBINDIR)/plink: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(PLINKDIR)
 
 plink: $(PBINDIR)/plink
 
-$(PBINDIR)/popt: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+$(PBINDIR)/popt: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(INSNDIR) popt
 
 popt: $(PBINDIR)/popt
 
-$(PBINDIR)/prun: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+$(PBINDIR)/prun: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(INSNDIR) prun
 
 prun: $(PBINDIR)/prun
 
-$(PBINDIR)/plist: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+$(PBINDIR)/plist: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(INSNDIR) plist
 
 plist: $(PBINDIR)/plist
 
-$(PBINDIR)/papps: $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
+$(PBINDIR)/papps: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 	$(Q) $(MAKE) -C $(INSNDIR) all
 
 papps: $(PBINDIR)/papps

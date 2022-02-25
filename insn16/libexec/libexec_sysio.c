@@ -1,5 +1,5 @@
 /****************************************************************************
- * psysio.c
+ * libexec_sysio.c
  *
  *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -52,8 +52,8 @@
 #include "pas_errcodes.h"
 #include "pas_error.h"
 
-#include "plongops.h"
-#include "psysio.h"
+#include "libexec_longops.h"
+#include "libexec_sysio.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -93,47 +93,47 @@ typedef union uWord_u uWord_t;
  * Private Function Prototypes
  ****************************************************************************/
 
-static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
-static void     pexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
-static void     pexec_CheckEoln(uint16_t fileNumber, char *buffer);
-static ustack_t pexec_AllocateFile(void);
-static int      pexec_FreeFile(uint16_t fileNumber);
-static int      pexec_AssignFile(uint16_t fileNumber, bool text,
-                                 const char *fileName, uint16_t size);
-static int      pexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
-static int      pexec_CloseFile(uint16_t fileNumber);
-static int      pexec_RecordSize(uint16_t fileNumber, uint16_t size);
-static int      pexec_ReadLn(uint16_t fileNumber);
-static int      pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest,
-                                 uint16_t size);
-static int      pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
-static int      pexec_ReadChar(uint16_t fileNumber, uint8_t *dest);
-static int      pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
-                                 uint16_t *stringVarPtr, uint16_t readSize);
-static int      pexec_ReadReal(uint16_t fileNumber, uint16_t *dest);
-static int      pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
-                                  uint16_t size);
-static int      pexec_WriteInteger(uint16_t fileNumber, int16_t value,
-                                   uint16_t fieldWidth);
-static int      pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
-                                       uint16_t fieldWidth);
-static int      pexec_WriteWord(uint16_t fileNumber, uint16_t value,
-                                uint16_t fieldWidth);
-static int      pexec_WriteChar(uint16_t fileNumber, uint8_t value,
-                                uint16_t fieldWidth);
-static int      pexec_WriteReal(uint16_t fileNumber, double value,
-                                uint16_t fieldWidth);
-static int      pexec_WriteString(uint16_t fileNumber, const char *string,
-                                  uint16_t size, uint16_t fieldWidth);
-static int      pexec_GetFileSize(FILE *stream, off_t *fileSize);
-static int      pexec_Eof(struct pexec_s *st, uint16_t fileNumber);
-static int      pexec_Eoln(struct pexec_s *st, uint16_t fileNumber);
-static int      pexec_FilePos(struct pexec_s *st, uint16_t fileNumber);
-static int      pexec_FileSize(struct pexec_s *st, uint16_t fileNumber);
-static int      pexec_Seek(struct pexec_s *st, uint16_t fileNumber,
-                           uint32_t filePos);
-static int      pexec_SeekEof(struct pexec_s *st, uint16_t fileNumber);
-static int      pexec_SeekEoln(struct pexec_s *st, uint16_t fileNumber);
+static ustack_t libexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
+static void     libexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
+static void     libexec_CheckEoln(uint16_t fileNumber, char *buffer);
+static ustack_t libexec_AllocateFile(void);
+static int      libexec_FreeFile(uint16_t fileNumber);
+static int      libexec_AssignFile(uint16_t fileNumber, bool text,
+                  const char *fileName, uint16_t size);
+static int      libexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
+static int      libexec_CloseFile(uint16_t fileNumber);
+static int      libexec_RecordSize(uint16_t fileNumber, uint16_t size);
+static int      libexec_ReadLn(uint16_t fileNumber);
+static int      libexec_ReadBinary(uint16_t fileNumber, uint8_t *dest,
+                  uint16_t size);
+static int      libexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
+static int      libexec_ReadChar(uint16_t fileNumber, uint8_t *dest);
+static int      libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
+                  uint16_t *stringVarPtr, uint16_t readSize);
+static int      libexec_ReadReal(uint16_t fileNumber, uint16_t *dest);
+static int      libexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
+                  uint16_t size);
+static int      libexec_WriteInteger(uint16_t fileNumber, int16_t value,
+                  uint16_t fieldWidth);
+static int      libexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
+                  uint16_t fieldWidth);
+static int      libexec_WriteWord(uint16_t fileNumber, uint16_t value,
+                  uint16_t fieldWidth);
+static int      libexec_WriteChar(uint16_t fileNumber, uint8_t value,
+                  uint16_t fieldWidth);
+static int      libexec_WriteReal(uint16_t fileNumber, double value,
+                  uint16_t fieldWidth);
+static int      libexec_WriteString(uint16_t fileNumber, const char *string,
+                  uint16_t size, uint16_t fieldWidth);
+static int      libexec_GetFileSize(FILE *stream, off_t *fileSize);
+static int      libexec_Eof(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_Eoln(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_FilePos(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_FileSize(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_Seek(struct libexec_s *st, uint16_t fileNumber,
+                  uint32_t filePos);
+static int      libexec_SeekEof(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_SeekEoln(struct libexec_s *st, uint16_t fileNumber);
 
 /****************************************************************************
  * Private Data
@@ -154,13 +154,13 @@ static uint8_t g_ioLine[LINE_SIZE + 1];
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_ConvertInteger
+ * Name: libexec_ConvertInteger
  *
  * Description:
  *   This function parses a decimal integer from ioPtr
  ****************************************************************************/
 
-static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr)
+static ustack_t libexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr)
 {
   long int value = 0;
   bool negative = false;
@@ -204,14 +204,14 @@ static ustack_t pexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr)
 }
 
 /****************************************************************************
- * Name: pexec_ConvertReal
+ * Name: libexec_ConvertReal
  *
  * Description:
  *    This function parses a decimal integer from ioPtr.
  *
  ****************************************************************************/
 
-static void pexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
+static void libexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
 {
   int32_t  intpart;
   fparg_t  result;
@@ -267,7 +267,7 @@ static void pexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
 
 /****************************************************************************/
 
-static void pexec_CheckEoln(uint16_t fileNumber, char *buffer)
+static void libexec_CheckEoln(uint16_t fileNumber, char *buffer)
 {
   bool eoln = false;
   int len;
@@ -292,7 +292,7 @@ static void pexec_CheckEoln(uint16_t fileNumber, char *buffer)
 
 /****************************************************************************/
 
-static ustack_t pexec_AllocateFile(void)
+static ustack_t libexec_AllocateFile(void)
 {
   uint16_t fileNumber;
 
@@ -310,7 +310,7 @@ static ustack_t pexec_AllocateFile(void)
 
 /****************************************************************************/
 
-static int pexec_FreeFile(uint16_t fileNumber)
+static int libexec_FreeFile(uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -328,7 +328,7 @@ static int pexec_FreeFile(uint16_t fileNumber)
 
       if (g_fileTable[fileNumber].stream != NULL)
         {
-          pexec_CloseFile(fileNumber);
+          libexec_CloseFile(fileNumber);
         }
 
       /* Reset the entire file entry */
@@ -341,8 +341,8 @@ static int pexec_FreeFile(uint16_t fileNumber)
 
 /****************************************************************************/
 
-static int pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
-                            uint16_t size)
+static int libexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
+                              uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -376,7 +376,7 @@ static int pexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName
 
 /****************************************************************************/
 
-static int pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
+static int libexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
 {
   int errorCode = eNOERROR;
 
@@ -427,7 +427,7 @@ static int pexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
 
 /****************************************************************************/
 
-static int pexec_CloseFile(uint16_t fileNumber)
+static int libexec_CloseFile(uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -450,7 +450,7 @@ static int pexec_CloseFile(uint16_t fileNumber)
 
 /****************************************************************************/
 
-static int pexec_RecordSize(uint16_t fileNumber, uint16_t size)
+static int libexec_RecordSize(uint16_t fileNumber, uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -468,7 +468,7 @@ static int pexec_RecordSize(uint16_t fileNumber, uint16_t size)
 
 /****************************************************************************/
 
-static int pexec_ReadLn(uint16_t fileNumber)
+static int libexec_ReadLn(uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -501,7 +501,7 @@ static int pexec_ReadLn(uint16_t fileNumber)
 
 /****************************************************************************/
 
-static int pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
+static int libexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -529,7 +529,7 @@ static int pexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
 
 /****************************************************************************/
 
-static int pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
+static int libexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
 {
   int errorCode = eNOERROR;
 
@@ -554,8 +554,8 @@ static int pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
         }
       else
         {
-          pexec_CheckEoln(fileNumber, (char *)g_ioLine);
-          *dest = pexec_ConvertInteger(fileNumber, g_ioLine);
+          libexec_CheckEoln(fileNumber, (char *)g_ioLine);
+          *dest = libexec_ConvertInteger(fileNumber, g_ioLine);
         }
     }
 
@@ -564,7 +564,7 @@ static int pexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
 
 /****************************************************************************/
 
-static int pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
+static int libexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
 {
   int errorCode = eNOERROR;
 
@@ -589,7 +589,7 @@ static int pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
         }
       else
         {
-          pexec_CheckEoln(fileNumber, (char *)g_ioLine);
+          libexec_CheckEoln(fileNumber, (char *)g_ioLine);
           *dest = g_ioLine[0];
         }
     }
@@ -599,8 +599,8 @@ static int pexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
 
 /****************************************************************************/
 
-static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
-                            uint16_t *stringVarPtr, uint16_t readSize)
+static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
+                              uint16_t *stringVarPtr, uint16_t readSize)
 {
   int errorCode = eNOERROR;
 
@@ -631,7 +631,7 @@ static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
         }
       else
         {
-          pexec_CheckEoln(fileNumber, stringBufferPtr);
+          libexec_CheckEoln(fileNumber, stringBufferPtr);
           stringVarPtr[sSTRING_SIZE_OFFSET / sINT_SIZE] =
             strlen(stringBufferPtr);
         }
@@ -640,7 +640,7 @@ static int pexec_ReadString(struct pexec_s *st, uint16_t fileNumber,
   return errorCode;
 }
 
-static int pexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
+static int libexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
 {
   int errorCode = eNOERROR;
 
@@ -665,8 +665,8 @@ static int pexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
         }
       else
         {
-          pexec_CheckEoln(fileNumber, (char *)g_ioLine);
-          pexec_ConvertReal(dest, g_ioLine);
+          libexec_CheckEoln(fileNumber, (char *)g_ioLine);
+          libexec_ConvertReal(dest, g_ioLine);
         }
     }
 
@@ -675,8 +675,8 @@ static int pexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
 
 /****************************************************************************/
 
-static int pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
-                             uint16_t size)
+static int libexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
+                               uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -705,8 +705,8 @@ static int pexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
 
 /****************************************************************************/
 
-static int pexec_WriteInteger(uint16_t fileNumber, int16_t value,
-                              uint16_t fieldWidth)
+static int libexec_WriteInteger(uint16_t fileNumber, int16_t value,
+                                uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -722,7 +722,7 @@ static int pexec_WriteInteger(uint16_t fileNumber, int16_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat("d", fieldWidth >> 8, 0);
+      const char *fmt = libexec_GetFormat("d", fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -735,8 +735,8 @@ static int pexec_WriteInteger(uint16_t fileNumber, int16_t value,
 
 /****************************************************************************/
 
-static int pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
-                                  uint16_t fieldWidth)
+static int libexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
+                                    uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -752,7 +752,7 @@ static int pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat(PRId32, fieldWidth >> 8, 0);
+      const char *fmt = libexec_GetFormat(PRId32, fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -765,8 +765,8 @@ static int pexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
 
 /****************************************************************************/
 
-static int pexec_WriteWord(uint16_t fileNumber, uint16_t value,
-                           uint16_t fieldWidth)
+static int libexec_WriteWord(uint16_t fileNumber, uint16_t value,
+                             uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -782,7 +782,7 @@ static int pexec_WriteWord(uint16_t fileNumber, uint16_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat("u", fieldWidth >> 8, 0);
+      const char *fmt = libexec_GetFormat("u", fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -795,8 +795,8 @@ static int pexec_WriteWord(uint16_t fileNumber, uint16_t value,
 
 /****************************************************************************/
 
-static int pexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
-                               uint16_t fieldWidth)
+static int libexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
+                                 uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -812,7 +812,7 @@ static int pexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat(PRIu32, fieldWidth >> 8, 0);
+      const char *fmt = libexec_GetFormat(PRIu32, fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -825,8 +825,8 @@ static int pexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
 
 /****************************************************************************/
 
-static int pexec_WriteChar(uint16_t fileNumber, uint8_t value,
-                           uint16_t fieldWidth)
+static int libexec_WriteChar(uint16_t fileNumber, uint8_t value,
+                             uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -842,7 +842,7 @@ static int pexec_WriteChar(uint16_t fileNumber, uint8_t value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat("c", fieldWidth >> 8, 0);
+      const char *fmt = libexec_GetFormat("c", fieldWidth >> 8, 0);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -856,8 +856,8 @@ static int pexec_WriteChar(uint16_t fileNumber, uint8_t value,
 
 /****************************************************************************/
 
-static int pexec_WriteReal(uint16_t fileNumber, double value,
-                           uint16_t fieldWidth)
+static int libexec_WriteReal(uint16_t fileNumber, double value,
+                             uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -873,8 +873,8 @@ static int pexec_WriteReal(uint16_t fileNumber, double value,
     }
   else
     {
-      const char *fmt = pexec_GetFormat("f", fieldWidth >> 8,
-                                        fieldWidth & 0x00ff);
+      const char *fmt = libexec_GetFormat("f", fieldWidth >> 8,
+                                          fieldWidth & 0x00ff);
       int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
@@ -887,7 +887,7 @@ static int pexec_WriteReal(uint16_t fileNumber, double value,
 
 /****************************************************************************/
 
-static int pexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
+static int libexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
                              uint16_t size, uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
@@ -928,7 +928,7 @@ static int pexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
 
 /****************************************************************************/
 
-static int pexec_GetFileSize(FILE *stream, off_t *fileSize)
+static int libexec_GetFileSize(FILE *stream, off_t *fileSize)
 {
   int errorCode = eNOERROR;
   off_t oldPos = 0;
@@ -975,7 +975,7 @@ static int pexec_GetFileSize(FILE *stream, off_t *fileSize)
 
 /****************************************************************************/
 
-static int pexec_Eof(struct pexec_s *st, uint16_t fileNumber)
+static int libexec_Eof(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
   uint16_t eof = PASCAL_FALSE;
@@ -1012,7 +1012,7 @@ static int pexec_Eof(struct pexec_s *st, uint16_t fileNumber)
         }
       else
         {
-          errorCode = pexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
+          errorCode = libexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
           if (errorCode != eNOERROR || filePos >= fileSize)
             {
               eof = PASCAL_TRUE;
@@ -1026,7 +1026,7 @@ static int pexec_Eof(struct pexec_s *st, uint16_t fileNumber)
 
 /****************************************************************************/
 
-static int pexec_Eoln(struct pexec_s *st, uint16_t fileNumber)
+static int libexec_Eoln(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
   uint16_t eoln;
@@ -1049,7 +1049,7 @@ static int pexec_Eoln(struct pexec_s *st, uint16_t fileNumber)
 /****************************************************************************/
 /* Return the current position in the file */
 
-static int pexec_FilePos(struct pexec_s *st, uint16_t fileNumber)
+static int libexec_FilePos(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -1077,7 +1077,7 @@ static int pexec_FilePos(struct pexec_s *st, uint16_t fileNumber)
 
       /* REVISIT:  Int64 not yet implemented; substituting LongInteger. */
 
-       pexec_UPush32(st, (uint32_t)pos);
+       libexec_UPush32(st, (uint32_t)pos);
     }
 
   return errorCode;
@@ -1086,7 +1086,7 @@ static int pexec_FilePos(struct pexec_s *st, uint16_t fileNumber)
 /****************************************************************************/
 /* Return the file size */
 
-static int pexec_FileSize(struct pexec_s *st, uint16_t fileNumber)
+static int libexec_FileSize(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -1108,11 +1108,11 @@ static int pexec_FileSize(struct pexec_s *st, uint16_t fileNumber)
     {
       off_t fileSize;
 
-      errorCode = pexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
+      errorCode = libexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
 
       /* REVISIT:  Int64 not yet implemented; substituting LongInteger. */
 
-      pexec_UPush32(st, (uint32_t)fileSize);
+      libexec_UPush32(st, (uint32_t)fileSize);
     }
 
   return errorCode;
@@ -1121,7 +1121,7 @@ static int pexec_FileSize(struct pexec_s *st, uint16_t fileNumber)
 /****************************************************************************/
 /* Seek to a position in the file */
 
-static int pexec_Seek(struct pexec_s *st, uint16_t fileNumber, uint32_t filePos)
+static int libexec_Seek(struct libexec_s *st, uint16_t fileNumber, uint32_t filePos)
 {
   int errorCode = eNOERROR;
 
@@ -1157,7 +1157,7 @@ static int pexec_Seek(struct pexec_s *st, uint16_t fileNumber, uint32_t filePos)
 /****************************************************************************/
 /* Set file position to end of file */
 
-static int pexec_SeekEof(struct pexec_s *st, uint16_t fileNumber)
+static int libexec_SeekEof(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
   uint16_t result = PASCAL_FALSE;
@@ -1206,7 +1206,7 @@ static int pexec_SeekEof(struct pexec_s *st, uint16_t fileNumber)
 /****************************************************************************/
 /* Set file position to end of line */
 
-static int pexec_SeekEoln(struct pexec_s *st, uint16_t fileNumber)
+static int libexec_SeekEoln(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
   uint16_t result = PASCAL_FALSE;
@@ -1257,7 +1257,7 @@ static int pexec_SeekEoln(struct pexec_s *st, uint16_t fileNumber)
  * Public Functions
  ****************************************************************************/
 
-void pexec_InitializeFile(void)
+void libexec_InitializeFile(void)
 {
   int fileNumber;
 
@@ -1291,14 +1291,14 @@ void pexec_InitializeFile(void)
 }
 
 /****************************************************************************
- * Name: pexec_sysio
+ * Name: libexec_sysio
  *
  * Description:
  *   This function process a system I/O operation.
  *
  ****************************************************************************/
 
-int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
+int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 {
   fparg_t  fp;
   uint16_t fileNumber;
@@ -1314,7 +1314,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     /* ALLOCFILE: No stack arguments */
 
     case xALLOCFILE :
-       fileNumber = pexec_AllocateFile();
+       fileNumber = libexec_AllocateFile();
        if (fileNumber >= MAX_OPEN_FILES)
          {
            errorCode = eTOOMANYFILES;
@@ -1327,35 +1327,35 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 
     case xFREEFILE :
        POP(st, fileNumber); /* File number */
-       errorCode = pexec_FreeFile(fileNumber);
+       errorCode = libexec_FreeFile(fileNumber);
        break;
 
     /* EOF: TOS(0) = File number */
 
     case xEOF :
       POP(st, fileNumber); /* File number */
-      errorCode = pexec_Eof(st, fileNumber);
+      errorCode = libexec_Eof(st, fileNumber);
       break;
 
     /* EOLN: TOS(0) = File number */
 
     case xEOLN :
       POP(st, fileNumber); /* File number */
-      errorCode = pexec_Eoln(st, fileNumber);
+      errorCode = libexec_Eoln(st, fileNumber);
       break;
 
     /* FILEPOS: TOS(0) = File number. */
 
     case xFILEPOS :
       POP(st, fileNumber); /* File number */
-      errorCode = pexec_FilePos(st, fileNumber);
+      errorCode = libexec_FilePos(st, fileNumber);
       break;
 
     /* FILESIZE: TOS(0) = File number */
 
     case xFILESIZE :
       POP(st, fileNumber); /* File number */
-      errorCode = pexec_FileSize(st, fileNumber);
+      errorCode = libexec_FileSize(st, fileNumber);
       break;
 
     /* SEEK: TOS(0) = File number
@@ -1369,8 +1369,8 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
         uint32_t filePos;
 
         POP(st, fileNumber); /* File number */
-        filePos = pexec_UPop32(st);
-        errorCode = pexec_Seek(st, fileNumber, filePos);
+        filePos = libexec_UPop32(st);
+        errorCode = libexec_Seek(st, fileNumber, filePos);
       }
       break;
 
@@ -1378,14 +1378,14 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 
     case xSEEKEOF :
       POP(st, fileNumber); /* File number */
-      errorCode = pexec_SeekEof(st, fileNumber);
+      errorCode = libexec_SeekEof(st, fileNumber);
       break;
 
     /* SEEKEOLN: TOS(0) = File number */
 
     case xSEEKEOLN :
       POP(st, fileNumber); /* File number */
-      errorCode = pexec_SeekEoln(st, fileNumber);
+      errorCode = libexec_SeekEoln(st, fileNumber);
       break;
 
     /* ASSIGNFILE: TOS(0) = File name pointer
@@ -1398,16 +1398,16 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* File name string size */
       POP(st, uValue);      /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_AssignFile(fileNumber, (uValue != 0),
-                                   (const char *)&st->dstack.b[address],
-                                   size);
+      errorCode = libexec_AssignFile(fileNumber, (uValue != 0),
+                                     (const char *)&st->dstack.b[address],
+                                     size);
       break;
 
     /* RESET: TOS(0) = File number */
 
     case xRESET :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_OpenFile(fileNumber, eOPEN_READ);
+      errorCode = libexec_OpenFile(fileNumber, eOPEN_READ);
       break;
 
     /* RESETR: TOS(0) = New record size
@@ -1417,15 +1417,15 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     case xRESETR :
       POP(st, size);  /* File number from stack */
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_OpenFile(fileNumber, eOPEN_READ);
-      errorCode = pexec_RecordSize(fileNumber, size);
+      errorCode = libexec_OpenFile(fileNumber, eOPEN_READ);
+      errorCode = libexec_RecordSize(fileNumber, size);
       break;
 
     /* REWRITE: TOS(0) = File number */
 
     case xREWRITE :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_OpenFile(fileNumber, eOPEN_WRITE);
+      errorCode = libexec_OpenFile(fileNumber, eOPEN_WRITE);
       break;
 
     /* RESETR: TOS(0) = New record size
@@ -1435,22 +1435,22 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     case xREWRITER :
       POP(st, size);  /* File number from stack */
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_OpenFile(fileNumber, eOPEN_WRITE);
-      errorCode = pexec_RecordSize(fileNumber, size);
+      errorCode = libexec_OpenFile(fileNumber, eOPEN_WRITE);
+      errorCode = libexec_RecordSize(fileNumber, size);
       break;
 
     /* APPEND: TOS(0) = File number */
 
     case xAPPEND :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_OpenFile(fileNumber, eOPEN_APPEND);
+      errorCode = libexec_OpenFile(fileNumber, eOPEN_APPEND);
       break;
 
     /* CLOSEFILE: TOS(0) = File number */
 
     case xCLOSEFILE :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_CloseFile(fileNumber);
+      errorCode = libexec_CloseFile(fileNumber);
       break;
 
     /* READLN: TOS(0) = File number */
@@ -1458,7 +1458,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
     case xREADLN :
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_ReadLn(fileNumber);
+      errorCode = libexec_ReadLn(fileNumber);
       break;
 
     /* READ_BINARY: TOS(0) = Read address
@@ -1471,9 +1471,9 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* Read size */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_ReadBinary(fileNumber,
-                                   (uint8_t *)&st->dstack.b[address],
-                                   size);
+      errorCode = libexec_ReadBinary(fileNumber,
+                                     (uint8_t *)&st->dstack.b[address],
+                                     size);
       break;
 
     /* READ_INT: TOS(0) = Read address
@@ -1485,8 +1485,8 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_ReadInteger(fileNumber,
-                                    (ustack_t *)&st->dstack.b[address]);
+      errorCode = libexec_ReadInteger(fileNumber,
+                                      (ustack_t *)&st->dstack.b[address]);
       break;
 
     /* READ_CHAR: TOS(0) = Read address
@@ -1497,8 +1497,8 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_ReadChar(fileNumber,
-                                 (uint8_t *)&st->dstack.b[address]);
+      errorCode = libexec_ReadChar(fileNumber,
+                                   (uint8_t *)&st->dstack.b[address]);
       break;
 
     /* READ_STRING: TOS(0) = String variable address
@@ -1509,9 +1509,9 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Standard string variable address */
       POP(st, fileNumber);  /* File number */
 
-      errorCode = pexec_ReadString(st, fileNumber,
-                                   (uint16_t *)&st->dstack.b[address],
-                                   st->strsize);
+      errorCode = libexec_ReadString(st, fileNumber,
+                                     (uint16_t *)&st->dstack.b[address],
+                                     st->strsize);
       break;
 
     case xREAD_SHORTSTRING :
@@ -1527,7 +1527,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
         strPtr = (uint16_t *)&st->dstack.b[address];
         strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
 
-        errorCode = pexec_ReadString(st, fileNumber, strPtr,strAlloc);
+        errorCode = libexec_ReadString(st, fileNumber, strPtr,strAlloc);
       }
       break;
 
@@ -1539,22 +1539,22 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_ReadReal(fileNumber,
-                                 (uint16_t *)&st->dstack.b[address]);
+      errorCode = libexec_ReadReal(fileNumber,
+                                   (uint16_t *)&st->dstack.b[address]);
       break;
 
     /* WRITELN: TOS(0) = File number */
 
     case xWRITELN :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_WriteChar(fileNumber, '\n', 0);
+      errorCode = libexec_WriteChar(fileNumber, '\n', 0);
       break;
 
     /* WRITE_PAGE: TOS(0) = File number */
 
     case xWRITE_PAGE :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = pexec_WriteChar(fileNumber, '\f', 0);
+      errorCode = libexec_WriteChar(fileNumber, '\f', 0);
       break;
 
     /* WRITE_BINARY: TOS(0) = Write size
@@ -1567,9 +1567,9 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* Write size */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_WriteBinary(fileNumber,
-                                    (const uint8_t *)&st->dstack.b[address],
-                                    size);
+      errorCode = libexec_WriteBinary(fileNumber,
+                                      (const uint8_t *)&st->dstack.b[address],
+                                      size);
       break;
 
     /* WRITE_INT: TOS(0) = Field width
@@ -1582,7 +1582,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, sValue);      /* Write integer value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_WriteInteger(fileNumber, sValue, fieldWidth);
+      errorCode = libexec_WriteInteger(fileNumber, sValue, fieldWidth);
       break;
 
     /* WRITE_LONGINT: TOS(0)   = Field width
@@ -1599,7 +1599,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
         POP(st, lword.word[0]); /* Write integer value[0] */
         POP(st, fileNumber);    /* File number from stack */
 
-        errorCode = pexec_WriteLongInteger(fileNumber, lword.sData, fieldWidth);
+        errorCode = libexec_WriteLongInteger(fileNumber, lword.sData, fieldWidth);
       }
       break;
 
@@ -1617,7 +1617,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
         POP(st, lword.word[0]); /* Write unsigned integer value[0] */
         POP(st, fileNumber);    /* File number from stack */
 
-        errorCode = pexec_WriteLongWord(fileNumber, lword.uData, fieldWidth);
+        errorCode = libexec_WriteLongWord(fileNumber, lword.uData, fieldWidth);
       }
       break;
 
@@ -1631,7 +1631,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, uValue);      /* Write integer value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_WriteWord(fileNumber, uValue, fieldWidth);
+      errorCode = libexec_WriteWord(fileNumber, uValue, fieldWidth);
       break;
 
     /* WRITE_CHAR: TOS(0) = Field width
@@ -1644,7 +1644,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, uValue);      /* Write value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_WriteChar(fileNumber, (uint8_t)uValue, fieldWidth);
+      errorCode = libexec_WriteChar(fileNumber, (uint8_t)uValue, fieldWidth);
       break;
 
     /* WRITE_STRING: TOS(0) = Field width
@@ -1659,9 +1659,9 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* String size */
       POP(st, fileNumber);  /* File number */
 
-      errorCode = pexec_WriteString(fileNumber,
-                                    (const char *)&st->dstack.b[address],
-                                    size, fieldWidth);
+      errorCode = libexec_WriteString(fileNumber,
+                                      (const char *)&st->dstack.b[address],
+                                      size, fieldWidth);
       break;
 
     /* WRITE_SHORTSTRING: TOS(0) = Field width
@@ -1678,9 +1678,9 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, size);        /* String size */
       POP(st, fileNumber);  /* File number */
 
-      errorCode = pexec_WriteString(fileNumber,
-                                    (const char *)&st->dstack.b[address],
-                                    size, fieldWidth);
+      errorCode = libexec_WriteString(fileNumber,
+                                      (const char *)&st->dstack.b[address],
+                                      size, fieldWidth);
       break;
 
     /* WRITE_CHAR: TOS(0)   = Field width/precision
@@ -1696,7 +1696,7 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
       POP(st, fp.hw[0]);
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = pexec_WriteReal(fileNumber, fp.f, fieldWidth);
+      errorCode = libexec_WriteReal(fileNumber, fp.f, fieldWidth);
       break;
 
     default :
@@ -1709,8 +1709,8 @@ int pexec_sysio(struct pexec_s *st, uint16_t subfunc)
 
 /****************************************************************************/
 
-const char *pexec_GetFormat(const char *baseFormat, uint8_t fieldWidth,
-                            uint8_t precision)
+const char *libexec_GetFormat(const char *baseFormat, uint8_t fieldWidth,
+                              uint8_t precision)
 {
   static char fmt[20];
 

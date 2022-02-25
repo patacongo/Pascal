@@ -1,8 +1,8 @@
 /***************************************************************************
- * psysio.h
- * External Declarations associated with the run-time file table
+ * libexec_library.h
+ * External Declarations associated with the run-time library
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,46 +34,25 @@
  *
  ***************************************************************************/
 
-#ifndef __PSYSIO_H
-#define __PSYSIO_H
+#ifndef __LIBEXEC_LIBRARY_H
+#define __LIBEXEC_LIBRARY_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
-#include <stdbool.h>
-#include "pexec.h"
 
-/***************************************************************************
- * Pre-processor Definitions
- ***************************************************************************/
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
 
-/* Maximum number of files that can be opened at run-time */
-
-#define MAX_OPEN_FILES 8
-
-/***************************************************************************
- * Public Types
- ***************************************************************************/
-
-enum openMode_e
-{
-  eOPEN_NONE = 0,
-  eOPEN_READ,
-  eOPEN_WRITE,
-  eOPEN_APPEND
-};
-
-typedef enum openMode_e openMode_t;
+extern int16_t g_exitCode;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void pexec_InitializeFile(void);
-int  pexec_sysio(struct pexec_s *st, uint16_t subfunc);
-const char *pexec_GetFormat(const char *baseFormat, uint8_t fieldWidth,
-                            uint8_t precision);
+uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc);
 
-#endif /* __PSYSIO_H */
+#endif /* __LIBEXEC_LIBRARY_H */

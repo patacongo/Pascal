@@ -1,5 +1,5 @@
 /****************************************************************************
- * plongops.c
+ * libexec_longops.c
  *
  *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -44,7 +44,7 @@
 #include "pas_errcodes.h"
 
 #include "paslib.h"
-#include "pexec.h"
+#include "libexec.h"
 
 /****************************************************************************
  * Private Types
@@ -64,14 +64,14 @@ typedef union uWord_u uWord_t;
  ****************************************************************************/
 
 /****************************************************************************
- * Name: pexec_UPop32
+ * Name: libexec_UPop32
  *
  * Descripton:
  *   Pop a 32-bit unsigned value from the top of the stack
  *
  ****************************************************************************/
 
-uint32_t pexec_UPop32(struct pexec_s *st)
+uint32_t libexec_UPop32(struct libexec_s *st)
 {
   uWord_t uWord;
 
@@ -81,14 +81,14 @@ uint32_t pexec_UPop32(struct pexec_s *st)
 }
 
 /****************************************************************************
- * Name: pexec_UPush32
+ * Name: libexec_UPush32
  *
  * Descripton:
  *   Push a 32-bit unsigned value at the top of the stack
  *
  ****************************************************************************/
 
-void pexec_UPush32(struct pexec_s *st, uint32_t value)
+void libexec_UPush32(struct libexec_s *st, uint32_t value)
 {
   uWord_t uWord;
 
@@ -98,14 +98,14 @@ void pexec_UPush32(struct pexec_s *st, uint32_t value)
 }
 
 /****************************************************************************
- * Name: pexec_UGetTos32
+ * Name: libexec_UGetTos32
  *
  * Descripton:
  *   Get a copy of the 32-bit unsigned value at the top of the stack
  *
  ****************************************************************************/
 
-uint32_t pexec_UGetTos32(struct pexec_s *st, int offset32)
+uint32_t libexec_UGetTos32(struct libexec_s *st, int offset32)
 {
   uWord_t uWord;
 
@@ -115,14 +115,14 @@ uint32_t pexec_UGetTos32(struct pexec_s *st, int offset32)
 }
 
 /****************************************************************************
- * Name: pexec_UPutTos32
+ * Name: libexec_UPutTos32
  *
  * Descripton:
  *   Write a 32-bit unsigned value to the top of the stack
  *
  ****************************************************************************/
 
-void pexec_UPutTos32(struct pexec_s *st, uint32_t value, int offset32)
+void libexec_UPutTos32(struct libexec_s *st, uint32_t value, int offset32)
 {
   uWord_t uWord;
 
@@ -132,14 +132,14 @@ void pexec_UPutTos32(struct pexec_s *st, uint32_t value, int offset32)
 }
 
 /****************************************************************************
- * Name: pexec_LongOperation8
+ * Name: libexec_LongOperation8
  *
  * Descripton:
  *   Handle LONGOP + 8-bit operation with no immediate data
  *
  ****************************************************************************/
 
-int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
+int libexec_LongOperation8(struct libexec_s *st, uint8_t opcode)
 {
   int32_t  sparm1;
   int32_t  sparm2;
@@ -155,105 +155,105 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
     /* Arithmetic & logical & and integer conversions (One stack argument) */
 
     case oDNEG  :
-      pexec_UPutTos32(st, -(int32_t)pexec_UGetTos32(st, 0), 0);
+      libexec_UPutTos32(st, -(int32_t)libexec_UGetTos32(st, 0), 0);
       break;
 
     case oDABS  :
-      sparm1 = (int32_t)pexec_UGetTos32(st, 0);
+      sparm1 = (int32_t)libexec_UGetTos32(st, 0);
       if (sparm1 < 0)
         {
-          pexec_UPutTos32(st, -sparm1, 0);
+          libexec_UPutTos32(st, -sparm1, 0);
         }
       break;
 
     case oDINC  :
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) + 1, 0);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) + 1, 0);
       break;
 
     case oDDEC  :
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) - 1, 0);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) - 1, 0);
       break;
 
     case oDNOT  :
-      pexec_UPutTos32(st, ~pexec_UGetTos32(st, 0), 0);
+      libexec_UPutTos32(st, ~libexec_UGetTos32(st, 0), 0);
       break;
 
     /* Arithmetic & logical (Two stack arguments) */
 
     case oDADD :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) + sparm1, 0);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      libexec_UPutTos32(st, (int32_t)libexec_UGetTos32(st, 0) + sparm1, 0);
       break;
 
     case oDSUB :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) - sparm1, 0);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      libexec_UPutTos32(st, (int32_t)libexec_UGetTos32(st, 0) - sparm1, 0);
       break;
 
     case oDMUL :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) * sparm1, 0);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      libexec_UPutTos32(st, (int32_t)libexec_UGetTos32(st, 0) * sparm1, 0);
       break;
 
     case oDUMUL :
-      uparm1 = pexec_UPop32(st);
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) * uparm1, 0);
+      uparm1 = libexec_UPop32(st);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) * uparm1, 0);
       break;
 
     case oDDIV :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) / sparm1, 0);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      libexec_UPutTos32(st, (int32_t)libexec_UGetTos32(st, 0) / sparm1, 0);
       break;
 
     case oDUDIV :
-      uparm1 = pexec_UPop32(st);
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) / uparm1, 0);
+      uparm1 = libexec_UPop32(st);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) / uparm1, 0);
       break;
 
     case oDMOD :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) % sparm1, 0);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      libexec_UPutTos32(st, (int32_t)libexec_UGetTos32(st, 0) % sparm1, 0);
       break;
 
     case oDUMOD :
-      uparm1 = pexec_UPop32(st);
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) % uparm1, 0);
+      uparm1 = libexec_UPop32(st);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) % uparm1, 0);
       break;
 
     case oDSLL :
       POP(st, sparm1);
-      pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) << sparm1, 0);
+      libexec_UPutTos32(st, (int32_t)libexec_UGetTos32(st, 0) << sparm1, 0);
       break;
 
     case oDSRL :
       POP(st, sparm1);
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) >> sparm1, 0);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) >> sparm1, 0);
       break;
 
     case oDSRA :
       POP(st, sparm1);
-      pexec_UPutTos32(st, (int32_t)pexec_UGetTos32(st, 0) >> sparm1, 0);
+      libexec_UPutTos32(st, (int32_t)libexec_UGetTos32(st, 0) >> sparm1, 0);
       break;
 
     case oDOR  :
-      uparm1 = pexec_UPop32(st);
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) | uparm1, 0);
+      uparm1 = libexec_UPop32(st);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) | uparm1, 0);
       break;
 
     case oDAND :
-      uparm1 = pexec_UPop32(st);
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) & uparm1, 0);
+      uparm1 = libexec_UPop32(st);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) & uparm1, 0);
       break;
 
     case oDXOR :
-      uparm1 = pexec_UPop32(st);
-      pexec_UPutTos32(st, pexec_UGetTos32(st, 0) ^ uparm1, 0);
+      uparm1 = libexec_UPop32(st);
+      libexec_UPutTos32(st, libexec_UGetTos32(st, 0) ^ uparm1, 0);
       break;
 
     /* Comparisons (One stack argument) */
 
     case oDEQUZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 == 0)
         {
@@ -264,7 +264,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDNEQZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 != 0)
         {
@@ -275,7 +275,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDLTZ  :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 < 0)
         {
@@ -286,7 +286,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDGTEZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 >= 0)
         {
@@ -297,7 +297,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDGTZ  :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 > 0)
         {
@@ -308,7 +308,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDLTEZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 <= 0)
         {
@@ -321,8 +321,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
     /* Comparisons (Two stack arguments) */
 
     case oDEQU  :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 == sparm2)
         {
@@ -333,8 +333,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDNEQ  :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 != sparm2)
         {
@@ -345,8 +345,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDLT   :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 < sparm2)
         {
@@ -357,8 +357,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDGTE  :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 >= sparm2)
         {
@@ -369,8 +369,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDGT   :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 > sparm2)
         {
@@ -381,8 +381,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDLTE  :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (sparm1 <= sparm2)
         {
@@ -393,8 +393,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDULT   :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (result < uparm2)
         {
@@ -405,8 +405,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDUGTE  :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (uparm1 >= uparm2)
         {
@@ -417,8 +417,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDUGT   :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (uparm1 > uparm2)
         {
@@ -429,8 +429,8 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       break;
 
     case oDULTE  :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       result = PASCAL_FALSE;
       if (uparm1 <= uparm2)
         {
@@ -443,15 +443,15 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
     /* Stack operations */
 
     case oDDUP :
-      uparm1 = pexec_UGetTos32(st, 0);
-      pexec_UPush32(st, uparm1);
+      uparm1 = libexec_UGetTos32(st, 0);
+      libexec_UPush32(st, uparm1);
       break;
 
     case oDXCHG :
-      uparm1 = pexec_UGetTos32(st, 0);
-      uparm2 = pexec_UGetTos32(st, 1);
-      pexec_UPutTos32(st, uparm2, 0); /* Swap 16-bit values */
-      pexec_UPutTos32(st, uparm1, 1);
+      uparm1 = libexec_UGetTos32(st, 0);
+      uparm2 = libexec_UGetTos32(st, 1);
+      libexec_UPutTos32(st, uparm2, 0); /* Swap 16-bit values */
+      libexec_UPutTos32(st, uparm1, 1);
       break;
 
     case oCNVD :
@@ -463,7 +463,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
 
         POP(st, sWord);
         sLong = signExtend16(sWord);
-        pexec_UPush32(st, (uint32_t)sLong);
+        libexec_UPush32(st, (uint32_t)sLong);
       }
       break;
 
@@ -474,7 +474,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
         /* Convert 16-bit unsigned data 32-bit unsigned */
 
         POP(st, uWord);
-        pexec_UPush32(st, (int32_t)uWord);
+        libexec_UPush32(st, (int32_t)uWord);
       }
       break;
 
@@ -482,7 +482,7 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
       {
         /* Convert 32-bit signed/unsigned data 16-bit signed/unsigned */
 
-        int32_t sLong = (int32_t)pexec_UPop32(st);
+        int32_t sLong = (int32_t)libexec_UPop32(st);
         PUSH(st, (uint16_t)sLong);
       }
       break;
@@ -495,14 +495,14 @@ int pexec_LongOperation8(struct pexec_s *st, uint8_t opcode)
 }
 
 /****************************************************************************
- * Name: pexec_LongOperation24
+ * Name: libexec_LongOperation24
  *
  * Descripton:
  *   Handle LONGOP + 24-bit operation with 16-bits of immediate data (imm16)
  *
  ****************************************************************************/
 
-int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
+int libexec_LongOperation24(struct libexec_s *st, uint8_t opcode, uint16_t imm16)
 {
   int32_t  sparm1;
   int32_t  sparm2;
@@ -515,7 +515,7 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
     /* Program control:  imm16 = unsigned label (One stack argument) */
 
     case oDJEQUZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       if (sparm1 == 0)
         {
           goto branchOut;
@@ -523,7 +523,7 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJNEQZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       if (sparm1 != 0)
         {
           goto branchOut;
@@ -531,7 +531,7 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJLTZ  :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       if (sparm1 < 0)
         {
           goto branchOut;
@@ -539,7 +539,7 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJGTEZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       if (sparm1 >= 0)
         {
           goto branchOut;
@@ -547,7 +547,7 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJGTZ  :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       if (sparm1 > 0)
         {
           goto branchOut;
@@ -555,7 +555,7 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJLTEZ :
-      sparm1 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
       if (sparm1 <= 0)
         {
           goto branchOut;
@@ -565,8 +565,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       /* Program control:  imm16 = unsigned label (Two stack arguments) */
 
     case oDJEQU :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       if (sparm2 == sparm1)
         {
           goto branchOut;
@@ -574,8 +574,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJNEQ :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       if (sparm2 != sparm1)
         {
           goto branchOut;
@@ -583,8 +583,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJLT  :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       if (sparm2 < sparm1)
         {
           goto branchOut;
@@ -592,8 +592,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJGTE :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       if (sparm2 >= sparm1)
         {
           goto branchOut;
@@ -601,8 +601,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJGT  :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       if (sparm2 > sparm1)
         {
           goto branchOut;
@@ -610,8 +610,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJLTE :
-      sparm1 = (int32_t)pexec_UPop32(st);
-      sparm2 = (int32_t)pexec_UPop32(st);
+      sparm1 = (int32_t)libexec_UPop32(st);
+      sparm2 = (int32_t)libexec_UPop32(st);
       if (sparm2 <= sparm1)
         {
           goto branchOut;
@@ -619,8 +619,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJULT  :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       if (uparm2 < uparm1)
         {
           goto branchOut;
@@ -628,8 +628,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJUGTE :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       if (uparm2 >= uparm1)
         {
           goto branchOut;
@@ -637,8 +637,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJUGT  :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       if (uparm2 > uparm1)
         {
           goto branchOut;
@@ -646,8 +646,8 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
       break;
 
     case oDJULTE :
-      uparm1 = pexec_UPop32(st);
-      uparm2 = pexec_UPop32(st);
+      uparm1 = libexec_UPop32(st);
+      uparm2 = libexec_UPop32(st);
       if (uparm2 <= uparm1)
         {
           goto branchOut;
@@ -663,6 +663,6 @@ int pexec_LongOperation24(struct pexec_s *st, uint8_t opcode, uint16_t imm16)
   return ret;
 
 branchOut:
-  st->pc = (paddr_t)imm16;
+  st->pc = (pasSize_t)imm16;
   return ret;
 }

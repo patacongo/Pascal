@@ -1,8 +1,8 @@
 /***************************************************************************
- * psetops.h
- * External Declarations associated with the run-time file table
+ * libexec_heap.h
+ * External Declarations associated with the run-time memory manager
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,21 +34,21 @@
  *
  ***************************************************************************/
 
-#ifndef __PSETOPS_H
-#define __PSETOPS_H
+#ifndef __LIBEXEC_HEAP_H
+#define __LIBEXEC_HEAP_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
 #include <stdint.h>
-#include <stdbool.h>
-#include "pexec.h"
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-int pexec_setops(struct pexec_s *st, uint8_t subfunc);
+void libexec_InitializeHeap(struct libexec_s *st);
+int  libexec_New(struct libexec_s *st, uint16_t size);
+int  libexec_Dispose(struct libexec_s *st, uint16_t address);
 
-#endif /* __PSETOPS_H */
+#endif /* __LIBEXEC_HEAP_H */

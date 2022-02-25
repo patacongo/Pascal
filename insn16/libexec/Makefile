@@ -2,7 +2,7 @@
 # Makefile
 # Host system makefile
 #
-#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,9 +37,9 @@
 # Directories
 #
 
-PRUNDIR   = ${shell pwd}
-INSNDIR   = $(PRUNDIR)/..
-PASCAL    = $(PRUNDIR)/../..
+LIBEXECDIR   = ${shell pwd}
+INSNDIR      = $(LIBEXECDIR)/..
+PASCAL       = $(LIBEXECDIR)/../..
 
 include $(PASCAL)/tools/Config.mk
 
@@ -48,27 +48,29 @@ include $(PASCAL)/tools/Config.mk
 #
 
 EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES += $(EXTRA_INCLUDES)
-CFLAGS   += $(EXTRA_INCLUDES)
+INCLUDES    += $(EXTRA_INCLUDES)
+CFLAGS      += $(EXTRA_INCLUDES)
 
 #
 # Objects and targets
 #
 
-RUNSRCS   = prun.c
-RUNOBJS   = $(RUNSRCS:.c=.o)
+LIBEXECSRCS  = libexec_runloop.c libexec_debug.c libexec_load.c libexec_run.c
+LIBEXECSRCS += libexec_float.c libexec_sysio.c libexec_library.c
+LIBEXECSRCS += libexec_setops.c libexec_longops.c libexec_heap.c
+LIBEXEOBJS   = $(LIBEXECSRCS:.c=.o)
 
-OBJS      = $(RUNOBJS)
-DEPS      = $(RUNSRCS:.c=.d)
+OBJS         = $(LIBEXEOBJS)
+DEPS         = $(LIBEXECSRCS:.c=.d)
 
-SUFFIXES += .d
+SUFFIXES    += .d
 
 #
 # Targets
 #
 
-all: prun
-.PHONY: all prun check_libs clean distclean
+all: libexec.a
+.PHONY: all libexec.a clean distclean
 
 $(DEPS): %.d: %.c
 	$(Q) echo "  $@"
@@ -78,32 +80,14 @@ $(OBJS): %.o: %.c
 	$(Q) echo "  $@"
 	$(Q) $(CC) -c $(CFLAGS) $< -o $@
 
-check_libs:
-	$(Q) if [ ! -f $(PLIBDIR)/libinsn.a ] ; then \
-		echo "$(PLIBDIR)/libinsn.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libexec.a ] ; then \
-		echo "$(PLIBDIR)/libexec.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libpas.a ] ; then \
-		echo "$(PLIBDIR)/libpas.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libpoff.a ] ; then \
-		echo "$(PLIBDIR)/libpoff.a does not exist" ; \
-		exit 1 ; \
-	fi
+$(PLIBDIR)/libexec.a: $(DEPS) $(OBJS)
+	$(Q) echo "  $@"
+	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
 
-$(PBINDIR)/prun: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  prun$(HOSTEEXT)"
-	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -lexec -linsn  -lpoff -lpas
-
-prun: $(PBINDIR)/prun
+libexec.a: $(PLIBDIR)/libexec.a
 
 clean:
-	$(Q) $(RM) prun *.o core *~
+	$(Q) $(RM) libexec.a *.o core *~
 
 distclean: clean
 	$(Q) $(RM) *.d .depend Make.dep

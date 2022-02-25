@@ -1,5 +1,5 @@
 /****************************************************************************
- * pexec.h
+ * libexec.h
  *
  *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -33,12 +33,14 @@
  *
  ****************************************************************************/
 
-#ifndef __PEXEC_H
-#define __PEXEC_H
+#ifndef __LIBEXEC_H
+#define __LIBEXEC_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+
+#include "pas_machine.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -122,7 +124,6 @@
 
 typedef uint16_t ustack_t;   /* Stack values are 16-bits in length */
 typedef int16_t  sstack_t;
-typedef uint16_t paddr_t;    /* Addresses are 16-bits in length */
 typedef uint16_t level_t;    /* Limits to UINT16_MAX levels */
 
 union stack_u
@@ -146,35 +147,35 @@ typedef union fparg_u fparg_t;
  * interpreter.
  */
 
-struct pexec_attr_s
+struct libexec_attr_s
 {
   /* Instruction space (I-Space) */
 
-  uint8_t *ispace;   /* Allocated I-Space containing p-code data */
-  paddr_t  entry;    /* Entry point */
-  paddr_t  maxpc;    /* Last valid p-code address */
+  uint8_t  *ispace;   /* Allocated I-Space containing p-code data */
+  pasSize_t entry;    /* Entry point */
+  pasSize_t maxpc;    /* Last valid p-code address */
 
   /* Read-only data block */
 
-  uint8_t *rodata;   /* Address of read-only data block */
-  paddr_t  rosize;   /* Size of read-only data block */
+  uint8_t  *rodata;   /* Address of read-only data block */
+  pasSize_t rosize;   /* Size of read-only data block */
 
   /* Allocate for variable storage */
 
-  paddr_t  strsize;  /* String storage size */
-  paddr_t  stksize;  /* Pascal stack size */
-  paddr_t  hpsize;   /* Heap storage size */
+  pasSize_t strsize;  /* String storage size */
+  pasSize_t stksize;  /* Pascal stack size */
+  pasSize_t hpsize;   /* Heap storage size */
 
   /* String allocation configuration */
 
-  paddr_t  stralloc; /* Size of string buffer allocation */
+  pasSize_t stralloc; /* Size of string buffer allocation */
 };
 
 /* This structure defines the current state of the p-code interpreter.  It
  * includes the simulated CPU registers and memory map information.
  */
 
-struct pexec_s
+struct libexec_s
 {
   /* This is the emulated P-Machine stack (D-Space) */
 
@@ -182,11 +183,11 @@ struct pexec_s
 
   /* This is the emulated P-Machine instruction space (I-Space) */
 
-  uint8_t *ispace;
+  uint8_t  *ispace;
 
  /* Address of last valid P-Code */
 
-  paddr_t maxpc;
+  pasSize_t maxpc;
 
   /* These are the emulated P-Machine registers:
    *
@@ -202,15 +203,15 @@ struct pexec_s
    * pc:  Holds the current p-code location
    */
 
-  paddr_t spb;        /* Pascal stack base */
-  paddr_t sp;         /* Pascal stack pointer */
-  paddr_t csp;        /* Character stack pointer */
-  paddr_t hpb;        /* Base of the heap */
-  paddr_t hsp;        /* Heap stack pointer */
-  paddr_t fp;         /* Base of the current frame */
-  paddr_t rop;        /* Read-only data pointer */
-  paddr_t pc;         /* Program counter */
-  paddr_t lsp;        /* Static nesting level */
+  pasSize_t spb;        /* Pascal stack base */
+  pasSize_t sp;         /* Pascal stack pointer */
+  pasSize_t csp;        /* Character stack pointer */
+  pasSize_t hpb;        /* Base of the heap */
+  pasSize_t hsp;        /* Heap stack pointer */
+  pasSize_t fp;         /* Base of the current frame */
+  pasSize_t rop;        /* Read-only data pointer */
+  pasSize_t pc;         /* Program counter */
+  pasSize_t lsp;        /* Static nesting level */
 
   /* Info needed to perform a simulated reset.  Memory organization:
    *
@@ -221,26 +222,22 @@ struct pexec_s
    *  strsize + rosize + stksize + hpsize : "Normal" Pascal stack
    */
 
-  paddr_t strsize;    /* String stack size */
-  paddr_t rosize;     /* Read-only stack size */
-  paddr_t stksize;    /* Pascal stack size */
-  paddr_t hpsize;     /* Heap stack size */
-  paddr_t stacksize;  /* Total memory allocation */
+  pasSize_t strsize;    /* String stack size */
+  pasSize_t rosize;     /* Read-only stack size */
+  pasSize_t stksize;    /* Pascal stack size */
+  pasSize_t hpsize;     /* Heap stack size */
+  pasSize_t stacksize;  /* Total memory allocation */
 
-  paddr_t entry;      /* Entry point */
-  paddr_t stralloc;   /* String buffer allocation size */
+  pasSize_t entry;      /* Entry point */
+  pasSize_t stralloc;   /* String buffer allocation size */
 };
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
-struct pexec_s *pexec_Load(const char *filename, paddr_t stralloc,
-                           paddr_t strsize, paddr_t stksize,
-                           paddr_t hpsize);
-struct pexec_s *pexec_Initialize(struct pexec_attr_s *attr);
-int    pexec_Execute(struct pexec_s *st);
-void   pexec_Reset(struct pexec_s *st);
-void   pexec_Release(struct pexec_s *st);
+struct libexec_s *libexec_Initialize(struct libexec_attr_s *attr);
+int    libexec_Execute(struct libexec_s *st);
+void   libexec_Reset(struct libexec_s *st);
 
-#endif /* __PEXEC_H */
+#endif /* __LIBEXEC_H */

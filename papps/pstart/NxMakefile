@@ -34,20 +34,29 @@
 #
 #############################################################################
 
+include $(TOPDIR)/Make.defs
 include $(APPDIR)/Make.defs
 
 ifneq ($(CONFIG_PASCAL_STARTUP),)
 
+# Directories
+
+PASCAL    = $(APPDIR)/pascal
+include $(PASCAL)/tools/Config.mk
+
+INSN_INCDIR = $(INSNDIR)/include
+CFLAGS   += ${shell $(INCDIR) "$(CC)" "$(INSN_INCDIR)"}
+
 # Application info
 
 PROGNAME  = pstart
+PRIORITY  = $(CONFIG_INIT_PRIORITY)
+STACKSIZE = $(CONFIG_INIT_STACKSIZE)
 MODULE    = $(CONFIG_PASCAL_STARTUP)
 
 # Source files
 
-MAINSRC = pstart_main.c
+MAINSRC   = pstart_main.c
 endif
-
-Makefile: # Needed to satisfy dependiencies on Makefile in Application.mk
 
 include $(APPDIR)/Application.mk

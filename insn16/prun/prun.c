@@ -37,25 +37,12 @@
  * Included Files
  ****************************************************************************/
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include <string.h>
-#include <errno.h>
-#include <ctype.h>
-
-#include "pas_debug.h"
-#include "pas_machine.h"
-#include "insn16.h"
-#include "pas_sysio.h"
-#include "pas_errcodes.h"
 
 #include "paslib.h"
-#include "pas_error.h"
-#include "pexec.h"
-#include "plib.h"
-#include "pdbg.h"
+#include "execlib.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -136,10 +123,10 @@ static void prun_showusage(const char *progname)
 }
 
 /****************************************************************************
- * Name: prun_parseargs
+ * Name: prun_ParseArgs
  ****************************************************************************/
 
-static void prun_parseargs(int argc, char **argv)
+static void prun_ParseArgs(int argc, char **argv)
 {
   int option_index;
   int alloc;
@@ -238,37 +225,6 @@ static void prun_parseargs(int argc, char **argv)
 }
 
 /****************************************************************************
- * Name: prun
- *
- * Description:
- *   This function executes the P-Code program until a stopping condition
- *   is encountered.
- *
- ****************************************************************************/
-
-static void prun(struct pexec_s *st)
-{
-  int errcode;
-
-  for (; ; )
-    {
-      /* Execute the instruction; Check for exceptional conditions */
-
-      errcode = pexec_Execute(st);
-      if (errcode != eNOERROR) break;
-    }
-
-  if (errcode == eEXIT)
-    {
-      printf("Exit with code %d\n", g_exitCode);
-    }
-  else
-    {
-      printf("Runtime error 0x%02x -- Execution Stopped\n", errcode);
-    }
-}
-
-/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
@@ -278,12 +234,12 @@ static void prun(struct pexec_s *st)
 
 int main(int argc, char *argv[], char *envp[])
 {
-  struct pexec_s *st;
-  char fileName[FNAME_SIZE+1];  /* Object file name */
+  EXEC_HANDLE_t handle;
+  char fileName[FNAME_SIZE + 1];  /* Object file name */
 
   /* Parse the command line arguments */
 
-  prun_parseargs(argc, argv);
+  prun_ParseArgs(argc, argv);
 
   /* Load the POFF files specified on the command line */
   /* Use .o or command line extension, if supplied */
@@ -292,9 +248,9 @@ int main(int argc, char *argv[], char *envp[])
 
   /* Initialize the P-machine and load the POFF file */
 
-  st = pexec_Load(fileName, g_strallocsize, g_strstacksize, g_passtacksize,
-                  g_hpstacksize);
-  if (st == NULL)
+  handle = libexec_Load(fileName, g_strallocsize, g_strstacksize,
+                        g_passtacksize, g_hpstacksize);
+  if (handle == NULL)
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);
       exit(1);
@@ -306,15 +262,15 @@ int main(int argc, char *argv[], char *envp[])
 
   if (g_debug)
     {
-      dbg_run(st);
+      libexec_DebugLoop(handle);
     }
   else
     {
-      prun(st);
+      libexec_RunLoop(handle);
     }
 
   /* Clean up resources used by the interpreter */
 
-  pexec_Release(st);
+  libexec_Release(handle);
   return 0;
 }

@@ -1,8 +1,8 @@
 /***************************************************************************
- * pdbg.h
- * External Declarations associated with the P-Code debugger
+ * execlib.h
+ * External Declarations associated with the P-Code run-time
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,19 +34,32 @@
  *
  ***************************************************************************/
 
-#ifndef __PDBG_H
-#define __PDBG_H
+#ifndef _EXECLIB_H
+#define _EXECLIB_H
 
 /***************************************************************************
  * Included Files
  ***************************************************************************/
 
-#include "pexec.h"
+#include "pas_machine.h"
+
+/***************************************************************************
+ * Public Types
+ ***************************************************************************/
+
+/* Opaque handler that represents the state of the run-time */
+
+typedef void *EXEC_HANDLE_t;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void dbg_run(struct pexec_s *st);
+EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t stralloc,
+                           pasSize_t strsize, pasSize_t stksize,
+                           pasSize_t hpsize);
+void libexec_Release(EXEC_HANDLE_t handle);
+void libexec_RunLoop(EXEC_HANDLE_t handle);
+void libexec_DebugLoop(EXEC_HANDLE_t handle);
 
-#endif /* __PDBG_H */
+#endif /* _EXECLIB_H */

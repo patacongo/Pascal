@@ -1,5 +1,5 @@
 /***************************************************************************
- * pfloat.h
+ * libexec_float.h
  * External Declarations associated with the run-time library
  *
  *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PFLOAT_H
-#define __PFLOAT_H
+#ifndef __LIBEXEC_FLOAT_H
+#define __LIBEXEC_FLOAT_H
 
 /***************************************************************************
  * Included Files
@@ -47,7 +47,7 @@
  * Public Function Prototypes
  ***************************************************************************/
 
-struct pexec_s;  /* Forward reference */
-int pexec_execfp(struct pexec_s *st, uint8_t fpop);
+struct libexec_s;  /* Forward reference */
+int libexec_FloatOps(struct libexec_s *st, uint8_t fpop);
 
-#endif /* __PFLOAT_H */
+#endif /* __LIBEXEC_FLOAT_H */
