@@ -105,25 +105,25 @@ config PASCAL_STARTUP_DEBUG
 		The start-up Pascal program with begin in the Pascal P-code debugger.
 
 config PASCAL_STARTUP_STKSIZE
-	string "Pascal start-up stack size"
+	int "Pascal start-up stack size"
 	default 4096
 	---help---
 		Stack memory set aside for code execution.
 
 config PASCAL_STARTUP_STRSIZE
-	string "Pascal start-up string stack size (total)"
+	int "Pascal start-up string stack size (total)"
 	default 1024
 	---help---
 		Total stack memory set aside for strings.
 
 config PASCAL_STARTUP_STRALLOC
-	string "Pascal start-up string stack alloc"
+	int "Pascal start-up string stack alloc"
 	default 128
 	---help---
 		String memory allocation per standard string instantiation.
 
 config PASCAL_STARTUP_HEAPSIZE
-	string "Pascal start-up heap size"
+	int "Pascal start-up heap size"
 	default 256
 	---help---
 		Memory set aside for usage with new and dispose.

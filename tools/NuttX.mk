@@ -49,7 +49,7 @@ BUILDDIRS := $(dir $(wildcard *$(DELIM)NxMakefile))
 # Definitions
 
 define Make_template
-$(1)_$(2): $(PINCDIR)/config.h
+$(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) -f NxMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
 
 endef
@@ -65,6 +65,7 @@ $(PINCDIR)/config.h:  $(TOPDIR)/include/nuttx/config.h
 config.h: $(PINCDIR)/config.h
 
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),archive)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),install)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),context)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),register)))
@@ -72,41 +73,45 @@ $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),depend)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),clean)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))
 
-all:       $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
-
 Kconfig:
 	$(Q) echo "# Configuration for use with kconfig-frontends" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "menu \"Pascal Support\"" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "config PASCAL" >Kconfig
-	$(Q) echo "	bool \"Enable Pascal Support\"" >Kconfig
-	$(Q) echo "	default n" >Kconfig
-	$(Q) echo "	---help---" >Kconfig
-	$(Q) echo "		Enable building of Pascal support" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "if PASCAL" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "config PASCAL_BUILD_LINUX" >Kconfig
-	$(Q) echo "	bool" >Kconfig
-	$(Q) echo "	default n" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "config PASCAL_BUILD_NUTTX" >Kconfig
-	$(Q) echo "	bool" >Kconfig
-	$(Q) echo "	default y" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "source $(PASCAL)/tools/Kconfig.body" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "endif # PASCAL" >Kconfig
-	$(Q) echo "endmenu # Pascal Support" >Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "menu \"Pascal Support\"" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "config PASCAL" >>Kconfig
+	$(Q) echo "	bool \"Enable Pascal Support\"" >>Kconfig
+	$(Q) echo "	default n" >>Kconfig
+	$(Q) echo "	---help---" >>Kconfig
+	$(Q) echo "		Enable building of Pascal support" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "if PASCAL" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "config PASCAL_BUILD_LINUX" >>Kconfig
+	$(Q) echo "	bool" >>Kconfig
+	$(Q) echo "	default n" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "config PASCAL_BUILD_NUTTX" >>Kconfig
+	$(Q) echo "	bool" >>Kconfig
+	$(Q) echo "	default y" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "source $(PASCAL)/tools/Kconfig.body" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "endif # PASCAL" >>Kconfig
+	$(Q) echo "endmenu # Pascal Support" >>Kconfig
+
+all:       config.h $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
+
+archive:   $(foreach DIR, $(BUILDDIRS), $(DIR)_archive)
 
 install:   $(foreach DIR, $(BUILDDIRS), $(DIR)_install)
+
+preconfig: Kconfig
 
 context:   Kconfig $(foreach DIR, $(BUILDDIRS), $(DIR)_context)
 
 register:  $(foreach DIR, $(BUILDDIRS), $(DIR)_register)
 
-depend:    $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
+depend:    config.h $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
 
 clean:     $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
 	$(Q) $(RM) core *~

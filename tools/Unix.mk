@@ -81,20 +81,20 @@ config.h: $(PINCDIR)/config.h
 
 Kconfig:
 	$(Q) echo "# Configuration for use with kconfig-frontends" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "config PASCAL" >Kconfig
-	$(Q) echo "	bool" >Kconfig
-	$(Q) echo "	default y" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "config PASCAL_BUILD_LINUX" >Kconfig
-	$(Q) echo "	bool" >Kconfig
-	$(Q) echo "	default y" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "config PASCAL_BUILD_NUTTX" >Kconfig
-	$(Q) echo "	bool" >Kconfig
-	$(Q) echo "	default n" >Kconfig
-	$(Q) echo "" >Kconfig
-	$(Q) echo "source $(PASCAL)/tools/Kconfig.body" >Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "config PASCAL" >>Kconfig
+	$(Q) echo "	bool" >>Kconfig
+	$(Q) echo "	default y" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "config PASCAL_BUILD_LINUX" >>Kconfig
+	$(Q) echo "	bool" >>Kconfig
+	$(Q) echo "	default y" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "config PASCAL_BUILD_NUTTX" >>Kconfig
+	$(Q) echo "	bool" >>Kconfig
+	$(Q) echo "	default n" >>Kconfig
+	$(Q) echo "" >>Kconfig
+	$(Q) echo "source $(PASCAL)/tools/Kconfig.body" >>Kconfig
 
 $(PLIBDIR):
 	$(Q) mkdir $(PLIBDIR)

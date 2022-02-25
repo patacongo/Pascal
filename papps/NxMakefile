@@ -58,6 +58,7 @@ endef
 # Targets
 
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),archive)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),install)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),context)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),register)))
@@ -66,6 +67,8 @@ $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),clean)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))
 
 all:       $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
+
+archive:   $(foreach DIR, $(BUILDDIRS), $(DIR)_archive)
 
 install:   $(foreach DIR, $(BUILDDIRS), $(DIR)_install)
 
