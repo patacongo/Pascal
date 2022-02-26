@@ -34,8 +34,8 @@
  *
  ***********************************************************************/
 
-#ifndef __PTDEFS_H
-#define __PTDEFS_H
+#ifndef __PAS_TKNDEFS_H
+#define __PAS_TKNDEFS_H
 
 /***********************************************************************/
 
@@ -269,4 +269,4 @@
 #define txINSERT         0xa9
 #define txDELETE         0xaa
 
-#endif /* __PTDEFS_H */
+#endif /* __PAS_TKNDEFS_H */

@@ -34,8 +34,8 @@
  *
  ***************************************************************************/
 
-#ifndef __PTKN_H
-#define __PTKN_H
+#ifndef __PAS_TOKEN_H
+#define __PAS_TOKEN_H
 
 /***************************************************************************
  * Included Files
@@ -68,4 +68,4 @@ char    pas_GetNextCharacter(bool skipWhiteSpace);
 int16_t pas_PrimeTokenizer(unsigned long stringStackSize);
 int16_t pas_RePrimeTokenizer(void);
 
-#endif /* __PTKN_H */
+#endif /* __PAS_TOKEN_H */
