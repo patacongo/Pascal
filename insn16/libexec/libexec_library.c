@@ -61,7 +61,6 @@
  * Private Function Prototypes
  ****************************************************************************/
 
-static uint8_t *libexec_MkCString(uint8_t *buffer, int buflen);
 static int      libexec_StrInit(struct libexec_s *st, uint16_t strVarAddr,
                    uint16_t strAllocSize);
 static void     libexec_StrCpy(struct libexec_s *st, uint16_t srcBufferAddr,
@@ -90,24 +89,6 @@ int16_t g_exitCode;
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
-
-/****************************************************************************
- * Name: libexec_MkCString
- ****************************************************************************/
-
-static uint8_t *libexec_MkCString(uint8_t *buffer, int buflen)
-{
-  uint8_t *string;
-
-  string = malloc(buflen + 1);
-  if (string != NULL)
-    {
-      memcpy(string, buffer, buflen);
-      string[buflen] = '\0';
-    }
-
-  return string;
-}
 
 static int libexec_StrInit(struct libexec_s *st, uint16_t strVarAddr,
                            uint16_t strAllocSize)
@@ -150,8 +131,8 @@ static void libexec_StrCpy(struct libexec_s *st, uint16_t srcBufferAddr,
   /* Copy pascal string to a pascal string */
 
   uint16_t destBufferAddr;
-  const uint8_t *src;
-  uint8_t *dest;
+  const char *src;
+  char *dest;
 
   /* Offset the destination address */
 
@@ -182,8 +163,8 @@ static void libexec_StrCpy(struct libexec_s *st, uint16_t srcBufferAddr,
 
       /* Transfer the string buffer contents */
 
-      dest = ATSTACK(st, destBufferAddr);
-      src  = ATSTACK(st, srcBufferAddr);
+      dest = (char *)ATSTACK(st, destBufferAddr);
+      src  = (char *)ATSTACK(st, srcBufferAddr);
       memcpy(dest, src, srcStringSize);
 
       /* And set the new string size */
@@ -349,7 +330,7 @@ static int libexec_FillChar(struct libexec_s *st, ustack_t *sptr, uint16_t count
   uint16_t  strAddr;
   uint16_t  strSize;
   uint16_t  limit;
-  uint8_t  *dest;
+  char     *dest;
   int i;
 
   /* Get the existing size of the target string and a pointer to the
@@ -359,7 +340,7 @@ static int libexec_FillChar(struct libexec_s *st, ustack_t *sptr, uint16_t count
   strAddr = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
   strSize = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
-  dest = (uint8_t *)ATSTACK(st, strAddr) + strSize;
+  dest = (char *)ATSTACK(st, strAddr) + strSize;
 
   /* Pad until the length is count - 1 characters long or until there is no
    * available space in the allocated string memory.
@@ -402,9 +383,9 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
   ustack_t  size;
   pasSize_t addr1;
   pasSize_t addr2;
-  uint8_t  *src;
-  uint8_t  *dest;
-  uint8_t  *name;
+  char     *src;
+  char     *dest;
+  char     *name;
   int       errorCode = eNOERROR;
 
   switch (subfunc)
@@ -481,8 +462,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
         /* Make a C string out of the pascal string */
 
-        src = (uint8_t *)ATSTACK(st, addr1);
-        name = libexec_MkCString(src, size);
+        src = (char *)ATSTACK(st, addr1);
+        name = libexec_MkCString(st, src, size, false);
         if (name == NULL)
           {
             errorCode = eNOMEMORY;
@@ -491,8 +472,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           {
             /* Make the C-library call and free the string copy */
 
-            src = (uint8_t *)getenv((char *)name);
-            free_cstring(name);
+            src = (char *)getenv((char *)name);
 
             /* Is the environment variable defined? */
 
@@ -527,7 +507,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
                         size = st->stralloc;
                       }
 
-                    dest  = (uint8_t *)ATSTACK(st, addr2);
+                    dest  = (char *)ATSTACK(st, addr2);
                     memcpy(dest, src, size);
 
                     /* Save the allocated string buffer pointer */
@@ -1110,8 +1090,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
           /* Copy the string into the string stack */
 
-          src      = (uint8_t *)ATSTACK(st, addr1); /* Pointer to original string */
-          dest     = (uint8_t *)ATSTACK(st, addr2); /* Pointer to new string */
+          src      = (char *)ATSTACK(st, addr1); /* Pointer to original string */
+          dest     = (char *)ATSTACK(st, addr2); /* Pointer to new string */
           memcpy(dest, src, size);
 
           /* Update the string buffer address */
@@ -1164,7 +1144,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
           /* Save the length at the beginning of the copy */
 
-          dest     = (uint8_t *)ATSTACK(st, addr2);  /* Pointer to new string */
+          dest     = (char *)ATSTACK(st, addr2);     /* Pointer to new string */
 
           /* Copy the character into the string stack */
 
@@ -1380,8 +1360,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
         /* Get full address */
 
-        dest   = ATSTACK(st, addr1);
-        src    = ATSTACK(st, addr2);
+        dest   = (char *)ATSTACK(st, addr1);
+        src    = (char *)ATSTACK(st, addr2);
 
         /* If name1 is shorter than name2, then we can only return
          * -1 (less than) or +1 greater than.  If the substrings
@@ -1538,8 +1518,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
               /* And copy the substring */
 
-              src  = ATSTACK(st, addr1);
-              dest = ATSTACK(st, addr2);
+              src  = (char *)ATSTACK(st, addr1);
+              dest = (char *)ATSTACK(st, addr2);
               memcpy(dest, &src[offset], size);
 
               TOS(st, 1) = size;
@@ -1644,7 +1624,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
          * string.
          */
 
-        dest = (uint8_t *)ATSTACK(st, addr1);
+        dest = (char *)ATSTACK(st, addr1);
 
         ulimit1 = uparm1 + uparm2;
         if (ulimit1 > st->stralloc)
@@ -1659,7 +1639,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
         /* Copy the source string into this space. */
 
-        src = (uint8_t *)ATSTACK(st, addr2);
+        src = (char *)ATSTACK(st, addr2);
 
         ulimit2 = uparm2 + offset;
         if (ulimit2 > ulimit1)
@@ -1714,7 +1694,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
         /* Move text at the end of the string to fill the gap. */
 
-        dest = (uint8_t *)ATSTACK(st, addr2);
+        dest = (char *)ATSTACK(st, addr2);
 
         for (i = offset, j = offset + size; j < uparm2; i++, j++)
           {
@@ -1843,8 +1823,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           {
             /* Convert the string at the end of the string */
 
-            dest     = (uint8_t *)ATSTACK(st, strAddr) + strSize;
-            strSize += snprintf((char *)dest, strAlloc - strSize, fmt, value);
+            dest     = (char *)ATSTACK(st, strAddr) + strSize;
+            strSize += snprintf(dest, strAlloc - strSize, fmt, value);
 
             /* Save the updated size of the string */
 
@@ -1907,8 +1887,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           {
             /* Convert the string at the end of the string */
 
-            dest     = (uint8_t *)ATSTACK(st, strAddr) + strSize;
-            strSize += snprintf((char *)dest, strAlloc - strSize, fmt, value);
+            dest     = (char *)ATSTACK(st, strAddr) + strSize;
+            strSize += snprintf(dest, strAlloc - strSize, fmt, value);
 
             /* Save the updated size of the string */
 
@@ -1962,8 +1942,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           {
             /* Convert the string at the end of the string */
 
-            dest     = (uint8_t *)ATSTACK(st, strAddr) + strSize;
-            strSize += snprintf((char *)dest, strAlloc - strSize, fmt, value.f);
+            dest     = (char *)ATSTACK(st, strAddr) + strSize;
+            strSize += snprintf(dest, strAlloc - strSize, fmt, value.f);
 
             /* Save the updated size of the string */
 
@@ -2006,9 +1986,9 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
       /* Make a C string out of the pascal string */
 
-      src       = (uint8_t *)ATSTACK(st, uparm1);
+      src       = (char *)ATSTACK(st, uparm1);
       src[size] = '\0';
-      name      = libexec_MkCString(src, size);
+      name      = libexec_MkCString(st, src, size, false);
       if (name == NULL)
         {
           errorCode = eNOMEMORY;
@@ -2039,4 +2019,41 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
     }
 
   return errorCode;
+}
+
+/****************************************************************************
+ * Name: libexec_MkCString
+ ****************************************************************************/
+
+char *libexec_MkCString(struct libexec_s *st, const char *src, int size,
+                        bool keep)
+{
+  char *dest;
+
+  /* Check if there is free space in the string stack to hold this string */
+
+  if (st->csp + size + 1 >= st->spb)
+    {
+      return NULL;
+    }
+
+  /* Allocate a string buffer on the string stack for the copy. */
+
+  dest = (char *)ATSTACK(st, st->csp);
+
+  /* Make the string persistent if keep is true.  If keep is false, then
+   * st->csp is not bumped up so this is a temporary alloc; it will be
+   * invalid when the caller returns.
+   */
+
+  if (keep)
+    {
+      st->csp += size + 1;
+    }
+
+  /* Copy the originl string, adding C-style NUL termination */
+
+  memcpy(dest, src, size);
+  dest[size] = '\0';
+  return dest;
 }

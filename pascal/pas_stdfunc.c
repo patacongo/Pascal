@@ -88,6 +88,10 @@ static void       pas_CopyFunc(void);
 static void       pas_PosFunc(void);
 static void       pas_ConcatFunc(void);
 
+/* Borland style directory operations */
+
+static void       pas_DirectoryFunc(uint16_t opCode);
+
 /* Non-standard C-library interface functions */
 
 static exprType_t pas_GetEnvFunc (void);  /* Get environment string value */
@@ -548,7 +552,7 @@ static void pas_CopyFunc(void)
 
   if (exprType == exprShortString)
     {
-      pas_GenerateSimple(opDISCARD);
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
     }
 
   /* A comma should separate the arguments */
@@ -606,7 +610,7 @@ static void pas_PosFunc(void)
 
   if (exprType == exprShortString)
     {
-      pas_GenerateSimple(opDISCARD);
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
     }
 
   /* A comma should separate the arguments */
@@ -619,7 +623,7 @@ static void pas_PosFunc(void)
   exprType = pas_Expression(exprString, NULL);
   if (exprType == exprShortString)
     {
-      pas_GenerateSimple(opDISCARD);
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
     }
 
   /* Now we can generate the string operation */
@@ -681,6 +685,44 @@ static void pas_ConcatFunc(void)
       if (g_token != ',') break;
       else getToken();
     }
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
+/* Set current working directory */
+
+static void pas_DirectoryFunc(uint16_t opCode)
+{
+  exprType_t exprType;
+
+/* FORM: 'setcurrentdir | createdir' '(' string-expression ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Get the string expression */
+
+  exprType = pas_Expression(exprString, NULL);
+
+  /* If this is a short string, then discard the string alloc size at the
+   * top of the stack in order to convert to a standard (but read-only)
+   * string.  The optimizer should remove these.
+   *
+   * This allows us to have a single xCHDIR or all string types.
+   */
+
+  if (exprType == exprShortString)
+    {
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+    }
+
+  /* Now we can generate the directory operation */
+
+  pas_GenerateIoOperation(opCode);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
 
@@ -774,6 +816,22 @@ exprType_t pas_StandardFunction(void)
         case txCONCAT :
           pas_ConcatFunc();
           funcType = exprString;
+          break;
+
+          /* Borland-style directory operations */
+
+        case txSETCURRDIR :
+          pas_DirectoryFunc(xCHDIR);
+          funcType = exprBoolean;
+          break;
+
+        case txCREATEDIR :
+          pas_DirectoryFunc(xMKDIR);
+          funcType = exprBoolean;
+          break;
+
+        case txREMOVEDIR :
+          pas_DirectoryFunc(xRMDIR);
           break;
 
           /* Non-standard C library interfaces */

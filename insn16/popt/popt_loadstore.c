@@ -88,10 +88,18 @@ int16_t popt_StackOrderOptimize(void)
             }
           break;
 
-        case oDISCARD :  /* (One 16-bit stack argument) */
-          if (popt_CheckDataOperation(i - 1))
+        case oINDS :  /* (Variable number of 16-bit stack arguments) */
+          if (g_opPtr[i]->arg2 >= sINT_SIZE && popt_CheckDataOperation(i - 1))
             {
-              popt_DeletePCodePair(i, i - 1);
+              if (g_opPtr[i]->arg2 == sINT_SIZE)
+                {
+                  popt_DeletePCodePair(i, i - 1);
+                }
+              else
+                {
+                  g_opPtr[i]->arg2 -= sINT_SIZE;
+                  popt_DeletePCode(i - 1);
+                }
             }
           else
             {

@@ -37,8 +37,12 @@
  * Included Files
  ****************************************************************************/
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
@@ -53,6 +57,7 @@
 #include "pas_error.h"
 
 #include "libexec_longops.h"
+#include "libexec_library.h"
 #include "libexec_sysio.h"
 
 /****************************************************************************
@@ -1697,6 +1702,64 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, fileNumber);  /* File number from stack */
 
       errorCode = libexec_WriteReal(fileNumber, fp.f, fieldWidth);
+      break;
+
+    /* CHDIR : TOS(0) = Directory name string address
+     *         TOS(1) = Directory name string size
+     * MKDIR : TOS(0) = Directory name string address
+     *         TOS(1) = Directory name string size
+     *
+     * Both return a boolean value on the stack.
+     */
+
+    case xCHDIR :
+    case xMKDIR :
+    case xRMDIR :
+      {
+        const char *strBuffer;
+        char *dirName;
+        uint16_t result;
+
+        /* Get the string argument */
+
+        POP(st, address);     /* Directory name string address */
+        POP(st, size);        /* Directory name string size */
+
+        /* Convert to a NUL terminated C string */
+
+        strBuffer = (const char *)ATSTACK(st, address);
+
+        /* We don't know the size of the string allocation, so we need to
+         * copy the string in order to append the NUL termination.
+         */
+
+        dirName = libexec_MkCString(st, strBuffer, size, false);
+        if (dirName == NULL)
+          {
+            errorCode = eSTRSTKOVERFLOW;
+            result = PASCAL_FALSE;
+          }
+        else if (subfunc == xCHDIR)
+          {
+            /* Then change directories */
+
+            result = (chdir(dirName) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
+          }
+        else if (subfunc == xMKDIR)
+          {
+            /* Then create the directory */
+
+            result = (mkdir(dirName, 0644) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
+          }
+        else /* if (subfunc == xRMDIR) */
+          {
+            /* Then remove the directory */
+
+            result = (rmdir(dirName) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
+          }
+
+        PUSH(st, result);
+      }
       break;
 
     default :

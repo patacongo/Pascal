@@ -98,7 +98,7 @@ unsigned int g_nConst        = 0;     /* Number constant table entries */
  * (5) Non-standard Pascal function
  * (6) Non-standard Pascal procedure
  * (7) Built-In Function
- * (8) Borland-style string operations
+ * (8) Borland-style string/file operations
  */
 
 static const reservedWord_t g_rsw[] =                /* Reserved word list */
@@ -113,12 +113,14 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"BEGIN",          tBEGIN,          txNONE},       /* (1) */
   {"CARD",           tSTDFUNC,        txCARD},       /* (2) */
   {"CASE",           tCASE,           txNONE},       /* (1) */
+  {"CHDIR",          tSTDPROC,        txCHDIR},      /* (8) */
   {"CHR",            tSTDFUNC,        txCHR},        /* (2) */
   {"CLOSEFILE",      tSTDPROC,        txCLOSEFILE},  /* (3) */
   {"CONCAT",         tSTDFUNC,        txCONCAT},     /* (8) */
   {"CONST",          tCONST,          txNONE},       /* (1) */
   {"COPY",           tSTDFUNC,        txCOPY},       /* (8) */
   {"COS",            tSTDFUNC,        txCOS},        /* (2) */
+  {"CREATEDIR",      tSTDFUNC,        txCREATEDIR},  /* (8) */
   {"DELETE",         tSTDPROC,        txDELETE},     /* (8) */
   {"DISPOSE",        tSTDPROC,        txDISPOSE},    /* (3) */
   {"DIV",            tDIV,            txNONE},       /* (1) */
@@ -152,6 +154,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"LABEL",          tLABEL,          txNONE},       /* (1) */
   {"LENGTH",         tBUILTIN,        txLENGTH},     /* (8) */
   {"LN",             tSTDFUNC,        txLN},         /* (2) */
+  {"MKDIR",          tSTDPROC,        txMKDIR},      /* (8) */
   {"MOD",            tMOD,            txNONE},       /* (1) */
   {"NEW",            tSTDPROC,        txNEW},        /* (3) */
   {"NOT",            tNOT,            txNONE},       /* (1) */
@@ -170,14 +173,17 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"READ",           tSTDPROC,        txREAD},       /* (3) */
   {"READLN",         tSTDPROC,        txREADLN},     /* (3) */
   {"RECORD",         tRECORD,         txNONE},       /* (1) */
+  {"REMOVEDIR",      tSTDFUNC,        txREMOVEDIR},  /* (8) */
   {"REPEAT",         tREPEAT,         txNONE},       /* (1) */
   {"RESET",          tSTDPROC,        txRESET},      /* (3) */
   {"REWRITE",        tSTDPROC,        txREWRITE},    /* (3) */
+  {"RMDIR",          tSTDPROC,        txRMDIR},      /* (8) */
   {"ROUND",          tSTDFUNC,        txROUND},      /* (2) */
   {"SEEK",           tSTDPROC,        txSEEK},       /* (3) */
   {"SEEKEOF",        tSTDFUNC,        txSEEKEOF},    /* (2) */
   {"SEEKEOLN",       tSTDFUNC,        txSEEKEOLN},   /* (2) */
   {"SET",            tSET,            txNONE},       /* (1) */
+  {"SETCURRENTDIR",  tSTDFUNC,        txSETCURRDIR}, /* (8) */
   {"SHL",            tSHL,            txNONE},       /* (4) */
   {"SHR",            tSHR,            txNONE},       /* (4) */
   {"SIN",            tSTDFUNC,        txSIN},        /* (2) */

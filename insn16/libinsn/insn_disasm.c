@@ -161,7 +161,7 @@ static const struct
 /* 0x2b */ { invOp,     MKFMT(NOARG8, NOARG16) },
 /* 0x2c */ { "PUSHS",   MKFMT(NOARG8, NOARG16) },
 /* 0x2d */ { "POPS",    MKFMT(NOARG8, NOARG16) },
-/* 0x2e */ { "DISCARD", MKFMT(NOARG8, NOARG16) },
+/* 0x2e */ { invOp,     MKFMT(NOARG8, NOARG16) },
 /* 0x2f */ { "RET  ",   MKFMT(NOARG8, NOARG16) },
 
 /* 0x30 */ { invOp,     MKFMT(NOARG8, NOARG16) },
@@ -476,7 +476,8 @@ static const char *xName[MAX_XOP] =
 /* 0x14 */ "READINT",   "READCHR",    "READSTR",    "READSSTR",
 /* 0x18 */ "READRL",    "WRITELN",    "WRITEPG",    "WRITEBIN",
 /* 0x1c */ "WRITEINT",  "WRITEWORD",  "WRITELONG",  "WRITEULONG",
-/* 0x20 */ "WRITECHR",  "WRITESTR",   "WRITESSTR",  "WRITERL"
+/* 0x20 */ "WRITECHR",  "WRITESTR",   "WRITESSTR",  "WRITERL",
+/* 0x24 */ "CHDIR",     "MKDIR",      "RMDIR"
 };
 
 static const char invSetOp[] = "Invalid SETOP";

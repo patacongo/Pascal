@@ -89,6 +89,10 @@
 #define xWRITE_SHORTSTRING (0x0022)  /* Write an string to a text file */
 #define xWRITE_REAL        (0x0023)  /* Write an real value to a text file */
 
-#define MAX_XOP            (0x0024)
+#define xCHDIR             (0x0024)  /* Set current working directory */
+#define xMKDIR             (0x0025)  /* Create a new directory */
+#define xRMDIR             (0x0026)  /* Remove an existing directory */
+
+#define MAX_XOP            (0x0027)
 
 #endif /* __PAS_SYSIO_H */

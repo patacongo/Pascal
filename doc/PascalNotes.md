@@ -153,6 +153,15 @@ The following are not currently implemented:
 - `Rename` – Rename a filename
 - `SetTextBuf`  - Sets size of file buffer
 
+## Directory Operations
+
+- `function SetCurrentDir(dirName : string) : boolean` - Set the current working directory.  Returns `true` if successful.
+- `procedure ChDir(dirName : string)` - Set the current working directory.  No failure indication is returned.
+- `function CreateDir(dirName : string) : boolean` - Create a new directory.  Returns `true` if the directory was create successfully.
+- `procedure MkDir(dirName : string)` - Create a new directory.  No failure indication is returned.
+- `function RemoveDir (dirName : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
+- `procedure RmDir(dirName : string)` - Remove a new directory.  No failure indication is returned.
+
 ## Extended Pascal Features
 
 - `PACKED ARRAY[..] OF CHAR` is not a string.  But `PACKED ARRAY[] OF CHA`R does have some legacy behavior that allow them some limited behavior like `STRINGS`

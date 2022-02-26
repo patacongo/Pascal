@@ -116,7 +116,6 @@ static const uint16_t g_opCodeMap[NUM_OPCODES] =
   oXCHG,    /* opXCHG */
   oPUSHS,   /* opPUSHS */
   oPOPS,    /* opPOPS */
-  oDISCARD, /* opDISCARD */
   oRET,     /* opRET */
   oEND,     /* opEND */
   oFLOAT,   /* opFLOAT */

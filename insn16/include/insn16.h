@@ -102,7 +102,7 @@
  * xx10 1011  ---        ---            LDXM uoffs     LDSXM loff,offs
  * xx10 1100  PUSHS      ---            STX uoffs      STSX loff,offs
  * xx10 1101  POPS       ---            ---            ---
- * xx10 1110  DISCARD    ---            STXB uoffs     STSXB loff,offs
+ * xx10 1110  ---        ---            STXB uoffs     STSXB loff,offs
  * xx10 1111  RET        ---            STXM uoffs     STSXM loff,offs
  *
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS loff,offs
@@ -211,7 +211,8 @@
                           /* 0x2a -- unassigned */
 #define oPUSHS   (0x2c)   /* No arguments */
 #define oPOPS    (0x2d)   /* (One 16-bit stack argument) */
-#define oDISCARD (0x2e)   /* (One 16-bit stack argument) */
+
+/* 0x2e -- unassigned */
 
 /* Program control (No stack arguments)
  * Behavior:

@@ -91,7 +91,7 @@ enum pcode_e
 
   /* Data stack */
 
-  opDUP, opXCHG, opPUSHS, opPOPS, opDISCARD,
+  opDUP, opXCHG, opPUSHS, opPOPS,
 
   /* Program control (No stack arguments)
    * Behavior:

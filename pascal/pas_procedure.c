@@ -115,6 +115,7 @@ static void     pas_WriteProcCommon(bool text,      /* WRITE[LN] common logic */
 static void     pas_WriteText(void);                /* WRITE text file */
 static uint16_t pas_WriteFieldWidth(void);          /* Get text file write field-width. */
 static void     pas_WriteBinary(uint16_t fileSize); /* WRITE binary file */
+static void     pas_DirectoryProc(uint16_t opCode); /* Change|Create working directory */
 static void     pas_NewProc(void);                  /* Memory allocator */
 static void     pas_DisposeProc(void);              /* Free memory */
 
@@ -1496,6 +1497,51 @@ static void pas_WriteBinary(uint16_t fileSize)
 }
 
 /****************************************************************************/
+/* Change current working directory */
+
+static void pas_DirectoryProc(uint16_t opCode)
+{
+  exprType_t exprType;
+
+  /* FORM: 'chdir' '(' string-expression ')' */
+
+  TRACE(g_lstFile,"[pas_DirectoryProc]");
+
+  getToken();
+  if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
+  else getToken();
+
+  /* Get the string expression */
+
+  exprType = pas_Expression(exprString, NULL);
+
+  /* If this is a short string, then discard the string alloc size at the
+   * top of the stack in order to convert to a standard (but read-only)
+   * string.  The optimizer should remove these.
+   *
+   * This allows us to have a single xCHDIR or all string types.
+   */
+
+  if (exprType == exprShortString)
+    {
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+    }
+
+  /* Now we can generate the directory operation */
+
+  pas_GenerateIoOperation(opCode);
+
+  /* xCHDIR returns a boolean success/fail value; CHDIR returns nothing */
+
+  pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
+  else getToken();
+}
+
+/****************************************************************************/
 /* Memory allocator */
 
 static void pas_NewProc(void)
@@ -1876,7 +1922,7 @@ static void pas_InsertProc(void)
        * simply discarding the allocation size at the top of the stack.
        */
 
-      pas_GenerateSimple(opDISCARD);
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
     }
   else if (exprType != exprString)
     {
@@ -2091,7 +2137,7 @@ static void pas_ValProc(void)  /* VAL procedure */
        * simply discarding the allocation size at the top of the stack.
        */
 
-      pas_GenerateSimple(opDISCARD);
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
     }
   else if (exprType != exprString)
     {
@@ -2444,6 +2490,20 @@ void pas_StandardProcedure(void)
 
         case txVAL :
           pas_ValProc();
+          break;
+
+          /* Borland-style string directory operations */
+
+        case txCHDIR :
+          pas_DirectoryProc(xCHDIR);
+          break;
+
+        case txMKDIR :
+          pas_DirectoryProc(xMKDIR);
+          break;
+
+        case txRMDIR :
+          pas_DirectoryProc(xRMDIR);
           break;
 
           /* File I/O */
