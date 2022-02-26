@@ -1,8 +1,8 @@
 ############################################################################
-# insn16/popt/Makefile
+# PasMakefile
 # Host system makefile
 #
-#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,79 +37,57 @@
 # Directories
 #
 
-POPTDIR = ${shell pwd}
-INSNDIR = $(POPTDIR)/..
-PASCAL = $(POPTDIR)/../..
+PHELLODIR = ${shell pwd}
+PAPPSDIR  = $(PHELLODIR)/..
+PIMAGEDIR = $(PAPPSDIR)/image
+PUNITDIR  = $(PAPPSDIR)/units
 
+PASCAL    = $(PAPPSDIR)/..
 include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
 #
 
-EXTRA_INCLUDES	= -I$(INSNDIR)/include
-INCLUDES += $(EXTRA_INCLUDES)
-CFLAGS   += $(EXTRA_INCLUDES)
+PASOPTS   = -I$(PUNITDIR)
 
 #
 # Objects and targets
 #
 
-POPTSRCS  = popt.c popt_strings.c popt_strconst.c popt_strstack.c
-POPTSRCS += popt_local.c popt_constants.c popt_longconst.c popt_branch.c
-POPTSRCS += popt_loadstore.c popt_reloc.c popt_finalize.c popt_peephole.c
-POPTSRCS += popt_util.c
-POPTOBJS  = $(POPTSRCS:.c=.o)
+SUFFIXES  += .pas .o1 .o .pex .err .lst
 
-OBJS      = $(POPTOBJS)
-DEPS      = $(POPTSRCS:.c=.d)
-LIBS      = libpoff.a libpas.a
-
-SUFFIXES += .d
+PSRCS   = phello.c
+POBJS1  = $(PSRCS:.c=.o1)
+POBJS   = $(PSRCS:.c=.o)
+PEX     = $(PSRCS:.c=.pex)
 
 #
 # Targets
 #
 
-all: popt
-.PHONY: all check_libs popt check_libs clean distclean
+all: phello
+.PHONY: all phello clean distclean
 
-$(DEPS): %.d: %.c
+$(POBJS1): %.o1: %.pas
 	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) $(PAS) $(PASOPTS) $<
 
-$(OBJS): %.o: %.c
+$(POBJS): %.o: %.o1
 	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
+	$(Q) $(POPT) $(POPTOPTS) $<
 
-check_libs:
-	$(Q) if [ ! -f $(PLIBDIR)/libpoff.a ] ; then \
-		echo "$(PLIBDIR)/libpoff.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libpas.a ] ; then \
-		echo "$(PLIBDIR)/libpas.a does not exist" ; \
-		exit 1 ; \
-	fi
-	$(Q) if [ ! -f $(PLIBDIR)/libinsn.a ] ; then \
-		echo "$(PLIBDIR)/libinsn.a does not exist" ; \
-		exit 1 ; \
-	fi
+$(PEX): %.pex: %.o
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(PLINKOPTS) $< $@
 
-$(PBINDIR)/popt: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  popt$(TOOLEXEEXT)"
-	$(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
+$(PIMAGEDIR)/phello.pex: $(PEX)
+	$(Q) echo "  $@"
+	$(Q) $(INSTALL) $< $@
 
-popt: $(PBINDIR)/popt
+phello: $(PIMAGEDIR)/phello.pex
 
 clean:
-	$(Q) $(RM) popt *.o core *~
+	$(Q) $(RM) phello *.o *.o1 *.pex *.err *.lst core *~
 
 distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
-endif

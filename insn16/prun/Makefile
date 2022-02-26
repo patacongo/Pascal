@@ -97,7 +97,7 @@ check_libs:
 	fi
 
 $(PBINDIR)/prun: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  prun$(HOSTEEXT)"
+	$(Q) echo "  prun$(TOOLEXEEXT)"
 	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -lexec -linsn  -lpoff -lpas
 
 prun: $(PBINDIR)/prun

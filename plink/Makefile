@@ -83,7 +83,7 @@ check_libs:
 	fi
 
 $(PBINDIR)/plink: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  plink$(HOSTEEXT)"
+	$(Q) echo "  plink$(TOOLEXEEXT)"
 	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -linsn -lpoff -lpas
 
 plink: $(PBINDIR)/plink

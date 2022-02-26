@@ -39,14 +39,14 @@ HOSTCFLAGS ?= -O2 -Wall -Wstrict-prototypes -Wshadow
 
 # Targets
 
-all: mkconfig$(HOSTEEXT)
+all: mkconfig$(HOSTEXEEXT)
 
 .PHONY: clean
 
 # mkconfig - Convert a .config file into a C config.h file
 
 mkconfig$(HOSTEXEEXT): mkconfig.c
-	$(Q) echo "  mkconfig$(HOSTEEXT)"
+	$(Q) echo "  mkconfig$(HOSTEXEEXT)"
 	$(Q) $(HOSTCC) $(HOSTCFLAGS) -o mkconfig$(HOSTEXEEXT) mkconfig.c
 
 clean:

@@ -49,44 +49,74 @@ endif
 # Directories (relative to PASCAL)
 #
 
-PINCDIR    := $(PASCAL)/include
-PLIBDIR    := $(PASCAL)/lib
-PBINDIR    := $(PASCAL)/bin16
-PASDIR     := $(PASCAL)/pascal
-PLINKDIR   := $(PASCAL)/plink
-INSNDIR    := $(PASCAL)/insn16
-PAPPSDIR   := $(PASCAL)/papps
-PTESTDIR   := $(PASCAL)/tests
-PTOOLDIR   := $(PASCAL)/tools
+PINCDIR     := $(PASCAL)/include
+PLIBDIR     := $(PASCAL)/lib
+PBINDIR     := $(PASCAL)/bin16
+PASDIR      := $(PASCAL)/pascal
+PLINKDIR    := $(PASCAL)/plink
+INSNDIR     := $(PASCAL)/insn16
+PAPPSDIR    := $(PASCAL)/papps
+PTESTDIR    := $(PASCAL)/tests
+PTOOLDIR    := $(PASCAL)/tools
 
-LIBPOFFDIR := $(PASCAL)/libpoff
-LIBPASDIR  := $(PASCAL)/libpas
-LIBINSNDIR := $(INSNDIR)/libinsn
-LIBEXECDIR := $(INSNDIR)/libexec
+LIBPOFFDIR  := $(PASCAL)/libpoff
+LIBPASDIR   := $(PASCAL)/libpas
+LIBINSNDIR  := $(INSNDIR)/libinsn
+LIBEXECDIR  := $(INSNDIR)/libexec
 
-ALLDIRS     = $(LIBPOFFDIR) $(LIBPASDIR) $(PASDIR) $(PLINKDIR) $(INSNDIR)
-ALLDIRS    += $(PAPPSDIR) $(PTESTDIR) $(PTOOLDIR)
+ALLDIRS      = $(LIBPOFFDIR) $(LIBPASDIR) $(PASDIR) $(PLINKDIR) $(INSNDIR)
+ALLDIRS     += $(PAPPSDIR) $(PTESTDIR) $(PTOOLDIR)
 
 #
 # Tools.  Most of these will be set in the NuttX build
 #
-CC        ?= /usr/bin/gcc
-CPP       ?= /usr/bin/cpp
-LD        ?= /usr/bin/ld
-MAKE      ?= /usr/bin/make
-AR        ?= /usr/bin/ar
 
-RM        ?= /bin/rm -f
+CC          ?= /usr/bin/gcc
+CPP         ?= /usr/bin/cpp
+LD          ?= /usr/bin/ld
+MAKE        ?= /usr/bin/make
+AR          ?= /usr/bin/ar
 
-HOSTCC    ?= /usr/bin/gcc
-HOSTCPP   ?= /usr/bin/cpp
-HOSTLD    ?= /usr/bin/ld
-HOSTMAKE  ?= /usr/bin/make
-HOSTAR    ?= /usr/bin/ar
+RM          ?= /bin/rm -f
+INSTALL     ?= install -m 0644
+MKDIR       ?= /usr/bin/mkdir -p
 
-HOSTRM    ?= /bin/rm -f
+HOSTCC      ?= /usr/bin/gcc
+HOSTCPP     ?= /usr/bin/cpp
+HOSTLD      ?= /usr/bin/ld
+HOSTMAKE    ?= /usr/bin/make
+HOSTAR      ?= /usr/bin/ar
 
-CFLAGS    ?= -Wall -g $(DEFINES) $(INCLUDES)
-CFLAGS    += -I. -I$(PINCDIR)
-LDFLAGS   += -L$(PLIBDIR)
-ARFLAGS   ?= -r
+HOSTRM      ?= /bin/rm -f
+
+CFLAGS      ?= -Wall -g $(DEFINES) $(INCLUDES)
+CFLAGS      += -I. -I$(PINCDIR)
+LDFLAGS     += -L$(PLIBDIR)
+ARFLAGS     ?= -r
+
+HOSTCFLAGS  ?= -Wall -g $(DEFINES) $(INCLUDES)
+HOSTCFLAGS  += -I. -I$(PINCDIR)
+HOSTLDFLAGS += -L$(PLIBDIR)
+HOSTARFLAGS ?= -r
+
+PAS          = $(BINDIR)/pascal$(TOOLEXEEXT)
+POPT         = $(BINDIR)/popt$(TOOLEXEEXT)
+PLINK        = $(BINDIR)/plink$(TOOLEXEEXT)
+
+PASOPTS      = -I$(PUNITDIR)
+POPTOPTS     =
+PLINKOPTS    =
+
+
+
+#
+# Executable File Extension
+#
+
+ifdef CONFIG_HOST_WINDOWS
+  HOSTEXEEXT ?= .exe
+endif
+
+ifndef CONFIG_PASCAL_TARGET_TOOLS
+  TOOLEXEEXT ?= $(HOSTEXEEXT)
+endif

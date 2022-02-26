@@ -89,10 +89,10 @@ static int          g_debug        = 0;
 
 static void prun_showusage(const char *progname)
 {
-  fprintf(stderr, "Usage:\n");
-  fprintf(stderr, "  %s [options] <program-filename>\n",
+  fprintf(stderr, "USAGE:\n");
+  fprintf(stderr, "  %s [OPTIONS] <program-filename>\n",
           progname);
-  fprintf(stderr, "options:\n");
+  fprintf(stderr, "OPTIONS:\n");
   fprintf(stderr, "  -a <string-buffer-size>\n");
   fprintf(stderr, "  --alloc <string-buffer-size>\n");
   fprintf(stderr, "    Size of the string buffer to be allocated whenever a\n");

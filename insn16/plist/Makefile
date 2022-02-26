@@ -92,7 +92,7 @@ check_libs:
 	fi
 
 $(PBINDIR)/plist: check_libs $(DEPS) $(OBJS)
-	$(Q) echo "  plist$(HOSTEEXT)"
+	$(Q) echo "  plist$(TOOLEXEEXT)"
 	$(Q) $(CC) -o $@ $(LDFLAGS) $(OBJS) -lpoff -linsn -lpas
 
 plist: $(PBINDIR)/plist

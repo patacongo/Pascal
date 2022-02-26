@@ -94,8 +94,8 @@ static void     plink_WirteOutputFile  (poffHandle_t outHandle);
 
 static void plink_ShowUsage(const char *progname)
 {
-  fprintf(stderr, "Usage:\n");
-  fprintf(stderr, "  %s <in-file-name> {<in-file-name>} <out-file-name>\n",
+  fprintf(stderr, "USAGE:\n");
+  fprintf(stderr, "  %s <in-file-name> [<in-file-name>] <out-file-name>\n",
           progname);
 }
 

@@ -49,7 +49,7 @@ CLEANDIRS  = $(ALLDIRS)
 # ---------------------------------------------------------------------------
 # Tools
 
-MKCONFIG = $(PTOOLDIR)/mkconfig$(HOSTEEXT)
+MKCONFIG = $(PTOOLDIR)/mkconfig$(HOSTEXEEXT)
 
 # ---------------------------------------------------------------------------
 # Objects and targets
@@ -72,7 +72,7 @@ ifeq ($(wildcard $(PASCAL)/.config),)
 endif
 
 $(MKCONFIG) : $(PTOOLDIR)/mkconfig.c
-	$(Q) $(MAKE) -C $(PTOOLDIR) mkconfig$(HOSTEEXT)
+	$(Q) $(MAKE) -C $(PTOOLDIR) mkconfig$(HOSTEXEEXT)
 
 $(PINCDIR)/config.h: .config $(MKCONFIG)
 	$(Q) $(MKCONFIG) . >$(PINCDIR)/config.h
@@ -86,6 +86,10 @@ Kconfig:
 	$(Q) echo "	bool" >>Kconfig
 	$(Q) echo "	default y" >>Kconfig
 	$(Q) echo "" >>Kconfig
+	$(Q) echo "config PASDIR" >>Kconfig
+	$(Q) echo "	string" >>Kconfig
+	$(Q) echo "	default $(PASDIR)" >>Kconfig
+	$(Q) echo "" >>Kconfig
 	$(Q) echo "config PASCAL_BUILD_LINUX" >>Kconfig
 	$(Q) echo "	bool" >>Kconfig
 	$(Q) echo "	default y" >>Kconfig
@@ -94,7 +98,8 @@ Kconfig:
 	$(Q) echo "	bool" >>Kconfig
 	$(Q) echo "	default n" >>Kconfig
 	$(Q) echo "" >>Kconfig
-	$(Q) echo "source $(PASCAL)/tools/Kconfig.body" >>Kconfig
+	$(Q) echo "source $(PASCAL)/tools/Kconfig.main" >>Kconfig
+	$(Q) echo "source $(PASCAL)/papps/Kconfig.papps" >>Kconfig
 
 $(PLIBDIR):
 	$(Q) mkdir $(PLIBDIR)
@@ -147,10 +152,10 @@ $(PBINDIR)/plist: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
 
 plist: $(PBINDIR)/plist
 
-$(PBINDIR)/papps: check_config $(PBINDIR) $(PINCDIR)/config.h $(LIBS)
-	$(Q) $(MAKE) -C $(INSNDIR) all
+$(PAPPSDIR)/papps: check_config $(PINCDIR)/config.h $(LIBS)
+	$(Q) $(MAKE) -C $(PAPPSDIR) all
 
-papps: $(PBINDIR)/papps
+papps: $(PAPPSDIR)/papps
 
 menuconfig: Kconfig
 	$(Q) kconfig-mconf Kconfig

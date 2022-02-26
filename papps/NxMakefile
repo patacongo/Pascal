@@ -37,36 +37,53 @@
 # ---------------------------------------------------------------------------
 # Directories
 
-MENUDESC   = "Pascal Language Support"
-
-PASCAL    := ${shell pwd}/..
+PASCAL     := ${shell pwd}/..
 include $(PASCAL)/tools/Config.mk
 
-DELIM     ?=  $(strip /)
-BUILDDIRS := $(dir $(wildcard *$(DELIM)NxMakefile))
+PIMAGEDIR   = $(PAPPSDIR)/image
+PUNITDIR    = $(PAPPSDIR)/units
+
+DELIM      ?=  $(strip /)
+BUILDDIRS  := $(dir $(wildcard *$(DELIM)NxMakefile))
+PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
 
 # ---------------------------------------------------------------------------
 # Definitions
 
-define Make_template
+define MxMake_template
 $(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) -f NxMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
+
+endef
+
+define PasMake_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
 
 endef
 
 # ---------------------------------------------------------------------------
 # Targets
 
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),all)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),archive)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),install)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),context)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),register)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),depend)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),clean)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),archive)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),install)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),context)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),register)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),depend)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),distclean)))
 
-all:       $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),all)))
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),clean)))
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),distclean)))
+
+$(PIMAGEDIR):
+	$(Q) $(MKDIR) $(PIMAGEDIR)
+
+all:       $(PIMAGEDIR) \
+           $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
+           $(foreach DIR, $(PBUILDDIRS), $(DIR)_all)
 
 archive:   $(foreach DIR, $(BUILDDIRS), $(DIR)_archive)
 
@@ -78,6 +95,10 @@ register:  $(foreach DIR, $(BUILDDIRS), $(DIR)_register)
 
 depend:    $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
 
-clean:     $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
+clean:     $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
+           $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean)
+	$(Q) $(RM) -rf $(PIMAGEDIR)
 
-distclean: $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)
+distclean: clean \
+           $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
+           $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)

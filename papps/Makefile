@@ -37,13 +37,17 @@
 # ---------------------------------------------------------------------------
 # Directories
 
-PASCAL    = ${shell pwd}/..
+PASCAL     = ${shell pwd}/..
 
 -include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
-DELIM     ?=  $(strip /)
-BUILDDIRS := $(dir $(wildcard *$(DELIM)Makefile))
+PIMAGEDIR   = $(PAPPSDIR)/image
+PUNITDIR    = $(PAPPSDIR)/units
+
+DELIM      ?=  $(strip /)
+BUILDDIRS  := $(dir $(wildcard *$(DELIM)Makefile))
+PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
 
 # ---------------------------------------------------------------------------
 # Objects and targets
@@ -53,16 +57,38 @@ $(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) $(2)
 endef
 
+define PasMake_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2)
+
+endef
+
 $(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),all)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),clean)))
 $(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),distclean)))
 
-all:    $(foreach DIR, $(BUILDDIRS), $(DIR)_all)
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),all)))
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),clean)))
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),distclean)))
+
+$(PIMAGEDIR):
+	$(Q) $(MKDIR) $(PIMAGEDIR)
+
+all:    $(PIMAGEDIR) \
+        $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_all)
 
 .PHONY: $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
         $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
-        $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)
+        $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_all) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)
 
-clean: $(foreach DIR, $(BUILDDIRS), $(DIR)_clean)
+clean:  $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean)
+	$(Q) $(RM) -rf $(PIMAGEDIR)
 
-distclean: $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean)
+distclean: clean \
+           $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
+           $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)

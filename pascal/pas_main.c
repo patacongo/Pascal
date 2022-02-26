@@ -233,10 +233,11 @@ static void primeSignalHandlers(void)
 static void pas_ShowUsage(void)
 {
   fprintf(stderr, "USAGE:\n");
-  fprintf(stderr, "  %s [options] <filename>\n", g_programName);
-  fprintf(stderr, "[options]\n");
+  fprintf(stderr, "  %s [OPTIONS] <program-filename>\n", g_programName);
+  fprintf(stderr, "[OPTIONS]\n");
   fprintf(stderr, "  -I<include-path>\n");
-  fprintf(stderr, "    Search in <include-path> for additional file\n");
+  fprintf(stderr, "    Search in <include-path> for additional Unit files\n");
+  fprintf(stderr, "    needed byte program file.\n");
   fprintf(stderr, "    A maximum of %d pathes may be specified\n",
           MAX_INCPATHES);
   fprintf(stderr, "    (default is current directory)\n");

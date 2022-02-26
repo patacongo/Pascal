@@ -106,104 +106,15 @@ static void plist_ParseArgs       (int argc, char **argv);
 static void plist_DumpProgramData (poffHandle_t poffHandle);
 
 /**********************************************************************
- * Public Functions
- **********************************************************************/
-
-int main (int argc, char *argv[], char *envp[])
-{
-  FILE   *object;                  /* Object file pointer */
-  poffHandle_t poffHandle;         /* Handle for POFF object */
-  char    fileName[FNAME_SIZE+1];  /* Object file name */
-  uint16_t errCode;                /* See pas_errcodes.h */
-
-  /* Parse the command line arguments */
-
-  plist_ParseArgs(argc, argv);
-
-  /* Open source POFF file -- Use .o or command line extension, if supplied */
-
-  (void)extension(g_poffFileName, "o", fileName, 0);
-  if (!(object = fopen (fileName, "rb")))
-    {
-      printf ("Error opening %s\n", fileName);
-      exit (1);
-    }
-
-  /* Read the POFF file */
-
-  poffHandle = poffCreateHandle();
-  if (poffHandle == NULL)
-    {
-      printf ("Could not get POFF handler\n");
-      exit (1);
-    }
-
-  errCode = poffReadFile(poffHandle, object);
-  if (errCode != eNOERROR)
-    {
-      printf ("Could not read POFF file\n");
-      exit (1);
-    }
-
-  /* Dump the File Header */
-
-  if (g_showFileHeader)
-    {
-      poffDumpFileHeader(poffHandle, stdout);
-    }
-
-  /* Dump the Section Headers */
-
-  if (g_showSectionHeaders)
-    {
-      poffDumpSectionHeaders(poffHandle, stdout);
-    }
-
-  /* Dump the symbol table */
-
-  if (g_showSymbols)
-    {
-      poffDumpSymbolTable(poffHandle, stdout);
-    }
-
-  /* Dump the relocation table */
-
-  if (g_showRelocs)
-    {
-      poffDumpRelocTable(poffHandle, stdout);
-    }
-
-  /* Dump line number information */
-
-  if (g_showLineNumbers)
-    {
-      poffDumpLineNumberTable(poffHandle, stdout);
-    }
-
-  /* Dump the program data section -- Main Loop */
-
-  if (g_disassemble)
-    {
-      plist_DumpProgramData(poffHandle);
-    }
-
-  /* Close files and release objects */
-
-  poffDestroyHandle(poffHandle);
-  (void)fclose(object);
-  return 0;
-}
-
-/**********************************************************************
  * Private Functions
  **********************************************************************/
 
 static void plist_ShowUsage(const char *progname)
 {
-  fprintf(stderr, "Usage:\n");
-  fprintf(stderr, "  %s [options] <poff-filename>\n",
+  fprintf(stderr, "USAGE:\n");
+  fprintf(stderr, "  %s [OPTIONS] <poff-filename>\n",
           progname);
-  fprintf(stderr, "options:\n");
+  fprintf(stderr, "OPTIONS:\n");
   fprintf(stderr, "  -a --all              Equivalent to: -h -S -s -r -d\n");
   fprintf(stderr, "  -h --file-header      Display the POFF file header\n");
   fprintf(stderr, "  -l --section-headers  Display line number information\n");
@@ -380,4 +291,93 @@ static void plist_DumpProgramData(poffHandle_t poffHandle)
   /* Release buffers associated with line number information */
 
   poffReleaseLineNumberTable();
+}
+
+/**********************************************************************
+ * Public Functions
+ **********************************************************************/
+
+int main (int argc, char *argv[], char *envp[])
+{
+  FILE   *object;                  /* Object file pointer */
+  poffHandle_t poffHandle;         /* Handle for POFF object */
+  char    fileName[FNAME_SIZE+1];  /* Object file name */
+  uint16_t errCode;                /* See pas_errcodes.h */
+
+  /* Parse the command line arguments */
+
+  plist_ParseArgs(argc, argv);
+
+  /* Open source POFF file -- Use .o or command line extension, if supplied */
+
+  (void)extension(g_poffFileName, "o", fileName, 0);
+  if (!(object = fopen (fileName, "rb")))
+    {
+      printf ("Error opening %s\n", fileName);
+      exit (1);
+    }
+
+  /* Read the POFF file */
+
+  poffHandle = poffCreateHandle();
+  if (poffHandle == NULL)
+    {
+      printf ("Could not get POFF handler\n");
+      exit (1);
+    }
+
+  errCode = poffReadFile(poffHandle, object);
+  if (errCode != eNOERROR)
+    {
+      printf ("Could not read POFF file\n");
+      exit (1);
+    }
+
+  /* Dump the File Header */
+
+  if (g_showFileHeader)
+    {
+      poffDumpFileHeader(poffHandle, stdout);
+    }
+
+  /* Dump the Section Headers */
+
+  if (g_showSectionHeaders)
+    {
+      poffDumpSectionHeaders(poffHandle, stdout);
+    }
+
+  /* Dump the symbol table */
+
+  if (g_showSymbols)
+    {
+      poffDumpSymbolTable(poffHandle, stdout);
+    }
+
+  /* Dump the relocation table */
+
+  if (g_showRelocs)
+    {
+      poffDumpRelocTable(poffHandle, stdout);
+    }
+
+  /* Dump line number information */
+
+  if (g_showLineNumbers)
+    {
+      poffDumpLineNumberTable(poffHandle, stdout);
+    }
+
+  /* Dump the program data section -- Main Loop */
+
+  if (g_disassemble)
+    {
+      plist_DumpProgramData(poffHandle);
+    }
+
+  /* Close files and release objects */
+
+  poffDestroyHandle(poffHandle);
+  (void)fclose(object);
+  return 0;
 }
