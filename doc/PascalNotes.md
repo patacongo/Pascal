@@ -177,7 +177,7 @@ Where the definition of `TDirEntry` is implementation specific and should have b
 - `size` : The size of the file in bytes
 - `attribute` : The file attribute character (as above)
 
-The `attribute` is a character type the identifies the type of the file with `'R'` for regular file, `'S'` for system file, or `'D'` for directory as possibilities.  
+The `attribute` is a character type the identifies the type of the file with `'R'` for regular file, `'S'` for system file, or `'D'` for directory as possibilities.
 
 Using these intrinic functions, `FileUtils.pas` can then provide:
 

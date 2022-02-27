@@ -37,6 +37,7 @@ config PASCAL_STARTUP_FILENAME
 config PASCAL_STARTUP_DEBUG
 	bool "Enable P-Code debugger at startup"
 	default n
+	depends on PASCAL_DEBUGGER
 	---help---
 		The start-up Pascal program with begin in the Pascal P-code debugger.
 
