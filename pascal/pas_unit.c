@@ -85,8 +85,6 @@ static void pas_InterfaceSection(void)
   unsigned int saveSymOffset;   /* Save previous level symbol offset */
   unsigned int saveConstOffset; /* Save previous level constant offset */
 
-  TRACE(g_lstFile, "[pas_InterfaceSection]");
-
   /* Save the current top-of-stack data for symbols, constants, and
    * initializers.
    */
@@ -248,8 +246,6 @@ static void pas_ExportedProcedureHeading(void)
   symbol_t *procPtr;
   int       i;
 
-  TRACE(g_lstFile,"[pas_ExportedProcedureHeading]");
-
   /* FORM: procedure-heading =
    *       'procedure' identifier [ formal-parameter-list ]
    * FORM: procedure-identifier = identifier
@@ -328,8 +324,6 @@ static void pas_ExportedFunctionHeading(void)
   char     *saveChSp;
   symbol_t *funcPtr;
   int       i;
-
-  TRACE(g_lstFile,"[pas_ExportedFunctionHeading]");
 
   /* FORM: function-declaration =
    *       function-heading ';' directive |
@@ -444,8 +438,6 @@ static void pas_ExportedFunctionHeading(void)
 void pas_UnitImplementation(void)
 {
   char   *saveTknStart = g_tokenString;
-
-  TRACE(g_lstFile, "[pas_UnitImplementation]");
 
   /* FORM: unit =
    *       unit-heading ';' interface-section implementation-section

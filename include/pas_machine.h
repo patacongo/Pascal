@@ -53,6 +53,7 @@
 
 #define FNAME_SIZE          40           /* Max size file name */
 #define LINE_SIZE           256          /* Max size of input line buffer */
+#define MAX_OPEN_FILES      8            /* Max number of open file */
 
 /* Target P-Machine Data Storage Sizes.  Currently assumes 16-bit machine */
 

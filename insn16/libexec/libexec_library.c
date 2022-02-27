@@ -81,12 +81,6 @@ static int      libexec_FillChar(struct libexec_s *st, ustack_t *sptr,
                    uint16_t count, uint8_t value, uint16_t strAlloc);
 
 /****************************************************************************
- * Public Data
- ****************************************************************************/
-
-int16_t g_exitCode;
-
-/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -392,7 +386,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
     {
       /* Exit processing
        *
-       *   procedure hist(exitCode : integer);
+       *   procedure exit(exitCode : integer);
        *
        * ON INPUT:
        *   TOS(0) - Exit code
@@ -401,7 +395,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        */
 
     case lbEXIT:
-      POP(st, g_exitCode);
+      POP(st, st->exitCode);
       errorCode = eEXIT;
       break;
 

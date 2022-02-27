@@ -516,7 +516,6 @@ static void pass4(poffHandle_t poffHandle)
 void popt_Finalization(poffHandle_t poffHandle)
 {
   poffProgHandle_t poffProgHandle; /* Handle to temporary POFF object */
-  TRACE(stderr, "[popt_Finalization]");
 
   /* Create a handle to a temporary object to store new POFF program
    * data.

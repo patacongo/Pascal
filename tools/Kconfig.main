@@ -1,3 +1,16 @@
+menu "Target Machine Description"
+
+config PASCAL_POINTERSIZE
+	int "Size of a pointer"
+	default 4
+	---help---
+		Size of a pointer on the target machine.  Typically one of 2 bytes
+		(16-bits), 4 bytes (32-bits), or 8 bytes(64-bytes).  This setting is
+		used to dyamically size some Pascal types that are containers of the
+		target pointer values (vs. the VM's pointer size which is always 2).
+
+endmenu
+
 menu "Pascal Target Tools"
 	depends on PASCAL_BUILD_NUTTX
 
@@ -68,8 +81,10 @@ config PASCAL_DEBUG
 	---help---
 		Enable DEBUG features in tools and run-time code.
 
-config PASCAL_TRACE
-	bool "Enable Function Tracing"
+config PASCAL_DEBUGGER
+	bool "Enable Debug Monitor"
 	default n
 	---help---
-		Enable DEBUG output on entry into each function.
+		Enable building a Pascal run-time debug monitor into the run-time
+		code.  With this option, the prun program will accept an argument,
+		--debug, to enter the Pascal debug monitory

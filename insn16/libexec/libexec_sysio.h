@@ -42,38 +42,15 @@
  ***************************************************************************/
 
 #include <stdint.h>
-#include <stdbool.h>
 #include "libexec.h"
-
-/***************************************************************************
- * Pre-processor Definitions
- ***************************************************************************/
-
-/* Maximum number of files that can be opened at run-time */
-
-#define MAX_OPEN_FILES 8
-
-/***************************************************************************
- * Public Types
- ***************************************************************************/
-
-enum openMode_e
-{
-  eOPEN_NONE = 0,
-  eOPEN_READ,
-  eOPEN_WRITE,
-  eOPEN_APPEND
-};
-
-typedef enum openMode_e openMode_t;
 
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void libexec_InitializeFile(void);
+void libexec_InitializeFile(struct libexec_s *st);
 int  libexec_sysio(struct libexec_s *st, uint16_t subfunc);
 const char *libexec_GetFormat(const char *baseFormat, uint8_t fieldWidth,
-                            uint8_t precision);
+                              uint8_t precision);
 
 #endif /* __LIBEXEC_SYSIO_H */

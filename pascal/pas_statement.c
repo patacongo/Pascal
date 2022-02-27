@@ -210,8 +210,6 @@ void pas_Statement(void)
   symbol_t  *symPtr;     /* Save Symbol Table pointer to token */
   exprType_t exprType;
 
-  TRACE(g_lstFile,"[pas_Statement");
-
   /* Generate file/line number pseudo-operation to facilitate P-Code testing */
 
   pas_GenerateLineNumber(FP->include, FP->line);
@@ -329,8 +327,6 @@ void pas_Statement(void)
    */
 
   pas_GenerateSimple(opPOPS);
-
-  TRACE(g_lstFile,"]");
 }
 
 /***********************************************************************/
@@ -339,7 +335,6 @@ void pas_Statement(void)
 static void pas_ComplexAssignment(void)
 {
    symbol_t symbolSave;
-   TRACE(g_lstFile,"[pas_ComplexAssignment]");
 
    /* FORM:  <variable OR function identifer> := <expression>
     * First, make a copy of the symbol table entry because the call to
@@ -369,8 +364,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 {
   symbol_t   *typePtr;
   exprType_t  exprType;
-
-  TRACE(g_lstFile,"[pas_SimpleAssignment]");
 
   /* FORM:  <variable OR function identifer> := <expression> */
 
@@ -1141,15 +1134,13 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
 static void pas_Assignment(uint16_t storeOp, exprType_t assignType,
                            symbol_t *varPtr, symbol_t *typePtr)
 {
-   TRACE(g_lstFile,"[pas_Assignment]");
+  /* FORM:  <variable OR function identifer> := <expression> */
 
-   /* FORM:  <variable OR function identifer> := <expression> */
+  if (g_token != tASSIGN) error (eASSIGN);
+  else getToken();
 
-   if (g_token != tASSIGN) error (eASSIGN);
-   else getToken();
-
-   pas_Expression(assignType, typePtr);
-   pas_GenerateStackReference(storeOp, varPtr);
+  pas_Expression(assignType, typePtr);
+  pas_GenerateStackReference(storeOp, varPtr);
 }
 
 /***********************************************************************/
@@ -1303,8 +1294,6 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
   uint16_t   lValueType;
   uint16_t   libOpcode;
   bool       destFirst = false;
-
-  TRACE(g_lstFile,"[pas_StringAssignment]");
 
   /* FORM:  <variable OR function identifer> := <expression> */
 
@@ -1481,16 +1470,14 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
 static void pas_LargeAssignment(uint16_t storeOp, exprType_t assignType,
                                 symbol_t *varPtr, symbol_t *typePtr)
 {
-   TRACE(g_lstFile,"[pas_LargeAssignment]");
+  /* FORM:  <variable OR function identifer> := <expression> */
 
-   /* FORM:  <variable OR function identifer> := <expression> */
+  if (g_token != tASSIGN) error (eASSIGN);
+  else getToken();
 
-   if (g_token != tASSIGN) error (eASSIGN);
-   else getToken();
-
-   pas_Expression(assignType, typePtr);
-   pas_GenerateDataSize(varPtr->sParm.v.vSize);
-   pas_GenerateStackReference(storeOp, varPtr);
+  pas_Expression(assignType, typePtr);
+  pas_GenerateDataSize(varPtr->sParm.v.vSize);
+  pas_GenerateStackReference(storeOp, varPtr);
 }
 
 /***********************************************************************/
@@ -1500,8 +1487,6 @@ static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr,
                                 uint8_t assignFlags)
 {
   uint16_t opCode;
-
-  TRACE(g_lstFile,"[pas_ArrayAssignment]");
 
   /* FORM:  <variable OR function identifer> := <expression> */
 
@@ -1549,8 +1534,6 @@ static void pas_GotoStatement(void)
   char     labelname [8];             /* Label symbol table name */
   symbol_t *label_ptr;                /* Pointer to Label Symbol */
 
-  TRACE(g_lstFile,"[pas_GotoStatement]");
-
   /* FORM:  GOTO <integer> */
 
   /* Get the token after the goto reserved word. It should be an <integer> */
@@ -1594,8 +1577,6 @@ static void pas_LabelStatement(void)
 {
    char labelName [8];               /* Label symbol table name */
    symbol_t *labelPtr;               /* Pointer to Label Symbol */
-
-   TRACE(g_lstFile,"[pas_LabelStatement]");
 
    /* FORM:  <integer> : */
 
@@ -1644,8 +1625,6 @@ static void pas_ProcStatement(void)
   symbol_t *procPtr = g_tknPtr;
   int size = 0;
 
-  TRACE(g_lstFile,"[pas_ProcStatement]");
-
   /* FORM: procedure-method-statement =
    * procedure-method-specifier [ actual-parameter-list ]
    *
@@ -1675,8 +1654,6 @@ static void pas_IfStatement(void)
 {
   uint16_t else_label  = ++g_label;
   uint16_t endif_label = else_label;
-
-  TRACE(g_lstFile,"[pas_IfStatement]");
 
   /* FORM: IF <expression> THEN <statement> [ELSE <statement>] */
 
@@ -1752,8 +1729,6 @@ static void pas_IfStatement(void)
 
 void pas_CompoundStatement(void)
 {
-   TRACE(g_lstFile,"[pas_CompoundStatement]");
-
    /* Process statements until END encountered */
 
    do
@@ -1774,8 +1749,6 @@ void pas_CompoundStatement(void)
 void pas_RepeatStatement ()
 {
   uint16_t rpt_label = ++g_label;
-
-  TRACE(g_lstFile,"[pas_RepeatStatement]");
 
   /* REPEAT <statement[;statement[statement...]]> UNTIL <expression> */
 
@@ -1812,8 +1785,6 @@ static void pas_WhileStatement(void)
 {
    uint16_t while_label    = ++g_label;  /* Top of loop label */
    uint16_t endwhile_label = ++g_label;  /* End of loop label */
-
-   TRACE(g_lstFile,"[pas_WhileStatement]");
 
    /* Generate WHILE <expression> DO <statement> */
 
@@ -1858,8 +1829,6 @@ static void pas_CaseStatement(void)
   uint16_t this_case;
   uint16_t next_case  = ++g_label;
   uint16_t end_case   = ++g_label;
-
-  TRACE(g_lstFile,"[pas_CaseStatement]");
 
   /* Process "CASE <expression> OF" */
 
@@ -2064,8 +2033,6 @@ static void pas_ForStatement(void)
    uint16_t jmpOp;
    uint16_t modOp;
 
-   TRACE(g_lstFile,"[pas_ForStatement]");
-
    /* FOR <assigment statement> <TO, DOWNTO> <expression> DO <statement> */
 
    /* Skip over the FOR token */
@@ -2180,8 +2147,6 @@ static void pas_ForStatement(void)
 static void pas_WithStatement(void)
 {
   with_t saveWithRecord;
-
-  TRACE(g_lstFile,"[pas_WithStatement]");
 
   /* Generate WITH <variable[,variable[...]] DO <statement> */
 

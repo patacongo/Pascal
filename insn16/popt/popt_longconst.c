@@ -76,8 +76,6 @@ int16_t popt_LongUnaryOptimize(void)
   int16_t nchanges = 0;
   int i;
 
-  TRACE(stderr, "[popt_LongUnaryOptimize]");
-
   /* At least two pcodes are need to perform unary optimizations */
 
   i = 1;
@@ -791,8 +789,6 @@ int16_t popt_LongBinaryOptimize(void)
 {
   int16_t nchanges = 0;
   int i;
-
-  TRACE(stderr, "[popt_LongBinaryOptimize]");
 
   /* At least two pcodes are needed to perform any of the following binary
    * operator optimizations.

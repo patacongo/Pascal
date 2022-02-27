@@ -57,10 +57,10 @@ PASOPTS   = -I$(PUNITDIR)
 
 SUFFIXES  += .pas .o1 .o .pex .err .lst
 
-PSRCS   = phello.c
-POBJS1  = $(PSRCS:.c=.o1)
-POBJS   = $(PSRCS:.c=.o)
-PEX     = $(PSRCS:.c=.pex)
+PSRCS   = phello.pas
+POBJS1  = $(PSRCS:.pas=.o1)
+POBJS   = $(PSRCS:.pas=.o)
+PEX     = $(PSRCS:.pas=.pex)
 
 #
 # Targets

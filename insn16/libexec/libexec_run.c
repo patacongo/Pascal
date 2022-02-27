@@ -1543,7 +1543,7 @@ void libexec_Reset(struct libexec_s *st)
 
   /* [Re]-initialize the file I/O logic */
 
-  libexec_InitializeFile();
+  libexec_InitializeFile(st);
 }
 
 /****************************************************************************

@@ -163,8 +163,6 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
   exprType_t term1Type;
   exprType_t term2Type;
 
-  TRACE(g_lstFile,"[pas_SimpleExpression]");
-
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]]
    *
    * Get +/- unary operation
@@ -564,8 +562,6 @@ static exprType_t pas_Term(exprType_t findExprType)
   exprType_t factor1Type;
   exprType_t factor2Type;
 
-  TRACE(g_lstFile,"[pas_Term]");
-
   /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
 
   factor1Type = pas_Factor(findExprType);
@@ -869,8 +865,6 @@ static exprType_t pas_Term(exprType_t findExprType)
 static exprType_t pas_Factor(exprType_t findExprType)
 {
   exprType_t factorType = exprUnknown;
-
-  TRACE(g_lstFile,"[pas_Factor]");
 
   /* Process by token type */
 
@@ -1248,8 +1242,6 @@ static exprType_t pas_ComplexFactor(void)
 {
   varInfo_t varInfo;
 
-  TRACE(g_lstFile,"[pas_ComplexFactor]");
-
   /* First, make a copy of the symbol table entry because the call to
    * pas_SimpleFactor() will modify it.
    */
@@ -1290,8 +1282,6 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
   symbol_t  *baseTypePtr;
   exprType_t factorType;
   uint16_t   arrayKind;
-
-  TRACE(g_lstFile,"[pas_SimpleFactor]");
 
   /* Check if it has been reduced to a simple factor. */
 
@@ -1878,8 +1868,6 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
   symbol_t  *typePtr;
   exprType_t factorType;
 
-  TRACE(g_lstFile,"[pas_BaseFactor]");
-
   /* Process according to the current variable sKind */
 
   typePtr = varPtr->sParm.v.vParent;
@@ -2265,8 +2253,6 @@ static exprType_t pas_PointerFactor(void)
 {
   exprType_t factorType;
 
-  TRACE(g_lstFile,"[pas_PointerFactor]");
-
   /* Process by token type */
 
   switch (g_token)
@@ -2379,8 +2365,6 @@ static exprType_t pas_ComplexPointerFactor(exprFlag_t factorFlags)
 {
   varInfo_t varInfo;
 
-  TRACE(g_lstFile,"[pas_ComplexPointerFactor]");
-
   /* First, make a copy of the symbol table entry because the call to
    * pas_SimplePointerFactor() will modify it.
    */
@@ -2421,8 +2405,6 @@ static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
   symbol_t  *varPtr = &varInfo->variable;
   symbol_t  *typePtr;
   exprType_t factorType;
-
-  TRACE(g_lstFile,"[pas_SimplePointerFactor]");
 
   /* Check if it has been reduced to a simple factor. */
 
@@ -2747,8 +2729,6 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
   symbol_t  *typePtr;
   exprType_t factorType;
 
-  TRACE(g_lstFile,"[pas_BasePointerFactor]");
-
   /* NOPE... recurse until it becomes a simple pointer factor
    *
    * Process the complex factor according to the current variable sKind.
@@ -2961,8 +2941,6 @@ static exprType_t pas_FunctionDesignator(void)
   exprType_t factorType;
   int        size         = 0;
 
-  TRACE(g_lstFile,"[pas_FunctionDesignator]");
-
   /* FORM: function-designator =
    *       function-identifier [ actual-parameter-list ]
    */
@@ -3036,8 +3014,6 @@ static exprType_t pas_FactorExprType(exprType_t baseExprType,
 
 static void pas_SetAbstractType(symbol_t *sType)
 {
-  TRACE(g_lstFile,"[pas_SetAbstractType]");
-
   if (sType != NULL &&
       sType->sKind == sTYPE &&
       sType->sParm.t.tType == sPOINTER)
@@ -3106,8 +3082,6 @@ static exprType_t pas_GetSetFactor(void)
   symbol_t *abstractTypePtr;
   symbol_t *setTypePtr;
   bool first;
-
-  TRACE(g_lstFile,"[pas_GetSetFactor]");
 
   /* FORM: '['[ set-subset [',' set-subset [',' ...]]]']'
    *       set-subset = set-element | set-subrange
@@ -3514,8 +3488,6 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
   exprType_t     simple2Type;
   bool           haveSimple2;
   bool           handled;
-
-  TRACE(g_lstFile,"[expression]");
 
   /* The abstract types - SETs, RECORDS, etc - require an exact
    * match in type.  Save the symbol table sTYPE entry associated
@@ -4248,8 +4220,6 @@ exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
 
 void pas_ArrayIndex(symbol_t *arrayTypePtr)
 {
-  TRACE(g_lstFile,"[pas_ArrayIndex]");
-
   /* Parse the index-type-list.
    *
    *   FORM:  array-type = 'array' '[' index-type-list ']' 'of' type-denoter
@@ -4379,8 +4349,6 @@ void pas_ArrayIndex(symbol_t *arrayTypePtr)
 exprType_t pas_GetExpressionType(symbol_t *sType)
 {
   exprType_t factorType = sINT;
-
-  TRACE(g_lstFile,"[getExprType]");
 
   if (sType != NULL && sType->sKind == sTYPE)
     {

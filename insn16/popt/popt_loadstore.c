@@ -62,8 +62,6 @@ int16_t popt_StackOrderOptimize(void)
   int16_t  nchanges = 0;
   register int16_t i;
 
-  TRACE(stderr, "[popt_StackOrderOptimize]");
-
   /* At least three pcodes are needed to perform the following Store
    * optimizations.
    */
@@ -122,8 +120,6 @@ int16_t popt_LoadOptimize(void)
   uint16_t val;
   int16_t  nchanges = 0;
   register int16_t i;
-
-  TRACE(stderr, "[popt_LoadOptimize]");
 
   /* At least two pcodes are need to perform Load optimizations */
 
@@ -259,8 +255,6 @@ int16_t popt_StoreOptimize (void)
 {
   int16_t  nchanges = 0;
   register int16_t i;
-
-  TRACE(stderr, "[popt_StoreOptimize]");
 
   /* At least two pcodes are needed to perform the following Store
    * optimizations.

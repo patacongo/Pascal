@@ -90,8 +90,6 @@ static void readPoffFile(const char *filename)
   FILE   *objFile;
   uint16_t errcode;
 
-  TRACE(stderr, "[readPoffFile]");
-
   /* Open the input, un-optimized POFF object file -- Use .o1 extension */
 
   (void)extension(filename, "o1", objname, 1);
@@ -132,8 +130,6 @@ static void writePoffFile(const char *filename)
   char  optname [FNAME_SIZE+1];
   FILE *optFile;
 
-  TRACE(stderr, "[writePoffFile]");
-
   /* Open optimized p-code file -- Use .o extension */
 
   (void)extension(filename, "o", optname, 1);
@@ -164,8 +160,6 @@ static void writePoffFile(const char *filename)
 
 int main(int argc, char *argv[], char *envp[])
 {
-  TRACE(stderr, "[main]");
-
   /* Check for existence of filename argument */
 
   if (argc < 2)

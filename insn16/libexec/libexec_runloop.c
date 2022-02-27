@@ -73,7 +73,7 @@ void libexec_RunLoop(EXEC_HANDLE_t handle)
 
   if (errcode == eEXIT)
     {
-      printf("Exit with code %d\n", g_exitCode);
+      printf("Exit with code %d\n", st->exitCode);
     }
   else
     {

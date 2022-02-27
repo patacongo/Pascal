@@ -63,8 +63,6 @@ int16_t popt_UnaryOptimize(void)
   int16_t pushIndex;
   int16_t i;
 
-  TRACE(stderr, "[popt_UnaryOptimize]");
-
   /* At least two pcodes are need to perform unary optimizations */
 
   i = 0;
@@ -627,8 +625,6 @@ int16_t popt_BinaryOptimize(void)
   int16_t pushIndex1;
   int16_t pushIndex2;
   int16_t i;
-
-  TRACE(stderr, "[popt_BinaryOptimize]");
 
   /* At least three pcodes are needed to perform the following binary
    * operator optimizations.

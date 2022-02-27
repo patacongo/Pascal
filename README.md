@@ -4,13 +4,27 @@ README
 Language Implementation
 -----------------------
 
-This Pascal implementation is a traditional, Pascal compiler tool suite
-with many enhancement for compatibility with modern Pascal usage.  The
-tool suit include a compiler, optimizer, linker, lister, and run-time
+**What It Is**.  This Pascal implementation is a traditional, Pascal compiler
+tool suite with many enhancement for compatibility with modern Pascal usage.
+The tool suit include a compiler, optimizer, linker, lister, and run-time
 package.  It targets a 16-bit, emulated stack machine that is implemented
 as a virtual machine by the run-time logic.
 
-Refer to the PascalNotes.md file in the docs sub-directory.
+Refer to the PascalNotes.md file in the docs sub-directory for more
+language-oriented discussion.
+
+**What It Is Not**.  This Pascal Implementation would not be the best choice for
+desk-top application; it does not have a feature set that is as rich as other
+desk-top Pascal tool suites.  It's virtual machine would probably not be
+optimal for the desk-top environement.  But neither is it a tiny, minimal
+Pascal tool set.  Although traditional and not object-based, it is a rather
+comple Pascal implementation suitable for significant developments.
+
+**Embedded Pascal**.  The environment where the Pascal compiler would be a
+good choice would probably be the embedded environment.  The run-time builds
+on the standard C library and expects little more from the hardware platform.
+An RTOS environment or, perhaps, even a bare-metal environment would be a
+good fit.  A port to NuttX is provided.
 
 Configuring Pascal
 ------------------

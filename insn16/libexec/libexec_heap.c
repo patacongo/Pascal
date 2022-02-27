@@ -92,13 +92,6 @@ struct freeChunk_s
 typedef struct freeChunk_s freeChunk_t;
 
 /****************************************************************************
- * Private Data
- ****************************************************************************/
-
-static memChunk_t  *g_inUseChunks;
-static freeChunk_t *g_freeChunks;
-
-/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -113,7 +106,7 @@ static void libexec_AddChunkToFreeList(struct libexec_s *st,
   /* Find the location to insert the free chunk in the ordered list */
 
   prevChunk = NULL;
-  freeChunk = g_freeChunks;
+  freeChunk = st->freeChunks;
 
   while (freeChunk != NULL)
     {
@@ -147,7 +140,7 @@ static void libexec_AddChunkToFreeList(struct libexec_s *st,
               newChunk->prev  = 0;
               newChunk->next  = freeChunk->chunk.address;
               freeChunk->prev = newChunk->chunk.address;
-              g_freeChunks    = newChunk;
+              st->freeChunks  = newChunk;
             }
           else if (nextChunk != NULL)
             {
@@ -176,9 +169,9 @@ static void libexec_AddChunkToFreeList(struct libexec_s *st,
 
   if (prevChunk == NULL)
     {
-      newChunk->prev = 0;
-      newChunk->next = 0;
-      g_freeChunks   = newChunk;
+      newChunk->prev  = 0;
+      newChunk->next  = 0;
+      st->freeChunks  = newChunk;
     }
   else
     {
@@ -201,13 +194,13 @@ static void libexec_RemoveChunkFromFreeList(struct libexec_s *st,
         {
           /* This is the only chunk in the free list */
 
-          g_freeChunks       = NULL;
+          st->freeChunks       = NULL;
         }
       else
         {
-          uint16_t nextAddr  = st->hpb + freeChunk->next;
-          g_freeChunks       = (freeChunk_t *)ATSTACK(st, nextAddr);
-          g_freeChunks->prev = 0;
+          uint16_t nextAddr    = st->hpb + freeChunk->next;
+          st->freeChunks       = (freeChunk_t *)ATSTACK(st, nextAddr);
+          st->freeChunks->prev = 0;
         }
     }
   else
@@ -365,8 +358,7 @@ void libexec_InitializeHeap(struct libexec_s *st)
       initialChunk->chunk.address  = heapStart - st->hpb;
       initialChunk->next           = 0;
 
-      g_inUseChunks                = NULL;
-      g_freeChunks                 = initialChunk;
+      st->freeChunks               = initialChunk;
     }
 }
 
@@ -380,7 +372,7 @@ int libexec_New(struct libexec_s *st, uint16_t size)
    * enough for this allocation.
    */
 
-  freeChunk = g_freeChunks;
+  freeChunk = st->freeChunks;
   size      = HEAP_ALIGNUP(size);
 
   while (freeChunk != NULL)

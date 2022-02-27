@@ -90,9 +90,10 @@
 #define xWRITE_REAL        (0x0023)  /* Write an real value to a text file */
 
 #define xCHDIR             (0x0024)  /* Set current working directory */
-#define xMKDIR             (0x0025)  /* Create a new directory */
-#define xRMDIR             (0x0026)  /* Remove an existing directory */
+#define xGETDIR            (0x0025)  /* Get the current working directory */
+#define xMKDIR             (0x0026)  /* Create a new directory */
+#define xRMDIR             (0x0027)  /* Remove an existing directory */
 
-#define MAX_XOP            (0x0027)
+#define MAX_XOP            (0x0028)
 
 #endif /* __PAS_SYSIO_H */

@@ -83,8 +83,6 @@ static void pas_IsOrdinalConstant(void);
 
 static void pas_ConstantAbsFunc(void)
 {
-  TRACE(g_lstFile,"[pas_ConstantAbsFunc]");
-
   /* FORM:  ABS (<simple integer/real expression>) */
 
   pas_CheckLParen();
@@ -116,8 +114,6 @@ static void pas_ConstantAbsFunc(void)
 
 static void pas_ConstantOrdFunc(void)
 {
-  TRACE(g_lstFile,"[pas_ConstantOrdFunc]");
-
   /* FORM:  ORD (<scalar type>) */
 
   pas_CheckLParen();
@@ -130,8 +126,6 @@ static void pas_ConstantOrdFunc(void)
 
 static void pas_ConstantPredFunc(void)
 {
-  TRACE(g_lstFile,"[pas_ConstantPredFunc]");
-
   /* FORM:  PRED (<simple integer expression>) */
 
   pas_CheckLParen();
@@ -145,8 +139,6 @@ static void pas_ConstantPredFunc(void)
 
 static void pas_ConstantSqrFunc(void)
 {
-  TRACE(g_lstFile,"[pas_ConstantSqrFunc]");
-
   /* FORM:  SQR (<simple integer OR real expression>) */
 
   pas_CheckLParen();
@@ -171,8 +163,6 @@ static void pas_ConstantSqrFunc(void)
 
 static void pas_ConstantRealFunc(uint8_t fpOpCode)
 {
-  TRACE(g_lstFile,"[pas_ConstantRealFunc]");
-
   /* FORM:  <function identifier> (<real/integer expression>) */
 
   pas_CheckLParen();
@@ -193,8 +183,6 @@ static void pas_ConstantRealFunc(uint8_t fpOpCode)
 
 static void pas_ConstantSuccFunc(void)
 {
-  TRACE(g_lstFile,"[pas_ConstantSuccFunc]");
-
   /* FORM:  SUCC (<simple integer expression>) */
 
   pas_CheckLParen();
@@ -208,8 +196,6 @@ static void pas_ConstantSuccFunc(void)
 
 static void pas_ConstantOddFunc(void)
 {
-  TRACE(g_lstFile,"[pas_ConstantOddFunc]");
-
   /* FORM:  ODD (<simple integer expression>) */
 
   pas_CheckLParen();
@@ -225,8 +211,6 @@ static void pas_ConstantOddFunc(void)
 
 static void pas_ConstantChrFunc(void)
 {
-  TRACE(g_lstFile,"[pas_ConstantChrFunc]");
-
   /* Form:  chr(integer expression).
    *
    * char(val) is only defined if there exists a character ch such
@@ -279,8 +263,6 @@ static void pas_IsOrdinalConstant(void)
 
 void pas_StandardFunctionOfConstant(void)
 {
-  TRACE(g_lstFile,"[pas_StandardFunctionOfConstant]");
-
   /* Is the token a function? */
 
   if (g_token == tSTDFUNC)

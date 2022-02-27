@@ -163,15 +163,13 @@ void errmsg(char *fmt, ...)
 
 void warn(uint16_t errCode)
 {
-   TRACE(g_lstFile,"[warn:%04x]", errCode);
+  /* Write error record to the error and list files */
 
-   /* Write error record to the error and list files */
+  pas_PrintError(errCode, ERROR_LEVEL_WARNING);
 
-   pas_PrintError(errCode, ERROR_LEVEL_WARNING);
+  /* Increment the count of warning */
 
-   /* Increment the count of warning */
-
-   g_warnCount++;
+  g_warnCount++;
 }
 
 /****************************************************************************/
@@ -179,46 +177,40 @@ void warn(uint16_t errCode)
 
 void error(uint16_t errCode)
 {
-   TRACE(g_lstFile,"[error:%04x]", errCode);
-
 #if CONFIG_DEBUG
-   fatal(errCode);
+  fatal(errCode);
 #else
-   /* Write error record to the error and list files */
+  /* Write error record to the error and list files */
 
-   pas_PrintError(errCode, ERROR_LEVEL_ERROR);
+  pas_PrintError(errCode, ERROR_LEVEL_ERROR);
 
-   /* Check if the error count has been execeeded the max allowable */
+  /* Check if the error count has been execeeded the max allowable */
 
-   if ((++g_errCount) > MAX_ERRORS)
-     {
-       fatal(eCOUNT);
-     }
+  if ((++g_errCount) > MAX_ERRORS)
+    {
+      fatal(eCOUNT);
+    }
 #endif
-
-} /* end error */
+}
 
 /****************************************************************************/
 
 
 void fatal(uint16_t errCode)
 {
-   TRACE(g_lstFile,"[fatal:%04x]", errCode);
+  /* Write error record to the error and list files */
 
-   /* Write error record to the error and list files */
+  pas_PrintError(errCode, ERROR_LEVEL_FATAL);
 
-   pas_PrintError(errCode, ERROR_LEVEL_FATAL);
+  /* Dump the tables (if CONFIG_DEBUG) */
 
-   /* Dump the tables (if CONFIG_DEBUG) */
+  DUMPTABLES;
 
-   DUMPTABLES;
+  /* And say goodbye */
 
-   /* And say goodbye */
+  printf(g_fmtErrAbort, errCode);
+  fprintf(g_lstFile, g_fmtErrAbort, errCode);
 
-   printf(g_fmtErrAbort, errCode);
-   fprintf(g_lstFile, g_fmtErrAbort, errCode);
-
-   exit(1);
-
-} /* end fatal */
+  exit(1);
+}
 

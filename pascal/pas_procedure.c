@@ -403,8 +403,6 @@ static void pas_ReadProc(void)  /* READ procedure */
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
-  TRACE(g_lstFile, "[pas_ReadProc]");
-
   /* Handles read-parameter-list
    *
    * FORM: READ read-parameter-list
@@ -459,8 +457,6 @@ static void pas_ReadlnProc(void)  /* READLN procedure */
 {
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
-
-  TRACE(g_lstFile, "[pas_ReadlnProc]");
 
   /* Handles read-parameter-list
    *
@@ -554,8 +550,6 @@ static void pas_ReadlnProc(void)  /* READLN procedure */
 
 static void pas_ReadProcCommon(bool text, uint16_t fileSize)
 {
-  TRACE(g_lstFile, "[pas_ReadProcCommon]");
-
   /* On entry, g_token should refer to the the first variable-access.  The
    * caller has assure that g_token is not ',' or ')' before calling.
    *
@@ -601,8 +595,6 @@ static void pas_ReadProcCommon(bool text, uint16_t fileSize)
 static void pas_ReadText(void)
 {
   exprType_t exprType;
-
-  TRACE(g_lstFile, "[pas_ReadText]");
 
   /* Get TOS = file number by duplicating the one that is already there (but
    * that we also need to preserve).
@@ -677,8 +669,6 @@ static void pas_ReadBinary(uint16_t fileSize)
 {
   symbol_t *parent;
   uint16_t size;
-
-  TRACE(g_lstFile, "[pas_ReadBinary]");
 
   /* It is binary.  Make sure that the token refers to a variable
    * with the same type as the FILE OF.
@@ -779,8 +769,6 @@ static void pas_OpenFileProc(uint16_t opcode1, uint16_t opcode2)
 {
   uint16_t opcode = opcode1;
 
-  TRACE(g_lstFile, "[pas_OpenFileProc]");
-
   /* FORM: open-procedure-name '(' file-variable {, record-size} ')'
    * FORM: open-procedure-name = REWRITE | RESET
    *
@@ -839,8 +827,6 @@ static void pas_OpenFileProc(uint16_t opcode1, uint16_t opcode2)
 
 static void pas_FileProc(uint16_t opcode)
 {
-  TRACE(g_lstFile, "[pas_FileProc]");
-
   /* FORM: procedure-name(<file number>)
    * FORM: procedure-name = PAGE | APPEND | CLOSEFILE
    *
@@ -933,8 +919,6 @@ static void pas_AssignFileProc(void)  /* ASSIGNFILE procedure */
   exprType_t exprType;
   uint32_t   fileType;
 
-  TRACE(g_lstFile, "[pas_AssignFileProc]");
-
   /* FORM: ASSIGNFILE|ASSIGN assignfile-parameter-list ';'
    * FORM: assignfile-parameter-list = '(' file-variable ',' file-name ')'
    * FORM: file-variable = file-variable | typed-file-variable | textfile-variable
@@ -996,8 +980,6 @@ static void pas_WriteProc(void)  /* WRITE procedure */
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
 
-   TRACE(g_lstFile, "[pas_WriteProc]");
-
   /* FORM: WRITE write-parameter-list
    * FORM:       write-parameter-list = '(' [ file-variable ',' ]
    *             write-parameter { ',' write-parameter } ')'
@@ -1049,8 +1031,6 @@ static void pas_WritelnProc(void)  /* WRITELN procedure */
 {
   uint16_t fileType;  /* sFILE or sTEXTFILE */
   uint16_t fileSize;  /* Size asociated with sFILE type */
-
-  TRACE(g_lstFile, "[pas_WritelnProc]");
 
   /* FORM: WRITELN writeln-parameter-list
    * FORM:      writeln-parameter-list = [ write-parameter-list ]
@@ -1122,8 +1102,6 @@ static void pas_WritelnProc(void)  /* WRITELN procedure */
 
 static void pas_WriteProcCommon(bool text, uint16_t fileSize)
 {
-  TRACE(g_lstFile, "[pas_WriteProcCommon]");
-
   /* Handle the WRITE/WRITELN write-parameter
    *
    * FORM:  write-parameter-list = '(' [ file-variable ',' ]
@@ -1163,8 +1141,6 @@ static void pas_WriteProcCommon(bool text, uint16_t fileSize)
 
 static void pas_WriteText(void)
 {
-  TRACE(g_lstFile, "[pas_WriteText]");
-
   /* The general form is <expression> */
 
   switch (g_token)
@@ -1366,8 +1342,6 @@ static uint16_t pas_WriteFieldWidth(void)
   uint8_t fieldWidth = 0;
   uint8_t precision  = 0;
 
-  TRACE(g_lstFile, "[pas_WriteFieldWidth]");
-
   /* If a field width/precision is present, then the current token will
    * be ':'
    *
@@ -1419,8 +1393,6 @@ static void pas_WriteBinary(uint16_t fileSize)
 {
   symbol_t *parent;
   uint16_t size;
-
-  TRACE(g_lstFile, "[pas_WriteBinary]");
 
   /* It is binary.  Make sure that the token refers to a variable
    * with the same type as the FILE OF.
@@ -1505,8 +1477,6 @@ static void pas_DirectoryProc(uint16_t opCode)
 
   /* FORM: 'chdir' '(' string-expression ')' */
 
-  TRACE(g_lstFile,"[pas_DirectoryProc]");
-
   getToken();
   if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
   else getToken();
@@ -1547,8 +1517,6 @@ static void pas_DirectoryProc(uint16_t opCode)
 static void pas_NewProc(void)
 {
   /* FORM:  'new' '(' pointer-variable ')' */
-
-  TRACE(g_lstFile,"[pas_NewProc]");
 
   getToken();
   if (g_token != '(') error(eLPAREN);  /* Skip over '(' */
@@ -2099,8 +2067,6 @@ static void pas_ValProc(void)  /* VAL procedure */
 {
   exprType_t exprType;
 
-  TRACE(g_lstFile, "[pas_ValProc]");
-
   /* Declaration:
    *   procedure val(const S : string; var V; var Code : word);
    *
@@ -2422,8 +2388,6 @@ static void pas_InitializeNewArray(symbol_t *typePtr)
 
 void pas_StandardProcedure(void)
 {
-  TRACE(g_lstFile, "[pas_StandardProcedure]");
-
   /* Is the token a procedure? */
 
   if (g_token == tSTDPROC)
@@ -2650,8 +2614,6 @@ int pas_ActualParameterList(symbol_t *procPtr)
   bool lparen = false;
   int parmIndex = 0;
   int size = 0;
-
-  TRACE(g_lstFile,"[pas_ActualParameterList]");
 
   /* Processes the (optional) actual-parameter-list associated with
    * a function or procedure call:

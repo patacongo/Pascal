@@ -1,8 +1,8 @@
 ############################################################################
-# Makefile
+# PasMakefile
 # Host system makefile
 #
-#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,69 +37,45 @@
 # Directories
 #
 
-LIBEXECDIR   = ${shell pwd}
-INSNDIR      = $(LIBEXECDIR)/..
-PASCAL       = $(LIBEXECDIR)/../..
+PUNITDIR  = ${shell pwd}
+PAPPSDIR  = $(PUNITDIR)/..
+PIMAGEDIR = $(PAPPSDIR)/image
 
--include $(PASCAL)/.config
+PASCAL    = $(PAPPSDIR)/..
 include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
 #
 
-EXTRA_INCLUDES = -I$(INSNDIR)/include
-INCLUDES    += $(EXTRA_INCLUDES)
-CFLAGS      += $(EXTRA_INCLUDES)
+PASOPTS   = -I$(PUNITDIR)
 
 #
 # Objects and targets
 #
 
-LIBEXECSRCS  = libexec_runloop.c libexec_load.c libexec_run.c libexec_float.c
-LIBEXECSRCS += libexec_sysio.c libexec_library.c libexec_setops.c
-LIBEXECSRCS += libexec_longops.c libexec_heap.c
+SUFFIXES  += .pas .o1 .o .err .lst
 
-ifeq ($(CONFIG_PASCAL_DEBUGGER),y)
-LIBEXECSRCS += libexec_debug.c
-endif
-
-LIBEXEOBJS   = $(LIBEXECSRCS:.c=.o)
-
-OBJS         = $(LIBEXEOBJS)
-DEPS         = $(LIBEXECSRCS:.c=.d)
-
-SUFFIXES    += .d
+PSRCS  := $(wildcard *.pas)
+POBJS1  = $(PSRCS:.pas=.o1)
+POBJS   = $(PSRCS:.pas=.o)
 
 #
 # Targets
 #
 
-all: libexec.a
-.PHONY: all libexec.a clean distclean
+all: $(POBJS)
+.PHONY: all clean distclean
 
-$(DEPS): %.d: %.c
+$(POBJS1): %.o1: %.pas
 	$(Q) echo "  $@"
-	$(Q) $(CC) $(CFLAGS) -MM $< -MF $@
+	$(Q) $(PAS) $(PASOPTS) $<
 
-$(OBJS): %.o: %.c
+$(POBJS): %.o: %.o1
 	$(Q) echo "  $@"
-	$(Q) $(CC) -c $(CFLAGS) $< -o $@
-
-$(PLIBDIR)/libexec.a: $(DEPS) $(OBJS)
-	$(Q) echo "  $@"
-	$(Q) $(AR) $(ARFLAGS) $@ $^ 1>/dev/null
-
-libexec.a: $(PLIBDIR)/libexec.a
+	$(Q) $(POPT) $(POPTOPTS) $<
 
 clean:
-	$(Q) $(RM) libexec.a *.o core *~
+	$(Q) $(RM) *.o *.o1 *.err *.lst core *~
 
 distclean: clean
-	$(Q) $(RM) *.d .depend Make.dep
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),distclean)
--include $(DEPS)
-endif
-endif

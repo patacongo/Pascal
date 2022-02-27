@@ -74,8 +74,6 @@ void pas_Program(void)
   char *programName = NULL;
   uint16_t nFiles   = 2;
 
-  TRACE(g_lstFile, "[pas_Program]");
-
   /* FORM: program = program-heading ';' [uses-section ] block '.'
    * FORM: program-heading = 'program' identifier [ '(' identifier-list ')' ]
    *
@@ -174,8 +172,6 @@ void pas_UsesSection(void)
   char *unitFileName = NULL;
   char *saveTknStrt;
   char *unitName;
-
-  TRACE(g_lstFile, "[pas_UsesSection]");
 
   /* FORM: uses-section = 'uses' [ uses-unit-list ] ';'
    * FORM: uses-unit-list = unit-import {';' uses-unit-list }

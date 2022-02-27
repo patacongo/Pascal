@@ -213,7 +213,6 @@ static void insn16_Generate(enum pcode_e opcode, uint16_t arg1,
 {
   uint16_t insn_opcode = g_opCodeMap[opcode];
   uint16_t arg16;
-  TRACE(g_lstFile,"[insn16_Generate:0x%02x->0x%04x]", opcode, insn_opcode);
 
   poffAddProgByte(g_poffHandle, insn_opcode);
   if (insn_opcode & o8)

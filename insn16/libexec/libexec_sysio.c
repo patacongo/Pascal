@@ -61,27 +61,8 @@
 #include "libexec_sysio.h"
 
 /****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-#define MAX_FILE_NAME       64
-
-/****************************************************************************
  * Private Types
  ****************************************************************************/
-
-struct pexecFileTable_s
-{
-  char fileName[MAX_FILE_NAME];
-  bool inUse;
-  bool text;
-  bool eoln;
-  uint16_t recordSize;
-  FILE *stream;
-  openMode_t openMode;
-};
-
-typedef struct pexecFileTable_s pexecFileTable_t;
 
 /* Used for dealing with LongInteger and LongWord types */
 
@@ -100,36 +81,44 @@ typedef union uWord_u uWord_t;
 
 static ustack_t libexec_ConvertInteger(uint16_t fileNumber, uint8_t *ioPtr);
 static void     libexec_ConvertReal(uint16_t *dest, uint8_t *ioPtr);
-static void     libexec_CheckEoln(uint16_t fileNumber, char *buffer);
-static ustack_t libexec_AllocateFile(void);
-static int      libexec_FreeFile(uint16_t fileNumber);
-static int      libexec_AssignFile(uint16_t fileNumber, bool text,
-                  const char *fileName, uint16_t size);
-static int      libexec_OpenFile(uint16_t fileNumber, openMode_t openMode);
-static int      libexec_CloseFile(uint16_t fileNumber);
-static int      libexec_RecordSize(uint16_t fileNumber, uint16_t size);
-static int      libexec_ReadLn(uint16_t fileNumber);
-static int      libexec_ReadBinary(uint16_t fileNumber, uint8_t *dest,
+static void     libexec_CheckEoln(struct libexec_s *st, uint16_t fileNumber,
+                  char *buffer);
+static ustack_t libexec_AllocateFile(struct libexec_s *st);
+static int      libexec_FreeFile(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_AssignFile(struct libexec_s *st, uint16_t fileNumber,
+                  bool text, const char *fileName, uint16_t size);
+static int      libexec_OpenFile(struct libexec_s *st, uint16_t fileNumber,
+                  openMode_t openMode);
+static int      libexec_CloseFile(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_RecordSize(struct libexec_s *st, uint16_t fileNumber,
                   uint16_t size);
-static int      libexec_ReadInteger(uint16_t fileNumber, ustack_t *dest);
-static int      libexec_ReadChar(uint16_t fileNumber, uint8_t *dest);
+static int      libexec_ReadLn(struct libexec_s *st, uint16_t fileNumber);
+static int      libexec_ReadBinary(struct libexec_s *st, uint16_t fileNumber,
+                  uint8_t *dest, uint16_t size);
+static int      libexec_ReadInteger(struct libexec_s *st, uint16_t fileNumber,
+                  ustack_t *dest);
+static int      libexec_ReadChar(struct libexec_s *st, uint16_t fileNumber,
+                  uint8_t *dest);
 static int      libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
                   uint16_t *stringVarPtr, uint16_t readSize);
-static int      libexec_ReadReal(uint16_t fileNumber, uint16_t *dest);
-static int      libexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
-                  uint16_t size);
-static int      libexec_WriteInteger(uint16_t fileNumber, int16_t value,
-                  uint16_t fieldWidth);
-static int      libexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
-                  uint16_t fieldWidth);
-static int      libexec_WriteWord(uint16_t fileNumber, uint16_t value,
-                  uint16_t fieldWidth);
-static int      libexec_WriteChar(uint16_t fileNumber, uint8_t value,
-                  uint16_t fieldWidth);
-static int      libexec_WriteReal(uint16_t fileNumber, double value,
-                  uint16_t fieldWidth);
-static int      libexec_WriteString(uint16_t fileNumber, const char *string,
-                  uint16_t size, uint16_t fieldWidth);
+static int      libexec_ReadReal(struct libexec_s *st, uint16_t fileNumber,
+                  uint16_t *dest);
+static int      libexec_WriteBinary(struct libexec_s *st, uint16_t fileNumber,
+                  const uint8_t *src, uint16_t size);
+static int      libexec_WriteInteger(struct libexec_s *st, uint16_t fileNumber,
+                  int16_t value, uint16_t fieldWidth);
+static int      libexec_WriteLongInteger(struct libexec_s *st,
+                  uint16_t fileNumber, int32_t value, uint16_t fieldWidth);
+static int      libexec_WriteWord(struct libexec_s *st, uint16_t fileNumber,
+                  uint16_t value, uint16_t fieldWidth);
+static int      libexec_WriteLongWord(struct libexec_s *st,
+                  uint16_t fileNumber, uint32_t value, uint16_t fieldWidth);
+static int      libexec_WriteChar(struct libexec_s *st, uint16_t fileNumber,
+                  uint8_t value, uint16_t fieldWidth);
+static int      libexec_WriteReal(struct libexec_s *st, uint16_t fileNumber,
+                  double value, uint16_t fieldWidth);
+static int      libexec_WriteString(struct libexec_s *st, uint16_t fileNumber,
+                  const char *string, uint16_t size, uint16_t fieldWidth);
 static int      libexec_GetFileSize(FILE *stream, off_t *fileSize);
 static int      libexec_Eof(struct libexec_s *st, uint16_t fileNumber);
 static int      libexec_Eoln(struct libexec_s *st, uint16_t fileNumber);
@@ -139,20 +128,6 @@ static int      libexec_Seek(struct libexec_s *st, uint16_t fileNumber,
                   uint32_t filePos);
 static int      libexec_SeekEof(struct libexec_s *st, uint16_t fileNumber);
 static int      libexec_SeekEoln(struct libexec_s *st, uint16_t fileNumber);
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-/* The runtime file table.  Maps a fileNumber to the current state of the
- * file.
- */
-
-static pexecFileTable_t g_fileTable[MAX_OPEN_FILES];
-
-/* Working buffer */
-
-static uint8_t g_ioLine[LINE_SIZE + 1];
 
 /****************************************************************************
  * Private Functions
@@ -272,7 +247,8 @@ static void libexec_ConvertReal(uint16_t *dest, uint8_t *inPtr)
 
 /****************************************************************************/
 
-static void libexec_CheckEoln(uint16_t fileNumber, char *buffer)
+static void libexec_CheckEoln(struct libexec_s *st, uint16_t fileNumber,
+                              char *buffer)
 {
   bool eoln = false;
   int len;
@@ -292,20 +268,20 @@ static void libexec_CheckEoln(uint16_t fileNumber, char *buffer)
         }
     }
 
-  g_fileTable[fileNumber].eoln = eoln;
+  st->fileTable[fileNumber].eoln = eoln;
 }
 
 /****************************************************************************/
 
-static ustack_t libexec_AllocateFile(void)
+static ustack_t libexec_AllocateFile(struct libexec_s *st)
 {
   uint16_t fileNumber;
 
   for (fileNumber = 0; fileNumber < MAX_OPEN_FILES; fileNumber++)
     {
-      if (!g_fileTable[fileNumber].inUse)
+      if (!st->fileTable[fileNumber].inUse)
         {
-          g_fileTable[fileNumber].inUse = true;
+          st->fileTable[fileNumber].inUse = true;
           return fileNumber;
         }
     }
@@ -315,7 +291,7 @@ static ustack_t libexec_AllocateFile(void)
 
 /****************************************************************************/
 
-static int libexec_FreeFile(uint16_t fileNumber)
+static int libexec_FreeFile(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -323,7 +299,7 @@ static int libexec_FreeFile(uint16_t fileNumber)
     {
       errorCode = eBADFILE;
     }
-  else if (!g_fileTable[fileNumber].inUse)
+  else if (!st->fileTable[fileNumber].inUse)
     {
       errorCode = eFILENOTINUSE;
     }
@@ -331,14 +307,14 @@ static int libexec_FreeFile(uint16_t fileNumber)
     {
       /* If the file was opened, then close it */
 
-      if (g_fileTable[fileNumber].stream != NULL)
+      if (st->fileTable[fileNumber].stream != NULL)
         {
-          libexec_CloseFile(fileNumber);
+          libexec_CloseFile(st, fileNumber);
         }
 
       /* Reset the entire file entry */
 
-      memset(&g_fileTable[fileNumber], 0, sizeof(pexecFileTable_t));
+      memset(&st->fileTable[fileNumber], 0, sizeof(execFileTable_t));
     }
 
   return errorCode;
@@ -346,8 +322,8 @@ static int libexec_FreeFile(uint16_t fileNumber)
 
 /****************************************************************************/
 
-static int libexec_AssignFile(uint16_t fileNumber, bool text, const char *fileName,
-                              uint16_t size)
+static int libexec_AssignFile(struct libexec_s *st, uint16_t fileNumber,
+                              bool text, const char *fileName, uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -357,7 +333,7 @@ static int libexec_AssignFile(uint16_t fileNumber, bool text, const char *fileNa
     {
       errorCode = eBADFILE;
     }
-  else if (size >= MAX_FILE_NAME) /* include NUL terminator */
+  else if (size > FNAME_SIZE) /* include NUL terminator */
     {
       errorCode = eBADFILENAME;
     }
@@ -365,15 +341,15 @@ static int libexec_AssignFile(uint16_t fileNumber, bool text, const char *fileNa
     {
       /* Copy the file name into the file table */
 
-      memcpy(g_fileTable[fileNumber].fileName, fileName, size);
+      memcpy(st->fileTable[fileNumber].fileName, fileName, size);
 
       /* NUL terminate the fileName so that we can use it like a C string */
 
-      g_fileTable[fileNumber].fileName[size] = '\0';
+      st->fileTable[fileNumber].fileName[size] = '\0';
 
       /* The set the file type */
 
-      g_fileTable[fileNumber].text = text;
+      st->fileTable[fileNumber].text = text;
     }
 
   return errorCode;
@@ -381,7 +357,8 @@ static int libexec_AssignFile(uint16_t fileNumber, bool text, const char *fileNa
 
 /****************************************************************************/
 
-static int libexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
+static int libexec_OpenFile(struct libexec_s *st, uint16_t fileNumber,
+                            openMode_t openMode)
 {
   int errorCode = eNOERROR;
 
@@ -391,7 +368,7 @@ static int libexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream != NULL)
+  else if (st->fileTable[fileNumber].stream != NULL)
     {
       errorCode = eFILEALREADYOPEN;
     }
@@ -415,15 +392,15 @@ static int libexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
             return eBADOPENMODE;
         }
 
-      g_fileTable[fileNumber].stream = fopen(g_fileTable[fileNumber].fileName,
+      st->fileTable[fileNumber].stream = fopen(st->fileTable[fileNumber].fileName,
                                              modeString);
-      if (g_fileTable[fileNumber].stream == NULL)
+      if (st->fileTable[fileNumber].stream == NULL)
         {
           errorCode = eOPENFAILED;
         }
       else
         {
-          g_fileTable[fileNumber].openMode = openMode;
+          st->fileTable[fileNumber].openMode = openMode;
         }
     }
 
@@ -432,7 +409,7 @@ static int libexec_OpenFile(uint16_t fileNumber, openMode_t openMode)
 
 /****************************************************************************/
 
-static int libexec_CloseFile(uint16_t fileNumber)
+static int libexec_CloseFile(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -440,14 +417,14 @@ static int libexec_CloseFile(uint16_t fileNumber)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (st->fileTable[fileNumber].stream == NULL)
     {
       errorCode = eFILENOTOPEN;
     }
   else
     {
-      (void)fclose(g_fileTable[fileNumber].stream);
-      g_fileTable[fileNumber].stream = NULL;
+      (void)fclose(st->fileTable[fileNumber].stream);
+      st->fileTable[fileNumber].stream = NULL;
     }
 
   return errorCode;
@@ -455,7 +432,8 @@ static int libexec_CloseFile(uint16_t fileNumber)
 
 /****************************************************************************/
 
-static int libexec_RecordSize(uint16_t fileNumber, uint16_t size)
+static int libexec_RecordSize(struct libexec_s *st, uint16_t fileNumber,
+                              uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -465,7 +443,7 @@ static int libexec_RecordSize(uint16_t fileNumber, uint16_t size)
     }
   else
     {
-      g_fileTable[fileNumber].recordSize = size;
+      st->fileTable[fileNumber].recordSize = size;
     }
 
   return errorCode;
@@ -473,7 +451,7 @@ static int libexec_RecordSize(uint16_t fileNumber, uint16_t size)
 
 /****************************************************************************/
 
-static int libexec_ReadLn(uint16_t fileNumber)
+static int libexec_ReadLn(struct libexec_s *st, uint16_t fileNumber)
 {
   int errorCode = eNOERROR;
 
@@ -481,14 +459,14 @@ static int libexec_ReadLn(uint16_t fileNumber)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_READ)
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           st->fileTable[fileNumber].openMode != eOPEN_READ)
     {
       errorCode = eNOTOPENFORREAD;
     }
-  else if (g_fileTable[fileNumber].eoln)
+  else if (st->fileTable[fileNumber].eoln)
     {
-      g_fileTable[fileNumber].eoln = false;
+      st->fileTable[fileNumber].eoln = false;
     }
   else
     {
@@ -496,7 +474,7 @@ static int libexec_ReadLn(uint16_t fileNumber)
 
       do
         {
-          ch = fgetc(g_fileTable[fileNumber].stream);
+          ch = fgetc(st->fileTable[fileNumber].stream);
         }
       while (ch != EOF && ch != '\n');
     }
@@ -506,7 +484,8 @@ static int libexec_ReadLn(uint16_t fileNumber)
 
 /****************************************************************************/
 
-static int libexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
+static int libexec_ReadBinary(struct libexec_s *st, uint16_t fileNumber,
+                              uint8_t *dest, uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -514,18 +493,18 @@ static int libexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_READ)
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           st->fileTable[fileNumber].openMode != eOPEN_READ)
     {
       errorCode = eNOTOPENFORREAD;
     }
   else
     {
-      size_t nitems = fread(dest, 1, size, g_fileTable[fileNumber].stream);
-      if (nitems < size && ferror(g_fileTable[fileNumber].stream))
+      size_t nitems = fread(dest, 1, size, st->fileTable[fileNumber].stream);
+      if (nitems < size && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eREADFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
+          clearerr(st->fileTable[fileNumber].stream);
         }
     }
 
@@ -534,7 +513,8 @@ static int libexec_ReadBinary(uint16_t fileNumber, uint8_t *dest, uint16_t size)
 
 /****************************************************************************/
 
-static int libexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
+static int libexec_ReadInteger(struct libexec_s *st, uint16_t fileNumber,
+                               ustack_t *dest)
 {
   int errorCode = eNOERROR;
 
@@ -542,25 +522,25 @@ static int libexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_READ)
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           st->fileTable[fileNumber].openMode != eOPEN_READ)
     {
       errorCode = eNOTOPENFORREAD;
     }
   else
     {
-      char *ptr = fgets((char *)g_ioLine, LINE_SIZE,
-                         g_fileTable[fileNumber].stream);
+      char *ptr = fgets((char *)st->ioBuffer, LINE_SIZE,
+                         st->fileTable[fileNumber].stream);
 
-      if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
+      if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eREADFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
+          clearerr(st->fileTable[fileNumber].stream);
         }
       else
         {
-          libexec_CheckEoln(fileNumber, (char *)g_ioLine);
-          *dest = libexec_ConvertInteger(fileNumber, g_ioLine);
+          libexec_CheckEoln(st, fileNumber, (char *)st->ioBuffer);
+          *dest = libexec_ConvertInteger(fileNumber, st->ioBuffer);
         }
     }
 
@@ -569,7 +549,8 @@ static int libexec_ReadInteger(uint16_t fileNumber, ustack_t *dest)
 
 /****************************************************************************/
 
-static int libexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
+static int libexec_ReadChar(struct libexec_s *st, uint16_t fileNumber,
+                            uint8_t *dest)
 {
   int errorCode = eNOERROR;
 
@@ -577,25 +558,25 @@ static int libexec_ReadChar(uint16_t fileNumber, uint8_t *dest)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_READ)
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           st->fileTable[fileNumber].openMode != eOPEN_READ)
     {
       errorCode = eNOTOPENFORREAD;
     }
   else
     {
-      char *ptr = fgets((char *)g_ioLine, LINE_SIZE,
-                        g_fileTable[fileNumber].stream);
+      char *ptr = fgets((char *)st->ioBuffer, LINE_SIZE,
+                        st->fileTable[fileNumber].stream);
 
-      if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
+      if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eREADFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
+          clearerr(st->fileTable[fileNumber].stream);
         }
       else
         {
-          libexec_CheckEoln(fileNumber, (char *)g_ioLine);
-          *dest = g_ioLine[0];
+          libexec_CheckEoln(st, fileNumber, (char *)st->ioBuffer);
+          *dest = st->ioBuffer[0];
         }
     }
 
@@ -613,8 +594,8 @@ static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_READ)
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           st->fileTable[fileNumber].openMode != eOPEN_READ)
     {
       errorCode = eNOTOPENFORREAD;
     }
@@ -627,16 +608,16 @@ static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
       stringBufferStack = stringVarPtr[sSTRING_DATA_OFFSET / sINT_SIZE];
       stringBufferPtr   = (char *)&st->dstack.b[stringBufferStack];
       ptr               = fgets(stringBufferPtr, readSize,
-                                g_fileTable[fileNumber].stream);
+                                st->fileTable[fileNumber].stream);
 
-      if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
+      if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eREADFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
+          clearerr(st->fileTable[fileNumber].stream);
         }
       else
         {
-          libexec_CheckEoln(fileNumber, stringBufferPtr);
+          libexec_CheckEoln(st, fileNumber, stringBufferPtr);
           stringVarPtr[sSTRING_SIZE_OFFSET / sINT_SIZE] =
             strlen(stringBufferPtr);
         }
@@ -645,7 +626,8 @@ static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
   return errorCode;
 }
 
-static int libexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
+static int libexec_ReadReal(struct libexec_s *st, uint16_t fileNumber,
+                            uint16_t *dest)
 {
   int errorCode = eNOERROR;
 
@@ -653,25 +635,25 @@ static int libexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           g_fileTable[fileNumber].openMode != eOPEN_READ)
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           st->fileTable[fileNumber].openMode != eOPEN_READ)
     {
       errorCode = eNOTOPENFORREAD;
     }
   else
     {
-      char *ptr = fgets((char*)g_ioLine, LINE_SIZE,
-                        g_fileTable[fileNumber].stream);
+      char *ptr = fgets((char*)st->ioBuffer, LINE_SIZE,
+                        st->fileTable[fileNumber].stream);
 
-      if (ptr == NULL && ferror(g_fileTable[fileNumber].stream))
+      if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eREADFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
+          clearerr(st->fileTable[fileNumber].stream);
         }
       else
         {
-          libexec_CheckEoln(fileNumber, (char *)g_ioLine);
-          libexec_ConvertReal(dest, g_ioLine);
+          libexec_CheckEoln(st, fileNumber, (char *)st->ioBuffer);
+          libexec_ConvertReal(dest, st->ioBuffer);
         }
     }
 
@@ -680,8 +662,8 @@ static int libexec_ReadReal(uint16_t fileNumber, uint16_t *dest)
 
 /****************************************************************************/
 
-static int libexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
-                               uint16_t size)
+static int libexec_WriteBinary(struct libexec_s *st, uint16_t fileNumber,
+                               const uint8_t *src, uint16_t size)
 {
   int errorCode = eNOERROR;
 
@@ -689,19 +671,19 @@ static int libexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
   else
     {
-      ssize_t nitems = fwrite(src, 1, size, g_fileTable[fileNumber].stream);
-      if (nitems < 0 && ferror(g_fileTable[fileNumber].stream))
+      ssize_t nitems = fwrite(src, 1, size, st->fileTable[fileNumber].stream);
+      if (nitems < 0 && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eWRITEFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
+          clearerr(st->fileTable[fileNumber].stream);
         }
     }
 
@@ -710,8 +692,8 @@ static int libexec_WriteBinary(uint16_t fileNumber, const uint8_t *src,
 
 /****************************************************************************/
 
-static int libexec_WriteInteger(uint16_t fileNumber, int16_t value,
-                                uint16_t fieldWidth)
+static int libexec_WriteInteger(struct libexec_s *st, uint16_t fileNumber,
+                                int16_t value, uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -719,16 +701,16 @@ static int libexec_WriteInteger(uint16_t fileNumber, int16_t value,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       const char *fmt = libexec_GetFormat("d", fieldWidth >> 8, 0);
-      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      int nbytes = fprintf(st->fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
           errorCode = eWRITEFAILED;
@@ -740,7 +722,8 @@ static int libexec_WriteInteger(uint16_t fileNumber, int16_t value,
 
 /****************************************************************************/
 
-static int libexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
+static int libexec_WriteLongInteger(struct libexec_s *st,
+                                    uint16_t fileNumber, int32_t value,
                                     uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
@@ -749,16 +732,16 @@ static int libexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       const char *fmt = libexec_GetFormat(PRId32, fieldWidth >> 8, 0);
-      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      int nbytes = fprintf(st->fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
           errorCode = eWRITEFAILED;
@@ -770,8 +753,8 @@ static int libexec_WriteLongInteger(uint16_t fileNumber, int32_t value,
 
 /****************************************************************************/
 
-static int libexec_WriteWord(uint16_t fileNumber, uint16_t value,
-                             uint16_t fieldWidth)
+static int libexec_WriteWord(struct libexec_s *st, uint16_t fileNumber,
+                             uint16_t value, uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -779,16 +762,16 @@ static int libexec_WriteWord(uint16_t fileNumber, uint16_t value,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       const char *fmt = libexec_GetFormat("u", fieldWidth >> 8, 0);
-      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      int nbytes = fprintf(st->fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
           errorCode = eWRITEFAILED;
@@ -800,8 +783,8 @@ static int libexec_WriteWord(uint16_t fileNumber, uint16_t value,
 
 /****************************************************************************/
 
-static int libexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
-                                 uint16_t fieldWidth)
+static int libexec_WriteLongWord(struct libexec_s *st, uint16_t fileNumber,
+                                 uint32_t value, uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -809,16 +792,16 @@ static int libexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       const char *fmt = libexec_GetFormat(PRIu32, fieldWidth >> 8, 0);
-      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      int nbytes = fprintf(st->fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
           errorCode = eWRITEFAILED;
@@ -830,8 +813,8 @@ static int libexec_WriteLongWord(uint16_t fileNumber, uint32_t value,
 
 /****************************************************************************/
 
-static int libexec_WriteChar(uint16_t fileNumber, uint8_t value,
-                             uint16_t fieldWidth)
+static int libexec_WriteChar(struct libexec_s *st, uint16_t fileNumber,
+                             uint8_t value, uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -839,20 +822,20 @@ static int libexec_WriteChar(uint16_t fileNumber, uint8_t value,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
   else
     {
       const char *fmt = libexec_GetFormat("c", fieldWidth >> 8, 0);
-      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      int nbytes = fprintf(st->fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
           errorCode = eWRITEFAILED;
-          clearerr(g_fileTable[fileNumber].stream);
+          clearerr(st->fileTable[fileNumber].stream);
         }
     }
 
@@ -861,8 +844,8 @@ static int libexec_WriteChar(uint16_t fileNumber, uint8_t value,
 
 /****************************************************************************/
 
-static int libexec_WriteReal(uint16_t fileNumber, double value,
-                             uint16_t fieldWidth)
+static int libexec_WriteReal(struct libexec_s *st, uint16_t fileNumber,
+                             double value, uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -870,9 +853,9 @@ static int libexec_WriteReal(uint16_t fileNumber, double value,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
@@ -880,7 +863,7 @@ static int libexec_WriteReal(uint16_t fileNumber, double value,
     {
       const char *fmt = libexec_GetFormat("f", fieldWidth >> 8,
                                           fieldWidth & 0x00ff);
-      int nbytes = fprintf(g_fileTable[fileNumber].stream, fmt, value);
+      int nbytes = fprintf(st->fileTable[fileNumber].stream, fmt, value);
       if (nbytes < 0)
         {
           errorCode = eWRITEFAILED;
@@ -892,8 +875,9 @@ static int libexec_WriteReal(uint16_t fileNumber, double value,
 
 /****************************************************************************/
 
-static int libexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
-                             uint16_t size, uint16_t fieldWidth)
+static int libexec_WriteString(struct libexec_s *st, uint16_t fileNumber,
+                               const char *stringDataPtr, uint16_t size,
+                               uint16_t fieldWidth)
 {
   int errorCode = eNOERROR;
 
@@ -901,9 +885,9 @@ static int libexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream    == NULL ||
-           (g_fileTable[fileNumber].openMode != eOPEN_WRITE &&
-            g_fileTable[fileNumber].openMode != eOPEN_APPEND))
+  else if (st->fileTable[fileNumber].stream    == NULL ||
+           (st->fileTable[fileNumber].openMode != eOPEN_WRITE &&
+            st->fileTable[fileNumber].openMode != eOPEN_APPEND))
     {
       errorCode = eNOTOPENFORWRITE;
     }
@@ -915,14 +899,14 @@ static int libexec_WriteString(uint16_t fileNumber, const char *stringDataPtr,
 
       for (fieldWidth >>= 8; fieldWidth > size; fieldWidth--)
         {
-          fputc(' ', g_fileTable[fileNumber].stream);
+          fputc(' ', st->fileTable[fileNumber].stream);
         }
 
       /* Then write the string */
 
       nItems = fwrite(stringDataPtr, 1, size,
-                      g_fileTable[fileNumber].stream);
-      if (nItems < 0 && ferror(g_fileTable[fileNumber].stream))
+                      st->fileTable[fileNumber].stream);
+      if (nItems < 0 && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eWRITEFAILED;
         }
@@ -990,12 +974,12 @@ static int libexec_Eof(struct libexec_s *st, uint16_t fileNumber)
       errorCode = eBADFILE;
       eof       = PASCAL_TRUE;
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (st->fileTable[fileNumber].stream == NULL)
     {
       errorCode = eFILENOTOPEN;
       eof       = PASCAL_TRUE;
     }
-  else if (feof(g_fileTable[fileNumber].stream))
+  else if (feof(st->fileTable[fileNumber].stream))
     {
       eof = PASCAL_TRUE;
     }
@@ -1009,7 +993,7 @@ static int libexec_Eof(struct libexec_s *st, uint16_t fileNumber)
        * of file even if feof() returns false.
        */
 
-      filePos = ftell(g_fileTable[fileNumber].stream);
+      filePos = ftell(st->fileTable[fileNumber].stream);
       if (filePos < 0)
         {
           errorCode = eFTELLFAILED;
@@ -1017,7 +1001,8 @@ static int libexec_Eof(struct libexec_s *st, uint16_t fileNumber)
         }
       else
         {
-          errorCode = libexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
+          errorCode = libexec_GetFileSize(st->fileTable[fileNumber].stream,
+                                          &fileSize);
           if (errorCode != eNOERROR || filePos >= fileSize)
             {
               eof = PASCAL_TRUE;
@@ -1043,7 +1028,7 @@ static int libexec_Eoln(struct libexec_s *st, uint16_t fileNumber)
     }
   else
     {
-      eoln      = g_fileTable[fileNumber].eoln
+      eoln      = st->fileTable[fileNumber].eoln
                   ? PASCAL_TRUE : PASCAL_FALSE;
     }
 
@@ -1068,13 +1053,13 @@ static int libexec_FilePos(struct libexec_s *st, uint16_t fileNumber)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (st->fileTable[fileNumber].stream == NULL)
     {
       errorCode = eFILENOTOPEN;
     }
   else
     {
-      off_t pos = ftell(g_fileTable[fileNumber].stream);
+      off_t pos = ftell(st->fileTable[fileNumber].stream);
       if (pos < 0)
         {
           errorCode = eFTELLFAILED;
@@ -1105,7 +1090,7 @@ static int libexec_FileSize(struct libexec_s *st, uint16_t fileNumber)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (st->fileTable[fileNumber].stream == NULL)
     {
       errorCode = eFILENOTOPEN;
     }
@@ -1113,7 +1098,8 @@ static int libexec_FileSize(struct libexec_s *st, uint16_t fileNumber)
     {
       off_t fileSize;
 
-      errorCode = libexec_GetFileSize(g_fileTable[fileNumber].stream, &fileSize);
+      errorCode = libexec_GetFileSize(st->fileTable[fileNumber].stream,
+                                      &fileSize);
 
       /* REVISIT:  Int64 not yet implemented; substituting LongInteger. */
 
@@ -1143,13 +1129,13 @@ static int libexec_Seek(struct libexec_s *st, uint16_t fileNumber, uint32_t file
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (st->fileTable[fileNumber].stream == NULL)
     {
       errorCode = eFILENOTOPEN;
     }
   else
     {
-      int ret = fseek(g_fileTable[fileNumber].stream, filePos, SEEK_SET);
+      int ret = fseek(st->fileTable[fileNumber].stream, filePos, SEEK_SET);
       if (ret < 0)
         {
           errorCode = eFSEEKFAILED;
@@ -1182,7 +1168,7 @@ static int libexec_SeekEof(struct libexec_s *st, uint16_t fileNumber)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (st->fileTable[fileNumber].stream == NULL)
     {
       errorCode = eFILENOTOPEN;
     }
@@ -1190,7 +1176,7 @@ static int libexec_SeekEof(struct libexec_s *st, uint16_t fileNumber)
     {
       for (; ; )
         {
-          int ch = fgetc(g_fileTable[fileNumber].stream);
+          int ch = fgetc(st->fileTable[fileNumber].stream);
           if (ch == EOF)
             {
               result = PASCAL_TRUE;
@@ -1232,7 +1218,7 @@ static int libexec_SeekEoln(struct libexec_s *st, uint16_t fileNumber)
     {
       errorCode = eBADFILE;
     }
-  else if (g_fileTable[fileNumber].stream == NULL)
+  else if (st->fileTable[fileNumber].stream == NULL)
     {
       errorCode = eFILENOTOPEN;
     }
@@ -1240,7 +1226,7 @@ static int libexec_SeekEoln(struct libexec_s *st, uint16_t fileNumber)
     {
       for (; ; )
         {
-          int ch = fgetc(g_fileTable[fileNumber].stream);
+          int ch = fgetc(st->fileTable[fileNumber].stream);
           if (ch == '\n')
             {
               result = PASCAL_TRUE;
@@ -1262,7 +1248,7 @@ static int libexec_SeekEoln(struct libexec_s *st, uint16_t fileNumber)
  * Public Functions
  ****************************************************************************/
 
-void libexec_InitializeFile(void)
+void libexec_InitializeFile(struct libexec_s *st)
 {
   int fileNumber;
 
@@ -1270,29 +1256,29 @@ void libexec_InitializeFile(void)
 
   for (fileNumber = 2; fileNumber < MAX_OPEN_FILES; fileNumber++)
     {
-      if (g_fileTable[fileNumber].stream != NULL)
+      if (st->fileTable[fileNumber].stream != NULL)
         {
-          (void)fclose(g_fileTable[fileNumber].stream);
+          (void)fclose(st->fileTable[fileNumber].stream);
         }
     }
 
   /* Then Re-initalize INPUT and OUTPUT */
 
-  memset(g_fileTable, 0, MAX_OPEN_FILES * sizeof(pexecFileTable_t));
+  memset(st->fileTable, 0, MAX_OPEN_FILES * sizeof(execFileTable_t));
 
-  strcpy(g_fileTable[INPUT_FILE_NUMBER].fileName, "INPUT");
-  g_fileTable[INPUT_FILE_NUMBER].inUse       = true;
-  g_fileTable[INPUT_FILE_NUMBER].text        = true;
-  g_fileTable[INPUT_FILE_NUMBER].recordSize  = 1;
-  g_fileTable[INPUT_FILE_NUMBER].stream      = stdin;
-  g_fileTable[INPUT_FILE_NUMBER].openMode    = eOPEN_READ;
+  strcpy(st->fileTable[INPUT_FILE_NUMBER].fileName, "INPUT");
+  st->fileTable[INPUT_FILE_NUMBER].inUse       = true;
+  st->fileTable[INPUT_FILE_NUMBER].text        = true;
+  st->fileTable[INPUT_FILE_NUMBER].recordSize  = 1;
+  st->fileTable[INPUT_FILE_NUMBER].stream      = stdin;
+  st->fileTable[INPUT_FILE_NUMBER].openMode    = eOPEN_READ;
 
-  strcpy(g_fileTable[OUTPUT_FILE_NUMBER].fileName, "OUTPUT");
-  g_fileTable[OUTPUT_FILE_NUMBER].inUse      = true;
-  g_fileTable[OUTPUT_FILE_NUMBER].text       = true;
-  g_fileTable[OUTPUT_FILE_NUMBER].recordSize = 1;
-  g_fileTable[OUTPUT_FILE_NUMBER].stream     = stdout;
-  g_fileTable[OUTPUT_FILE_NUMBER].openMode   = eOPEN_WRITE;
+  strcpy(st->fileTable[OUTPUT_FILE_NUMBER].fileName, "OUTPUT");
+  st->fileTable[OUTPUT_FILE_NUMBER].inUse      = true;
+  st->fileTable[OUTPUT_FILE_NUMBER].text       = true;
+  st->fileTable[OUTPUT_FILE_NUMBER].recordSize = 1;
+  st->fileTable[OUTPUT_FILE_NUMBER].stream     = stdout;
+  st->fileTable[OUTPUT_FILE_NUMBER].openMode   = eOPEN_WRITE;
 }
 
 /****************************************************************************
@@ -1319,7 +1305,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     /* ALLOCFILE: No stack arguments */
 
     case xALLOCFILE :
-       fileNumber = libexec_AllocateFile();
+       fileNumber = libexec_AllocateFile(st);
        if (fileNumber >= MAX_OPEN_FILES)
          {
            errorCode = eTOOMANYFILES;
@@ -1332,7 +1318,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     case xFREEFILE :
        POP(st, fileNumber); /* File number */
-       errorCode = libexec_FreeFile(fileNumber);
+       errorCode = libexec_FreeFile(st, fileNumber);
        break;
 
     /* EOF: TOS(0) = File number */
@@ -1403,7 +1389,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, size);        /* File name string size */
       POP(st, uValue);      /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_AssignFile(fileNumber, (uValue != 0),
+      errorCode = libexec_AssignFile(st, fileNumber, (uValue != 0),
                                      (const char *)&st->dstack.b[address],
                                      size);
       break;
@@ -1412,7 +1398,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     case xRESET :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_OpenFile(fileNumber, eOPEN_READ);
+      errorCode = libexec_OpenFile(st, fileNumber, eOPEN_READ);
       break;
 
     /* RESETR: TOS(0) = New record size
@@ -1422,15 +1408,15 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     case xRESETR :
       POP(st, size);  /* File number from stack */
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_OpenFile(fileNumber, eOPEN_READ);
-      errorCode = libexec_RecordSize(fileNumber, size);
+      errorCode = libexec_OpenFile(st, fileNumber, eOPEN_READ);
+      errorCode = libexec_RecordSize(st, fileNumber, size);
       break;
 
     /* REWRITE: TOS(0) = File number */
 
     case xREWRITE :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_OpenFile(fileNumber, eOPEN_WRITE);
+      errorCode = libexec_OpenFile(st, fileNumber, eOPEN_WRITE);
       break;
 
     /* RESETR: TOS(0) = New record size
@@ -1440,22 +1426,22 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     case xREWRITER :
       POP(st, size);  /* File number from stack */
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_OpenFile(fileNumber, eOPEN_WRITE);
-      errorCode = libexec_RecordSize(fileNumber, size);
+      errorCode = libexec_OpenFile(st, fileNumber, eOPEN_WRITE);
+      errorCode = libexec_RecordSize(st, fileNumber, size);
       break;
 
     /* APPEND: TOS(0) = File number */
 
     case xAPPEND :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_OpenFile(fileNumber, eOPEN_APPEND);
+      errorCode = libexec_OpenFile(st, fileNumber, eOPEN_APPEND);
       break;
 
     /* CLOSEFILE: TOS(0) = File number */
 
     case xCLOSEFILE :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_CloseFile(fileNumber);
+      errorCode = libexec_CloseFile(st, fileNumber);
       break;
 
     /* READLN: TOS(0) = File number */
@@ -1463,7 +1449,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     case xREADLN :
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_ReadLn(fileNumber);
+      errorCode = libexec_ReadLn(st, fileNumber);
       break;
 
     /* READ_BINARY: TOS(0) = Read address
@@ -1476,7 +1462,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, size);        /* Read size */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_ReadBinary(fileNumber,
+      errorCode = libexec_ReadBinary(st, fileNumber,
                                      (uint8_t *)&st->dstack.b[address],
                                      size);
       break;
@@ -1490,7 +1476,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_ReadInteger(fileNumber,
+      errorCode = libexec_ReadInteger(st, fileNumber,
                                       (ustack_t *)&st->dstack.b[address]);
       break;
 
@@ -1502,7 +1488,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_ReadChar(fileNumber,
+      errorCode = libexec_ReadChar(st, fileNumber,
                                    (uint8_t *)&st->dstack.b[address]);
       break;
 
@@ -1544,7 +1530,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, address);     /* Read address */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_ReadReal(fileNumber,
+      errorCode = libexec_ReadReal(st, fileNumber,
                                    (uint16_t *)&st->dstack.b[address]);
       break;
 
@@ -1552,14 +1538,14 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     case xWRITELN :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_WriteChar(fileNumber, '\n', 0);
+      errorCode = libexec_WriteChar(st, fileNumber, '\n', 0);
       break;
 
     /* WRITE_PAGE: TOS(0) = File number */
 
     case xWRITE_PAGE :
       POP(st, fileNumber);  /* File number from stack */
-      errorCode = libexec_WriteChar(fileNumber, '\f', 0);
+      errorCode = libexec_WriteChar(st, fileNumber, '\f', 0);
       break;
 
     /* WRITE_BINARY: TOS(0) = Write size
@@ -1572,7 +1558,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, size);        /* Write size */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_WriteBinary(fileNumber,
+      errorCode = libexec_WriteBinary(st, fileNumber,
                                       (const uint8_t *)&st->dstack.b[address],
                                       size);
       break;
@@ -1587,7 +1573,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, sValue);      /* Write integer value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_WriteInteger(fileNumber, sValue, fieldWidth);
+      errorCode = libexec_WriteInteger(st, fileNumber, sValue, fieldWidth);
       break;
 
     /* WRITE_LONGINT: TOS(0)   = Field width
@@ -1604,7 +1590,8 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         POP(st, lword.word[0]); /* Write integer value[0] */
         POP(st, fileNumber);    /* File number from stack */
 
-        errorCode = libexec_WriteLongInteger(fileNumber, lword.sData, fieldWidth);
+        errorCode = libexec_WriteLongInteger(st, fileNumber, lword.sData,
+                                             fieldWidth);
       }
       break;
 
@@ -1622,7 +1609,8 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         POP(st, lword.word[0]); /* Write unsigned integer value[0] */
         POP(st, fileNumber);    /* File number from stack */
 
-        errorCode = libexec_WriteLongWord(fileNumber, lword.uData, fieldWidth);
+        errorCode = libexec_WriteLongWord(st, fileNumber, lword.uData,
+                                          fieldWidth);
       }
       break;
 
@@ -1636,7 +1624,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, uValue);      /* Write integer value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_WriteWord(fileNumber, uValue, fieldWidth);
+      errorCode = libexec_WriteWord(st, fileNumber, uValue, fieldWidth);
       break;
 
     /* WRITE_CHAR: TOS(0) = Field width
@@ -1649,7 +1637,8 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, uValue);      /* Write value */
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_WriteChar(fileNumber, (uint8_t)uValue, fieldWidth);
+      errorCode = libexec_WriteChar(st, fileNumber, (uint8_t)uValue,
+                                    fieldWidth);
       break;
 
     /* WRITE_STRING: TOS(0) = Field width
@@ -1664,7 +1653,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, size);        /* String size */
       POP(st, fileNumber);  /* File number */
 
-      errorCode = libexec_WriteString(fileNumber,
+      errorCode = libexec_WriteString(st, fileNumber,
                                       (const char *)&st->dstack.b[address],
                                       size, fieldWidth);
       break;
@@ -1683,7 +1672,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, size);        /* String size */
       POP(st, fileNumber);  /* File number */
 
-      errorCode = libexec_WriteString(fileNumber,
+      errorCode = libexec_WriteString(st, fileNumber,
                                       (const char *)&st->dstack.b[address],
                                       size, fieldWidth);
       break;
@@ -1701,15 +1690,17 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       POP(st, fp.hw[0]);
       POP(st, fileNumber);  /* File number from stack */
 
-      errorCode = libexec_WriteReal(fileNumber, fp.f, fieldWidth);
+      errorCode = libexec_WriteReal(st, fileNumber, fp.f, fieldWidth);
       break;
 
     /* CHDIR : TOS(0) = Directory name string address
      *         TOS(1) = Directory name string size
      * MKDIR : TOS(0) = Directory name string address
      *         TOS(1) = Directory name string size
+     * RMDIR : TOS(0) = Directory name string address
+     *         TOS(1) = Directory name string size
      *
-     * Both return a boolean value on the stack.
+     * All return a boolean value on the stack.
      */
 
     case xCHDIR :
@@ -1760,6 +1751,43 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
         PUSH(st, result);
       }
+      break;
+
+    /* GETDIR : TOS(0) = Address of standard string variable */
+
+    case xGETDIR :
+      /* Get the string argument */
+
+      POP(st, address);     /* Directory name string address */
+
+      /* Get the current working directory  */
+
+      if (getcwd((char *)st->ioBuffer, LINE_SIZE) == NULL)
+        {
+          errorCode = eGETCWDFAILED;
+        }
+      else
+        {
+          uint16_t *strVarPtr;
+          char *strBufferPtr;
+          int nameLen;
+
+          /* Convert the C-string into a Pascal string */
+
+          st->ioBuffer[LINE_SIZE] = '\0';
+          nameLen = strlen((char *)st->ioBuffer);
+          if (nameLen > st->stralloc)
+            {
+              nameLen = st->stralloc;
+            }
+
+          strVarPtr    = (uint16_t *)ATSTACK(st, address);
+          address      = strVarPtr[sSTRING_DATA_OFFSET / sINT_SIZE];
+          strBufferPtr = (char *)ATSTACK(st, address);
+
+          memcpy(strBufferPtr, st->ioBuffer, nameLen);
+          strVarPtr[sSTRING_SIZE_OFFSET / sINT_SIZE] = nameLen;
+        }
       break;
 
     default :

@@ -466,7 +466,7 @@ static const struct
 };
 
 static const char invXOp[] = "Invalid SYSIO";
-static const char *xName[MAX_XOP] =
+static const char * const xName[MAX_XOP] =
 { /* SYSIO opcode mnemonics */
 /* 0x00 */ invXOp,      "ALLOCFILE",  "FREEFILE",   "EOF",
 /* 0x04 */ "EOLN",      "FILEPOS",    "FILESIZE",   "SEEK",
@@ -477,11 +477,11 @@ static const char *xName[MAX_XOP] =
 /* 0x18 */ "READRL",    "WRITELN",    "WRITEPG",    "WRITEBIN",
 /* 0x1c */ "WRITEINT",  "WRITEWORD",  "WRITELONG",  "WRITEULONG",
 /* 0x20 */ "WRITECHR",  "WRITESTR",   "WRITESSTR",  "WRITERL",
-/* 0x24 */ "CHDIR",     "MKDIR",      "RMDIR"
+/* 0x24 */ "CHDIR",     "GETDIR",     "MKDIR",       "RMDIR"
 };
 
 static const char invSetOp[] = "Invalid SETOP";
-static const char *sName[MAX_SETOP] =
+static const char * const sName[MAX_SETOP] =
 { /* Set opcode mnemonics */
 /* 0x00 */ invSetOp,     "EMPTY",     "INTERSECTION", "UNION",
 /* 0x04 */ "DIFFERENCE", "SYMDIFF",   "EQUAL",        "NEQUAL",
@@ -490,7 +490,7 @@ static const char *sName[MAX_SETOP] =
 };
 
 static const char invLbOp[] = "Invalid runtime code";
-static const char *lbName[MAX_LBOP] =
+static const char * const lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
 /* 0x00 */ "EXIT",       "NEW",        "DISPOSE",     "GETENV",
 /* 0x04 */ "STRCPY",     "STRCPY2",    "STRCPYX",     "STRCPYX2",
@@ -509,7 +509,7 @@ static const char *lbName[MAX_LBOP] =
 };
 
 static const char invFpOp[] = "Invalid FP Operation";
-static const char *fpName[MAX_FOP] =
+static const char * const fpName[MAX_FOP] =
 {
 /* 0x00 */ invFpOp,    "FLOAT",    "TRUNC",    "ROUND",
 /* 0x04 */ "ADD",      "SUB",      "MUL",      "DIV",

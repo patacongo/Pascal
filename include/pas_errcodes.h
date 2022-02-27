@@ -367,5 +367,6 @@
 #define eWRITEFAILED     ((uint16_t) 0xbb)
 #define eFSEEKFAILED     ((uint16_t) 0xbc)
 #define eFTELLFAILED     ((uint16_t) 0xbd)
+#define eGETCWDFAILED    ((uint16_t) 0xbe)
 
 #endif /* __PAS_ERRCODES_H */

@@ -187,8 +187,6 @@ exprType_t pas_BuiltInFunction(void)
 {
   exprType_t exprType = exprUnknown;
 
-  TRACE(g_lstFile,"[pas_BuiltInFunction]");
-
   /* Is the token a builtin function? */
 
   if (g_token == tBUILTIN)

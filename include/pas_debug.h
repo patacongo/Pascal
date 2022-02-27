@@ -61,16 +61,6 @@
 # define DEBUG(x...)
 #endif
 
-#ifndef CONFIG_PASCAL_TRACE
-# define CONFIG_PASCAL_TRACE 0
-#endif
-
-#if CONFIG_PASCAL_TRACE
-# define TRACE(stream, format, arg...) fprintf(stream, format, ##arg)
-#else
-# define TRACE(x...)
-#endif
-
 #define dbg(...) fprintf(stderr, __VA_ARGS__)
 #define vdbg(...) DEBUG(__VA_ARGS__)
 

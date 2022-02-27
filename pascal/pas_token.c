@@ -97,8 +97,6 @@ int   g_levelConstOffset = 0;  /* Index to constants for this level */
 
 int16_t pas_PrimeTokenizer(unsigned long stringStackSize)
 {
-  TRACE(g_lstFile,"[pas_PrimeTokenizer]");
-
   /* Allocate and initialize the string stack and stack pointers */
 
   strStack = malloc(stringStackSize);
@@ -124,8 +122,6 @@ int16_t pas_PrimeTokenizer(unsigned long stringStackSize)
 
 int16_t pas_RePrimeTokenizer(void)
 {
-  TRACE(g_lstFile,"[pas_RePrimeTokenizer]");
-
   /* (Re-)set the char pointer to the beginning of the line */
 
   FP->cp = FP->buffer;

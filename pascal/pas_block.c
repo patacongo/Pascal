@@ -160,29 +160,30 @@ static forwardRef_t *g_forwardRefs;
 
 static void pas_DeclareLabel(void)
 {
-   char   *labelname;                   /* Label symbol table name */
+  char   *labelname;                   /* Label symbol table name */
 
-   TRACE(g_lstFile,"[pas_DeclareLabel]");
+  /* FORM:  LABEL <integer>[,<integer>[,<integer>][...]]]; */
 
-   /* FORM:  LABEL <integer>[,<integer>[,<integer>][...]]]; */
+  do
+    {
+      getToken();
+      if (g_token == tINT_CONST)
+        {
+          labelname = g_stringSP;
+          (void)sprintf(labelname, "%" PRIu32, g_tknUInt);
+          while (*g_stringSP++);
+          (void)pas_AddLabel(labelname, ++g_label);
+          getToken();
+        }
+      else
+        {
+          error(eINTCONST);
+        }
+    }
+  while (g_token == ',');
 
-   do
-     {
-       getToken();
-       if (g_token == tINT_CONST)
-         {
-           labelname = g_stringSP;
-           (void)sprintf(labelname, "%" PRIu32, g_tknUInt);
-           while (*g_stringSP++);
-           (void)pas_AddLabel(labelname, ++g_label);
-           getToken();
-         }
-       else error(eINTCONST);
-     }
-   while (g_token == ',');
-
-   if (g_token != ';') error(eSEMICOLON);
-   else getToken();
+  if (g_token != ';') error(eSEMICOLON);
+  else getToken();
 }
 
 /****************************************************************************/
@@ -198,8 +199,6 @@ static void pas_DeclareLabel(void)
 static void pas_DeclareConst(void)
 {
   char *const_name;
-
-  TRACE(g_lstFile,"[pas_DeclareConst]");
 
   /* FORM:  <identifier> = <numeric constant|string>
    * NOTE:  Only integer constants are supported
@@ -254,8 +253,6 @@ static void pas_DeclareConst(void)
 static symbol_t *pas_DeclareType(char *typeName)
 {
   symbol_t *typePtr;
-
-  TRACE(g_lstFile,"[pas_DeclareType]");
 
   /* This function processes the type-denoter in
    * FORM: type-definition = identifier '=' type-denoter
@@ -337,8 +334,6 @@ static symbol_t *pas_DeclareVar(bool *pInitializer)
   symbol_t *typePtr;
   char     *varName;
   bool      initializer;
-
-  TRACE(g_lstFile,"[pas_DeclareVar]");
 
   /* FORM: variable-declaration = identifier-list ':' type-denoter
    *       { '=' initial-value }
@@ -544,8 +539,6 @@ static void pas_ProcedureDeclaration(void)
   unsigned int saveConstOffset;  /* Saved previous level constant offset */
   int          i;
 
-  TRACE(g_lstFile,"[pas_ProcedureDeclaration]");
-
   /* FORM: procedure-declaration =
    *       procedure-heading ';' directive |
    *       procedure-heading ';' procedure-block
@@ -661,8 +654,6 @@ static void pas_FunctionDeclaration(void)
   unsigned int saveSymOffset;   /* Saved previous level symbol offset */
   unsigned int saveConstOffset; /* Saved previous level constant offset */
   int          i;
-
-  TRACE(g_lstFile,"[pas_FunctionDeclaration]");
 
   /* FORM: function-declaration =
    *       function-heading ';' directive |
@@ -815,8 +806,6 @@ static symbol_t *pas_TypeIdentifier(void)
 {
   symbol_t *typePtr = NULL;
 
-  TRACE(g_lstFile,"[pas_TypeIdentifier]");
-
   /* Check for type-identifier */
 
   if (g_token == sTYPE)
@@ -856,8 +845,6 @@ static symbol_t *pas_TypeIdentifier(void)
 
 static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
 {
-  TRACE(g_lstFile,"[pas_CheckShortString]");
-
   /* Is the type name followed by a storage size value. */
 
   if (g_token == '[')
@@ -912,8 +899,6 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
 static symbol_t *pas_TypeDenoter(char *typeName)
 {
   symbol_t *typePtr;
-
-  TRACE(g_lstFile,"[pas_TypeDenoter]");
 
   /* FORM: type-denoter = type-identifier | new-type
    *
@@ -1320,8 +1305,6 @@ static symbol_t *pas_NewComplexType(char *typeName)
   symbol_t *typeIdPtr;
   symbol_t *indexTypePtr;
 
-  TRACE(g_lstFile,"[pas_NewComplexType]");
-
   /* FORM: new-complex-type = new-structured-type | new-pointer-type */
 
   switch (g_token)
@@ -1637,8 +1620,6 @@ static symbol_t *pas_OrdinalTypeIdentifier(void)
 {
   symbol_t *typePtr;
 
-  TRACE(g_lstFile,"[pas_OrdinalTypeIdentifier]");
-
   /* Get the next type from the input stream */
 
   typePtr = pas_TypeIdentifier();
@@ -1690,8 +1671,6 @@ static symbol_t *pas_GetArrayIndexType(void)
   uint16_t indexType;
   uint16_t subType;
   bool    haveIndex;
-
-  TRACE(g_lstFile,"[pas_GetArrayIndexType]");
 
   /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
    * FORM: [PACKED] ARRAY [<integer>] OF type-denoter
@@ -1857,8 +1836,6 @@ static void pas_GetArrayBaseType(symbol_t *arrayTypePtr)
   symbol_t *baseTypePtr;
   uint32_t indexUnit;
 
-  TRACE(g_lstFile,"[pas_GetArrayBaseType]");
-
   /* FORM: array-type = 'array' '[' index-type-list ']' 'of' type-denoter
    * FORM: [PACKED] ARRAY [<integer>] OF type-denoter
    *
@@ -1919,8 +1896,6 @@ static symbol_t *pas_DeclareRecordType(char *recordName)
   symbol_t *fieldPtr;
   int16_t recordOffset;
   int recordCount;
-
-  TRACE(g_lstFile,"[pas_DeclareRecordType]");
 
   /* FORM: record-type = 'record' field-list 'end' */
 
@@ -2321,8 +2296,6 @@ static symbol_t *pas_DeclareField(symbol_t *recordPtr, symbol_t *lastField)
   symbol_t *fieldPtr = NULL;
   symbol_t *typePtr  = NULL;
 
-  TRACE(g_lstFile,"[pas_DeclareField]");
-
   /* Declare one record-section with a record.
    * FORM: record-section = identifier-list ':' type-denoter
    * FORM: identifier-list = identifier { ',' identifier }
@@ -2390,8 +2363,6 @@ static symbol_t *pas_DeclareParameter(bool pointerType)
    int16_t   varType = 0;
    symbol_t *varPtr;
    symbol_t *typePtr;
-
-   TRACE(g_lstFile,"[pas_DeclareParameter]");
 
    /* FORM:
     * <identifier>[,<identifier>[,<identifier>[...]]] : <type identifier>
@@ -2986,8 +2957,6 @@ void pas_Block(int32_t preAllocatedDStack)
   unsigned int saveConstOffset;       /* Saved previous level constant offset */
   unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
 
-  TRACE(g_lstFile,"[pas_Block]");
-
   /* Set the begin label number */
 
   beginLabel              = ++g_label;
@@ -3131,8 +3100,6 @@ void pas_DeclarationGroup(int32_t beginLabel)
   unsigned int saveSymOffset;         /* Saved previous level symbol offset */
   unsigned int saveConstOffset;       /* Saved previous level constant offset */
   unsigned int saveInitializerOffset; /* Saved previous level initializer offset */
-
-  TRACE(g_lstFile,"[pas_DeclarationGroup]");
 
   /* Save the current top-of-stack data for symbols and constants. */
 
@@ -3403,8 +3370,6 @@ int16_t pas_FormalParameterList(symbol_t *procPtr)
   int16_t parameterOffset;
   int16_t i;
   bool    pointerType;
-
-  TRACE(g_lstFile,"[pas_FormalParameterList]");
 
   /* FORM: formal-parameter-list =
    *       '(' formal-parameter-section { ';' formal-parameter-section } ')'

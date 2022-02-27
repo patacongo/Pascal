@@ -54,6 +54,24 @@
 #define DEFAULT_HPSTK_SIZE      0
 
 /****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+struct prunArgs_s
+{
+  const char *poffFileName;  /* Input POFF file name */
+  int32_t     strStackSize;  /* String stack size to allocate */
+  int32_t     pasStackSize;  /* Pascal run-time stack to allocate */
+  int32_t     hpStackSize;   /* Heap memory to allocate */
+  int32_t     strAllocSize;  /* Allocation size per standard string */
+#ifdef CONFIG_PASCAL_DEBUGGER
+  int         debugger;      /* > 0:  Run the debug monitor */
+#endif
+};
+
+typedef struct prunArgs_s prunArgs_t;
+
+/****************************************************************************
  * Private Constant Data
  ****************************************************************************/
 
@@ -63,21 +81,12 @@ static const struct option long_options[] =
   {"stack",  1, NULL, 's'},
   {"string", 1, NULL, 't'},
   {"new",    1, NULL, 'n'},
+#ifdef CONFIG_PASCAL_DEBUGGER
   {"debug",  0, NULL, 'd'},
+#endif
   {"help",   0, NULL, 'h'},
   {NULL,     0, NULL, 0}
 };
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-static const char  *g_pofffilename;
-static int32_t      g_strstacksize = DEFAULT_STKSTR_SIZE;
-static int32_t      g_passtacksize = DEFAULT_STACK_SIZE;
-static int32_t      g_hpstacksize  = DEFAULT_HPSTK_SIZE;
-static int32_t      g_strallocsize = STRING_BUFFER_SIZE;
-static int          g_debug        = 0;
 
 /****************************************************************************
  * Private Functions
@@ -113,9 +122,11 @@ static void prun_showusage(const char *progname)
   fprintf(stderr, "    Memory in bytes to allocate for the pascal program\n");
   fprintf(stderr, "    head use for new() (default is %d bytes)\n",
           DEFAULT_HPSTK_SIZE);
+#ifdef CONFIG_PASCAL_DEBUGGER
   fprintf(stderr, "  -d\n");
   fprintf(stderr, "  --debug\n");
   fprintf(stderr, "    Enable PCode program debugger\n");
+#endif
   fprintf(stderr, "  -h\n");
   fprintf(stderr, "  --help\n");
   fprintf(stderr, "    Shows this message\n");
@@ -126,12 +137,23 @@ static void prun_showusage(const char *progname)
  * Name: prun_ParseArgs
  ****************************************************************************/
 
-static void prun_ParseArgs(int argc, char **argv)
+static void prun_ParseArgs(int argc, char **argv, prunArgs_t *args)
 {
   int option_index;
   int alloc;
   int size;
   int c;
+
+  /* Set up default value */
+
+  args->poffFileName = NULL;
+  args->strStackSize = DEFAULT_STKSTR_SIZE;
+  args->pasStackSize = DEFAULT_STACK_SIZE;
+  args->hpStackSize  = DEFAULT_HPSTK_SIZE;
+  args->strAllocSize = STRING_BUFFER_SIZE;
+#ifdef CONFIG_PASCAL_DEBUGGER
+  args->debugger     = 0;
+#endif
 
   /* Check for existence of filename argument */
 
@@ -159,7 +181,7 @@ static void prun_ParseArgs(int argc, char **argv)
                   prun_showusage(argv[0]);
                 }
 
-              g_strallocsize = (alloc + 1) & ~1;
+              args->strAllocSize = (alloc + 1) & ~1;
               break;
 
             case 'n' :
@@ -170,7 +192,7 @@ static void prun_ParseArgs(int argc, char **argv)
                   prun_showusage(argv[0]);
                 }
 
-              g_hpstacksize = ((size + 1) & ~1);
+              args->hpStackSize = ((size + 1) & ~1);
               break;
 
             case 's' :
@@ -181,7 +203,7 @@ static void prun_ParseArgs(int argc, char **argv)
                   prun_showusage(argv[0]);
                 }
 
-              g_passtacksize = (size + 3) & ~3;
+              args->pasStackSize = (size + 3) & ~3;
               break;
 
             case 't' :
@@ -192,13 +214,14 @@ static void prun_ParseArgs(int argc, char **argv)
                   prun_showusage(argv[0]);
                 }
 
-              g_strstacksize = ((size + 3) & ~3);
+              args->strStackSize = ((size + 3) & ~3);
               break;
 
+#ifdef CONFIG_PASCAL_DEBUGGER
             case 'd' :
-              g_debug++;
+              args->debugger++;
               break;
-
+#endif
             case 'h' :
               prun_showusage(argv[0]);
               break;
@@ -221,7 +244,7 @@ static void prun_ParseArgs(int argc, char **argv)
 
   /* Get the name of the p-code file(s) from the last argument(s) */
 
-  g_pofffilename = argv[argc-1];
+  args->poffFileName = argv[argc - 1];
 }
 
 /****************************************************************************
@@ -236,20 +259,21 @@ int main(int argc, char *argv[], char *envp[])
 {
   EXEC_HANDLE_t handle;
   char fileName[FNAME_SIZE + 1];  /* Object file name */
+  prunArgs_t args;
 
   /* Parse the command line arguments */
 
-  prun_ParseArgs(argc, argv);
+  prun_ParseArgs(argc, argv, &args);
 
   /* Load the POFF files specified on the command line */
   /* Use .o or command line extension, if supplied */
 
-  (void)extension(g_pofffilename, "o", fileName, 0);
+  (void)extension(args.poffFileName, "o", fileName, 0);
 
   /* Initialize the P-machine and load the POFF file */
 
-  handle = libexec_Load(fileName, g_strallocsize, g_strstacksize,
-                        g_passtacksize, g_hpstacksize);
+  handle = libexec_Load(fileName, args.strAllocSize, args.strStackSize,
+                        args.pasStackSize, args.hpStackSize);
   if (handle == NULL)
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);
@@ -260,11 +284,13 @@ int main(int argc, char *argv[], char *envp[])
 
   /* And start program execution in the specified mode */
 
-  if (g_debug)
+#ifdef CONFIG_PASCAL_DEBUGGER
+  if (args.debugger)
     {
       libexec_DebugLoop(handle);
     }
   else
+#endif
     {
       libexec_RunLoop(handle);
     }

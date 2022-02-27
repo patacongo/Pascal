@@ -69,8 +69,6 @@ void popt_LocalOptimization(poffHandle_t poffHandle)
   poffProgHandle_t poffProgHandle;
   int16_t nchanges;
 
-  TRACE(stderr, "[popt_LocalOptimization]");
-
   /* Create a handle to a temporary object to store new POFF program
    * data.
    */

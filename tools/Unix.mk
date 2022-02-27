@@ -160,6 +160,9 @@ papps: $(PAPPSDIR)/papps
 menuconfig: Kconfig
 	$(Q) kconfig-mconf Kconfig
 
+olddefconfig: Kconfig
+	$(Q) kconfig-conf --olddefconfig Kconfig
+
 $(foreach SDIR, $(CLEANDIRS), $(eval $(call MAKE_template,$(SDIR),clean)))
 $(foreach SDIR, $(CLEANDIRS), $(eval $(call MAKE_template,$(SDIR),distclean)))
 

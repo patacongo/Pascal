@@ -82,8 +82,6 @@ static int16_t popt_StringConstOptimize(void)
   int16_t  nchanges = 0;
   register int16_t i;
 
-  TRACE(stderr, "[popt_StringConstOptimize]");
-
   /* At least three pcodes are needed to perform these optimizations.  We are
    * looking for these sequences:
    *
@@ -256,8 +254,6 @@ void popt_StringLocalOptimization(poffHandle_t poffHandle,
                                   poffProgHandle_t poffProgHandle)
 {
   int16_t nchanges;
-
-  TRACE(stderr, "[popt_LocalOptimization]");
 
   /* Initialization */
 

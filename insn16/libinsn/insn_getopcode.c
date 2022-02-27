@@ -66,8 +66,6 @@ uint32_t insn_GetOpCode(poffHandle_t handle, opType_t *ptr)
   uint32_t opsize = 1;
   int c;
 
-  TRACE(stderr, "[insn_GetOpCode]");
-
   /* If we are not already at the EOF, read the next character from
    * the input stream.
    */

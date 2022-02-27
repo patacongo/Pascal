@@ -155,12 +155,41 @@ The following are not currently implemented:
 
 ## Directory Operations
 
+Variants of the basic directory operations, similar to those from Borland Turbo Pascal or Free Pascal are provided as intrinsic functions.
+
+- `function GetCurrentDir : string` - Returns the current working directory.
 - `function SetCurrentDir(dirName : string) : boolean` - Set the current working directory.  Returns `true` if successful.
 - `procedure ChDir(dirName : string)` - Set the current working directory.  No failure indication is returned.
 - `function CreateDir(dirName : string) : boolean` - Create a new directory.  Returns `true` if the directory was create successfully.
 - `procedure MkDir(dirName : string)` - Create a new directory.  No failure indication is returned.
 - `function RemoveDir (dirName : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
 - `procedure RmDir(dirName : string)` - Remove a new directory.  No failure indication is returned.
+
+Other directory operations inspired by Free Pascal are provided in the unit `FileUtils.pas`.  Some primitive directory intrinics are provided to support this unit.  Those intrinsics are very close to the underlying functions from the standard C library, on which the Pascal run-time is built.  These intrinces include:
+
+- `function OpenDir(dirName : string; VAR dirInfo: TDirEntry) : boolean` - Open a directory for reading.  if the directory was successfully opened, *true* is returned and TDirEntry is valid for use with `ReadDir`.
+- `function ReadDir(VAR dirInfo : TDirEntry, VAR result : TSearchRec) : boolean` - Read the next directory entry.  *true* is returned if the directory entry was read successfully and the content of the `result` will be valid.  The most likely reason for a failure to read the directory entry is that the final directory entry has already been provided.
+- `procedure CloseDir(VAR dirInfo : TDirEntry)` - Close the directory and release any resources.
+
+Where the definition of `TDirEntry` is implementation specific and should have be accessed by application code.  And `TSearchRec` is a `record` type with several fields, some are internal to the implemenation but the following are available to your program:
+
+- `name` : Name of the file found
+- `size` : The size of the file in bytes
+- `attribute` : The file attribute character (as above)
+
+The `attribute` is a character type the identifies the type of the file with `'R'` for regular file, `'S'` for system file, or `'D'` for directory as possibilities.  
+
+Using these intrinic functions, `FileUtils.pas` can then provide:
+
+- `function FindFirst(fileTemplate, attributes : string; VAR searchResult : TSearchRec ) : boolean` - `FindFirst` function searches for files matching a `fileTemplate` and `attributes`.  If successful, `FindFirst` returns *true* and the first match in `searchResult`.
+- `function FindNext(VAR searchResults : TSearchRec) : boolean` - The `FindNext` function looks for the next matching file, as defined in the search criteria given by the preceding `FindFirst` call.
+- `procedure FindClose(VAR searchResults : TSearchRec) - The `FindClose` function closes a successful FindFirst (and FindNext) file search. It frees up the resources used by the search in 'searchResults`.
+
+The `fileTemplate` is full or relative path to the directory to seach. It is a *template* because it may contain wild cards that match many different files: `?` to match any one character and/or `*`  to match 0, 1 or more characters
+
+The search attributes are the same as described above: `'R'` for regular file, `'S'` for system file, or `'D'` for directory.  These, however, can be concatenated:  You may set multiple `attributes` from one or more of these by simply concatenating them with the `ConCat` function.
+
+## Units
 
 ## Extended Pascal Features
 
@@ -176,6 +205,7 @@ I have seen initialization of file types like the following:
 There are some files that have Turbo-Pascal style constructions.  For example, use `BEGIN` rather than `INITIALIZATION` to introduce the initializers in a Unit file.  I have done a good faith effort to support Turbo-Pascal-isms wherever possible.
 
 ## NON-standard Pascal extensions/differences
+
 ### Types
 
 - Hexadecimal constants like %89ab
@@ -308,6 +338,16 @@ The P-Code run-time virtual machine can be used execute and/or debugt the `.pex`
         Shows this message
 
 ### Debugger
+
+### Flat Address Space Issues
+
+In a real application, you would probably need to have multiple Pascal programs running cocurrently.  This is not a problem with desktop systems like Linux or Windows where each program execution is encapsulated within its own address space.  But there could be issues in a flat address space such as you would have with an RTOS or on some custom bare-metal platform.
+
+In particular, in these flat address space environments, there will be on a single instance of each global variable that is shared between all instances of the program that are running.  Contrast this to the destktop OS environment where there will be a unique, private copy of each global variable in each process.  This is not a problem for Pascal per se, since it is an interpreted P-Code solution and each instance has its one simulated environment.  However, it can be a problem for the run-time code and, perhaps, tools in that environment.
+
+The run-time code has protections for this case:  The run-time uses no global variables and keeps all state information on the target machine stack (which is not the same as the P-Code stack).  So it should be possible to safely start many Pascal P-Code programs that all run concurrently (although there is not much that they can do to interact with no well-defined Pascial IPCs, Inter-Process Communications).
+
+The tools do use global variables, however.  So in a flat address space only one instance of the compiler, optimizer, linker, or lister can run at a time (the debugger is part of the protected run-time so there can be multiple, concurrent debug sessions).  This is not thought to be an issue in most cases but could become issue if, for example, the tools are used for JIT (Just-In-Time) compilations in a multi-threaded environment.
 
 ## Register Model / Native Code Translation
 

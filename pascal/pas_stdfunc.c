@@ -91,6 +91,7 @@ static void       pas_ConcatFunc(void);
 /* Borland style directory operations */
 
 static void       pas_DirectoryFunc(uint16_t opCode);
+static void       pas_GetDirFunc(void);
 
 /* Non-standard C-library interface functions */
 
@@ -105,8 +106,6 @@ static exprType_t pas_GetEnvFunc (void);  /* Get environment string value */
 static exprType_t pas_AbsFunc(void)
 {
   exprType_t absType;
-
-  TRACE(g_lstFile,"[pas_AbsFunc]");
 
   /* FORM:  ABS (<simple integer/real expression>) */
 
@@ -135,8 +134,6 @@ static exprType_t pas_AbsFunc(void)
 static exprType_t pas_AddrFunc(void)
 {
   exprType_t addrExprType = exprUnknown;
-
-  TRACE(g_lstFile,"[pas_AddrFunc]");
 
   /* FORM:  'addr' '(' variable-name | procedure-name | function-name ')'
    *
@@ -198,13 +195,11 @@ static exprType_t pas_AddrFunc(void)
 
 static void pas_OrdFunc(void)
 {
-   TRACE(g_lstFile,"[pas_OrdFunc]");
+  /* FORM:  ORD (<scalar type>) */
 
-   /* FORM:  ORD (<scalar type>) */
-
-   pas_CheckLParen();
-   pas_Expression(exprAnyOrdinal, NULL);     /* Get any ordinal type */
-   pas_CheckRParen();
+  pas_CheckLParen();
+  pas_Expression(exprAnyOrdinal, NULL);     /* Get any ordinal type */
+  pas_CheckRParen();
 }
 
 /****************************************************************************/
@@ -212,8 +207,6 @@ static void pas_OrdFunc(void)
 static exprType_t pas_PredFunc(void)
 {
   exprType_t predType;
-
-  TRACE(g_lstFile,"[pas_PredFunc]");
 
   /* FORM:  PRED (<simple integer expression>) */
 
@@ -232,8 +225,6 @@ static exprType_t pas_PredFunc(void)
 static exprType_t pas_SqrFunc(void)
 {
   exprType_t sqrType;
-
-  TRACE(g_lstFile,"[pas_SqrFunc]");
 
   /* FORM:  SQR (<simple integer OR real expression>) */
 
@@ -269,19 +260,23 @@ static void pas_RealFunc (uint8_t fpOpCode)
 {
    exprType_t realType;
 
-   TRACE(g_lstFile,"[pas_RealFunc]");
-
    /* FORM:  <function identifier> (<real/integer expression>) */
 
    pas_CheckLParen();
 
    realType = pas_Expression(exprUnknown, NULL); /* Process any expression */
    if (realType == exprInteger)
-     pas_GenerateFpOperation((fpOpCode | fpARG1));
+     {
+       pas_GenerateFpOperation((fpOpCode | fpARG1));
+     }
    else if (realType == exprReal)
-     pas_GenerateFpOperation(fpOpCode);
+     {
+       pas_GenerateFpOperation(fpOpCode);
+     }
    else
-     error(eINVARG);
+     {
+       error(eINVARG);
+     }
 
    pas_CheckRParen();
 }
@@ -290,40 +285,36 @@ static void pas_RealFunc (uint8_t fpOpCode)
 
 static exprType_t pas_SuccFunc(void)
 {
-   exprType_t succType;
+  exprType_t succType;
 
-   TRACE(g_lstFile,"[pas_SuccFunc]");
+  /* FORM:  SUCC (<simple integer expression>) */
 
-   /* FORM:  SUCC (<simple integer expression>) */
+  pas_CheckLParen();
 
-   pas_CheckLParen();
+  /* Process any ordinal expression */
 
-   /* Process any ordinal expression */
+  succType = pas_Expression(exprAnyOrdinal, NULL);
 
-   succType = pas_Expression(exprAnyOrdinal, NULL);
-
-   pas_CheckRParen();
-   pas_GenerateSimple(opINC);
-   return succType;
+  pas_CheckRParen();
+  pas_GenerateSimple(opINC);
+  return succType;
 }
 
 /****************************************************************************/
 
 static void pas_OddFunc(void)
 {
-   TRACE(g_lstFile,"[pas_OddFunc]");
+  /* FORM:  ODD (<simple integer expression>) */
 
-   /* FORM:  ODD (<simple integer expression>) */
+  pas_CheckLParen();
 
-   pas_CheckLParen();
+  /* Process any ordinal expression */
 
-   /* Process any ordinal expression */
-
-   pas_Expression(exprAnyOrdinal, NULL);
-   pas_CheckRParen();
-   pas_GenerateDataOperation(opPUSH, 1);
-   pas_GenerateSimple(opAND);
-   pas_GenerateSimple(opNEQZ);
+  pas_Expression(exprAnyOrdinal, NULL);
+  pas_CheckRParen();
+  pas_GenerateDataOperation(opPUSH, 1);
+  pas_GenerateSimple(opAND);
+  pas_GenerateSimple(opNEQZ);
 }
 
 /****************************************************************************/
@@ -331,17 +322,15 @@ static void pas_OddFunc(void)
 
 static void pas_ChrFunc(void)
 {
-   TRACE(g_lstFile,"[charFactor]");
+  /* Form:  chr(integer expression).
+   *
+   * char(val) is only defined if there exists a character ch such
+   * that ord(ch) = val.  If this is not the case, we will simply
+   * let the returned value exceed the range of type char. */
 
-   /* Form:  chr(integer expression).
-    *
-    * char(val) is only defined if there exists a character ch such
-    * that ord(ch) = val.  If this is not the case, we will simply
-    * let the returned value exceed the range of type char. */
-
-   pas_CheckLParen();
-   pas_Expression(exprInteger, NULL);
-   pas_CheckRParen();
+  pas_CheckLParen();
+  pas_Expression(exprInteger, NULL);
+  pas_CheckRParen();
 }
 
 /****************************************************************************/
@@ -349,8 +338,6 @@ static void pas_ChrFunc(void)
 
 static void pas_FileFunc(uint16_t opCode)
 {
-  TRACE(g_lstFile,"[pas_FileFunc]");
-
   /* FORM: function Eof(var t : TextFile) : Boolean;
    *       function Eof : Boolean;
    * FORM: function Eoln(var t : TextFile) : Boolean;
@@ -698,7 +685,7 @@ static void pas_DirectoryFunc(uint16_t opCode)
 {
   exprType_t exprType;
 
-/* FORM: 'setcurrentdir | createdir' '(' string-expression ')' */
+  /* FORM: 'setcurrentdir | createdir | removedir' '(' string-expression ')' */
 
   /* Verify that the argument list is enclosed in parentheses */
 
@@ -730,13 +717,48 @@ static void pas_DirectoryFunc(uint16_t opCode)
 }
 
 /****************************************************************************/
+/* Get the current working directory */
+
+static void pas_GetDirFunc(void)
+{
+  /* FORM: 'getdir' '(' 'VAR' string-variable ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* The parameter must be a standard string LValue */
+
+  if (g_token == sSTRING)
+    {
+      pas_GenerateStackReference(opLAS, g_tknPtr);
+    }
+  else if (g_token == sSHORTSTRING)
+    {
+      error(eNOTYET);
+    }
+  else
+    {
+      error(eINVARG);
+    }
+
+  getToken();  /* Skip over the string */
+
+  /* Now we can generate the directory operation */
+
+  pas_GenerateIoOperation(xGETDIR);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
 /* C library getenv interface */
 
 static exprType_t pas_GetEnvFunc(void)
 {
   exprType_t stringType;
-
-  TRACE(g_lstFile, "[pas_GetEnvFunc]");
 
   /* FORM:  <value-string> = getenv(<name-string>) */
 
@@ -768,8 +790,6 @@ static exprType_t pas_GetEnvFunc(void)
 exprType_t pas_StandardFunction(void)
 {
   exprType_t funcType = exprUnknown;
-
-  TRACE(g_lstFile,"[pas_StandardFunction]");
 
   /* Is the token a function? */
 
@@ -832,6 +852,10 @@ exprType_t pas_StandardFunction(void)
 
         case txREMOVEDIR :
           pas_DirectoryFunc(xRMDIR);
+          break;
+
+        case txGETDIR :
+          pas_GetDirFunc();
           break;
 
           /* Non-standard C library interfaces */

@@ -74,7 +74,7 @@ $(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),distclean)))
 $(PIMAGEDIR):
 	$(Q) $(MKDIR) $(PIMAGEDIR)
 
-all:    $(PIMAGEDIR) \
+all:    $(PIMAGEDIR) punits/_all \
         $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
         $(foreach DIR, $(PBUILDDIRS), $(DIR)_all)
 

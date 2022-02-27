@@ -98,7 +98,7 @@ unsigned int g_nConst        = 0;     /* Number constant table entries */
  * (5) Non-standard Pascal function
  * (6) Non-standard Pascal procedure
  * (7) Built-In Function
- * (8) Borland-style string/file operations
+ * (8) Borland-style and/or Free Pascal string/file operations
  */
 
 static const reservedWord_t g_rsw[] =                /* Reserved word list */
@@ -141,6 +141,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"FOR",            tFOR,            txNONE},       /* (1) */
   {"FUNCTION",       tFUNCTION,       txNONE},       /* (1) */
   {"GET",            tSTDPROC,        txGET},        /* (3) */
+  {"GETDIR",         tSTDFUNC,        txGETDIR},     /* (8) */
   {"GETENV",         tSTDFUNC,        txGETENV},     /* (5) */
   {"GOTO",           tGOTO,           txNONE},       /* (1) */
   {"HALT",           tSTDPROC,        txHALT},       /* (3) */
@@ -320,29 +321,27 @@ symbol_t *pas_FindSymbol(const char *inName, int tableOffset)
 
 static symbol_t *addSymbol(char *name, int16_t kind)
 {
-   TRACE(g_lstFile,"[addSymbol]");
+  /* Check for Symbol Table overflow */
 
-   /* Check for Symbol Table overflow */
+  if (g_nSym >= MAX_SYM)
+    {
+      fatal(eOVF);
+      return (symbol_t *)NULL;
+    }
+  else
+    {
+      /* Clear all elements of the symbol table entry */
 
-   if (g_nSym >= MAX_SYM)
-     {
-       fatal(eOVF);
-       return (symbol_t *)NULL;
-     }
-   else
-     {
-     /* Clear all elements of the symbol table entry */
+      memset(&g_symbolTable[g_nSym], 0, sizeof(symbol_t));
 
-     memset(&g_symbolTable[g_nSym], 0, sizeof(symbol_t));
+      /* Set the elements which are independent of sKind */
 
-     /* Set the elements which are independent of sKind */
+      g_symbolTable[g_nSym].sName  = name;
+      g_symbolTable[g_nSym].sKind  = kind;
+      g_symbolTable[g_nSym].sLevel = g_level;
 
-     g_symbolTable[g_nSym].sName  = name;
-     g_symbolTable[g_nSym].sKind  = kind;
-     g_symbolTable[g_nSym].sLevel = g_level;
-
-     return &g_symbolTable[g_nSym++];
-   }
+      return &g_symbolTable[g_nSym++];
+    }
 }
 
 /****************************************************************************/
@@ -350,33 +349,31 @@ static symbol_t *addSymbol(char *name, int16_t kind)
 symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
                             symbol_t *parent)
 {
-   symbol_t *typePtr;
+  symbol_t *typePtr;
 
-   TRACE(g_lstFile,"[pas_AddTypeDefine]");
+  /* Get a slot in the symbol table */
 
-   /* Get a slot in the symbol table */
+  typePtr = addSymbol(name, sTYPE);
+  if (typePtr)
+    {
+      /* Add the type definition to the symbol table
+       * NOTES:
+       * 1. The minValue and maxValue fields (for scalar and subrange)
+       *    types must be set external to this function
+       * 2. We assume that there are no special flags associated with
+       *    the type.
+       * 3. Additional external settings are necessary for ARRAY types
+       *    as well (tDimension, tIndex).
+       */
 
-   typePtr = addSymbol(name, sTYPE);
-   if (typePtr)
-     {
-       /* Add the type definition to the symbol table
-        * NOTES:
-        * 1. The minValue and maxValue fields (for scalar and subrange)
-        *    types must be set external to this function
-        * 2. We assume that there are no special flags associated with
-        *    the type.
-        * 3. Additional external settings are necessary for ARRAY types
-        *    as well (tDimension, tIndex).
-        */
+      typePtr->sParm.t.tType      = type;
+      typePtr->sParm.t.tAllocSize = size;
+      typePtr->sParm.t.tParent    = parent;
+    }
 
-       typePtr->sParm.t.tType      = type;
-       typePtr->sParm.t.tAllocSize = size;
-       typePtr->sParm.t.tParent    = parent;
-     }
+  /* Return a pointer to the new constant symbol */
 
-   /* Return a pointer to the new constant symbol */
-
-   return typePtr;
+  return typePtr;
 }
 
 /****************************************************************************/
@@ -385,8 +382,6 @@ symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
                           symbol_t *parent)
 {
   symbol_t *constPtr;
-
-  TRACE(g_lstFile,"[pas_AddConstant]");
 
   /* Get a slot in the symbol table */
 
@@ -418,8 +413,6 @@ symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
 {
   symbol_t *stringPtr;
 
-  TRACE(g_lstFile,"[pas_AddStringConstant]");
-
   /* Get a slot in the symbol table */
 
   stringPtr = addSymbol(name, sSTRING_CONST);
@@ -442,8 +435,6 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
                       uint16_t xfrUnit, symbol_t *typePtr)
 {
   symbol_t *filePtr;
-
-  TRACE(g_lstFile,"[pas_AddFile]");
 
   /* Get a slot in the symbol table */
 
@@ -468,26 +459,25 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
 symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
                            uint16_t nParms, symbol_t *parent)
 {
-   symbol_t *procPtr;
+  symbol_t *procPtr;
 
-   TRACE(g_lstFile,"[pas_AddProcedure]");
+  /* Get a slot in the symbol table */
 
-   /* Get a slot in the symbol table */
-   procPtr = addSymbol(name, type);
-   if (procPtr)
-     {
-       /* Add the procedure/function definition to the symbol table */
+  procPtr = addSymbol(name, type);
+  if (procPtr)
+    {
+      /* Add the procedure/function definition to the symbol table */
 
-       procPtr->sParm.p.pLabel    = label;
-       procPtr->sParm.p.pNParms   = nParms;
-       procPtr->sParm.p.pFlags    = 0;
-       procPtr->sParm.p.pSymIndex = 0;
-       procPtr->sParm.p.pParent   = parent;
-     }
+      procPtr->sParm.p.pLabel    = label;
+      procPtr->sParm.p.pNParms   = nParms;
+      procPtr->sParm.p.pFlags    = 0;
+      procPtr->sParm.p.pSymIndex = 0;
+      procPtr->sParm.p.pParent   = parent;
+    }
 
-   /* Return a pointer to the new procedure/function symbol */
+  /* Return a pointer to the new procedure/function symbol */
 
-   return procPtr;
+  return procPtr;
 }
 
 /****************************************************************************/
@@ -496,8 +486,6 @@ symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
                           uint16_t size, symbol_t *parent)
 {
   symbol_t *varPtr;
-
-  TRACE(g_lstFile,"[pas_AddVariable]");
 
   /* Get a slot in the symbol table */
 
@@ -522,8 +510,6 @@ symbol_t *pas_AddLabel(char *name, uint16_t label)
 {
   symbol_t *labelPtr;
 
-  TRACE(g_lstFile,"[pas_AddLabel]");
-
   /* Get a slot in the symbol table */
 
   labelPtr = addSymbol(name, sLABEL);
@@ -545,8 +531,6 @@ symbol_t *pas_AddLabel(char *name, uint16_t label)
 symbol_t *pas_AddField(char *name, symbol_t *record, symbol_t *lastField)
 {
   symbol_t *fieldPtr;
-
-  TRACE(g_lstFile,"[pas_AddField]");
 
   /* Get a slot in the symbol table */
 
@@ -578,8 +562,6 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
   int32_t falseValue  = BOOLEAN_FALSE;
   int32_t maxintValue = MAXINT;
   symbol_t *typePtr;
-
-  TRACE(g_lstFile,"[pas_PrimeSymbolTable]");
 
   /* Allocate and initialize symbol table */
 
@@ -703,14 +685,16 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
 
 void pas_VerifyLabels(int32_t symIndex)
 {
-   int16_t i;                 /* loop index */
-
-   for (i=symIndex; i < g_nSym; i++)
-     if ((g_symbolTable[i].sKind == sLABEL)
-     &&  (g_symbolTable[i].sParm.l.lUnDefined))
-     {
-       error (eUNDEFLABEL);
-     }
+  int16_t i;
+  
+  for (i=symIndex; i < g_nSym; i++)
+    {
+      if (g_symbolTable[i].sKind == sLABEL &&
+          g_symbolTable[i].sParm.l.lUnDefined)
+        {
+           error (eUNDEFLABEL);
+        }
+    }
 }
 
 /****************************************************************************/

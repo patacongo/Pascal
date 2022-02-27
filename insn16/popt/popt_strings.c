@@ -63,8 +63,6 @@ void popt_StringOptimization(poffHandle_t poffHandle)
 {
   poffProgHandle_t poffProgHandle; /* Handle to temporary POFF object */
 
-  TRACE(stderr, "[popt_StringOptimize]");
-
   /* Create a handle to a temporary object to store new POFF program
    * data.
    */

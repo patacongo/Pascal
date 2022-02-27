@@ -211,8 +211,6 @@ static void pas_ConstantSimpleExpression(exprType_t findExprType,
   double   termReal;
   uint16_t termSet[sSET_WORDS];
 
-  TRACE(g_lstFile,"[pas_ConstantSimpleExpression]");
-
   /* FORM: [+|-] <term> [{+|-} <term> [{+|-} <term> [...]]]
    * get +/- unary operation
    */
@@ -391,8 +389,6 @@ void pas_ConstantTerm(exprType_t findExprType, symbol_t *typePtr)
   int32_t  factorInt;
   double   factorReal;
   uint16_t factorSet[sSET_WORDS];
-
-  TRACE(g_lstFile,"[pas_ConstantTerm]");
 
   /* FORM:  <factor> [<operator> <factor>[<operator><factor>[...]]] */
 
@@ -584,8 +580,6 @@ void pas_ConstantTerm(exprType_t findExprType, symbol_t *typePtr)
 
 static void pas_ConstantFactor(exprType_t findExprType, symbol_t *typePtr)
 {
-  TRACE(g_lstFile,"[pas_ConstantFactor]");
-
   /* Process by token type */
 
   switch (g_token)
@@ -880,8 +874,6 @@ static void pas_AddBitSetElements(uint16_t firstElement,
 
 void pas_ConstantExpression(exprType_t findExprType, symbol_t *typePtr)
 {
-  TRACE(g_lstFile,"[constantExpression]");
-
   /* Get the value of a simple constant expression */
 
   pas_ConstantSimpleExpression(findExprType, typePtr);

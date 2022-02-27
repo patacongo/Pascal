@@ -258,15 +258,16 @@
 #define txCOPY           0x9e
 #define txCREATEDIR      0x9f
 #define txFILLCHAR       0xa0
-#define txMKDIR          0xa1
-#define txPOS            0xa2
-#define txREMOVEDIR      0xa3
-#define txRMDIR          0xa4
-#define txVAL            0xa5
-#define txSETCURRDIR     0xa6
-#define txSTR            0xa7
-#define txCONCAT         0xa8
-#define txINSERT         0xa9
-#define txDELETE         0xaa
+#define txGETDIR         0xa1
+#define txMKDIR          0xa2
+#define txPOS            0xa3
+#define txREMOVEDIR      0xa4
+#define txRMDIR          0xa5
+#define txVAL            0xa6
+#define txSETCURRDIR     0xa7
+#define txSTR            0xa8
+#define txCONCAT         0xa9
+#define txINSERT         0xaa
+#define txDELETE         0xab
 
 #endif /* __PAS_TKNDEFS_H */

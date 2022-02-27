@@ -161,8 +161,6 @@ static void popt_SetupOpcodePointerList(void)
 {
   register int16_t pindex;
 
-  TRACE(stderr, "[popt_SetupOpcodePointerList]");
-
   for (pindex = 0; pindex < g_nBufferedOpCodes; pindex++)
     {
       g_opPtr[pindex] = NULL;
@@ -225,8 +223,6 @@ void popt_SetupPeephole(poffHandle_t poffHandle,
   uint32_t opCodeSize;
   int16_t nOpCodes;
   int16_t i;
-
-  TRACE(stderr, "[intPTable]");
 
   g_poffHandle       = poffHandle;
   g_poffProgHandle   = poffProgHandle;
@@ -292,8 +288,6 @@ void popt_UpdatePeephole(void)
   int16_t i;
   int16_t j;
 
-  TRACE(stderr, "[popt_UpdatePeephole]");
-
   /* Transfer one buffered P-Code (except NOPs) to the optimized file */
 
   if (g_opTable[0].op != oNOP && !g_endOut)
@@ -356,8 +350,6 @@ void popt_UpdatePeephole(void)
 
 void popt_DeletePCode(int16_t delIndex)
 {
-  TRACE(stderr, "[popt_DeletePCode]");
-
   g_opPtr[delIndex]->op   = oNOP;
   g_opPtr[delIndex]->arg1 = 0;
   g_opPtr[delIndex]->arg2 = 0;
@@ -368,8 +360,6 @@ void popt_DeletePCode(int16_t delIndex)
 
 void popt_DeletePCodePair(int16_t delIndex1, int16_t delIndex2)
 {
-  TRACE(stderr, "[popt_DeletePCodePair]");
-
   g_opPtr[delIndex1]->op   = oNOP;
   g_opPtr[delIndex1]->arg1 = 0;
   g_opPtr[delIndex1]->arg2 = 0;
@@ -384,8 +374,6 @@ void popt_DeletePCodePair(int16_t delIndex1, int16_t delIndex2)
 void popt_DeletePCodeTrio(int16_t delIndex1, int16_t delIndex2,
                           int16_t delIndex3)
 {
-  TRACE(stderr, "[popt_DeletePCodeTrio]");
-
   g_opPtr[delIndex1]->op   = oNOP;
   g_opPtr[delIndex1]->arg1 = 0;
   g_opPtr[delIndex1]->arg2 = 0;
@@ -403,8 +391,6 @@ void popt_DeletePCodeTrio(int16_t delIndex1, int16_t delIndex2,
 void popt_DeletePCodeQuartet(int16_t delIndex1, int16_t delIndex2,
                              int16_t delIndex3, int16_t delIndex4)
 {
-  TRACE(stderr, "[popt_DeletePCodeTrio]");
-
   g_opPtr[delIndex1]->op   = oNOP;
   g_opPtr[delIndex1]->arg1 = 0;
   g_opPtr[delIndex1]->arg2 = 0;

@@ -1,7 +1,7 @@
 /****************************************************************************
  * libexec_setops.c
  *
- *   Copyright (C) 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -96,7 +96,7 @@ static uint16_t libexec_BitsInNibble(uint8_t nibble);
  * Private Data
  ****************************************************************************/
 
-static uint8_t g_bitsInNibble[16] =
+static const uint8_t g_bitsInNibble[16] =
 {
 /* 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f */
    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4

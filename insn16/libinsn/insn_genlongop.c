@@ -172,9 +172,6 @@ static void insn16_longOpcodeGenerate(enum longops_e longOpCode,
   uint16_t insn_opCode;
   uint16_t arg16;
 
-  TRACE(g_lstFile,"[insn16_longOpcodeGenerate:0x%02x->0x%04x]",
-        longOpCode, insn_longOpCode);
-
   if ((insn_longOpCode & o16) != 0)
     {
       insn_opCode = oLONGOP24;

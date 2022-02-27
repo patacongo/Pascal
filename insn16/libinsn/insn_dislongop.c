@@ -85,7 +85,7 @@ struct opCodeInfo_s
 
 /* This table is indexed via enum longOp8_e & ~o8 */
 
-static struct opCodeInfo_s g_longOpTable8[] =
+static const struct opCodeInfo_s g_longOpTable8[] =
 {
   /* Program control (No stack arguments) */
 
@@ -165,7 +165,7 @@ static struct opCodeInfo_s g_longOpTable8[] =
 
 /* This table is indexed via enum longOp24_e & ~o8 */
 
-static struct opCodeInfo_s g_longOpTable24[] =
+static const struct opCodeInfo_s g_longOpTable24[] =
 {
 /* Program control:  arg16 = unsigned label (One stack argument) */
 
@@ -201,7 +201,7 @@ static struct opCodeInfo_s g_longOpTable24[] =
 
 void insn_DisassembleLongOpCode(FILE* lfile, opType_t *pop)
 {
-  struct opCodeInfo_s *opCodeInfo;
+  const struct opCodeInfo_s *opCodeInfo;
   uint8_t fmt16;
   int index;
 
