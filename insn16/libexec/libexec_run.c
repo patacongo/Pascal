@@ -1408,14 +1408,29 @@ struct libexec_s *libexec_Initialize(struct libexec_attr_s *attr)
 
   /* Set up info needed to perform a simulated reset */
 
-  st->strsize   = adjusted_strsize;
-  st->rosize    = adjusted_rosize;
-  st->stksize   = adjusted_stksize;
-  st->hpsize    = adjusted_hpsize;
-  st->stacksize = stacksize;
+  st->strsize      = adjusted_strsize;
+  st->rosize       = adjusted_rosize;
+  st->stksize      = adjusted_stksize;
+  st->hpsize       = adjusted_hpsize;
+  st->stacksize    = stacksize;
 
-  st->stralloc  = adjusted_stralloc;
-  st->entry     = attr->entry;
+  st->stralloc     = adjusted_stralloc;
+  st->entry        = attr->entry;
+
+  /* Set certain critical variables to a known state */
+
+  st->freeChunks   = 0;
+#ifdef CONFIG_PASCAL_DEBUGGER
+  st->lastCmd      = eCMD_NONE;
+  st->traceIndex   = 0;
+  st->nTracePoints = 0;
+  st->untilPoint   = 0;
+  st->nBreakPoints = 0;
+  st->nWatchPoints = 0;
+  st->bExecStop    = 0;
+#endif
+
+  memset(st->fileTable, 0, MAX_OPEN_FILES * sizeof(execFileTable_t));
 
   /* Then perform a simulated reset */
 

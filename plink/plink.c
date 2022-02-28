@@ -42,6 +42,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 #include <errno.h>
 
@@ -137,7 +138,7 @@ static void plink_LoadInputFiles(poffHandle_t outHandle)
 {
   poffHandle_t inHandle;
   FILE        *instream;
-  char         fileName[FNAME_SIZE + 1];  /* Object file name */
+  char         fileName[PATH_MAX];  /* Object file path */
   uint32_t     pcOffset = 0;
   uint32_t     fnOffset = 0;
   uint32_t     symOffset = 0;
@@ -162,7 +163,7 @@ static void plink_LoadInputFiles(poffHandle_t outHandle)
        * input file name.
        */
 
-      (void)extension(g_inFileName[i], "o", fileName, 0);
+      (void)extension(g_inFileName[i], "o", fileName, PATH_MAX, 0);
 
       /* Open the input file */
 
@@ -457,13 +458,13 @@ static uint32_t plink_MergeLineNumbers(poffHandle_t inHandle,
 static void plink_WirteOutputFile(poffHandle_t outHandle)
 {
   FILE *outstream;
-  char  fileName[FNAME_SIZE+1];  /* Output file name */
+  char  fileName[PATH_MAX];  /* Output file name */
 
   /* Use .pex or command line extension, if supplied, to get the
    * input file name.
    */
 
-  (void)extension(g_outFileName, "pex", fileName, 0);
+  (void)extension(g_outFileName, "pex", fileName, PATH_MAX, 0);
 
   /* Open the output file */
 

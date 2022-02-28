@@ -255,19 +255,23 @@
 
 #define txLENGTH         0x9c
 #define txCHDIR          0x9d
-#define txCOPY           0x9e
-#define txCREATEDIR      0x9f
-#define txFILLCHAR       0xa0
-#define txGETDIR         0xa1
-#define txMKDIR          0xa2
-#define txPOS            0xa3
-#define txREMOVEDIR      0xa4
-#define txRMDIR          0xa5
-#define txVAL            0xa6
-#define txSETCURRDIR     0xa7
-#define txSTR            0xa8
-#define txCONCAT         0xa9
-#define txINSERT         0xaa
-#define txDELETE         0xab
+#define txCLOSEDIR       0x9e
+#define txCOPY           0x9f
+#define txCREATEDIR      0xa0
+#define txFILLCHAR       0xa1
+#define txGETDIR         0xa2
+#define txMKDIR          0xa3
+#define txOPENDIR        0xa4
+#define txPOS            0xa5
+#define txREADDIR        0xa6
+#define txREMOVEDIR      0xa7
+#define txREWINDDIR      0xa8
+#define txRMDIR          0xa9
+#define txVAL            0xaa
+#define txSETCURRDIR     0xab
+#define txSTR            0xac
+#define txCONCAT         0xad
+#define txINSERT         0xae
+#define txDELETE         0xaf
 
 #endif /* __PAS_TKNDEFS_H */

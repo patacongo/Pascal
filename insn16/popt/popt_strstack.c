@@ -618,13 +618,35 @@ static void popt_DoPop(poffHandle_t poffHandle,
             }
             break;
 
-#if 1         /* REVISIT: Increases code size dramatically. */
+          case oSYSIO :
+            {
+              /* GetDir also allocates string stack. */
 
-              /* If we encounter a label or a jump between the PUSHS and the
-               * POPS, then keep both.  Labels are known to happen in loops
-               * where the top-of-loop label is after the PUSHS but the
-               * matching POPS may be much later in the file.
-               */
+              if (g_opCode.arg2 == xGETDIR)
+                {
+                  popt_DebugMessage("  Keep PUSH at %04x, level %d\n",
+                                    pushOffset, g_currentLevel);
+
+                  /* Remind ourselves to keep both the PUSHS and the POPS
+                   * when we find the matching POPS.
+                   */
+
+                  keepPop = true;
+                }
+
+              /* Put the instruction in the buffer in any event. */
+
+              popt_PutOpCode(poffHandle, poffProgHandle);
+            }
+            break;
+
+#if 1       /* REVISIT: Increases code size dramatically. */
+
+            /* If we encounter a label or a jump between the PUSHS and the
+             * POPS, then keep both.  Labels are known to happen in loops
+             * where the top-of-loop label is after the PUSHS but the
+             * matching POPS may be much later in the file.
+             */
 
           case oJMP   : /* Unconditional */
           case oJEQUZ : /* Unary comparisons with zero */

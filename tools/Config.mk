@@ -99,9 +99,9 @@ HOSTCFLAGS  += -I. -I$(PINCDIR)
 HOSTLDFLAGS += -L$(PLIBDIR)
 HOSTARFLAGS ?= -r
 
-PAS          = $(BINDIR)/pascal$(TOOLEXEEXT)
-POPT         = $(BINDIR)/popt$(TOOLEXEEXT)
-PLINK        = $(BINDIR)/plink$(TOOLEXEEXT)
+PAS          = $(PBINDIR)/pascal$(TOOLEXEEXT)
+POPT         = $(PBINDIR)/popt$(TOOLEXEEXT)
+PLINK        = $(PBINDIR)/plink$(TOOLEXEEXT)
 
 PASOPTS      = -I$(PUNITDIR)
 POPTOPTS     =

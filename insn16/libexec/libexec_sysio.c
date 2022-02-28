@@ -1756,10 +1756,6 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     /* GETDIR : TOS(0) = Address of standard string variable */
 
     case xGETDIR :
-      /* Get the string argument */
-
-      POP(st, address);     /* Directory name string address */
-
       /* Get the current working directory  */
 
       if (getcwd((char *)st->ioBuffer, LINE_SIZE) == NULL)
@@ -1768,26 +1764,95 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         }
       else
         {
-          uint16_t *strVarPtr;
-          char *strBufferPtr;
-          int nameLen;
+          char *sptr;
 
           /* Convert the C-string into a Pascal string */
 
           st->ioBuffer[LINE_SIZE] = '\0';
-          nameLen = strlen((char *)st->ioBuffer);
-          if (nameLen > st->stralloc)
+          size = strlen((char *)st->ioBuffer);
+          if (size > st->stralloc)
             {
-              nameLen = st->stralloc;
+              size = st->stralloc;
             }
 
-          strVarPtr    = (uint16_t *)ATSTACK(st, address);
-          address      = strVarPtr[sSTRING_DATA_OFFSET / sINT_SIZE];
-          strBufferPtr = (char *)ATSTACK(st, address);
+          /* Allocate storage in the string stack */
 
-          memcpy(strBufferPtr, st->ioBuffer, nameLen);
-          strVarPtr[sSTRING_SIZE_OFFSET / sINT_SIZE] = nameLen;
+          address = INT_ALIGNUP(st->csp);
+          st->csp = address + st->stralloc;
+
+          /* Copy the string into the string stack */
+
+          sptr    = (char *)ATSTACK(st, address);
+          memcpy(sptr, st->ioBuffer, size);
+
+          /* And push the newly create string */
+
+          PUSH(st, size);
+          PUSH(st, address);
         }
+      break;
+
+    /* OPENDIR : Open a directory for reading.
+     *
+     *   function OpenDir(dirName : string; VAR dirInfo: TDirEntry) : boolean
+     *
+     * ON INPUT:
+     *   TOS(0) = Address of dirName string in the string stack
+     *   TOS(1) = The length of the dirName string
+     *   TOS(2) = Address of dirInfo
+     * ON OUTPUT
+     *   TOS(0) = Boolean result of the OpenDir operation
+     */
+
+    case xOPENDIR :
+      {
+      }
+      break;
+
+    /* READDIR : Read the next directory entry.
+     *
+     *   function ReadDir(VAR dirInfo : TDirEntry, VAR result : TSearchRec) : boolean
+     *
+     * ON INPUT:
+     *   TOS(0) = Address of dirInfo
+     *   TOS(1) = Address of result
+     * ON OUTPUT
+     *   TOS(0) = Boolean result of the ReadDir operation
+     */
+
+    case xREADDIR :
+      {
+      }
+      break;
+
+    /* REWINDDIR : Reset the read position of the beginning of the directory.
+     *
+     *   function RewindDir(VAR dirInfo : TDirEntry) : boolean
+     *
+     * ON INPUT:
+     *   TOS(0) = Address of dirInfo
+     * ON OUTPUT
+     *   TOS(0) = Boolean result of the RewindDir operation
+     */
+
+    case xREWINDDIR :
+      {
+      }
+      break;
+
+    /* CLOSEDIR : Close the directory and release any resources.
+     *
+     *   function CloseDir(VAR dirInfo : TDirEntry) : boolean
+     *
+     * ON INPUT:
+     *   TOS(0) = Address of dirInfo
+     * ON OUTPUT
+     *   TOS(0) = Boolean result of the CloseDir operation
+     */
+
+    case xCLOSEDIR :
+      {
+      }
       break;
 
     default :

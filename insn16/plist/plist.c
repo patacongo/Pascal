@@ -299,10 +299,10 @@ static void plist_DumpProgramData(poffHandle_t poffHandle)
 
 int main (int argc, char *argv[], char *envp[])
 {
-  FILE   *object;                  /* Object file pointer */
-  poffHandle_t poffHandle;         /* Handle for POFF object */
-  char    fileName[FNAME_SIZE+1];  /* Object file name */
-  uint16_t errCode;                /* See pas_errcodes.h */
+  FILE   *object;                   /* Object file pointer */
+  poffHandle_t poffHandle;          /* Handle for POFF object */
+  char    fileName[FNAME_SIZE + 1]; /* Object file name */
+  uint16_t errCode;                 /* See pas_errcodes.h */
 
   /* Parse the command line arguments */
 
@@ -310,7 +310,7 @@ int main (int argc, char *argv[], char *envp[])
 
   /* Open source POFF file -- Use .o or command line extension, if supplied */
 
-  (void)extension(g_poffFileName, "o", fileName, 0);
+  (void)extension(g_poffFileName, "o", fileName, FNAME_SIZE + 1, 0);
   if (!(object = fopen (fileName, "rb")))
     {
       printf ("Error opening %s\n", fileName);

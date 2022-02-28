@@ -93,6 +93,11 @@ static void       pas_ConcatFunc(void);
 static void       pas_DirectoryFunc(uint16_t opCode);
 static void       pas_GetDirFunc(void);
 
+static void       pas_OpenDirFunc(void);
+static void       pas_ReadDirFunc(void);
+static void       pas_RewindDirFunc(void);
+static void       pas_CloseDirFunc(void);
+
 /* Non-standard C-library interface functions */
 
 static exprType_t pas_GetEnvFunc (void);  /* Get environment string value */
@@ -721,36 +726,60 @@ static void pas_DirectoryFunc(uint16_t opCode)
 
 static void pas_GetDirFunc(void)
 {
-  /* FORM: 'getdir' '(' 'VAR' string-variable ')' */
+  bool lparen;
 
-  /* Verify that the argument list is enclosed in parentheses */
+  /* FORM: 'getdir' [ '()' ] : string */
 
-  pas_CheckLParen();
+  /* Left parenthesis is optional */
 
-  /* The parameter must be a standard string LValue */
+  getToken();
 
-  if (g_token == sSTRING)
-    {
-      pas_GenerateStackReference(opLAS, g_tknPtr);
-    }
-  else if (g_token == sSHORTSTRING)
-    {
-      error(eNOTYET);
-    }
-  else
-    {
-      error(eINVARG);
-    }
+  lparen = (g_token == '(');
+  if (lparen) getToken();
 
-  getToken();  /* Skip over the string */
-
-  /* Now we can generate the directory operation */
+  /* Generate the directory operation */
 
   pas_GenerateIoOperation(xGETDIR);
 
-  /* Assure that the parameter list terminates with a right parenthesis. */
+  /* A right parenthis is required only if a left parenthesis was provided. */
 
-  pas_CheckRParen();
+  if (lparen)
+    {
+      if (g_token != ')') error(eRPAREN);
+      else getToken();
+    }
+}
+
+/****************************************************************************/
+/* Open a directory for reading. */
+
+static void pas_OpenDirFunc(void)
+{
+  /* FORM: 'opendir' '(' string-expression ',' directory-info-variable ')' */
+}
+
+/****************************************************************************/
+/*  Read the next directory entry. */
+
+static void pas_ReadDirFunc(void)
+{
+  /* FORM: 'readdir' '(' directory-info-variable ',' search-result-variable ')' */
+}
+
+/****************************************************************************/
+/* Reset the read position of the beginning of the directory. */
+
+static void pas_RewindDirFunc(void)
+{
+  /* FORM: 'rewinddir' '(' directory-info-variable ')' */
+}
+
+/****************************************************************************/
+/*  Close the directory and release any resources. */
+
+static void pas_CloseDirFunc(void)
+{
+  /* FORM: 'closedir' '(' directory-info-variable ')' */
 }
 
 /****************************************************************************/
@@ -852,10 +881,32 @@ exprType_t pas_StandardFunction(void)
 
         case txREMOVEDIR :
           pas_DirectoryFunc(xRMDIR);
+          funcType = exprBoolean;
           break;
 
         case txGETDIR :
           pas_GetDirFunc();
+          funcType = exprString;
+          break;
+
+        case txOPENDIR :
+          pas_OpenDirFunc();
+          funcType = exprBoolean;
+          break;
+
+        case txREADDIR :
+          pas_ReadDirFunc();
+          funcType = exprBoolean;
+          break;
+
+        case txREWINDDIR :
+          pas_RewindDirFunc();
+          funcType = exprBoolean;
+          break;
+
+        case txCLOSEDIR :
+          pas_CloseDirFunc();
+          funcType = exprBoolean;
           break;
 
           /* Non-standard C library interfaces */

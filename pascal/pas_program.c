@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
@@ -168,7 +169,7 @@ void pas_Program(void)
 void pas_UsesSection(void)
 {
   uint16_t saveToken;
-  char defaultUnitFileName[FNAME_SIZE + 1];
+  char defaultUnitFileName[PATH_MAX];
   char *unitFileName = NULL;
   char *saveTknStrt;
   char *unitName;
@@ -219,7 +220,7 @@ void pas_UsesSection(void)
         {
           /* Create a default filename */
 
-          (void)extension(unitName, "pas", defaultUnitFileName, 1);
+          (void)extension(unitName, "pas", defaultUnitFileName, PATH_MAX, 1);
           unitFileName = defaultUnitFileName;
         }
 
@@ -255,11 +256,12 @@ void pas_UsesSection(void)
       pas_UnitInterface();
       pas_CloseNestedFile();
 
-      /* Verify the terminating semicolon */
+      /* Verify the terminating condition.  A colon should not be needed
+       * in this case.  But we will skip over it if one is present.
+       */
 
       g_token = saveToken;
-      if (g_token !=  ';') error(eSEMICOLON);
-      else getToken();
+      if (g_token ==  ';') getToken();
     }
 }
 

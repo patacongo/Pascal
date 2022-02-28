@@ -55,6 +55,8 @@
 #  error CONFIG_PASCAL_POINTERSIZE must be 2
 #elif UINTPTR_MAX == 0xffffffff && CONFIG_PASCAL_POINTERSIZE != 4
 #  error CONFIG_PASCAL_POINTERSIZE must be 4
+#elif UINTPTR_MAX == 0xffffff && CONFIG_PASCAL_POINTERSIZE != 6
+#  error CONFIG_PASCAL_POINTERSIZE must be 6
 #elif UINTPTR_MAX == 0xffffffffffffffffu && CONFIG_PASCAL_POINTERSIZE != 8
 #  error CONFIG_PASCAL_POINTERSIZE must be 8
 #endif

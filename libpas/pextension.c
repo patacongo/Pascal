@@ -2,7 +2,7 @@
  * pextension.c
  * Manage file extensions
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@
 /***********************************************************************/
 
 bool extension(const char *inName, const char *ext, char *outName,
-               bool force_default)
+               int outSize, bool force_default)
 {
   int    namelen = strlen(inName);
   int    extlen;
@@ -79,7 +79,7 @@ bool extension(const char *inName, const char *ext, char *outName,
         {
           /* Copy the string. */
 
-          strcpy(outName, inName);
+          strncpy(outName, inName, outSize);
         }
     }
   else
@@ -107,7 +107,7 @@ bool extension(const char *inName, const char *ext, char *outName,
        * terminator) will fit in the allocated buffer.
        */
 
-      if (copylen + extlen + 2 > FNAME_SIZE)
+      if (copylen + extlen + 2 > outSize)
         {
           /* It won't */
 
@@ -129,7 +129,4 @@ bool extension(const char *inName, const char *ext, char *outName,
     }
 
   return false;
-
-} /* end extension */
-
-/***********************************************************************/
+}

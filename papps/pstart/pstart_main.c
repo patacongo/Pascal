@@ -65,7 +65,8 @@ int main(int argc, char *argv[], char *envp[])
    * Use .pex or command line extension, if supplied.
    */
 
-  (void)extension(CONFIG_PASCAL_STARTUP_FILENAME, "pex", fileName, 0);
+  (void)extension(CONFIG_PASCAL_STARTUP_FILENAME, "pex", fileName,
+                  FNAME_SIZE + 1, 0);
 
   /* Initialize the P-machine and load the POFF file */
 

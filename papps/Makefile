@@ -37,7 +37,8 @@
 # ---------------------------------------------------------------------------
 # Directories
 
-PASCAL     = ${shell pwd}/..
+PAPPSDIR   = ${shell pwd}
+PASCAL     = $(PAPPSDIR)/..
 
 -include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk

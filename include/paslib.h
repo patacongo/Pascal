@@ -70,7 +70,7 @@
 /* File name extension helper */
 
 bool     extension(const char *inName, const char *ext, char *outName,
-                   bool force_default);
+                   int outSize, bool force_default);
 
 /* Math helpers */
 

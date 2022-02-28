@@ -62,5 +62,6 @@ clean:
 	$(Q) rm -f src/*.o1 units/*.o1
 	$(Q) rm -f src/*.o units/*.o
 	$(Q) rm -f src/*.d units/*.d
+	$(Q) rm -rf newdir
 
 distclean: clean

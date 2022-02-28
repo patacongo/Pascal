@@ -94,6 +94,11 @@
 #define xMKDIR             (0x0026)  /* Create a new directory */
 #define xRMDIR             (0x0027)  /* Remove an existing directory */
 
-#define MAX_XOP            (0x0028)
+#define xOPENDIR           (0x0028)  /* Open a directory for reading */
+#define xREADDIR           (0x0029)  /* Read the next directory entry */
+#define xREWINDDIR         (0x002a)  /* Read the next directory entry */
+#define xCLOSEDIR          (0x002b)  /* Terminate the directory read */
+
+#define MAX_XOP            (0x002c)
 
 #endif /* __PAS_SYSIO_H */

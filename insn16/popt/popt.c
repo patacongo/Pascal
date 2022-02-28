@@ -86,13 +86,13 @@ int32_t          g_nextRelocationIndex; /* Non-negative if g_nextRelocation
 
 static void readPoffFile(const char *filename)
 {
-  char    objname [FNAME_SIZE+1];
+  char    objname [FNAME_SIZE + 1];
   FILE   *objFile;
   uint16_t errcode;
 
   /* Open the input, un-optimized POFF object file -- Use .o1 extension */
 
-  (void)extension(filename, "o1", objname, 1);
+  (void)extension(filename, "o1", objname, FNAME_SIZE + 1, 1);
   if (!(objFile = fopen(objname, "rb")))
     {
       fprintf(stderr, "ERROR: Error Opening %s\n", objname);
@@ -127,12 +127,12 @@ static void readPoffFile(const char *filename)
 
 static void writePoffFile(const char *filename)
 {
-  char  optname [FNAME_SIZE+1];
+  char  optname [FNAME_SIZE + 1];
   FILE *optFile;
 
   /* Open optimized p-code file -- Use .o extension */
 
-  (void)extension(filename, "o", optname, 1);
+  (void)extension(filename, "o", optname, FNAME_SIZE + 1, 1);
   if (!(optFile = fopen(optname, "wb")))
     {
       fprintf(stderr, "ERROR: Error Opening %s\n", optname);

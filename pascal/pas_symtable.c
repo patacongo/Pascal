@@ -115,6 +115,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"CASE",           tCASE,           txNONE},       /* (1) */
   {"CHDIR",          tSTDPROC,        txCHDIR},      /* (8) */
   {"CHR",            tSTDFUNC,        txCHR},        /* (2) */
+  {"CLOSEDIR",       tSTDFUNC,        txCLOSEDIR},   /* (8) */
   {"CLOSEFILE",      tSTDPROC,        txCLOSEFILE},  /* (3) */
   {"CONCAT",         tSTDFUNC,        txCONCAT},     /* (8) */
   {"CONST",          tCONST,          txNONE},       /* (1) */
@@ -161,6 +162,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"NOT",            tNOT,            txNONE},       /* (1) */
   {"ODD",            tSTDFUNC,        txODD},        /* (2) */
   {"OF",             tOF,             txNONE},       /* (1) */
+  {"OPENDIR",        tSTDFUNC,        txOPENDIR},    /* (8) */
   {"OR",             tOR,             txNONE},       /* (1) */
   {"ORD",            tSTDFUNC,        txORD},        /* (2) */
   {"PACK",           tSTDPROC,        txPACK},       /* (3) */
@@ -172,11 +174,13 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"PROGRAM",        tPROGRAM,        txNONE},       /* (1) */
   {"PUT",            tSTDPROC,        txPUT},        /* (3) */
   {"READ",           tSTDPROC,        txREAD},       /* (3) */
+  {"READDIR",        tSTDFUNC,        txREADDIR},    /* (8) */
   {"READLN",         tSTDPROC,        txREADLN},     /* (3) */
   {"RECORD",         tRECORD,         txNONE},       /* (1) */
   {"REMOVEDIR",      tSTDFUNC,        txREMOVEDIR},  /* (8) */
   {"REPEAT",         tREPEAT,         txNONE},       /* (1) */
   {"RESET",          tSTDPROC,        txRESET},      /* (3) */
+  {"REWINDDIR",      tSTDFUNC,        txREWINDDIR},  /* (8) */
   {"REWRITE",        tSTDPROC,        txREWRITE},    /* (3) */
   {"RMDIR",          tSTDPROC,        txRMDIR},      /* (8) */
   {"ROUND",          tSTDFUNC,        txROUND},      /* (2) */
@@ -220,12 +224,13 @@ static symbol_t *g_symbolTable;                      /* Symbol Table */
 
 static const symbolAlias_t g_aliasTable[] =
 {
-  {"ASSIGN",   "ASSIGNFILE"},
-  {"CLOSE",    "CLOSEFILE"},
-  {"INT64",    "LONGINTEGER"},
-  {"LONGINT",  "LONGINTEGER"},
-  {"SHORTINT", "SHORTINTEGER"},
-  {"TEXT",     "TEXTFILE"},
+  {"ASSIGN",        "ASSIGNFILE"},
+  {"CLOSE",         "CLOSEFILE"},
+  {"GETCURRENTDIR", "GETDIR"},
+  {"INT64",         "LONGINTEGER"},
+  {"LONGINT",       "LONGINTEGER"},
+  {"SHORTINT",      "SHORTINTEGER"},
+  {"TEXT",          "TEXTFILE"},
   {NULL,       NULL}
 };
 

@@ -268,7 +268,7 @@ int main(int argc, char *argv[], char *envp[])
   /* Load the POFF files specified on the command line */
   /* Use .o or command line extension, if supplied */
 
-  (void)extension(args.poffFileName, "o", fileName, 0);
+  (void)extension(args.poffFileName, "o", fileName, FNAME_SIZE + 1, 0);
 
   /* Initialize the P-machine and load the POFF file */
 

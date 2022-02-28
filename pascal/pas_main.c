@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <ctype.h>
 #include <string.h>
 #include <signal.h>
@@ -174,7 +175,7 @@ static void pas_CloseFiles(void)
 static void pas_OpenOutputFiles(void)
 {
   const outFileDesc_t *outFile;
-  char tmpname[FNAME_SIZE+1];
+  char tmpname[PATH_MAX];
 
   /* Open output files */
 
@@ -184,7 +185,8 @@ static void pas_OpenOutputFiles(void)
        * name and an extension associated with the output file.
        */
 
-      (void)extension(g_sourceFileName, outFile->extension, tmpname, 1);
+      (void)extension(g_sourceFileName, outFile->extension, tmpname,
+                      PATH_MAX, 1);
       *outFile->stream = fopen(tmpname, outFile->flags);
       if (*outFile->stream == NULL)
         {
@@ -282,6 +284,7 @@ static void pas_ParseArguments(int argc, char **argv)
                   g_nIncPathes++;
                 }
               break;
+
             default:
               fprintf(stderr, "Unrecognized [option]\n");
               pas_ShowUsage();
@@ -296,7 +299,7 @@ static void pas_ParseArguments(int argc, char **argv)
 
   /* Extract the Pascal program name from the command line */
 
-  g_sourceFileName = argv[argc-1];
+  g_sourceFileName = argv[argc - 1];
 }
 
 /****************************************************************************
@@ -305,7 +308,7 @@ static void pas_ParseArguments(int argc, char **argv)
 
 int main(int argc, char *argv[])
 {
-  char filename [FNAME_SIZE+1];
+  char filename[PATH_MAX];
 
   /* Parse command line arguments */
 
@@ -321,7 +324,7 @@ int main(int argc, char *argv[])
 
   /* Open source file -- Use .PAS or command line extension, if supplied */
 
-  (void)extension(g_sourceFileName, "PAS", filename, 0);
+  (void)extension(g_sourceFileName, "PAS", filename, PATH_MAX, 0);
   fprintf(g_errFile, "%01x=%s\n", FP->include, filename);
 
   memset(FP, 0, sizeof(fileState_t));
@@ -430,7 +433,7 @@ int main(int argc, char *argv[])
 void pas_OpenNestedFile(const char *fileName)
 {
   fileState_t *prev = FP;
-  char fullpath[FNAME_SIZE + 1];
+  char fullpath[PATH_MAX];
   int i;
 
   /* Make sure we can handle another nested file */
@@ -456,11 +459,12 @@ void pas_OpenNestedFile(const char *fileName)
 
           if (i == g_nIncPathes)
             {
-              sprintf(fullpath, "./%s", fileName);
+              snprintf(fullpath, PATH_MAX, "./%s", fileName);
             }
           else
             {
-              sprintf(fullpath, "%s/%s", g_includePath[i], fileName);
+              snprintf(fullpath, PATH_MAX, "%s/%s", g_includePath[i],
+                       fileName);
             }
 
           FP->stream = fopen (fullpath, "rb");
