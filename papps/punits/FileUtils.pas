@@ -11,12 +11,13 @@ INTERFACE
 
   TYPE
     TSearchRec = RECORD
-      name  : STRING;         (* Name of the file found *)
-      attr  : CHAR;           (* The file attribute character *)
-      time  : LONGWORD;       (* Time/date of last modification *)
-      size  : INT64;          (* The size of the file found in bytes *)
-      state : TMachinePointer (* For internal use by run-time *)
+      name  : STRING[NameSize]; (* Name of the file found *)
+      attr  : CHAR;             (* The file attribute character *)
+      time  : LONGWORD;         (* Time/date of last modification *)
+      size  : INT64;            (* The size of the file found in bytes *)
     END;
+
+    TDir = TMachinePointer
 
   FUNCTION FindFirst(fileTemplate, attributes : string; VAR searchResult : TSearchRec ) : BOOLEAN;
   FUNCTION FindNext(VAR searchResults : TSearchRec) : BOOLEAN;

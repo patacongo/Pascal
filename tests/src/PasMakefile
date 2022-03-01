@@ -1,8 +1,8 @@
-#!/bin/sh
 ############################################################################
-# tests/testmulti.sh
+# PasMakefile
+# Host system makefile
 #
-#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,37 +33,55 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-#set -x
+#
+# Directories
+#
 
-source ../.config
+PSRCDIR  = ${shell pwd}
+PTESTDIR = $(PSRCDIR)/..
+PASCAL   = $(PTESTDIR)/..
+PAPPSDIR = $(PASCAL)/papps
+PUNITDIR = $(PAPPSDIR)/punits
 
-PBINDIR=../bin16
+include $(PASCAL)/tools/Config.mk
 
-PRUN=${PBINDIR}/prun
-PRUNOPTS="-t 1024 -n 256"
+#
+# Tools
+#
 
-PASFILENAME=${1}
-INPUT=${2}
+PASOPTS   = -I. -I../units -I$(PUNITDIR)
 
-PASBASENAME=`basename ${PASFILENAME} .pex`
-PASDIRNAME=`dirname ${PASFILENAME}`
-if [ "${PASDIRNAME}" == "." ]; then
-  PASDIRNAME=units
-fi
+#
+# Objects and targets
+#
 
-echo "########${PASFILENAME}########";
+SUFFIXES  += .pas .o1 .o .pex .err .lst
 
-make -C ${PASDIRNAME} -f PasMakefile ${PASBASENAME}.pex
+PSRCS  := $(wildcard *.pas)
+POBJS1  = $(PSRCS:.pas=.o1)
+POBJS   = $(PSRCS:.pas=.o)
+PEX     = $(PSRCS:.pas=.pex)
 
-if [ ! -f ${PASDIRNAME}/${PASBASENAME}.pex ]; then
-  echo "Failed to build ${PASBASENAME}.pex"
-  if [ -f ${PASDIRNAME}/${PASBASENAME}.err ]; then
-    cat ${PASDIRNAME}/${PASBASENAME}.err | grep Line
-  fi
-fi
+#
+# Targets
+#
 
-if [ -z "${INPUT}" ]; then
-    ${PRUN} ${PRUNOPTS} ${PASDIRNAME}/${PASBASENAME}.pex 2>&1
-else
-    ${PRUN} ${PRUNOPTS} ${PASDIRNAME}/${PASBASENAME}.pex 2>&1 <${PASDIRNAME}/${INPUT}
-fi
+all: $(PEX)
+.PHONY: all clean distclean
+
+$(POBJS1): %.o1: %.pas
+	$(Q) echo "  $@"
+	$(Q) $(PAS) $(PASOPTS) $<
+
+$(POBJS): %.o: %.o1
+	$(Q) echo "  $@"
+	$(Q) $(POPT) $(POPTOPTS) $<
+
+$(PEX): %.pex: %.o
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $< $@
+
+clean:
+	$(Q) $(RM) *.o *.o1 *.pex *.err *.lst core *~
+
+distclean: clean

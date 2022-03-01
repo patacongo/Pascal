@@ -35,6 +35,9 @@
 ############################################################################
 #set -x
 
+WD=`pwd`
+PUNITDIR=$WD/../papps/punits
+
 # Parse command line
 
 DOLIST=A
@@ -91,7 +94,13 @@ function check_dolist ()
 }
 
 # Clean up
+
 rm -f src/*.o src/*.o1 src/*.pex src/*.err src/*.lst
+
+# Start clean
+
+make -C src -f PasMakefile distclean
+make -C units -f PasMakefile distclean
 
 # Compile and execute all of the selected tests in the src
 # directory.  Skip the multiple scripts; they must be handled
@@ -112,8 +121,9 @@ done
 # Multi-file tests are controlled by testmulti.sh
 
 if [ "${DOLIST}" == "A" -o "${DOLIST}" == "5" ]; then
-    ./testmulti.sh DoIt.pas SayIt.pas
-    ./testmulti.sh sinecos.pas "unit-cosine.pas unit-sine.pas unit-data.pas" sinecos.inp
-    ./testmulti.sh worksched.pas DayIO.pas
+    ./testmulti.sh DoIt.pex
+    ./testmulti.sh sinecos.pex sinecos.inp
+    ./testmulti.sh worksched.pex
+    ./testmulti.sh ReadDir.pex
 fi
 exit

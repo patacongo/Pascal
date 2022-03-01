@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <dirent.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
@@ -604,8 +605,10 @@ static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
       uint16_t stringBufferStack;
       char    *stringBufferPtr;
       char    *ptr;
+      int      index;
 
-      stringBufferStack = stringVarPtr[sSTRING_DATA_OFFSET / sINT_SIZE];
+      index             = sSTRING_DATA_OFFSET / sINT_SIZE;
+      stringBufferStack = stringVarPtr[index];
       stringBufferPtr   = (char *)&st->dstack.b[stringBufferStack];
       ptr               = fgets(stringBufferPtr, readSize,
                                 st->fileTable[fileNumber].stream);
@@ -617,9 +620,9 @@ static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
         }
       else
         {
+          index = sSTRING_SIZE_OFFSET / sINT_SIZE;
           libexec_CheckEoln(st, fileNumber, stringBufferPtr);
-          stringVarPtr[sSTRING_SIZE_OFFSET / sINT_SIZE] =
-            strlen(stringBufferPtr);
+          stringVarPtr[index] = strlen(stringBufferPtr);
         }
     }
 
@@ -1509,14 +1512,16 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       {
         uint16_t *strPtr;
         uint16_t  strAlloc;
+        int       index;
 
         POP(st, address);     /* Short string variable address */
         POP(st, fileNumber);  /* File number */
 
         /* Get the allocation size of the short string */
 
-        strPtr = (uint16_t *)&st->dstack.b[address];
-        strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
+        strPtr   = (uint16_t *)&st->dstack.b[address];
+        index    = sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE;
+        strAlloc = strPtr[index];
 
         errorCode = libexec_ReadString(st, fileNumber, strPtr,strAlloc);
       }
@@ -1708,7 +1713,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     case xRMDIR :
       {
         const char *strBuffer;
-        char *dirName;
+        char *dirPath;
         uint16_t result;
 
         /* Get the string argument */
@@ -1724,8 +1729,8 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
          * copy the string in order to append the NUL termination.
          */
 
-        dirName = libexec_MkCString(st, strBuffer, size, false);
-        if (dirName == NULL)
+        dirPath = libexec_MkCString(st, strBuffer, size, false);
+        if (dirPath == NULL)
           {
             errorCode = eSTRSTKOVERFLOW;
             result = PASCAL_FALSE;
@@ -1734,19 +1739,19 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
           {
             /* Then change directories */
 
-            result = (chdir(dirName) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
+            result = (chdir(dirPath) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
           }
         else if (subfunc == xMKDIR)
           {
             /* Then create the directory */
 
-            result = (mkdir(dirName, 0644) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
+            result = (mkdir(dirPath, 0755) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
           }
         else /* if (subfunc == xRMDIR) */
           {
             /* Then remove the directory */
 
-            result = (rmdir(dirName) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
+            result = (rmdir(dirPath) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
           }
 
         PUSH(st, result);
@@ -1794,40 +1799,168 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     /* OPENDIR : Open a directory for reading.
      *
-     *   function OpenDir(dirName : string; VAR dirInfo: TDirEntry) : boolean
+     *   function OpenDir(dirPath : string; VAR dirInfo: TDir) : boolean
      *
      * ON INPUT:
-     *   TOS(0) = Address of dirName string in the string stack
-     *   TOS(1) = The length of the dirName string
-     *   TOS(2) = Address of dirInfo
+     *   TOS(0) = Address of dir
+     *   TOS(1) = dirPath string memory address
+     *   TOS(2) = The length of the dirPath string
      * ON OUTPUT
      *   TOS(0) = Boolean result of the OpenDir operation
      */
 
     case xOPENDIR :
       {
+        const char *strBuffer;
+        char       *dirPath;
+        DIR        *dirp;
+        uint16_t    dirAddr;
+        uint16_t    strAddr;
+        uint16_t    strSize;
+        uint16_t    result;
+
+        /* Get the stack arguments */
+
+        POP(st, dirAddr);
+        POP(st, strAddr);
+        POP(st, strSize);
+
+        /* Convert the Pascal dirPath string to a NUL-terminated C-string */
+
+        strBuffer = (const char *)ATSTACK(st, strAddr);
+        dirPath   = libexec_MkCString(st, strBuffer, strSize, false);
+        dirp      = opendir(dirPath);
+        if (dirp == NULL)
+          {
+            result = PASCAL_FALSE;
+          }
+        else
+          {
+            tgtPtr_t  dir;
+            uint16_t *dest;
+            int i;
+
+            /* Copy the DIR pointer into the TDir containing on the Pascal
+             * stack.
+             */
+
+            dir.ptr = dirp;
+            dest = (uint16_t *)ATSTACK(st, dirAddr);
+
+            for (i = 0; i < PASCAL_POINTERWORDS; i++)
+              {
+                *dest++ = dir.b[i];
+              }
+
+            result = PASCAL_TRUE;
+          }
+
+        PUSH(st, result);
       }
       break;
 
     /* READDIR : Read the next directory entry.
      *
-     *   function ReadDir(VAR dirInfo : TDirEntry, VAR result : TSearchRec) : boolean
+     *   function ReadDir(VAR dir : TDir, VAR searchRec : TSearchRec) : boolean
      *
      * ON INPUT:
-     *   TOS(0) = Address of dirInfo
-     *   TOS(1) = Address of result
+     *   TOS(0) = Address of searchRec
+     *   TOS(1) = Address of dir
      * ON OUTPUT
      *   TOS(0) = Boolean result of the ReadDir operation
      */
 
     case xREADDIR :
       {
+        struct dirent *dirent;
+        uint16_t      *stkDir;
+        tgtPtr_t       dir;
+        uint16_t       searchAddr;
+        uint16_t       dirAddr;
+        uint16_t       result;
+        int            i;
+
+        /* Get the stack addresses */
+
+        POP(st, searchAddr);
+        POP(st, dirAddr);
+
+        /* Get the pointer from the stack (it may not be aligend) */
+
+        stkDir = (uint16_t *)ATSTACK(st, dirAddr);
+        for (i = 0; i < PASCAL_POINTERWORDS; i++)
+          {
+            dir.b[i] = *stkDir++;
+          }
+
+        /* Do the readdir operation */
+
+        dirent = readdir(dir.ptr);
+        if (dirent == NULL)
+          {
+            result = PASCAL_FALSE;
+          }
+        else
+          {
+            searchRec_t *searchRec; /* Search result record pointer */
+            char        *aStrPtr;   /* File name string allocation pointer */
+            int          allocSize;
+            int          copySize;
+            int          index;
+
+            /* Get a C pointer to the TSearchRec instance on the Pascal stack */
+
+            searchRec = (searchRec_t *)ATSTACK(st, searchAddr);
+
+            /* Copy the file name and type from the dirent structure */
+
+            copySize  = strnlen(dirent->d_name, NAME_MAX);
+            index     = sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE;
+            allocSize = searchRec->name[index];
+
+            if (copySize > allocSize)
+              {
+                copySize = allocSize;
+              }
+
+            index     = sSHORTSTRING_DATA_OFFSET / sINT_SIZE;
+            aStrPtr   = (char *)ATSTACK(st, searchRec->name[index]);
+            memcpy(aStrPtr, dirent->d_name, copySize);
+
+            index     = sSHORTSTRING_SIZE_OFFSET / sINT_SIZE;
+            searchRec->name[index] = copySize;
+
+            /* Convert the dirent file type into a FileUtils file type */
+
+            if (dirent->d_type == DT_DIR)
+              {
+                searchRec->attr = 'D';
+              }
+            else if (dirent->d_type == DT_REG)
+              {
+                searchRec->attr = 'R';
+              }
+            else
+              {
+                searchRec->attr = 'S';
+              }
+
+            /* Stat the file to get the size and last modification time.
+             * REVISIT:  Not yet implemented.
+             */
+
+            result = PASCAL_TRUE;
+          }
+
+        PUSH(st, result);
       }
       break;
 
     /* REWINDDIR : Reset the read position of the beginning of the directory.
+     * CLOSEDIR : Close the directory and release any resources.
      *
-     *   function RewindDir(VAR dirInfo : TDirEntry) : boolean
+     *   function RewindDir(VAR dirInfo : TDir) : boolean
+     *   function CloseDir(VAR dirInfo : TDir) : boolean
      *
      * ON INPUT:
      *   TOS(0) = Address of dirInfo
@@ -1835,23 +1968,39 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
      *   TOS(0) = Boolean result of the RewindDir operation
      */
 
+    case xCLOSEDIR :
     case xREWINDDIR :
       {
-      }
-      break;
+        tgtPtr_t       dir;
+        uint16_t      *stkDir;
+        uint16_t       dirAddr;
+        uint16_t       result;
+        int            i;
 
-    /* CLOSEDIR : Close the directory and release any resources.
-     *
-     *   function CloseDir(VAR dirInfo : TDirEntry) : boolean
-     *
-     * ON INPUT:
-     *   TOS(0) = Address of dirInfo
-     * ON OUTPUT
-     *   TOS(0) = Boolean result of the CloseDir operation
-     */
+        /* Get the stack address */
 
-    case xCLOSEDIR :
-      {
+        POP(st, dirAddr);
+
+        /* Get the pointer from the stack (it may not be aligend) */
+
+        stkDir = (uint16_t *)ATSTACK(st, dirAddr);
+        for (i = 0; i < PASCAL_POINTERWORDS; i++)
+          {
+            dir.b[i] = *stkDir++;
+          }
+
+        if (subfunc == xCLOSEDIR)
+          {
+            int ret = closedir(dir.ptr);
+            result = (ret == 0) ? PASCAL_TRUE : PASCAL_FALSE;
+          }
+        else /* if (subfunc == xCLOSEDIR) */
+          {
+            rewinddir(dir.ptr);
+            result = PASCAL_TRUE;
+          }
+
+        PUSH(st, result);
       }
       break;
 

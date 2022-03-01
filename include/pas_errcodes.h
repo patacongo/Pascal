@@ -129,7 +129,7 @@
  * eBADFIELDWIDTH       Bad field width in WRITE statement
  * eBADPRECISION        Bad precision in WRITE statement
  * eINDEXTYPE           Illegal array index type
- * eARRAYTYPE           Illegal type for ARRAY OF
+ * eARRAYTYPE           Illegal or incorrect ARRAY type
  * eTOOMANYINDICES      Two many indices for dimensionality of array
  * ePOINTERTYPE         Expected a pointer type
  * ePOINTERDEREF        Illegal pointer de-reference
@@ -144,8 +144,8 @@
  * eSYMTABINTERNAL      Internal error in symbol table
  * eRECORDDECLARE       Error in RECORD declaration
  * eRECORDOBJECT        Expected a field of RECORD
- * eRECORDVAR           Expected a RECORD variable in WITH
- * eRECORDTYPE          Bad record type
+ * eRECORDVAR           Expected a RECORD variable (e.g., in WITH)
+ * eRECORDTYPE          Bad or incorrect record type
  * eUNIT                Expected UNIT at beginning of unit file
  * eUNITNAME            File does not contain the expected UNIT
  * eARGIGNORED          An argument was provided, but ignored

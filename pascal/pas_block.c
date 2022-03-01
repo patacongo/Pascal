@@ -318,6 +318,15 @@ static symbol_t *pas_DeclareSimpleType(char *typeName)
             {
               typePtr = pas_AddTypeDefine(typeName, typeIdPtr->sParm.t.tType,
                                           g_dwVarSize, typeIdPtr);
+              if (typePtr != NULL && typeIdPtr->sParm.t.tType)
+                {
+                  /* Clone other characteristics of the ARRAY type */
+
+                  typePtr->sParm.t.tDimension = typeIdPtr->sParm.t.tDimension;
+                  typePtr->sParm.t.tMinValue  = typeIdPtr->sParm.t.tMinValue;
+                  typePtr->sParm.t.tMaxValue  = typeIdPtr->sParm.t.tMaxValue;
+                  typePtr->sParm.t.tIndex     = typeIdPtr->sParm.t.tIndex;
+                }
             }
         }
     }

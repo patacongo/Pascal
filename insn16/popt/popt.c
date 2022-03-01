@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "pas_debug.h"
 #include "pas_pcode.h"
@@ -86,13 +87,13 @@ int32_t          g_nextRelocationIndex; /* Non-negative if g_nextRelocation
 
 static void readPoffFile(const char *filename)
 {
-  char    objname [FNAME_SIZE + 1];
+  char    objname[PATH_MAX];
   FILE   *objFile;
   uint16_t errcode;
 
   /* Open the input, un-optimized POFF object file -- Use .o1 extension */
 
-  (void)extension(filename, "o1", objname, FNAME_SIZE + 1, 1);
+  (void)extension(filename, "o1", objname, PATH_MAX, 1);
   if (!(objFile = fopen(objname, "rb")))
     {
       fprintf(stderr, "ERROR: Error Opening %s\n", objname);

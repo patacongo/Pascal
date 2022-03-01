@@ -40,6 +40,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <strings.h>
 
 #include "pas_debug.h"
 #include "pas_defns.h"
@@ -93,10 +94,11 @@ static void       pas_ConcatFunc(void);
 static void       pas_DirectoryFunc(uint16_t opCode);
 static void       pas_GetDirFunc(void);
 
+static void       pas_ParseDirEntry(void);
+static void       pas_ParseDirSearchRec(void);
 static void       pas_OpenDirFunc(void);
 static void       pas_ReadDirFunc(void);
-static void       pas_RewindDirFunc(void);
-static void       pas_CloseDirFunc(void);
+static void       pas_ReadDirectoryFunc(uint16_t opCode);
 
 /* Non-standard C-library interface functions */
 
@@ -751,11 +753,103 @@ static void pas_GetDirFunc(void)
 }
 
 /****************************************************************************/
+/* Shared routine to parse a TDir VAR argument */
+
+static void pas_ParseDirEntry(void)
+{
+  /* Verify that the current token is instance of a Array named TDir */
+
+  if (g_token != sARRAY) error(eARRAYTYPE);
+    {
+      symbol_t *typePtr = g_tknPtr->sParm.v.vParent;
+
+      if (typePtr == NULL ||
+          typePtr->sKind != sTYPE ||
+          strcasecmp(typePtr->sName, "TDir") != 0)
+        {
+          error(eRECORDTYPE);
+        }
+      else
+        {
+          /* Push the address of the ARRAY */
+
+          pas_GenerateStackReference(opLAS, g_tknPtr);
+        }
+
+      getToken();
+    }
+}
+/****************************************************************************/
+/* Shared routine to parse a TSearchRec VAR argument */
+
+static void pas_ParseDirSearchRec(void)
+{
+  /* Verify that the current token is instance of a RECORD named TSearchRec */
+
+  if (g_token != sRECORD) error(eRECORDVAR);
+    {
+      symbol_t *typePtr = g_tknPtr->sParm.v.vParent;
+
+      if (typePtr == NULL ||
+          typePtr->sKind != sTYPE ||
+          strcasecmp(typePtr->sName, "TSearchRec") != 0)
+        {
+          error(eRECORDTYPE);
+        }
+      else
+        {
+          /* Push the address of the RECORD */
+
+          pas_GenerateStackReference(opLAS, g_tknPtr);
+        }
+
+      getToken();
+    }
+}
+
+/****************************************************************************/
 /* Open a directory for reading. */
 
 static void pas_OpenDirFunc(void)
 {
-  /* FORM: 'opendir' '(' string-expression ',' directory-info-variable ')' */
+  exprType_t exprType;
+
+  /* FORM: 'opendir' '(' string-expression ',' direntry-variable ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Get the string expression */
+
+  exprType = pas_Expression(exprString, NULL);
+
+  /* If this is a short string, then discard the string alloc size at the
+   * top of the stack in order to convert to a standard (but read-only)
+   * string.  The optimizer should remove these.
+   */
+
+  if (exprType == exprShortString)
+    {
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+    }
+
+  /* Verify that the two arguments are separated with a comma */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Parse the VAR TDir parameter */
+
+  pas_ParseDirEntry();
+
+  /* Generate the directory operation */
+
+  pas_GenerateIoOperation(xOPENDIR);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
 }
 
 /****************************************************************************/
@@ -763,23 +857,56 @@ static void pas_OpenDirFunc(void)
 
 static void pas_ReadDirFunc(void)
 {
-  /* FORM: 'readdir' '(' directory-info-variable ',' search-result-variable ')' */
+  /* FORM: 'readdir' '(' direntry-variable ',' search-result-variable ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Parse the VAR TDir parameter */
+
+  pas_ParseDirEntry();
+
+  /* Verify that the two arguments are separated with a comma */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Parse the VAR TSearchRec parameter */
+
+  pas_ParseDirSearchRec();
+
+  /* Generate the directory operation */
+
+  pas_GenerateIoOperation(xREADDIR);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
 }
 
 /****************************************************************************/
 /* Reset the read position of the beginning of the directory. */
 
-static void pas_RewindDirFunc(void)
+static void pas_ReadDirectoryFunc(uint16_t opCode)
 {
-  /* FORM: 'rewinddir' '(' directory-info-variable ')' */
-}
+  /* FORM: 'rewinddir|closedir' '(' direntry-variable ')' */
 
-/****************************************************************************/
-/*  Close the directory and release any resources. */
+  /* Verify that the argument list is enclosed in parentheses */
 
-static void pas_CloseDirFunc(void)
-{
-  /* FORM: 'closedir' '(' directory-info-variable ')' */
+  pas_CheckLParen();
+
+  /* Parse the VAR TDir parameter */
+
+  pas_ParseDirEntry();
+
+  /* Generate the directory operation */
+
+  pas_GenerateIoOperation(opCode);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
 }
 
 /****************************************************************************/
@@ -900,12 +1027,12 @@ exprType_t pas_StandardFunction(void)
           break;
 
         case txREWINDDIR :
-          pas_RewindDirFunc();
+          pas_ReadDirectoryFunc(xREWINDDIR);
           funcType = exprBoolean;
           break;
 
         case txCLOSEDIR :
-          pas_CloseDirFunc();
+          pas_ReadDirectoryFunc(xCLOSEDIR);
           funcType = exprBoolean;
           break;
 

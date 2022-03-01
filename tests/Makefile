@@ -47,12 +47,10 @@ all: clean
 clean:
 	$(Q) rm -f core *~ *.stackdump
 	$(Q) rm -f students.dat contact.txt raindata.dat
-	$(Q) rm -f src/*.err units/*.err
-	$(Q) rm -f src/*.lst units/*.lst
-	$(Q) rm -f src/*.pex units/*.pex
-	$(Q) rm -f src/*.o1 units/*.o1
-	$(Q) rm -f src/*.o units/*.o
-	$(Q) rm -f src/*.d units/*.d
 	$(Q) rm -rf newdir
+	$(Q) $(MAKE) -C src -f PasMakefile clean
+	$(Q) $(MAKE) -C units -f PasMakefile clean
 
 distclean: clean
+	$(Q) $(MAKE) -C src -f PasMakefile distclean
+	$(Q) $(MAKE) -C units -f PasMakefile distclean

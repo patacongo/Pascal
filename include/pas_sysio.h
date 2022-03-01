@@ -37,6 +37,16 @@
 #ifndef __PAS_SYSIO_H
 #define __PAS_SYSIO_H
 
+/***********************************************************************
+ * Included Files
+ ***********************************************************************/
+
+#include "pas_machine.h"  /* For STRING representation */
+
+/***********************************************************************
+ * Pre-processor Definitions
+ ***********************************************************************/
+
 /***********************************************************************/
 /* Codes for system IO calls associated with standard Pascal procedure
  * and function calls.  These must be confined to the range 0x0000
@@ -100,5 +110,38 @@
 #define xCLOSEDIR          (0x002b)  /* Terminate the directory read */
 
 #define MAX_XOP            (0x002c)
+
+/* File attribute characters */
+
+#define faAnyFile          '\0'      /* Match any file */
+#define faRegular          'R'       /* Regular file */
+#define faSysFile          'S'       /* System files */
+#define faDirectory        'D'       /* Directory */
+
+/***********************************************************************
+ * Public Types
+ ***********************************************************************/
+
+/* This structure represents the Pascal directory search record,
+ * TSearchRec.
+ *
+ * NOTES:
+ * - When declared on the stack, all fields will be aligned to 16-bit
+ *   boundaries.  It is not safe to access fields that require higher
+ *   levels of alignment on many platforms.  For this reason, all fields
+ *   are represented as arrays of uint16_t.
+ * - The 'size' field is declard as Int64, however, Int64 is not yet
+ *   implemented. The compiler substitutes a 32-bit LongInteger for Int64.
+ */
+
+struct searchRec_s
+{
+  uint16_t name[3];  /* Name of the file found */
+  uint8_t  attr;     /* The file attribute character  */
+  uint16_t time[2];  /* Time/date of last modification */
+  uint16_t size[2];  /* The size of file found in bytes */
+};
+
+typedef struct searchRec_s searchRec_t;
 
 #endif /* __PAS_SYSIO_H */

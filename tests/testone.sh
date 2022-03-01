@@ -37,11 +37,13 @@
 
 source ../.config
 
-PBINDIR=bin16
-PASCAL=../${PBINDIR}/pascal
-POPT=../${PBINDIR}/popt
-PLINK=../${PBINDIR}/plink
-PRUN=../${PBINDIR}/prun
+PBINDIR=../bin16
+PUNITDIR=../papps/punits
+
+PASCAL=${PBINDIR}/pascal
+POPT=${PBINDIR}/popt
+PLINK=${PBINDIR}/plink
+PRUN=${PBINDIR}/prun
 
 # Tell them how they are supposed to use this script
 
@@ -57,44 +59,43 @@ function show_usage ()
     exit 1
 }
 
-# Get the source file name and path
-
-function get_sourcename ()
-{
-    PASBASENAME=`basename ${PASFILENAME} .pas`
-    PASDIRNAME=`dirname ${PASFILENAME}`
-    if [ "${PASDIRNAME}" == "." ]; then
-    PASDIRNAME=src
-    fi
-
-    PASFILENAME=${PASDIRNAME}/${PASBASENAME}.pas
-    if [ ! -f "${PASFILENAME}" ]; then
-    echo "ERROR: ${PASFILENAME} does not exist"
-    exit 1
-    fi
-}
-
 # Compile source file
 
 function compile_source ()
 {
-    if [ ! -f ${PASFILENAME} ]; then
-    echo "No source file"
-    else
-    PASOPTS=-Iunits
-    ${PASCAL} ${PASOPTS} ${PASFILENAME} 2>&1 || rm -f src/${PASBASENAME}.o1
-    if [ -f src/${PASBASENAME}.err ] ; then
-        cat src/${PASBASENAME}.err | grep Line
-    fi
-    if [ ! -f src/${PASBASENAME}.o1 ] ; then
-        echo "Compilation failed"
-    else
+  PASBASENAME=`basename ${PASFILENAME} .pas`
+  PASDIRNAME=`dirname ${PASFILENAME}`
+  if [ "${PASDIRNAME}" == "." ]; then
+    PASDIRNAME=src
+  fi
 
-        POPTOPTS=
-        ${POPT} ${POPTOPTS} src/${PASBASENAME}.o1 2>&1
-        ${PLINK} src/${PASBASENAME}.o src/${PASBASENAME}.pex 2>&1
+  PASFILENAME=${PASDIRNAME}/${PASBASENAME}.pas
+  if [ ! -f "${PASFILENAME}" ]; then
+    echo "ERROR: ${PASFILENAME} does not exist"
+    exit 1
+  fi
+
+  make -C ${PASDIRNAME} -f PasMakefile ${PASBASENAME}.pex
+
+  # Was an error file generated?
+
+  if [ -f src/${PASBASENAME}.err ] ; then
+      cat src/${PASBASENAME}.err | grep Line
+  fi
+
+  # Which build step failed?
+
+  if [ ! -f src/${PASBASENAME}.pex ] ; then
+    if [ ! -f src/${PASBASENAME}.o1 ] ; then
+      echo "Compilation failed"
+    else
+      if [ ! -f src/${PASBASENAME}.o ] ; then
+        echo "Optimizer failed"
+      else
+        echo "Link failed"
+      fi
     fi
-    fi
+  fi
 }
 
 # Run test
@@ -155,7 +156,5 @@ fi
 
 # Get the source file name and path
 
-get_sourcename
 compile_source
 test_program
-

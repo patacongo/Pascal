@@ -13,12 +13,12 @@ BEGIN
 
   result  := CreateDir(newDir);
   IF result = false THEN
-    WriteLn('FAILED to create directory');
+    WriteLn('FAILED to create directory ', newDir);
 
   prevDir := currDir;
-  result  := SetCurrentDir(currDir);
+  result  := SetCurrentDir(newDir);
   IF result = false THEN
-    WriteLn('FAILED to set current working directory');
+    WriteLn('FAILED to set current working directory to ', newDir);
 
   currDir := GetDir;
   WriteLn('Current Working Directory: ', currDir);
@@ -26,7 +26,7 @@ BEGIN
   WriteLn('Go back to ', prevDir);
   result  := SetCurrentDir(prevDir);
   IF result = false THEN
-    WriteLn('FAILED to set current working directory');
+    WriteLn('FAILED to set current working directory to ', prevDir);
 
   currDir := GetDir;
   WriteLn('Current Working Directory: ', currDir);
@@ -34,16 +34,16 @@ BEGIN
   WriteLn('Remove ', newDir);
   result  := RemoveDir(newDir);
   IF result = false THEN
-    WriteLn('FAILED to remove directory');
+    WriteLn('FAILED to remove directory ', newDir);
 
   currDir := GetDir;
   WriteLn('Current Working Directory: ', currDir);
 
   result  := SetCurrentDir(newDir);
   IF result = true THEN
-    WriteLn('FAILED: Can set working directory to ', newDir)
+    WriteLn('FAILED: Can still set working directory to ', newDir)
   ELSE
-    WriteLn('Cannot to set working directory to ', newDir);
+    WriteLn('OK -- Cannot to set directory to removed ', newDir);
 
   currDir := GetDir;
   WriteLn('Current Working Directory: ', currDir)

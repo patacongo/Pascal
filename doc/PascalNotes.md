@@ -158,21 +158,21 @@ The following are not currently implemented:
 Variants of the basic directory operations, similar to those from Borland Turbo Pascal or Free Pascal are provided as intrinsic functions.
 
 - `function GetDir : string` - Returns the current working directory.
-- `function SetCurrentDir(dirName : string) : boolean` - Set the current working directory.  Returns `true` if successful.
-- `procedure ChDir(dirName : string)` - Set the current working directory.  No failure indication is returned.
-- `function CreateDir(dirName : string) : boolean` - Create a new directory.  Returns `true` if the directory was create successfully.
-- `procedure MkDir(dirName : string)` - Create a new directory.  No failure indication is returned.
-- `function RemoveDir(dirName : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
-- `procedure RmDir(dirName : string)` - Remove a new directory.  No failure indication is returned.
+- `function SetCurrentDir(dirPath : string) : boolean` - Set the current working directory.  Returns `true` if successful.
+- `procedure ChDir(dirPath : string)` - Set the current working directory.  No failure indication is returned.
+- `function CreateDir(dirPath : string) : boolean` - Create a new directory.  Returns `true` if the directory was create successfully.
+- `procedure MkDir(dirPath : string)` - Create a new directory.  No failure indication is returned.
+- `function RemoveDir(dirPath : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
+- `procedure RmDir(dirPath : string)` - Remove a new directory.  No failure indication is returned.
 
 Other directory operations inspired by Free Pascal are provided in the unit `FileUtils.pas`.  Some primitive directory intrinics are provided to support this unit.  Those intrinsics are very close to the underlying functions from the standard C library, on which the Pascal run-time is built.  These intrinsics include:
 
-- `function OpenDir(dirName : string; VAR dirInfo: TDirEntry) : boolean` - Open a directory for reading.  If the directory was successfully opened, *true* is returned and TDirEntry is valid for use with `ReadDir`.
-- `function ReadDir(VAR dirInfo : TDirEntry, VAR result : TSearchRec) : boolean` - Read the next directory entry.  *true* is returned if the directory entry was read successfully and the content of the `result` will be valid.  The most likely reason for a failure to read the directory entry is that the final directory entry has already been provided.
-- `function RewindDir(VAR dirInfo : TDirEntry) : boolean` - Reset the read position of the beginning of the directory.  *True* is returned if the directory read was successfully reset.
-- `function CloseDir(VAR dirInfo : TDirEntry) : boolean` - Close the directory and release any resources.  *True* is returned if the directory was successfully closed.
+- `function OpenDir(dirPath : string; VAR dir: TDir) : boolean` - Open a directory for reading.  If the directory was successfully opened, *true* is returned and TDir is valid for use with `ReadDir`.
+- `function ReadDir(VAR dir : TDir, VAR result : TSearchRec) : boolean` - Read the next directory entry.  *true* is returned if the directory entry was read successfully and the content of the `result` will be valid.  The most likely reason for a failure to read the directory entry is that the final directory entry has already been provided.
+- `function RewindDir(VAR dir : TDir) : boolean` - Reset the read position of the beginning of the directory.  *True* is returned if the directory read was successfully reset.
+- `function CloseDir(VAR dir : TDir) : boolean` - Close the directory and release any resources.  *True* is returned if the directory was successfully closed.
 
-Where the definition of `TDirEntry` is implementation specific and should have be accessed by application code.  And `TSearchRec` is a `record` type with several fields, some are internal to the implemenation but the following are available to your program:
+Where the definition of `TDir` is implementation specific and should have be accessed by application code.  And `TSearchRec` is a `record` type with several fields, some are internal to the implemenation but the following are available to your program:
 
 - `name` : Name of the file found.
 - `size` : The size of the file in bytes.

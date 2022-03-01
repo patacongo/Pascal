@@ -1,8 +1,8 @@
-#!/bin/sh
 ############################################################################
-# tests/testmulti.sh
+# PasMakefile
+# Host system makefile
 #
-#   Copyright (C) 2008, 2021-2022 Gregory Nutt. All rights reserved.
+#   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,37 +33,81 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-#set -x
+#
+# Directories
+#
 
-source ../.config
+PSRCDIR  = ${shell pwd}
+PTESTDIR = $(PSRCDIR)/..
+PASCAL   = $(PTESTDIR)/..
+PAPPSDIR = $(PASCAL)/papps
+PUNITDIR = $(PAPPSDIR)/punits
 
-PBINDIR=../bin16
+include $(PASCAL)/tools/Config.mk
 
-PRUN=${PBINDIR}/prun
-PRUNOPTS="-t 1024 -n 256"
+#
+# Tools
+#
 
-PASFILENAME=${1}
-INPUT=${2}
+PASOPTS   = -I. -I$(PUNITDIR)
 
-PASBASENAME=`basename ${PASFILENAME} .pex`
-PASDIRNAME=`dirname ${PASFILENAME}`
-if [ "${PASDIRNAME}" == "." ]; then
-  PASDIRNAME=units
-fi
+#
+# Objects and targets
+#
 
-echo "########${PASFILENAME}########";
+SUFFIXES  += .pas .o1 .o .pex .err .lst
 
-make -C ${PASDIRNAME} -f PasMakefile ${PASBASENAME}.pex
+STDUNITS  := $(PUNITDIR)/Machine.pas $(PUNITDIR)/FileUtils.pas
+PSRCS     := $(wildcard *.pas) $(STDUNITS)
+POBJS1     = $(PSRCS:.pas=.o1)
+POBJS      = $(PSRCS:.pas=.o)
 
-if [ ! -f ${PASDIRNAME}/${PASBASENAME}.pex ]; then
-  echo "Failed to build ${PASBASENAME}.pex"
-  if [ -f ${PASDIRNAME}/${PASBASENAME}.err ]; then
-    cat ${PASDIRNAME}/${PASBASENAME}.err | grep Line
-  fi
-fi
+DOITSRC    = DoIt.pas SayIt.pas
+DOITOBJS   = $(DOITSRC:.pas=.o)
 
-if [ -z "${INPUT}" ]; then
-    ${PRUN} ${PRUNOPTS} ${PASDIRNAME}/${PASBASENAME}.pex 2>&1
-else
-    ${PRUN} ${PRUNOPTS} ${PASDIRNAME}/${PASBASENAME}.pex 2>&1 <${PASDIRNAME}/${INPUT}
-fi
+SINCOSSRC  = sinecos.pas unit-cosine.pas unit-sine.pas unit-data.pas
+SINCOSOBJS = $(SINCOSSRC:.pas=.o)
+
+WKSCHDSRC  = worksched.pas DayIO.pas
+WKSCHDOBJS = $(WKSCHDSRC:.pas=.o)
+
+RDDIRSRC   = ReadDir.pas $(PUNITDIR)/Machine.pas $(PUNITDIR)/FileUtils.pas
+RDDIROBJS  = $(RDDIRSRC:.pas=.o)
+
+PEX        = ReadDir.pex worksched.pex sinecos.pex DoIt.pex
+
+#
+# Targets
+#
+
+all: $(PEX)
+.PHONY: all clean distclean
+
+$(POBJS1): %.o1: %.pas
+	$(Q) echo "  $@"
+	$(Q) $(PAS) $(PASOPTS) $<
+
+$(POBJS): %.o: %.o1
+	$(Q) echo "  $@"
+	$(Q) $(POPT) $(POPTOPTS) $<
+
+DoIt.pex : $(DOITOBJS)
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(DOITOBJS) $@
+
+sinecos.pex : $(SINCOSOBJS)
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(SINCOSOBJS) $@
+
+worksched.pex : $(WKSCHDOBJS)
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(WKSCHDOBJS) $@
+
+ReadDir.pex : $(RDDIROBJS)
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(RDDIROBJS) $@
+
+clean:
+	$(Q) $(RM) *.o *.o1 *.pex *.err *.lst core *~
+
+distclean: clean

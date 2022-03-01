@@ -1537,8 +1537,11 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
     case lbFINDSUBSTR :
       {
-        char *str;
-        char *substr;
+        uint16_t saveCsp;
+        char *strStack;
+        char *cStr;
+        char *subStrStack;
+        char *cSubStr;
         char *result;
 
         POP(st, addr1);
@@ -1546,29 +1549,37 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
         POP(st, addr2);
         POP(st, uparm2);
 
-        /* Find the substring in the string */
+        /* Convert strings to C strings */
 
-        str    = (char *)ATSTACK(st, addr1);
-        substr = (char *)ATSTACK(st, addr2);
-        result = strstr(str, substr);
+        saveCsp   = st->csp;
+        strStack  = (char *)ATSTACK(st, addr1);
+        cStr      = libexec_MkCString(st, strStack, uparm1, true);
 
-        /* strstr will NULL if the stubstring is not found but, oddly, will
-         * return result == str if substr is 0.
-         */
+        subStrStack = (char *)ATSTACK(st, addr2);
+        cSubStr     = libexec_MkCString(st, subStrStack, uparm2, false);
+        offset      = 0;
 
-        if (result != NULL)
+        if (cStr == NULL || cSubStr == NULL)
           {
-            offset = (uintptr_t)result - (uintptr_t)str + 1;
+            errorCode = eNOMEMORY;
           }
         else
           {
-            /* Character position zero means that the substring was not
-             * found.
+            /* Find the substring in the string */
+
+            result = strstr(cStr, cSubStr);
+
+            /* strstr will return NULL if the stubstring is not found but,
+             * oddly, will return result == str if substr is 0.
              */
 
-            offset = 0;
+            if (result != NULL)
+              {
+                offset = (uintptr_t)result - (uintptr_t)cStr + 1;
+              }
           }
 
+        st->csp = saveCsp;
         PUSH(st, offset);
       }
       break;

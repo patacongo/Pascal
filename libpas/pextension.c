@@ -69,7 +69,7 @@ bool extension(const char *inName, const char *ext, char *outName,
        * the allocated buffer.
        */
 
-      if ((namelen + 1) > FNAME_SIZE)
+      if (namelen + 1 > outSize)
         {
           /* It won't */
 

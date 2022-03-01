@@ -42,7 +42,8 @@
  ***********************************************************************/
 
 #include <stdint.h>
-#include <stdio.h> /* for FILE */
+#include <stdio.h>   /* for FILE */
+
 #include "config.h"
 
 /***********************************************************************
@@ -158,9 +159,15 @@
 #define MAXCHAR             255
 #define MINCHAR             0
 
+/* Size of a target hardware pointer in units of 16-bit stack words */
+
+#define PASCAL_POINTERWORDS \
+  (INT_ALIGNUP(CONFIG_PASCAL_POINTERSIZE) / sINT_SIZE)
+
 /***********************************************************************
- * Public Structure/Types
+ * Public Types
  ***********************************************************************/
+
 /* Type big enough to hold a the largest memory object. */
 
 typedef uint16_t pasSize_t;  /* Addresses are 16-bits in length */
@@ -175,5 +182,18 @@ struct opType_s
 };
 
 typedef struct opType_s opType_t;
+
+/* The tgtPtr_t structure simply represents a target machine pointer to
+ * allocated memory.  It is represented by a structure only due to alignment
+ * issues.
+ */
+
+union tgtPtr_u
+{
+  void    *ptr;
+  uint16_t b[PASCAL_POINTERWORDS];
+};
+
+typedef union tgtPtr_u tgtPtr_t;
 
 #endif /* __PAS_MACHINE_H */
