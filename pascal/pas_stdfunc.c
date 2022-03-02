@@ -585,7 +585,7 @@ static void pas_PosFunc(void)
 {
   exprType_t exprType;
 
-  /* FORM: 'pos' '(' string-expression ',' string-expression ')' */
+  /* FORM: 'pos' '(' string-expression ',' string-expression [',' integer-expression ')' */
 
   /* Verify that the argument list is enclosed in parentheses */
 
@@ -618,6 +618,20 @@ static void pas_PosFunc(void)
   if (exprType == exprShortString)
     {
       pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+    }
+
+  /* The second string may be followed by an optional start offset */
+
+  if (g_token == ',')
+    {
+      getToken();
+      pas_Expression(exprInteger, NULL);
+    }
+  else
+    {
+      /* Otherwise, start at positioni 1 */
+
+      pas_GenerateDataOperation(opPUSH, 1);
     }
 
   /* Now we can generate the string operation */
@@ -757,54 +771,70 @@ static void pas_GetDirFunc(void)
 
 static void pas_ParseDirEntry(void)
 {
-  /* Verify that the current token is instance of a Array named TDir */
+  symbol_t *wordTypePtr;
+  exprType_t exprType;
 
-  if (g_token != sARRAY) error(eARRAYTYPE);
+  /* Parse the VAR TDir parameter.
+   *
+   * Verify that the current token is instance of a Array named TDir.  This
+   * may also be a pointer to TDir or VAR parameter of type TDir.  The TDir
+   * instance could also be an element of an array or a field of a record.
+   */
+
+  /* Get the TDir type symbol */
+
+  wordTypePtr = pas_FindSymbol("TDir", 0, NULL);
+  if (wordTypePtr == NULL || wordTypePtr->sKind != sTYPE)
     {
-      symbol_t *typePtr = g_tknPtr->sParm.v.vParent;
-
-      if (typePtr == NULL ||
-          typePtr->sKind != sTYPE ||
-          strcasecmp(typePtr->sName, "TDir") != 0)
-        {
-          error(eRECORDTYPE);
-        }
-      else
-        {
-          /* Push the address of the ARRAY */
-
-          pas_GenerateStackReference(opLAS, g_tknPtr);
-        }
-
-      getToken();
+      error(eHUH);
     }
+
+  /* Then parse the TDir parameter.  We expect to have a pointer to an
+   * array of WORD.
+   */
+
+  exprType = pas_Expression(exprArrayPtr, wordTypePtr);
+
+  /* If pas_Expression was successful, we can be assured that the address
+   * of an instance of type tDir was pushed.
+   */
+
+  if (exprType != exprArrayPtr) error(eARRAYTYPE);
 }
+
 /****************************************************************************/
 /* Shared routine to parse a TSearchRec VAR argument */
 
 static void pas_ParseDirSearchRec(void)
 {
-  /* Verify that the current token is instance of a RECORD named TSearchRec */
+  symbol_t *srecTypePtr;
+  exprType_t exprType;
 
-  if (g_token != sRECORD) error(eRECORDVAR);
+  /* Verify that the current token is instance of a RECORD named TSearchRec.
+   * This may also be a pointer to TSearchRec or VAR parameter of type
+   * TSearchRec.  The TDir instance could also be an element of an array or
+   * a field of a record.
+   */
+
+  /* Get the TDir type symbol */
+
+  srecTypePtr = pas_FindSymbol("TSearchRec", 0, NULL);
+  if (srecTypePtr == NULL || srecTypePtr->sKind != sTYPE)
     {
-      symbol_t *typePtr = g_tknPtr->sParm.v.vParent;
-
-      if (typePtr == NULL ||
-          typePtr->sKind != sTYPE ||
-          strcasecmp(typePtr->sName, "TSearchRec") != 0)
-        {
-          error(eRECORDTYPE);
-        }
-      else
-        {
-          /* Push the address of the RECORD */
-
-          pas_GenerateStackReference(opLAS, g_tknPtr);
-        }
-
-      getToken();
+      error(eHUH);
     }
+
+  /* Then parse the TSearchRec parameter.  We expect to have a pointer to an
+   * array of WORD.
+   */
+
+  exprType = pas_Expression(exprRecordPtr, srecTypePtr);
+
+  /* If pas_Expression was successful, we can be assured that the address
+   * of an instance of type TSearchRec was pushed.
+   */
+
+  if (exprType != exprRecordPtr) error(eRECORDTYPE);
 }
 
 /****************************************************************************/
@@ -839,7 +869,7 @@ static void pas_OpenDirFunc(void)
   if (g_token != ',') error(eCOMMA);
   else getToken();
 
-  /* Parse the VAR TDir parameter */
+  /* Parse the VAR TDir parameter. */
 
   pas_ParseDirEntry();
 
@@ -863,7 +893,7 @@ static void pas_ReadDirFunc(void)
 
   pas_CheckLParen();
 
-  /* Parse the VAR TDir parameter */
+  /* Parse the VAR TDir parameter. */
 
   pas_ParseDirEntry();
 
@@ -896,7 +926,7 @@ static void pas_ReadDirectoryFunc(uint16_t opCode)
 
   pas_CheckLParen();
 
-  /* Parse the VAR TDir parameter */
+  /* Parse the VAR TDir parameter. */
 
   pas_ParseDirEntry();
 

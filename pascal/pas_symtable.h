@@ -62,19 +62,22 @@ extern unsigned int g_nConst;        /* Number constant table entries */
 const char *pas_MapToAlias(const char *name);
 const reservedWord_t *
           pas_FindReservedWord(const char *name);
-symbol_t *pas_FindSymbol(const char *inName, int tableOffset);
+symbol_t *pas_FindSymbol(const char *inName, int tableOffset,
+            int *foundIndex);
+symbol_t *pas_FindNextSymbol(const char *inName, int tableOffset,
+            int lastIndex, int *foundIndex);
 symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
-                            symbol_t *parent);
+            symbol_t *parent);
 symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
-                          symbol_t *parent);
+            symbol_t *parent);
 symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size);
 symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
-                      uint16_t xfrUnit, symbol_t *typePtr);
+            uint16_t xfrUnit, symbol_t *typePtr);
 symbol_t *pas_AddLabel(char *name, uint16_t label);
 symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
-                           uint16_t nParms, symbol_t *parent);
+            uint16_t nParms, symbol_t *parent);
 symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
-                          uint16_t size, symbol_t *parent);
+            uint16_t size, symbol_t *parent);
 symbol_t *pas_AddField(char *name, symbol_t *record, symbol_t *lastField);
 void      pas_PrimeSymbolTable(unsigned long symbolTableSize);
 void      pas_VerifyLabels(int32_t symIndex);

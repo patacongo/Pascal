@@ -986,7 +986,10 @@ static int libexec_Eof(struct libexec_s *st, uint16_t fileNumber)
     {
       eof = PASCAL_TRUE;
     }
-  else
+
+  /* ftell not meaningful on stdin (or pipes or sockets, etc.) */
+
+  else if (fileNumber != 0)
     {
       off_t fileSize;
       off_t filePos;
@@ -997,7 +1000,7 @@ static int libexec_Eof(struct libexec_s *st, uint16_t fileNumber)
        */
 
       filePos = ftell(st->fileTable[fileNumber].stream);
-      if (filePos < 0)
+      if (filePos < 0 && errno != ESPIPE)
         {
           errorCode = eFTELLFAILED;
           eof       = PASCAL_TRUE;
@@ -1932,20 +1935,31 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
             /* Convert the dirent file type into a FileUtils file type */
 
-            if (dirent->d_type == DT_DIR)
+            if (dirent->d_type == DT_REG)
               {
-                searchRec->attr = 'D';
+                searchRec->attr = 0;
               }
-            else if (dirent->d_type == DT_REG)
+            else if (dirent->d_type == DT_DIR)
               {
-                searchRec->attr = 'R';
+                searchRec->attr = faDirectory;
               }
             else
               {
-                searchRec->attr = 'S';
+                searchRec->attr = faSysFile;
               }
 
-            /* Stat the file to get the size and last modification time.
+            /* Under a POSIX file system, faHidden means that the filename
+             * begins with a dot.
+             */
+
+            if (dirent->d_name[0] == '.')
+              {
+                searchRec->attr |= faHidden;
+              }
+
+            /* Stat the file to get the size, last modification time, and
+             * read-only attribute.
+             *
              * REVISIT:  Not yet implemented.
              */
 

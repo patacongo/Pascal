@@ -1527,10 +1527,11 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        *   Pos(substr, s : string) : integer
        *
        * ON INPUT
-       *   TOS(2) = Address of string data
-       *   TOS(3) = Length of the string
-       *   TOS(2) = Address of substring data
-       *   TOS(3) = Length of the substring
+       *   TOS(0) = Start position
+       *   TOS(1) = Address of string data
+       *   TOS(2) = Length of the string
+       *   TOS(3) = Address of substring data
+       *   TOS(4) = Length of the substring
        * ON OUTPUT
        *   TOS(0) = Position of the substring (or zero if not present)
        */
@@ -1538,12 +1539,14 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
     case lbFINDSUBSTR :
       {
         uint16_t saveCsp;
+        uint16_t pos;
         char *strStack;
         char *cStr;
         char *subStrStack;
         char *cSubStr;
         char *result;
 
+        POP(st, pos);
         POP(st, addr1);
         POP(st, uparm1);
         POP(st, addr2);
@@ -1559,7 +1562,11 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
         cSubStr     = libexec_MkCString(st, subStrStack, uparm2, false);
         offset      = 0;
 
-        if (cStr == NULL || cSubStr == NULL)
+        if (pos < 1)
+          {
+            errorCode = eVALUERANGE;
+          }
+        else if (cStr == NULL || cSubStr == NULL)
           {
             errorCode = eNOMEMORY;
           }
@@ -1567,7 +1574,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           {
             /* Find the substring in the string */
 
-            result = strstr(cStr, cSubStr);
+            result = strstr(&cStr[pos - 1], cSubStr);
 
             /* strstr will return NULL if the stubstring is not found but,
              * oddly, will return result == str if substr is 0.

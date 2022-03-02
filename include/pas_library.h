@@ -511,10 +511,11 @@
  *   Pos(substr, s : string) : integer
  *
  * ON INPUT
- *   TOS(2) = Address of string data
- *   TOS(3) = Length of the string
- *   TOS(2) = Address of substring data
- *   TOS(3) = Length of the substring
+ *   TOS(0) = Start position
+ *   TOS(1) = Address of string data
+ *   TOS(2) = Length of the string
+ *   TOS(3) = Address of substring data
+ *   TOS(4) = Length of the substring
  * ON OUTPUT
  *   TOS(0) = Position of the substring (or zero if not present)
  */

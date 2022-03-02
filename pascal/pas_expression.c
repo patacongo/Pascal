@@ -1839,11 +1839,19 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
        * a function.
        */
 
-      else if (g_abstractTypePtr == varPtr)
+      else if (g_abstractTypePtr == typePtr)
         {
-          pas_GenerateDataSize(varPtr->sParm.v.vSize);
-          pas_GenerateStackReference(opLDSM, varPtr);
-          factorType = pas_MapVariable2ExprType(varPtr->sParm.t.tType, false);
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
+            {
+              pas_GenerateStackReference(opLAS, varPtr);
+              factorType = pas_MapVariable2ExprPtrType(varPtr->sKind, false);
+            }
+          else
+            {
+              pas_GenerateDataSize(varPtr->sParm.v.vSize);
+              pas_GenerateStackReference(opLDSM, varPtr);
+              factorType = pas_MapVariable2ExprType(varPtr->sKind, false);
+            }
         }
       else
         {
@@ -2232,9 +2240,11 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
         }
       break;
 
-    /* REVISIT: RECORD name may be a base factor -- as the input parameter of
-     * a function or in an assignment
+    /* REVISIT:  A RECORD name may be a base factor -- as the VAR input
+     * parameter of a function or in an assignment
      */
+
+    case sRECORD :
 
     default :
       factorType = exprUnknown;
@@ -2431,7 +2441,7 @@ static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
       break;
 
     case sRECORD :
-      /* Check if this is a pointer to a record */
+      /* Check if this is the address of a record */
 
       if (g_token != '.')
         {
@@ -2602,8 +2612,6 @@ static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
       /* Factor Flags:
        *
        *   FACTOR_VAR_PARM     - This is a VAR parameter.
-       *   FACTOR_DEREFERENCE  - VAR parameter is a address and must be de-
-       *                         referenced.
        *   FACTOR_LOAD_ADDRESS - Does nothing unless we discover later that
        *                         this is an ARRAY VAR parameter then this
        *                         will issue the correct order of indexing.
@@ -2611,10 +2619,9 @@ static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
 
       if (factorFlags != 0) error(eVARPARMTYPE);
 
-      factorFlags  |= (FACTOR_DEREFERENCE | FACTOR_LOAD_ADDRESS |
-                       FACTOR_VAR_PARM);
+      factorFlags  |= (FACTOR_LOAD_ADDRESS | FACTOR_VAR_PARM);
 
-      /* Then recurse to simplify the VAR paramter */
+      /* Then recurse to simplify the VAR parameter */
 
       varPtr->sKind = typePtr->sParm.t.tType;
       factorType    = pas_SimplePointerFactor(varInfo, factorFlags);
@@ -2749,7 +2756,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
     case sBOOLEAN :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
                 {
@@ -2768,7 +2775,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2807,7 +2814,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
     case sSHORTSTRING  :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
                 {
@@ -2826,7 +2833,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2851,7 +2858,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
 
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
                 {
@@ -2872,7 +2879,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
             }
@@ -2889,7 +2896,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
     case sTEXTFILE :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               if ((factorFlags & FACTOR_LOAD_ADDRESS) != 0)
                 {
@@ -2911,7 +2918,7 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
         }
       else
         {
-          if ((factorFlags & FACTOR_DEREFERENCE) != 0)
+          if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
             {
               pas_GenerateStackReference(opLDS, varPtr);
               factorType = exprFilePtr;
@@ -4048,7 +4055,8 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
           simple1Type = exprBoolean;
           handled     = true;
         }
-      else if (IS_POINTER_EXPRTYPE(simple1Type) && exprOpCodes.ptrOpCode != opNOP)
+      else if (IS_POINTER_EXPRTYPE(simple1Type) &&
+               exprOpCodes.ptrOpCode != opNOP)
         {
           pas_GenerateSimple(exprOpCodes.ptrOpCode);
 
@@ -4124,6 +4132,20 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
                simple1Type == exprAnyPointer)
         {
           simple1Type = findExprType;
+        }
+
+      /* If the caller needs a string type and a bare character type was
+       * found, then we should* convert that character to a string.
+       */
+
+      else if (pas_IsStringExpression(findExprType) && simple1Type == exprChar)
+        {
+          /* Expand the character to a string on the string stack.  And
+           * change the expression type to reflect this.
+           */
+
+          pas_StandardFunctionCall(lbMKSTKC);
+          simple1Type = exprString;
         }
 
       /* Any other type mismatch is an error */
@@ -4572,6 +4594,8 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
                   return exprSet;     /* set(integer) value */
 
                 case sARRAY :         /* REVISIT: array of something */
+                  return exprArray;   /* array of what? */
+
                 case sPOINTER :       /* REVISIT: pointer to something */
                 default:
                   error(eEXPRTYPE);

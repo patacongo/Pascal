@@ -304,22 +304,39 @@ const reservedWord_t *pas_FindReservedWord(const char *name)
 
 /****************************************************************************/
 
-symbol_t *pas_FindSymbol(const char *inName, int tableOffset)
+symbol_t *pas_FindNextSymbol(const char *inName, int tableOffset,
+                             int lastIndex, int *foundIndex)
 {
-  int i;
+  symbol_t *symbol = NULL;
+  int index;
 
-  for (i = g_nSym - 1; i >= tableOffset; i--)
+  for (index = lastIndex - 1; index >= tableOffset; index--)
     {
-      if (g_symbolTable[i].sName)
+      if (g_symbolTable[index].sName)
         {
-          if (!strcasecmp(g_symbolTable[i].sName, inName))
+          if (!strcasecmp(g_symbolTable[index].sName, inName))
             {
-              return &g_symbolTable[i];
+              symbol = &g_symbolTable[index];
+
+              if (foundIndex != NULL)
+                {
+                  *foundIndex = index;
+                }
+
+              break;
             }
         }
     }
 
-  return (symbol_t *)NULL;
+  return symbol;
+}
+
+/****************************************************************************/
+
+symbol_t *pas_FindSymbol(const char *inName, int tableOffset,
+                         int *foundIndex)
+{
+  return pas_FindNextSymbol(inName, tableOffset, g_nSym, foundIndex);
 }
 
 /****************************************************************************/

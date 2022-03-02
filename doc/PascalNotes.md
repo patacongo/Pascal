@@ -165,31 +165,39 @@ Variants of the basic directory operations, similar to those from Borland Turbo 
 - `function RemoveDir(dirPath : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
 - `procedure RmDir(dirPath : string)` - Remove a new directory.  No failure indication is returned.
 
-Other directory operations inspired by Free Pascal are provided in the unit `FileUtils.pas`.  Some primitive directory intrinics are provided to support this unit.  Those intrinsics are very close to the underlying functions from the standard C library, on which the Pascal run-time is built.  These intrinsics include:
+Other directory operations inspired by Free Pascal are provided in the unit `FileUtils.pas`.  Some primitive directory intrinics are provided in the run-time code to support this unit.  Those intrinsics are very close to the underlying functions from the standard C library, on which the Pascal run-time is built.  As a rule, then should not be used by Pascal application code for portability reasons.  These intrinsics include:
 
 - `function OpenDir(dirPath : string; VAR dir: TDir) : boolean` - Open a directory for reading.  If the directory was successfully opened, *true* is returned and TDir is valid for use with `ReadDir`.
-- `function ReadDir(VAR dir : TDir, VAR result : TSearchRec) : boolean` - Read the next directory entry.  *true* is returned if the directory entry was read successfully and the content of the `result` will be valid.  The most likely reason for a failure to read the directory entry is that the final directory entry has already been provided.
+- `function ReadDir(VAR dir : TDir, VAR result : TSearchRec) : boolean` - Read the next directory entry.  *true* is returned if the directory entry was read successfully and the content of the `result` will be valid.  Only the `name` and `attr` field of the `TSearchRec` record are populated.  The most likely reason for a failure to read the directory entry is that the final directory entry has already been provided.
 - `function RewindDir(VAR dir : TDir) : boolean` - Reset the read position of the beginning of the directory.  *True* is returned if the directory read was successfully reset.
 - `function CloseDir(VAR dir : TDir) : boolean` - Close the directory and release any resources.  *True* is returned if the directory was successfully closed.
 
 Where the definition of `TDir` is implementation specific and should have be accessed by application code.  And `TSearchRec` is a `record` type with several fields, some are internal to the implemenation but the following are available to your program:
 
-- `name` : Name of the file found.
-- `size` : The size of the file in bytes.
-- `attr` : The file attribute character (as above).
-- `time` : The time and data of the last modification.
+- `name` - Name of the file found.
+- `size` - The size of the file in bytes.
+- `attr` - The file attribute character (as above).
+- `time` - The time and data of the last modification.
 
-The `attribute` is a character type the identifies the type of the file with `'R'` for regular file, `'S'` for system file, or `'D'` for directory as possibilities.
+The `attr` is a integer constant the identifies the type(s) of the file:
+
+- `faAnyFile` - Find any file (this is a combination of the other flags).
+- `faReadOnly` - The file is read-only.
+- `faHidden` - The file is hidden. (Under a POSIX file system, this means that the filename starts with a dot).
+- `faSysFile` - The file is a system file (Under a POSIX file system, this means that the file is a character, block or FIFO file).
+- `faVolumeId` - Drive volume Label (Windows with FAT, not Fat32 of VFAT, file systems only).
+- `faDirectory` - File is a directory.
+- `faArchive` - The file needs to be archived (Windows only)
 
 Using these intrinic functions, `FileUtils.pas` can then provide:
 
-- `function FindFirst(fileTemplate, attributes : string; VAR searchResult : TSearchRec ) : boolean` - `FindFirst` function searches for files matching a `fileTemplate` and `attributes`.  If successful, `FindFirst` returns *true* and the first match in `searchResult`.
+- `function FindFirst(pathTemplate : string; attributes : ShortWord, VAR searchResult : TSearchRec ) : boolean` - `FindFirst` function searches for files matching a `pathTemplate` and `attributes`.  If successful, `FindFirst` returns *true* and the first match in `searchResult`.
 - `function FindNext(VAR searchResults : TSearchRec) : boolean` - The `FindNext` function looks for the next matching file, as defined in the search criteria given by the preceding `FindFirst` call.
 - `procedure FindClose(VAR searchResults : TSearchRec) - The `FindClose` function closes a successful FindFirst (and FindNext) file search. It frees up the resources used by the search in 'searchResults`.
 
-The `fileTemplate` is full or relative path to the directory to seach. It is a *template* because it may contain wild cards that match many different files: `?` to match any one character and/or `*`  to match 0, 1 or more characters
+The `pathTemplate` is full or relative path to the directory to seach. It is a *template* because it may contain wild cards that match many different files: `?` to match any one character and/or `*`  to match 0, 1 or more characters
 
-The search attributes are the same as described above: `'R'` for regular file, `'S'` for system file, or `'D'` for directory.  These, however, can be concatenated:  You may set multiple `attributes` from one or more of these by simply concatenating them with the `ConCat` function.
+The search attributes are the same as described above.  These can be concatenated:  You may set multiple `attributes` from one or more of these by simply `ORing them together.
 
 ## Units
 
@@ -377,15 +385,21 @@ A work-around is to use `PACKED ARRAY[] OF CHAR` which lies entirely within the 
     names : array [color] of String[7]
               = ('red', 'blue', 'yellow', 'green', 'white', 'black', 'orange');
 
-**Name Collision Issue**.  All symbols are kept on a symbol table stack.  This means that all naming must be unique.  For example, you could not have a type with the same name as a variable.  You could not do this:
+**Name Collision Issue**.  All symbols are kept in a symbol table.  This means that all naming must be unique.  For example, you could not have a type with the same name as a variable.  You could not do this:
 
     FUNCTION Map24to12(HourType: HourType): INTEGER;
 
-Most of these are kinds of name occlusion are reasonable (if not 100% correct), but there are a couple of cases that are more problematic.  For example, record field name is treated like any other named thing by the compiler.  So you cannot have a RECORD field with the same name as a variable or type as in the following.
+Most of these are kinds of name occlusion are reasonable (if not 100% correct), but there are a couple of cases that are more problematic.  I have not seen any authoritative discussion about what duplicate names may coexist for different types.
+
+A rather imperfect solution is in place for record field names with very often collide with other naming.  Basically record field names are ignored in two cases.  First if the record field name follows a period, as with:
 
     IF ptr^.stuff = stuff THEN ...
 
-Use of records with fields like `ptr^.word` would also collide with the `word` type.  Some of these worse offenders need to be fixed.
+Where the second `stuff` is a variable with the same name as the record field.  Use of records with fields like `ptr^.word`, as another example, might otherwise collide with the `word` type.
+
+This solution is *imperfect* in that the presence of the period followed by a record field name is not a guarantee of correct syntax.  The second case is when the field name is encountered within a `WITH *record*` block.  Again, this is imperfect because the field can then, again, collide with other naming within the `WITH *record*` block.
+
+Precedence is given to the interpretation of the identifier as a field name in both of these cases.  Record field names are completely ignored in other contexts.
 
 **Error Handling**.  Error handling is not user friendly at the moment:
 

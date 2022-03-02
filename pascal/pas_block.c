@@ -2544,7 +2544,7 @@ static void pas_ResolveForwardTypeRef(void)
           /* Find the symbol associate with the previously undefined type. */
 
           typeIdPtr = pas_FindSymbol(candidateRef->refName,
-                                     candidateRef->symStart);
+                                     candidateRef->symStart, NULL);
           if (typeIdPtr == NULL || typeIdPtr->sKind != sTYPE)
             {
               error(eINVTYPE);

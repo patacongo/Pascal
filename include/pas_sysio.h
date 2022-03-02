@@ -111,12 +111,16 @@
 
 #define MAX_XOP            (0x002c)
 
-/* File attribute characters */
+/* File attribute characters.  Default:  Non-hidden, regular files. */
 
-#define faAnyFile          '\0'      /* Match any file */
-#define faRegular          'R'       /* Regular file */
-#define faSysFile          'S'       /* System files */
-#define faDirectory        'D'       /* Directory */
+#define faSysFile          (1 << 0)  /* The file is a system file */
+#define faDirectory        (1 << 2)  /* File is a directory. */
+#define faArchive          (1 << 3)  /* The file needs to be archived (info only). */
+#define faReadOnly         (1 << 4)  /* The file is read-only (info only). */
+#define faVolumeId         (1 << 5)  /* Drive volume Label */
+#define faHidden           (1 << 6)  /* The file is hidden. */
+
+#define faAnyFile          (faSysFile | faDirectory | faVolumeId | faHidden)
 
 /***********************************************************************
  * Public Types

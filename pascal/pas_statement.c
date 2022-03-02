@@ -1550,7 +1550,7 @@ static void pas_GotoStatement(void)
       /* Find and verify the symbol associated with the label */
 
       (void)sprintf (labelname, "%" PRIu32, g_tknUInt);
-      if (!(label_ptr = pas_FindSymbol(labelname, 0)))
+      if (!(label_ptr = pas_FindSymbol(labelname, 0, NULL)))
         {
           error(eUNDECLABEL);
         }
@@ -1583,7 +1583,7 @@ static void pas_LabelStatement(void)
    /* Verify that the integer is a label name */
 
    (void)sprintf (labelName, "%" PRIu32, g_tknUInt);
-   if (!(labelPtr = pas_FindSymbol(labelName, 0)))
+   if (!(labelPtr = pas_FindSymbol(labelName, 0, NULL)))
      {
        error(eUNDECLABEL);
      }

@@ -1,4 +1,4 @@
-/***************************************************************
+/****************************************************************************
  * pas_token.c
  * Tokenization Package
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************/
+ ****************************************************************************/
 
-/***************************************************************
+/****************************************************************************
  * Included Functions
- ***************************************************************/
+ ****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,33 +53,35 @@
 #include "pas_symtable.h"
 #include "pas_error.h"
 
-/***************************************************************
+/****************************************************************************
  * Private Function Prototypes
- ***************************************************************/
+ ****************************************************************************/
 
-static void getCharacter        (void);
-static void skipLine            (void);
-static bool getLine             (void);
-static void identifier          (void);
-static void string              (void);
-static void unsignedNumber      (void);
-static void unsignedRealNumber  (void);
-static void unsignedExponent    (void);
-static void unsignedHexadecimal (void);
-static void unsignedBinary      (void);
+static void pas_GetCharacter        (void);
+static void pas_SkipLine            (void);
+static bool pas_GetLine             (void);
 
-/***************************************************************
+static bool pas_SymbolToken         (const char *name, bool recObj);
+static void pas_Identifier          (uint16_t lastToken);
+static void pas_StringToken         (void);
+static void pas_UnsignedNumber      (void);
+static void pas_UnsignedRealNumber  (void);
+static void pas_UnsignedExponent    (void);
+static void pas_UnsignedHexadecimal (void);
+static void pas_UnsignedBinary      (void);
+
+/****************************************************************************
  * Private Variables
- ***************************************************************/
+ ****************************************************************************/
 
 static char    *strStack;          /* String Stack */
 static uint16_t inChar;            /* last gotten character */
 static int      g_symStart   = 0;  /* Symbol search start index */
 static int      g_constStart = 0;  /* Constant search start index */
 
-/***************************************************************
+/****************************************************************************
  * Public Variables
- ***************************************************************/
+ ****************************************************************************/
 
 /* String stack access variables */
 
@@ -91,388 +93,69 @@ char *g_stringSP;              /* Top of string stack */
 int   g_levelSymOffset   = 0;  /* Index to symbols for this level */
 int   g_levelConstOffset = 0;  /* Index to constants for this level */
 
-/***************************************************************
- * Public Functions
- ***************************************************************/
-
-int16_t pas_PrimeTokenizer(unsigned long stringStackSize)
-{
-  /* Allocate and initialize the string stack and stack pointers */
-
-  strStack = malloc(stringStackSize);
-  if (!strStack)
-    {
-      fatal(eNOMEMORY);
-    }
-
-  /* Initially, everything points to the bottom of the
-   * string stack.
-   */
-
-  g_tokenString = strStack;
-  g_stringSP    = strStack;
-
-  /* Set up for input at the initial level of file parsing */
-
-  pas_RePrimeTokenizer();
-  return 0;
-}
-
-/***************************************************************/
-
-int16_t pas_RePrimeTokenizer(void)
-{
-  /* (Re-)set the char pointer to the beginning of the line */
-
-  FP->cp = FP->buffer;
-
-  /* Read the next line from the input stream */
-
-  if (!fgets((char *)FP->cp, LINE_SIZE, FP->stream))
-    {
-      /* EOF.. close file */
-
-      return 1;
-    }
-
-  /* Initialize the line nubmer */
-
-  FP->line = 1;
-
-  /* Get the first character from the new file */
-
-  getCharacter();
-  return 0;
-}
-
-/***************************************************************/
-/* Tell 'em what what the next character will be (if they should
- * choose to get it).  This is similar to getCharacter(), except that
- * the character pointer is not incremented past the character.  The
- * next time that getCharacter() is called, it will get the character
- * again.
- */
-
-char pas_GetNextCharacter(bool skipWhiteSpace)
-{
-  /* Get the next character from the line buffer. */
-
-  inChar = *(FP->cp);
-
-  /* If it is the EOL then read the next line from the input file */
-
-  if (!inChar)
-    {
-      /* We have used all of the characters on this line.  Read the next
-       * line of data
-       */
-
-      if (getLine())
-        {
-          /* Uh-oh, we are out of data!  Just return some bogus value. */
-          inChar = '?';
-
-        }
-      else
-        {
-          /* Otherwise, recurse to try again. */
-
-          return pas_GetNextCharacter(skipWhiteSpace);
-
-        }
-    }
-
-  /* If it is a space and we have been told to skip spaces then consume
-   * the input line until a non-space or the EOL is encountered.
-   */
-
-  else if (skipWhiteSpace)
-    {
-      while ((isspace(inChar)) && (inChar))
-        {
-          /* Skip over the space */
-
-          (FP->cp)++;
-
-          /* A get the character after the space */
-
-          inChar = *(FP->cp);
-
-        }
-
-      /* If we hit the EOL while searching for the next non-space, then
-       * recurse to try again on the next line
-       */
-
-      if (!inChar)
-        {
-          return pas_GetNextCharacter(skipWhiteSpace);
-        }
-    }
-
-  return inChar;
-}
-
-/***************************************************************/
-
-void getToken(void)
-{
-  /* Reset a few globals that may be left in a bad state */
-
-  g_tknPtr = NULL;
-
-  /* Skip over leading spaces and comments */
-
-  while (isspace(inChar)) getCharacter();
-
-  /* Point to the beginning of the next token */
-
-  g_tokenString = g_stringSP;
-
-  /* Process Identifier, Symbol, or Reserved Word */
-
-  if ((isalpha(inChar)) || (inChar == '_'))
-    {
-      identifier();
-    }
-
-  /* Process Numeric */
-
-  else if (isdigit(inChar))
-    {
-      unsignedNumber();
-    }
-
-  /* Process string */
-
-  else if (inChar == SQUOTE)
-    {
-      string();                       /* process string type */
-    }
-
-  /* Process ':' or assignment */
-
-  else if (inChar == ':')
-    {
-      getCharacter();
-      if (inChar == '=')
-        {
-          g_token = tASSIGN;
-          getCharacter();
-        }
-      else
-        {
-          g_token = ':';
-        }
-    }
-
-  /* Process '.' or subrange or real-number */
-
-  else if (inChar == '.')
-    {
-      /* Get the character after the '.' */
-
-      getCharacter();
-
-      /* ".." indicates a subrange */
-
-      if (inChar == '.')
-        {
-          g_token = tSUBRANGE;
-          getCharacter();
-        }
-
-      /* '.' digit is a real number */
-
-      else if (isdigit(inChar))
-        {
-          unsignedRealNumber();
-        }
-
-      /* Otherwise, it is just a '.' */
-
-      else
-        {
-          g_token = '.';
-        }
-    }
-
-  /* Process '<' or '<=' or '<>' or '<<' */
-
-  else if (inChar == '<')
-    {
-      getCharacter();
-      if (inChar == '>')
-        {
-          g_token = tNE;
-          getCharacter();
-        }
-      else if (inChar == '=')
-        {
-          g_token = tLE;
-          getCharacter();
-        }
-      else if (inChar == '<')
-        {
-          g_token = tSHL;
-          getCharacter();
-        }
-      else
-        {
-          g_token = tLT;
-        }
-    }
-
-  /* Process '>' or '>=' or '><' or '>>' */
-
-  else if (inChar == '>')
-    {
-      getCharacter();
-      if (inChar == '<')
-        {
-          g_token = tSYMDIFF;
-          getCharacter();
-        }
-      else if (inChar == '=')
-        {
-          g_token = tGE;
-          getCharacter();
-        }
-      else if (inChar == '>')
-        {
-          g_token = tSHR;
-          getCharacter();
-        }
-      else
-        {
-          g_token = tGT;
-        }
-    }
-
-  /* Get Comment -- form { .. } */
-
-  else if (inChar == '{')
-    {
-      do getCharacter();                 /* get the next character */
-      while (inChar != '}');             /* loop until end of comment */
-      getCharacter();                    /* skip over end of comment */
-      getToken();                        /* get the next real token */
-    }
-
-  /* Get comment -- form (* .. *) */
-
-  else if (inChar == '(')
-    {
-      getCharacter();                    /* skip over comment character */
-      if (inChar != '*')                 /* is this a comment? */
-        {
-          g_token = '(';                 /* No return '(' leaving the
-                                          * unprocessed char in inChar */
-        }
-      else
-        {
-          uint16_t lastChar = ' ';         /* YES... prime the look behind */
-          for (;;)                       /* look for end of comment */
-            {
-              getCharacter();            /* get the next character */
-              if ((lastChar == '*') &&   /* Is it '*)' ?  */
-                  (inChar == ')'))
-                {
-                  break;                 /* Yes... break out */
-                }
-
-              lastChar = inChar;         /* save the last character */
-            }
-
-          getCharacter();                /* skip over the comment end char */
-          getToken();                    /* and get the next real token */
-      }
-    }
-
-  /* NONSTANDARD:  All C/C++-style comments */
-
-  else if (inChar == '/')
-    {
-      getCharacter();                    /* skip over comment character */
-      if (inChar == '/')                 /* C++ style comment? */
-        {
-          skipLine();                    /* Yes, skip rest of line */
-          getToken();                    /* and get the next real token */
-        }
-      else if (inChar != '*')            /* is this a C-style comment? */
-        {
-          g_token = '/';                 /* No return '/' leaving the
-                                          * unprocessed char in inChar */
-        }
-      else
-        {
-          uint16_t lastChar = ' ';         /* YES... prime the look behind */
-          for (;;)                       /* look for end of comment */
-            {
-              getCharacter();            /* get the next character */
-              if ((lastChar == '*') &&   /* Is it '*)' ?  */
-                  (inChar == '/'))
-                {
-                  break;                 /* Yes... break out */
-                }
-
-              lastChar = inChar;         /* save the last character */
-            }
-
-          getCharacter();                /* skip over the comment end char */
-          getToken();                    /* and get the next real token */
-      }
-    }
-
-  /* Check for $XXXX (hex) */
-
-  else if (inChar == '%')
-    {
-      unsignedHexadecimal();
-    }
-
-  /* Check for $BBBB (binary) */
-
-  else if (inChar == '%')
-    {
-      unsignedBinary();
-    }
-
-  /* if inChar is an ASCII character then return token = character */
-
-  else if (isascii(inChar))
-    {
-      g_token = inChar;
-      getCharacter();
-    }
-
-  /* Otherwise, discard the character and try again */
-
-  else
-    {
-      getCharacter();
-      getToken();
-    }
-
-  DEBUG(g_lstFile,"[%02x]", g_token);
-}
-
-/***************************************************************/
-
-void getLevelToken(void)
-{
-  g_constStart = g_levelConstOffset;  /* Limit search to current level */
-  g_symStart   = g_levelSymOffset;
-  getToken();                         /* Get the token in this scope */
-  g_constStart = 0;
-  g_symStart   = 0;
-}
-
-/***************************************************************
+/****************************************************************************
  * Private Functions
- ***************************************************************/
+ ****************************************************************************/
 
-static void identifier(void)
+/****************************************************************************/
+
+static bool pas_SymbolToken(const char *name, bool findRecObj)
+{
+  symbol_t *tknPtr;
+  int foundIndex;
+  bool found = false;
+
+  /* Check if this identifier name matches a registered symbol name */
+
+  tknPtr = pas_FindSymbol(name, g_symStart, &foundIndex);
+
+  /* Loop, skipping over record objects unless a record object expected */
+
+  while (tknPtr != NULL)
+    {
+      /* Check if this token is a record object name.  If we are not expecting
+       * a record object in this context and one was foung, then keep looking.
+       * Otherwise, the record pointer will obfuscate another symbol that may
+       * have the same name.
+       */
+
+      bool isRecObj = (tknPtr->sKind == sRECORD_OBJECT);
+
+      if ((findRecObj && isRecObj) || (!findRecObj && !isRecObj))
+        {
+          g_token    = tknPtr->sKind;  /* Get the type from symbol table */
+          g_stringSP = g_tokenString;  /* Pop token from stack */
+
+          /* The following assignments only apply to constants.  However it
+           * is simpler just to make the assignments than it is to determine
+           * if is appropriate to do so
+           */
+
+          if (g_token == tREAL_CONST)
+            {
+              g_tknReal = tknPtr->sParm.c.cValue.f;
+            }
+          else
+            {
+              g_tknUInt = tknPtr->sParm.c.cValue.u;
+            }
+
+          found = true;
+          break;
+        }
+
+      /* It was a record object name.  Skip over it and keep looking */
+
+      tknPtr = pas_FindNextSymbol(name, g_symStart, foundIndex, &foundIndex);
+    }
+
+  g_tknPtr = tknPtr;
+  return found;
+}
+
+/****************************************************************************/
+
+static void pas_Identifier(uint16_t lastToken)
 {
   const reservedWord_t *rptr;        /* Pointer to reserved word */
   const char *aliasedName;           /* Pointer to alias */
@@ -483,8 +166,8 @@ static void identifier(void)
 
   do
     {
-      *g_stringSP++ = inChar;        /* concatenate char */
-      getCharacter();                /* get next character */
+      *g_stringSP++ = inChar;        /* Concatenate char */
+      pas_GetCharacter();            /* Get next character */
     }
   while ((isalnum(inChar)) || (inChar == '_'));
 
@@ -513,45 +196,43 @@ static void identifier(void)
 
   else
     {
-      g_tknPtr = pas_FindSymbol(aliasedName, g_symStart);
-      if (g_tknPtr)
+      /* Is a record object expected in this context? A record object would
+       * be expected:
+       *
+       *   After record-name '.', or
+       *   Any time while within a with block.
+       */
+
+      bool recObjExpected = (lastToken == '.' || g_withRecord.wParent != NULL);
+
+      /* Check for a symbol with this name.  If recObjExpected is true, then
+       * give precedence to record objects (at the cost of doing the symbol
+       * table lookup twice).
+       */
+
+      g_token = tIDENT;
+      if (pas_SymbolToken(aliasedName, recObjExpected))
         {
-          g_token    = g_tknPtr->sKind;       /* get type from symbol table */
-          g_stringSP = g_tokenString;         /* pop token from stack */
-
-          /* The following assignments only apply to constants.  However it
-           * is simpler just to make the assignments than it is to determine
-           * if is appropriate to do so
-           */
-
-          if (g_token == tREAL_CONST)
-            {
-              g_tknReal = g_tknPtr->sParm.c.cValue.f;
-            }
-          else
-            {
-              g_tknUInt = g_tknPtr->sParm.c.cValue.u;
-            }
+          /* Record object found (if recObjExpected == true) */
         }
-
-      /* Otherwise, the token is an identifier */
-
-      else
+      else if (recObjExpected)
         {
-          g_token = tIDENT;
+          /* Record object not found, then what is it? */
+
+          pas_SymbolToken(aliasedName, false);
         }
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 /* Process string */
 
-static void string(void)
+static void pas_StringToken(void)
 {
-  int16_t count = 0;         /* # chars in string */
+  int16_t count = 0;                  /* # chars in string */
 
-  g_token = tSTRING_CONST;           /* indicate string constant type */
-  getCharacter();                    /* skip over 1st single quote */
+  g_token = tSTRING_CONST;           /* Indicate string constant type */
+  pas_GetCharacter();                /* Skip over 1st single quote */
 
   /* Outer loop handles quoted single quotes in the comment */
 
@@ -576,11 +257,11 @@ static void string(void)
               count++;                /* Bump count of chars */
             }
 
-           getCharacter();            /* Get the next character */
+           pas_GetCharacter();        /* Get the next character */
         }
 
       prevChar = inChar;              /* Remember the terminating character */
-      getCharacter();                 /* Skip over the quote (or newline) */
+      pas_GetCharacter();             /* Skip over the quote (or newline) */
 
       /* Check for quoted singlel quote */
 
@@ -588,7 +269,7 @@ static void string(void)
         {
           *g_stringSP++ = inChar;     /* Concatenate the single quote */
           count++;                    /* Bump count of chars */
-          getCharacter();             /* Skip over the second single quote */
+          pas_GetCharacter();         /* Skip over the second single quote */
           continue;                   /* And continue building the string */
         }
 
@@ -605,9 +286,9 @@ static void string(void)
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static void getCharacter(void)
+static void pas_GetCharacter(void)
 {
   /* Get the next character from the line buffer.  If EOL, get next line */
 
@@ -618,15 +299,15 @@ static void getCharacter(void)
        * line of data
        */
 
-      skipLine();
+      pas_SkipLine();
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static void skipLine(void)
+static void pas_SkipLine(void)
 {
-  if (getLine())
+  if (pas_GetLine())
     {
       /* Uh-oh, we are out of data!  Just return some bogus value. */
 
@@ -636,13 +317,13 @@ static void skipLine(void)
     {
       /* Otherwise, get the first character from the line */
 
-      getCharacter();
+      pas_GetCharacter();
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static bool getLine(void)
+static bool pas_GetLine(void)
 {
   bool endOfFile = false;
 
@@ -692,11 +373,11 @@ static bool getLine(void)
    return endOfFile;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static void unsignedNumber(void)
+static void pas_UnsignedNumber(void)
 {
-  /* This logic (along with with unsignedRealNumber, and
+  /* This logic (along with with pas_UnsignedRealNumber, and
    * unsignedRealExponent) handles:
    *
    * FORM: integer-number = decimal-integer | hexadecimal-integer |
@@ -722,7 +403,7 @@ static void unsignedNumber(void)
   do
     {
       *g_stringSP++ = inChar;
-      getCharacter();
+      pas_GetCharacter();
     }
   while (isdigit(inChar));
 
@@ -732,7 +413,7 @@ static void unsignedNumber(void)
 
   if ((inChar == 'e') || (inChar == 'E'))
     {
-      unsignedExponent();
+      pas_UnsignedExponent();
     }
 
   /* If the digit-sequence is followed by '.' but not by ".." (i.e.,
@@ -758,16 +439,16 @@ static void unsignedNumber(void)
        * pas_GetNextCharacter() was called). Then process the real number.
        */
 
-      getCharacter();
-      unsignedRealNumber();
+      pas_GetCharacter();
+      pas_UnsignedRealNumber();
     }
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static void unsignedRealNumber(void)
+static void pas_UnsignedRealNumber(void)
 {
-  /* This logic (along with with unsignedNumber and unsignedExponent)
+  /* This logic (along with with pas_UnsignedNumber and pas_UnsignedExponent)
    * handles:
    *
    * FORM: real-number =
@@ -799,7 +480,7 @@ static void unsignedRealNumber(void)
   while (isdigit(inChar))
     {
       *g_stringSP++ = inChar;
-      getCharacter();
+      pas_GetCharacter();
     }
 
   /* If it is a digit-sequence followed by 'e' (or 'E'), then
@@ -808,7 +489,7 @@ static void unsignedRealNumber(void)
 
   if ((inChar == 'e') || (inChar == 'E'))
     {
-      unsignedExponent();
+      pas_UnsignedExponent();
     }
   else
     {
@@ -826,11 +507,11 @@ static void unsignedRealNumber(void)
   g_stringSP = g_tokenString;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static void unsignedExponent(void)
+static void pas_UnsignedExponent(void)
 {
-  /* This logic (along with with unsignedNumber and unsignedRealNumber)
+  /* This logic (along with with pas_UnsignedNumber and pas_UnsignedRealNumber)
    * handles:
    *
    * FORM: real-number =
@@ -856,7 +537,7 @@ static void unsignedExponent(void)
    */
 
   *g_stringSP++ = inChar;
-  getCharacter();
+  pas_GetCharacter();
 
   /* Check for an optional sign before the exponent value */
 
@@ -865,7 +546,7 @@ static void unsignedExponent(void)
       /* Add the sign to the stack */
 
       *g_stringSP++ = inChar;
-      getCharacter();
+      pas_GetCharacter();
     }
   else
     {
@@ -890,7 +571,7 @@ static void unsignedExponent(void)
       do
         {
           *g_stringSP++ = inChar;
-          getCharacter();
+          pas_GetCharacter();
         }
       while (isdigit(inChar));
 
@@ -907,9 +588,9 @@ static void unsignedExponent(void)
   g_stringSP = g_tokenString;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static void unsignedHexadecimal(void)
+static void pas_UnsignedHexadecimal(void)
 {
   /* FORM: integer-number = decimal-integer | hexadecimal-integer |
    *       binary-integer
@@ -930,7 +611,7 @@ static void unsignedHexadecimal(void)
     {
       /* Get the next character */
 
-      getCharacter();
+      pas_GetCharacter();
 
       /* Is it a decimal digit? */
 
@@ -965,9 +646,9 @@ static void unsignedHexadecimal(void)
   g_stringSP = g_tokenString;
 }
 
-/***************************************************************/
+/****************************************************************************/
 
-static void unsignedBinary(void)
+static void pas_UnsignedBinary(void)
 {
   uint32_t value;
 
@@ -992,7 +673,7 @@ static void unsignedBinary(void)
     {
       /* Get the next character */
 
-      getCharacter();
+      pas_GetCharacter();
 
       /* Is it a binary 'digit'? */
 
@@ -1015,4 +696,387 @@ static void unsignedBinary(void)
    */
 
   g_tknUInt = value;
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+int16_t pas_PrimeTokenizer(unsigned long stringStackSize)
+{
+  /* Allocate and initialize the string stack and stack pointers */
+
+  strStack = malloc(stringStackSize);
+  if (!strStack)
+    {
+      fatal(eNOMEMORY);
+    }
+
+  /* Initially, everything points to the bottom of the
+   * string stack.
+   */
+
+  g_tokenString = strStack;
+  g_stringSP    = strStack;
+
+  /* Set up for input at the initial level of file parsing */
+
+  pas_RePrimeTokenizer();
+  return 0;
+}
+
+/****************************************************************************/
+
+int16_t pas_RePrimeTokenizer(void)
+{
+  /* (Re-)set the char pointer to the beginning of the line */
+
+  FP->cp = FP->buffer;
+
+  /* Read the next line from the input stream */
+
+  if (!fgets((char *)FP->cp, LINE_SIZE, FP->stream))
+    {
+      /* EOF.. close file */
+
+      return 1;
+    }
+
+  /* Initialize the line nubmer */
+
+  FP->line = 1;
+
+  /* Get the first character from the new file */
+
+  pas_GetCharacter();
+  return 0;
+}
+
+/****************************************************************************/
+/* Tell 'em what what the next character will be (if they should
+ * choose to get it).  This is similar to pas_GetCharacter(), except that
+ * the character pointer is not incremented past the character.  The
+ * next time that pas_GetCharacter() is called, it will get the character
+ * again.
+ */
+
+char pas_GetNextCharacter(bool skipWhiteSpace)
+{
+  /* Get the next character from the line buffer. */
+
+  inChar = *(FP->cp);
+
+  /* If it is the EOL then read the next line from the input file */
+
+  if (!inChar)
+    {
+      /* We have used all of the characters on this line.  Read the next
+       * line of data
+       */
+
+      if (pas_GetLine())
+        {
+          /* Uh-oh, we are out of data!  Just return some bogus value. */
+          inChar = '?';
+
+        }
+      else
+        {
+          /* Otherwise, recurse to try again. */
+
+          return pas_GetNextCharacter(skipWhiteSpace);
+
+        }
+    }
+
+  /* If it is a space and we have been told to skip spaces then consume
+   * the input line until a non-space or the EOL is encountered.
+   */
+
+  else if (skipWhiteSpace)
+    {
+      while ((isspace(inChar)) && (inChar))
+        {
+          /* Skip over the space */
+
+          (FP->cp)++;
+
+          /* A get the character after the space */
+
+          inChar = *(FP->cp);
+
+        }
+
+      /* If we hit the EOL while searching for the next non-space, then
+       * recurse to try again on the next line
+       */
+
+      if (!inChar)
+        {
+          return pas_GetNextCharacter(skipWhiteSpace);
+        }
+    }
+
+  return inChar;
+}
+
+/****************************************************************************/
+
+void getToken(void)
+{
+  uint16_t lastToken;
+
+  /* Remember the current token */
+
+  lastToken = g_token;
+
+  /* Reset a few globals that may be left in a bad state */
+
+  g_tknPtr = NULL;
+
+  /* Skip over leading spaces and comments */
+
+  while (isspace(inChar)) pas_GetCharacter();
+
+  /* Point to the beginning of the next token */
+
+  g_tokenString = g_stringSP;
+
+  /* Process Identifier, Symbol, or Reserved Word */
+
+  if ((isalpha(inChar)) || (inChar == '_'))
+    {
+      pas_Identifier(lastToken);
+    }
+
+  /* Process Numeric */
+
+  else if (isdigit(inChar))
+    {
+      pas_UnsignedNumber();
+    }
+
+  /* Process string */
+
+  else if (inChar == SQUOTE)
+    {
+      pas_StringToken();  /* process string type */
+    }
+
+  /* Process ':' or assignment */
+
+  else if (inChar == ':')
+    {
+      pas_GetCharacter();
+      if (inChar == '=')
+        {
+          g_token = tASSIGN;
+          pas_GetCharacter();
+        }
+      else
+        {
+          g_token = ':';
+        }
+    }
+
+  /* Process '.' or subrange or real-number */
+
+  else if (inChar == '.')
+    {
+      /* Get the character after the '.' */
+
+      pas_GetCharacter();
+
+      /* ".." indicates a subrange */
+
+      if (inChar == '.')
+        {
+          g_token = tSUBRANGE;
+          pas_GetCharacter();
+        }
+
+      /* '.' digit is a real number */
+
+      else if (isdigit(inChar))
+        {
+          pas_UnsignedRealNumber();
+        }
+
+      /* Otherwise, it is just a '.' */
+
+      else
+        {
+          g_token = '.';
+        }
+    }
+
+  /* Process '<' or '<=' or '<>' or '<<' */
+
+  else if (inChar == '<')
+    {
+      pas_GetCharacter();
+      if (inChar == '>')
+        {
+          g_token = tNE;
+          pas_GetCharacter();
+        }
+      else if (inChar == '=')
+        {
+          g_token = tLE;
+          pas_GetCharacter();
+        }
+      else if (inChar == '<')
+        {
+          g_token = tSHL;
+          pas_GetCharacter();
+        }
+      else
+        {
+          g_token = tLT;
+        }
+    }
+
+  /* Process '>' or '>=' or '><' or '>>' */
+
+  else if (inChar == '>')
+    {
+      pas_GetCharacter();
+      if (inChar == '<')
+        {
+          g_token = tSYMDIFF;
+          pas_GetCharacter();
+        }
+      else if (inChar == '=')
+        {
+          g_token = tGE;
+          pas_GetCharacter();
+        }
+      else if (inChar == '>')
+        {
+          g_token = tSHR;
+          pas_GetCharacter();
+        }
+      else
+        {
+          g_token = tGT;
+        }
+    }
+
+  /* Get Comment -- form { .. } */
+
+  else if (inChar == '{')
+    {
+      do pas_GetCharacter();             /* Get the next character */
+      while (inChar != '}');             /* Loop until end of comment */
+      pas_GetCharacter();                /* Skip over end of comment */
+      getToken();                        /* Get the next real token */
+    }
+
+  /* Get comment -- form (* .. *) */
+
+  else if (inChar == '(')
+    {
+      pas_GetCharacter();                /* Skip over comment character */
+      if (inChar != '*')                 /* Is this a comment? */
+        {
+          g_token = '(';                 /* No return '(' leaving the
+                                          * unprocessed char in inChar */
+        }
+      else
+        {
+          uint16_t lastChar = ' ';         /* YES... prime the look behind */
+          for (;;)                       /* look for end of comment */
+            {
+              pas_GetCharacter();            /* get the next character */
+              if ((lastChar == '*') &&   /* Is it '*)' ?  */
+                  (inChar == ')'))
+                {
+                  break;                 /* Yes... break out */
+                }
+
+              lastChar = inChar;         /* save the last character */
+            }
+
+          pas_GetCharacter();                /* skip over the comment end char */
+          getToken();                    /* and get the next real token */
+      }
+    }
+
+  /* NONSTANDARD:  All C/C++-style comments */
+
+  else if (inChar == '/')
+    {
+      pas_GetCharacter();                    /* skip over comment character */
+      if (inChar == '/')                 /* C++ style comment? */
+        {
+          pas_SkipLine();                /* Yes, skip rest of line */
+          getToken();                    /* and get the next real token */
+        }
+      else if (inChar != '*')            /* is this a C-style comment? */
+        {
+          g_token = '/';                 /* No return '/' leaving the
+                                          * unprocessed char in inChar */
+        }
+      else
+        {
+          uint16_t lastChar = ' ';         /* YES... prime the look behind */
+          for (;;)                       /* look for end of comment */
+            {
+              pas_GetCharacter();            /* get the next character */
+              if ((lastChar == '*') &&   /* Is it '*)' ?  */
+                  (inChar == '/'))
+                {
+                  break;                 /* Yes... break out */
+                }
+
+              lastChar = inChar;         /* save the last character */
+            }
+
+          pas_GetCharacter();                /* skip over the comment end char */
+          getToken();                    /* and get the next real token */
+      }
+    }
+
+  /* Check for $XXXX (hex) */
+
+  else if (inChar == '%')
+    {
+      pas_UnsignedHexadecimal();
+    }
+
+  /* Check for $BBBB (binary) */
+
+  else if (inChar == '%')
+    {
+      pas_UnsignedBinary();
+    }
+
+  /* if inChar is an ASCII character then return token = character */
+
+  else if (isascii(inChar))
+    {
+      g_token = inChar;
+      pas_GetCharacter();
+    }
+
+  /* Otherwise, discard the character and try again */
+
+  else
+    {
+      pas_GetCharacter();
+      getToken();
+    }
+
+  DEBUG(g_lstFile,"[%02x]", g_token);
+}
+
+/****************************************************************************/
+
+void getLevelToken(void)
+{
+  g_constStart = g_levelConstOffset;  /* Limit search to current level */
+  g_symStart   = g_levelSymOffset;
+  getToken();                         /* Get the token in this scope */
+  g_constStart = 0;
+  g_symStart   = 0;
 }

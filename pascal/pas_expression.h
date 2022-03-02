@@ -127,6 +127,7 @@ enum exprType_e
   exprSet             = 0x1c,  /* set(integer) value */
   exprFile            = 0x1d,  /* file */
   exprRecord          = 0x1e,  /* record */
+  exprArray           = 0x1f,  /* array */
 
   /* Expressions that evaluate to pointers to standard type */
 
@@ -144,7 +145,8 @@ enum exprType_e
   exprShortStringPtr  = 0x9b,  /* variable length string reference */
   exprSetPtr          = 0x9c,  /* pointer to a set value */
   exprFilePtr         = 0x9d,  /* pointer to a file */
-  exprRecordPtr       = 0x9e   /* pointer to a record */
+  exprRecordPtr       = 0x9e,  /* pointer to a record */
+  exprArrayPtr        = 0x9f   /* pointer to an array */
 };
 
 typedef enum exprType_e exprType_t;

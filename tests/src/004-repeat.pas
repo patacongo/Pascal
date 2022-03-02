@@ -1,6 +1,6 @@
 { compute h(n) = 1 + 1/2 + 1/3 +...+ 1/n }
 
-program egrepeat(input, output);
+program TestRepeat(input, output);
 
 var
   n : integer;

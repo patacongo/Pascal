@@ -11,7 +11,7 @@ NameString =
 var
    Names : array[1..3] of NameString;
 
-procedure printName( var name : NameString );
+procedure printName(var name : NameString);
 begin
    writeln(name.title, ': ', name.info);
 end;
