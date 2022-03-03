@@ -73,7 +73,7 @@ typedef struct symbolAlias_s symbolAlias_t;
  * Private Function Prototypes
  ****************************************************************************/
 
-static symbol_t *addSymbol(char *name, int16_t type);
+static symbol_t *pas_AddSymbol(char *name, int16_t type);
 
 /****************************************************************************
  * Public Data
@@ -341,7 +341,7 @@ symbol_t *pas_FindSymbol(const char *inName, int tableOffset,
 
 /****************************************************************************/
 
-static symbol_t *addSymbol(char *name, int16_t kind)
+static symbol_t *pas_AddSymbol(char *name, int16_t kind)
 {
   /* Check for Symbol Table overflow */
 
@@ -375,7 +375,7 @@ symbol_t *pas_AddTypeDefine(char *name, uint8_t type, uint16_t size,
 
   /* Get a slot in the symbol table */
 
-  typePtr = addSymbol(name, sTYPE);
+  typePtr = pas_AddSymbol(name, sTYPE);
   if (typePtr)
     {
       /* Add the type definition to the symbol table
@@ -407,7 +407,7 @@ symbol_t *pas_AddConstant(char *name, uint8_t type, int32_t *value,
 
   /* Get a slot in the symbol table */
 
-  constPtr = addSymbol(name, type);
+  constPtr = pas_AddSymbol(name, type);
   if (constPtr)
     {
       /* Add the value of the constant to the symbol table */
@@ -437,7 +437,7 @@ symbol_t *pas_AddStringConstant(char *name, uint32_t offset, uint32_t size)
 
   /* Get a slot in the symbol table */
 
-  stringPtr = addSymbol(name, sSTRING_CONST);
+  stringPtr = pas_AddSymbol(name, sSTRING_CONST);
   if (stringPtr)
     {
       /* Add the value of the constant to the symbol table */
@@ -460,7 +460,7 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
 
   /* Get a slot in the symbol table */
 
-  filePtr = addSymbol(name, kind);
+  filePtr = pas_AddSymbol(name, kind);
   if (filePtr)
     {
       /* Add the file to the symbol table */
@@ -485,7 +485,7 @@ symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
 
   /* Get a slot in the symbol table */
 
-  procPtr = addSymbol(name, type);
+  procPtr = pas_AddSymbol(name, type);
   if (procPtr)
     {
       /* Add the procedure/function definition to the symbol table */
@@ -511,7 +511,7 @@ symbol_t *pas_AddVariable(char *name, uint8_t type, uint16_t offset,
 
   /* Get a slot in the symbol table */
 
-  varPtr = addSymbol(name, type);
+  varPtr = pas_AddSymbol(name, type);
   if (varPtr)
     {
       /* Add the variable to the symbol table */
@@ -534,7 +534,7 @@ symbol_t *pas_AddLabel(char *name, uint16_t label)
 
   /* Get a slot in the symbol table */
 
-  labelPtr = addSymbol(name, sLABEL);
+  labelPtr = pas_AddSymbol(name, sLABEL);
   if (labelPtr)
     {
       /* Add the label to the symbol table */
@@ -556,7 +556,7 @@ symbol_t *pas_AddField(char *name, symbol_t *record, symbol_t *lastField)
 
   /* Get a slot in the symbol table */
 
-  fieldPtr = addSymbol(name, sRECORD_OBJECT);
+  fieldPtr = pas_AddSymbol(name, sRECORD_OBJECT);
   if (fieldPtr)
     {
       /* Add the field to the symbol table */

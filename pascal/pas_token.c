@@ -74,8 +74,8 @@ static void pas_UnsignedBinary      (void);
  * Private Variables
  ****************************************************************************/
 
-static char    *strStack;          /* String Stack */
-static uint16_t inChar;            /* last gotten character */
+static char    *g_strStack;        /* String Stack */
+static uint16_t g_inChar;          /* last gotten character */
 static int      g_symStart   = 0;  /* Symbol search start index */
 static int      g_constStart = 0;  /* Constant search start index */
 
@@ -166,10 +166,10 @@ static void pas_Identifier(uint16_t lastToken)
 
   do
     {
-      *g_stringSP++ = inChar;        /* Concatenate char */
+      *g_stringSP++ = g_inChar;      /* Concatenate char */
       pas_GetCharacter();            /* Get next character */
     }
-  while ((isalnum(inChar)) || (inChar == '_'));
+  while ((isalnum(g_inChar)) || (g_inChar == '_'));
 
   *g_stringSP++ = '\0';                       /* make ASCIIZ string */
 
@@ -244,30 +244,30 @@ static void pas_StringToken(void)
        * a single quote is encountered.
        */
 
-      while (inChar != SQUOTE)        /* Loop until next single quote */
+      while (g_inChar != SQUOTE)      /* Loop until next single quote */
         {
-          if (inChar == '\n')         /* Check for EOL in string */
+          if (g_inChar == '\n')       /* Check for EOL in string */
             {
               error(eNOSQUOTE);       /* ERROR, terminate string */
               break;
             }
           else
             {
-              *g_stringSP++ = inChar; /* Concatenate character */
+              *g_stringSP++ = g_inChar; /* Concatenate character */
               count++;                /* Bump count of chars */
             }
 
            pas_GetCharacter();        /* Get the next character */
         }
 
-      prevChar = inChar;              /* Remember the terminating character */
+      prevChar = g_inChar;            /* Remember the terminating character */
       pas_GetCharacter();             /* Skip over the quote (or newline) */
 
       /* Check for quoted singlel quote */
 
-      if (prevChar == SQUOTE && inChar == SQUOTE)
+      if (prevChar == SQUOTE && g_inChar == SQUOTE)
         {
-          *g_stringSP++ = inChar;     /* Concatenate the single quote */
+          *g_stringSP++ = g_inChar;   /* Concatenate the single quote */
           count++;                    /* Bump count of chars */
           pas_GetCharacter();         /* Skip over the second single quote */
           continue;                   /* And continue building the string */
@@ -292,8 +292,8 @@ static void pas_GetCharacter(void)
 {
   /* Get the next character from the line buffer.  If EOL, get next line */
 
-  inChar = *(FP->cp)++;
-  if (!inChar)
+  g_inChar = *(FP->cp)++;
+  if (!g_inChar)
     {
       /* We have used all of the characters on this line.  Read the next
        * line of data
@@ -311,7 +311,7 @@ static void pas_SkipLine(void)
     {
       /* Uh-oh, we are out of data!  Just return some bogus value. */
 
-      inChar = '?';
+      g_inChar = '?';
     }
   else
     {
@@ -389,7 +389,7 @@ static void pas_UnsignedNumber(void)
    *       digit-sequence exponent scale-factor
    * FORM: exponent = 'e' | 'E'
    *
-   * When called, inChar is equal to the leading digit of a
+   * When called, g_inChar is equal to the leading digit of a
    * digit-sequence. NOTE that the real-number form beginning with
    * '.' does not use this logic.
    */
@@ -402,16 +402,16 @@ static void pas_UnsignedNumber(void)
 
   do
     {
-      *g_stringSP++ = inChar;
+      *g_stringSP++ = g_inChar;
       pas_GetCharacter();
     }
-  while (isdigit(inChar));
+  while (isdigit(g_inChar));
 
   /* If it is a digit-sequence followed by 'e' (or 'E'), then
    * continue processing this token as a real number.
    */
 
-  if ((inChar == 'e') || (inChar == 'E'))
+  if (g_inChar == 'e' || g_inChar == 'E')
     {
       pas_UnsignedExponent();
     }
@@ -421,7 +421,7 @@ static void pas_UnsignedNumber(void)
    * Otherwise, convert the integer string to binary.
    */
 
-  else if ((inChar != '.') || (pas_GetNextCharacter(false) == '.'))
+  else if (g_inChar != '.' || pas_GetNextCharacter(false) == '.')
     {
       /* Terminate the integer string and convert it using sscanf */
 
@@ -458,7 +458,7 @@ static void pas_UnsignedRealNumber(void)
    * FORM: exponent = 'e' | 'E'
    *
    * When called:
-   * - inChar is the character AFTER the '.'.
+   * - g_inChar is the character AFTER the '.'.
    * - Any leading digit-sequence is already in the character stack
    * - the '.' is not in the character stack.
    */
@@ -467,7 +467,7 @@ static void pas_UnsignedRealNumber(void)
 
   g_token = tREAL_CONST;
 
-  /* Save the decimal point (inChar points to the character after
+  /* Save the decimal point (g_inChar points to the character after
    * the decimal point).
    */
 
@@ -477,9 +477,9 @@ static void pas_UnsignedRealNumber(void)
    * decimal point.
    */
 
-  while (isdigit(inChar))
+  while (isdigit(g_inChar))
     {
-      *g_stringSP++ = inChar;
+      *g_stringSP++ = g_inChar;
       pas_GetCharacter();
     }
 
@@ -487,7 +487,7 @@ static void pas_UnsignedRealNumber(void)
    * continue processing this token as a real number.
    */
 
-  if ((inChar == 'e') || (inChar == 'E'))
+  if (g_inChar == 'e' || g_inChar == 'E')
     {
       pas_UnsignedExponent();
     }
@@ -522,7 +522,7 @@ static void pas_UnsignedExponent(void)
    * FORM: scale-factor = [ sign ] digit-sequence
    *
    * When called:
-   * - inChar holds the 'E' (or 'e') exponent
+   * - g_inChar holds the 'E' (or 'e') exponent
    * - Any leading digit-sequences or decimal points are already in the
    *   character stack
    * - the 'E' (or 'e') is not in the character stack.
@@ -532,20 +532,20 @@ static void pas_UnsignedExponent(void)
 
   g_token = tREAL_CONST;
 
-  /* Save the decimal point (inChar points to the character after
+  /* Save the decimal point (g_inChar points to the character after
    * the decimal point).
    */
 
-  *g_stringSP++ = inChar;
+  *g_stringSP++ = g_inChar;
   pas_GetCharacter();
 
   /* Check for an optional sign before the exponent value */
 
-  if ((inChar == '-') || (inChar == '+'))
+  if (g_inChar == '-' || g_inChar == '+')
     {
       /* Add the sign to the stack */
 
-      *g_stringSP++ = inChar;
+      *g_stringSP++ = g_inChar;
       pas_GetCharacter();
     }
   else
@@ -559,7 +559,7 @@ static void pas_UnsignedExponent(void)
    * sign.
    */
 
-  if (!isdigit(inChar))
+  if (!isdigit(g_inChar))
     {
       error(eEXPONENT);
       g_tknReal = 0.0;
@@ -570,10 +570,10 @@ static void pas_UnsignedExponent(void)
 
       do
         {
-          *g_stringSP++ = inChar;
+          *g_stringSP++ = g_inChar;
           pas_GetCharacter();
         }
-      while (isdigit(inChar));
+      while (isdigit(g_inChar));
 
       /* Terminate the real number string  and convert it to binay
        * using sscanf.
@@ -598,7 +598,7 @@ static void pas_UnsignedHexadecimal(void)
    * FORM: hex-digit-sequence = hex-digit { hex-digit }
    * FORM: hex-digit = digit | 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
    *
-   * On entry, inChar is '$'
+   * On entry, g_inChar is '$'
    */
 
   /* This is another representation for an integer */
@@ -615,20 +615,20 @@ static void pas_UnsignedHexadecimal(void)
 
       /* Is it a decimal digit? */
 
-      if (isdigit(inChar))
+      if (isdigit(g_inChar))
         {
-          *g_stringSP++ = inChar;
+          *g_stringSP++ = g_inChar;
         }
 
       /* Is it a hex 'digit'? */
 
-      else if ((inChar >= 'A') && (inChar <= 'F'))
+      else if (g_inChar >= 'A' && g_inChar <= 'F')
         {
-          *g_stringSP++ = inChar;
+          *g_stringSP++ = g_inChar;
         }
-      else if ((inChar >= 'a') && (inChar <= 'f'))
+      else if (g_inChar >= 'a' && g_inChar <= 'f')
         {
-          *g_stringSP++ = toupper(inChar);
+          *g_stringSP++ = toupper(g_inChar);
         }
 
       /* Otherwise, that must be the end of the hex value */
@@ -658,7 +658,7 @@ static void pas_UnsignedBinary(void)
    * FORM: binary-digit-sequence = binary-digit { binary-digit }
    * FORM: binary-digit = '0' | '1'
    *
-   * On entry, inChar is '%'
+   * On entry, g_inChar is '%'
    */
 
   /* This is another representation for an integer */
@@ -677,10 +677,12 @@ static void pas_UnsignedBinary(void)
 
       /* Is it a binary 'digit'? */
 
-      if (inChar == '0')
-        value <<= 1;
+      if (g_inChar == '0')
+        {
+          value <<= 1;
+        }
 
-      else if (inChar == '1')
+      else if (g_inChar == '1')
         {
           value <<= 1;
           value  |= 1;
@@ -706,8 +708,8 @@ int16_t pas_PrimeTokenizer(unsigned long stringStackSize)
 {
   /* Allocate and initialize the string stack and stack pointers */
 
-  strStack = malloc(stringStackSize);
-  if (!strStack)
+  g_strStack = malloc(stringStackSize);
+  if (!g_strStack)
     {
       fatal(eNOMEMORY);
     }
@@ -716,8 +718,8 @@ int16_t pas_PrimeTokenizer(unsigned long stringStackSize)
    * string stack.
    */
 
-  g_tokenString = strStack;
-  g_stringSP    = strStack;
+  g_tokenString = g_strStack;
+  g_stringSP    = g_strStack;
 
   /* Set up for input at the initial level of file parsing */
 
@@ -764,11 +766,11 @@ char pas_GetNextCharacter(bool skipWhiteSpace)
 {
   /* Get the next character from the line buffer. */
 
-  inChar = *(FP->cp);
+  g_inChar = *(FP->cp);
 
   /* If it is the EOL then read the next line from the input file */
 
-  if (!inChar)
+  if (!g_inChar)
     {
       /* We have used all of the characters on this line.  Read the next
        * line of data
@@ -777,8 +779,8 @@ char pas_GetNextCharacter(bool skipWhiteSpace)
       if (pas_GetLine())
         {
           /* Uh-oh, we are out of data!  Just return some bogus value. */
-          inChar = '?';
 
+          g_inChar = '?';
         }
       else
         {
@@ -795,7 +797,7 @@ char pas_GetNextCharacter(bool skipWhiteSpace)
 
   else if (skipWhiteSpace)
     {
-      while ((isspace(inChar)) && (inChar))
+      while (isspace(g_inChar) && g_inChar != '\0')
         {
           /* Skip over the space */
 
@@ -803,7 +805,7 @@ char pas_GetNextCharacter(bool skipWhiteSpace)
 
           /* A get the character after the space */
 
-          inChar = *(FP->cp);
+          g_inChar = *(FP->cp);
 
         }
 
@@ -811,13 +813,13 @@ char pas_GetNextCharacter(bool skipWhiteSpace)
        * recurse to try again on the next line
        */
 
-      if (!inChar)
+      if (!g_inChar)
         {
           return pas_GetNextCharacter(skipWhiteSpace);
         }
     }
 
-  return inChar;
+  return g_inChar;
 }
 
 /****************************************************************************/
@@ -836,7 +838,7 @@ void getToken(void)
 
   /* Skip over leading spaces and comments */
 
-  while (isspace(inChar)) pas_GetCharacter();
+  while (isspace(g_inChar)) pas_GetCharacter();
 
   /* Point to the beginning of the next token */
 
@@ -844,31 +846,31 @@ void getToken(void)
 
   /* Process Identifier, Symbol, or Reserved Word */
 
-  if ((isalpha(inChar)) || (inChar == '_'))
+  if (isalpha(g_inChar) || g_inChar == '_')
     {
       pas_Identifier(lastToken);
     }
 
   /* Process Numeric */
 
-  else if (isdigit(inChar))
+  else if (isdigit(g_inChar))
     {
       pas_UnsignedNumber();
     }
 
   /* Process string */
 
-  else if (inChar == SQUOTE)
+  else if (g_inChar == SQUOTE)
     {
       pas_StringToken();  /* process string type */
     }
 
   /* Process ':' or assignment */
 
-  else if (inChar == ':')
+  else if (g_inChar == ':')
     {
       pas_GetCharacter();
-      if (inChar == '=')
+      if (g_inChar == '=')
         {
           g_token = tASSIGN;
           pas_GetCharacter();
@@ -881,7 +883,7 @@ void getToken(void)
 
   /* Process '.' or subrange or real-number */
 
-  else if (inChar == '.')
+  else if (g_inChar == '.')
     {
       /* Get the character after the '.' */
 
@@ -889,7 +891,7 @@ void getToken(void)
 
       /* ".." indicates a subrange */
 
-      if (inChar == '.')
+      if (g_inChar == '.')
         {
           g_token = tSUBRANGE;
           pas_GetCharacter();
@@ -897,7 +899,7 @@ void getToken(void)
 
       /* '.' digit is a real number */
 
-      else if (isdigit(inChar))
+      else if (isdigit(g_inChar))
         {
           pas_UnsignedRealNumber();
         }
@@ -912,20 +914,20 @@ void getToken(void)
 
   /* Process '<' or '<=' or '<>' or '<<' */
 
-  else if (inChar == '<')
+  else if (g_inChar == '<')
     {
       pas_GetCharacter();
-      if (inChar == '>')
+      if (g_inChar == '>')
         {
           g_token = tNE;
           pas_GetCharacter();
         }
-      else if (inChar == '=')
+      else if (g_inChar == '=')
         {
           g_token = tLE;
           pas_GetCharacter();
         }
-      else if (inChar == '<')
+      else if (g_inChar == '<')
         {
           g_token = tSHL;
           pas_GetCharacter();
@@ -938,20 +940,20 @@ void getToken(void)
 
   /* Process '>' or '>=' or '><' or '>>' */
 
-  else if (inChar == '>')
+  else if (g_inChar == '>')
     {
       pas_GetCharacter();
-      if (inChar == '<')
+      if (g_inChar == '<')
         {
           g_token = tSYMDIFF;
           pas_GetCharacter();
         }
-      else if (inChar == '=')
+      else if (g_inChar == '=')
         {
           g_token = tGE;
           pas_GetCharacter();
         }
-      else if (inChar == '>')
+      else if (g_inChar == '>')
         {
           g_token = tSHR;
           pas_GetCharacter();
@@ -964,98 +966,98 @@ void getToken(void)
 
   /* Get Comment -- form { .. } */
 
-  else if (inChar == '{')
+  else if (g_inChar == '{')
     {
       do pas_GetCharacter();             /* Get the next character */
-      while (inChar != '}');             /* Loop until end of comment */
+      while (g_inChar != '}');           /* Loop until end of comment */
       pas_GetCharacter();                /* Skip over end of comment */
       getToken();                        /* Get the next real token */
     }
 
   /* Get comment -- form (* .. *) */
 
-  else if (inChar == '(')
+  else if (g_inChar == '(')
     {
       pas_GetCharacter();                /* Skip over comment character */
-      if (inChar != '*')                 /* Is this a comment? */
+      if (g_inChar != '*')               /* Is this a comment? */
         {
           g_token = '(';                 /* No return '(' leaving the
-                                          * unprocessed char in inChar */
+                                          * unprocessed char in g_inChar */
         }
       else
         {
-          uint16_t lastChar = ' ';         /* YES... prime the look behind */
-          for (;;)                       /* look for end of comment */
+          uint16_t lastChar = ' ';       /* YES... prime the look behind */
+          for (; ; )                     /* look for end of comment */
             {
-              pas_GetCharacter();            /* get the next character */
-              if ((lastChar == '*') &&   /* Is it '*)' ?  */
-                  (inChar == ')'))
+              pas_GetCharacter();        /* get the next character */
+              if (lastChar == '*' &&     /* Is it '*)' ?  */
+                  g_inChar == ')')
                 {
                   break;                 /* Yes... break out */
                 }
 
-              lastChar = inChar;         /* save the last character */
+              lastChar = g_inChar;       /* save the last character */
             }
 
-          pas_GetCharacter();                /* skip over the comment end char */
+          pas_GetCharacter();            /* skip over the comment end char */
           getToken();                    /* and get the next real token */
       }
     }
 
   /* NONSTANDARD:  All C/C++-style comments */
 
-  else if (inChar == '/')
+  else if (g_inChar == '/')
     {
-      pas_GetCharacter();                    /* skip over comment character */
-      if (inChar == '/')                 /* C++ style comment? */
+      pas_GetCharacter();                /* skip over comment character */
+      if (g_inChar == '/')               /* C++ style comment? */
         {
           pas_SkipLine();                /* Yes, skip rest of line */
           getToken();                    /* and get the next real token */
         }
-      else if (inChar != '*')            /* is this a C-style comment? */
+      else if (g_inChar != '*')          /* is this a C-style comment? */
         {
           g_token = '/';                 /* No return '/' leaving the
-                                          * unprocessed char in inChar */
+                                          * unprocessed char in g_inChar */
         }
       else
         {
-          uint16_t lastChar = ' ';         /* YES... prime the look behind */
+          uint16_t lastChar = ' ';       /* YES... prime the look behind */
           for (;;)                       /* look for end of comment */
             {
-              pas_GetCharacter();            /* get the next character */
-              if ((lastChar == '*') &&   /* Is it '*)' ?  */
-                  (inChar == '/'))
+              pas_GetCharacter();        /* get the next character */
+              if (lastChar == '*' &&     /* Is it '*)' ?  */
+                  g_inChar == '/')
                 {
                   break;                 /* Yes... break out */
                 }
 
-              lastChar = inChar;         /* save the last character */
+              lastChar = g_inChar;       /* save the last character */
             }
 
-          pas_GetCharacter();                /* skip over the comment end char */
+          pas_GetCharacter();            /* skip over the comment end char */
           getToken();                    /* and get the next real token */
       }
     }
 
   /* Check for $XXXX (hex) */
 
-  else if (inChar == '%')
+  else if (g_inChar == '%')
     {
       pas_UnsignedHexadecimal();
     }
 
   /* Check for $BBBB (binary) */
 
-  else if (inChar == '%')
+  else if (g_inChar == '%')
     {
       pas_UnsignedBinary();
     }
 
-  /* if inChar is an ASCII character then return token = character */
+  /* if g_inChar is an ASCII character then return token = character */
 
-  else if (isascii(inChar))
+  else if (isascii(g_inChar))
     {
-      g_token = inChar;
+      g_token = g_inChar;
       pas_GetCharacter();
     }
 

@@ -198,7 +198,7 @@ static void pas_DeclareLabel(void)
 
 static void pas_DeclareConst(void)
 {
-  char *const_name;
+  char *constName;
 
   /* FORM:  <identifier> = <numeric constant|string>
    * NOTE:  Only integer constants are supported
@@ -206,7 +206,7 @@ static void pas_DeclareConst(void)
 
   /* Save the name of the constant */
 
-  const_name = g_tokenString;
+  constName = g_tokenString;
 
   /* Verify that the name is followed by '=' and get the
    * following constant value.
@@ -230,15 +230,15 @@ static void pas_DeclareConst(void)
     case tCHAR_CONST :
     case tBOOLEAN_CONST :
     case sSCALAR_OBJECT :
-      pas_AddConstant(const_name, g_constantToken, &g_constantInt, NULL);
+      pas_AddConstant(constName, g_constantToken, &g_constantInt, NULL);
       break;
 
     case tREAL_CONST :
-      pas_AddConstant(const_name, g_constantToken, (int32_t*)&g_constantReal, NULL);
+      pas_AddConstant(constName, g_constantToken, (int32_t*)&g_constantReal, NULL);
       break;
 
     case tSTRING_CONST :
-      pas_AddStringConstant(const_name, g_constantStrOffset, g_constantStrLen);
+      pas_AddStringConstant(constName, g_constantStrOffset, g_constantStrLen);
       break;
 
     default :

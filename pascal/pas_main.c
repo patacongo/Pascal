@@ -136,6 +136,8 @@ static const char *g_programName;
 
 static void pas_CloseFiles(void);
 static void pas_OpenOutputFiles(void);
+static void pas_SignalHandler(int signo);
+static void pas_PrimeSignalHandlers(void);
 static void pas_ShowUsage(void);
 static void pas_ParseArguments(int argc, char **argv);
 
@@ -199,7 +201,7 @@ static void pas_OpenOutputFiles(void)
 
 /****************************************************************************/
 
-static void signalHandler(int signo)
+static void pas_SignalHandler(int signo)
 {
 #ifdef  _GNU_SOURCE
   fprintf(g_errFile, "Received signal: %s\n", strsignal(signo));
@@ -216,18 +218,18 @@ static void signalHandler(int signo)
 /****************************************************************************/
 /* NOTE that some signals are not available in the NuttX build */
 
-static void primeSignalHandlers(void)
+static void pas_PrimeSignalHandlers(void)
 {
 #ifndef CONFIG_PASCAL_BUILD_NUTTX
-  (void)signal(SIGHUP,  signalHandler);
-  (void)signal(SIGILL,  signalHandler);
-  (void)signal(SIGABRT, signalHandler);
-  (void)signal(SIGSEGV, signalHandler);
+  (void)signal(SIGHUP,  pas_SignalHandler);
+  (void)signal(SIGILL,  pas_SignalHandler);
+  (void)signal(SIGABRT, pas_SignalHandler);
+  (void)signal(SIGSEGV, pas_SignalHandler);
 #endif
 
-  (void)signal(SIGINT,  signalHandler);
-  (void)signal(SIGQUIT, signalHandler);
-  (void)signal(SIGTERM, signalHandler);
+  (void)signal(SIGINT,  pas_SignalHandler);
+  (void)signal(SIGQUIT, pas_SignalHandler);
+  (void)signal(SIGTERM, pas_SignalHandler);
 }
 
 /****************************************************************************/
@@ -338,7 +340,7 @@ int main(int argc, char *argv[])
 
   /* Initialization */
 
-  primeSignalHandlers();
+  pas_PrimeSignalHandlers();
   pas_PrimeSymbolTable(MAX_SYM);
   pas_PrimeTokenizer(MAX_STRINGS);
 
