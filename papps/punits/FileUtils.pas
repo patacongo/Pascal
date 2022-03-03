@@ -91,9 +91,9 @@ IMPLEMENTATION
          and hidden files are only reported if so requested. *)
 
        firstChar := Copy(searchResult.name, 1, 1);
-       IF success AND Length(firstChar) > 0 THEN
+       IF success AND (Length(firstChar) > 0) THEN
        BEGIN
-         IF firstChar = '.' AND (searchResult.sattr & faHidden) <> 0 THEN
+         IF (firstChar = '.') AND ((searchResult.sattr & faHidden) <> 0) THEN
            found := true
          ELSE IF (searchResult.attr & searchResult.sattr & faSysFile) <> 0 THEN
            found := true
@@ -102,18 +102,18 @@ IMPLEMENTATION
          ELSE IF (searchResult.attr & searchResult.sattr & faVolumeId) <> 0 THEN
            found := true;
        END
-    WHILE NOT found AND success
+    UNTIL found OR NOT success;
 
     FindNext := found
   END;
 
   PROCEDURE FindClose(VAR searchResult : TSearchRec);
   VAR
-    success
+    success : boolean
 
   BEGIN
     (* Open the directory *)
 
     success := CloseDir(searchResult.dir)
-  END
+  END;
 END.

@@ -40,7 +40,7 @@
 PHELLODIR = ${shell pwd}
 PAPPSDIR  = $(PHELLODIR)/..
 PIMAGEDIR = $(PAPPSDIR)/image
-PUNITDIR  = $(PAPPSDIR)/units
+PUNITDIR  = $(PAPPSDIR)/punits
 
 PASCAL    = $(PAPPSDIR)/..
 include $(PASCAL)/tools/Config.mk

@@ -789,17 +789,17 @@ static void pas_ParseDirEntry(void)
       error(eHUH);
     }
 
-  /* Then parse the TDir parameter.  We expect to have a pointer to an
+  /* Then parse the VAR TDir parameter.  We expect to have a pointer to an
    * array of WORD.
    */
 
-  exprType = pas_Expression(exprArrayPtr, wordTypePtr);
+  exprType = pas_VarParameter(exprWordPtr, wordTypePtr);
 
   /* If pas_Expression was successful, we can be assured that the address
    * of an instance of type tDir was pushed.
    */
 
-  if (exprType != exprArrayPtr) error(eARRAYTYPE);
+  if (exprType != exprWordPtr) error(eARRAYTYPE);
 }
 
 /****************************************************************************/
@@ -824,11 +824,11 @@ static void pas_ParseDirSearchRec(void)
       error(eHUH);
     }
 
-  /* Then parse the TSearchRec parameter.  We expect to have a pointer to an
+  /* Then parse the VAR TSearchRec parameter.  We expect to have a pointer to an
    * array of WORD.
    */
 
-  exprType = pas_Expression(exprRecordPtr, srecTypePtr);
+  exprType = pas_VarParameter(exprRecordPtr, srecTypePtr);
 
   /* If pas_Expression was successful, we can be assured that the address
    * of an instance of type TSearchRec was pushed.

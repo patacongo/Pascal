@@ -221,7 +221,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
        */
 
       if (g_token == '+'  || g_token == '-' || g_token == tOR ||
-          g_token == tXOR || g_token == tSYMDIFF)
+          g_token == tXOR || g_token == tSYMDIFF || g_token == '|')
         {
           operation = g_token;
         }
@@ -483,6 +483,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
             }
           break;
 
+        case '|' :
         case tOR :
           /* Integer/boolean 'OR' */
 
@@ -569,12 +570,12 @@ static exprType_t pas_Term(exprType_t findExprType)
     {
       /* Check for binary operator at this level of precedence:
        *
-       *   *, /, div, mod, and, shl, shr, as, <<, >>
+       *   *, /, div, mod, and, shl, shr, as, <<, >>, &
        */
 
       if (g_token == tMUL  || g_token == tDIV  || g_token == tFDIV ||
           g_token == tMOD  || g_token == tAND  || g_token == tSHL  ||
-          g_token == tSHR)
+          g_token == tSHR  || g_token == '&')
         {
           operation = g_token;
         }
@@ -798,6 +799,7 @@ static exprType_t pas_Term(exprType_t findExprType)
             }
           break;
 
+        case '&'  :
         case tAND :
           if (factor1Type == exprInteger      || factor1Type == exprWord      ||
               factor1Type == exprShortInteger || factor1Type == exprShortWord ||
@@ -1190,7 +1192,8 @@ static exprType_t pas_Factor(exprType_t findExprType)
       factorType = pas_ComplexPointerFactor(FACTOR_PTREXPR);
       break;
 
-    case tNOT:
+    case '~' :
+    case tNOT :
       getToken();
       factorType = pas_Factor(findExprType);
       if (factorType != exprInteger      && factorType != exprWord      &&
@@ -3846,6 +3849,20 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               simple1Type = exprBoolean;
               handled     = true;
             }
+          else if (simple2Type == exprChar)
+            {
+              /* Add the character of the second simple expression to the
+               * string of the first expression.
+               */
+
+              pas_StandardFunctionCall(lbSSTRCATC);
+              pas_GenerateSimple(exprOpCodes.strOpCode);
+
+              /* The resulting type is boolean */
+
+              simple1Type = exprBoolean;
+              handled     = true;
+            }
           else
             {
               error(eCOMPARETYPE);
@@ -3984,6 +4001,26 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
                     IS_POINTER_EXPRTYPE(simple1Type)))
             {
               simple2Type = simple1Type;
+            }
+
+          /* The stack representation of integer and short integers is the
+           * same... At least if they are both signed or unsigned.  Short
+           * unsigned integers can also be safely treated as signed integers
+           * due to the extended range of signed integers.  Other conversions
+           * may be erroneous.
+           */
+
+          else if (simple1Type == exprInteger &&
+                   (simple2Type == exprShortInteger ||
+                    simple2Type == exprShortWord))
+            {
+              simple2Type = exprInteger;
+            }
+          else if ((simple1Type == exprShortInteger ||
+                    simple1Type == exprShortWord) &&
+                   simple2Type == exprInteger)
+            {
+              simple1Type = exprInteger;
             }
 
           /* Otherwise, the two terms must agree in type */
@@ -4594,8 +4631,6 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
                   return exprSet;     /* set(integer) value */
 
                 case sARRAY :         /* REVISIT: array of something */
-                  return exprArray;   /* array of what? */
-
                 case sPOINTER :       /* REVISIT: pointer to something */
                 default:
                   error(eEXPRTYPE);

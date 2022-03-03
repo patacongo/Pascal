@@ -123,6 +123,10 @@ Borland style string operators
 - `fillchar(VAR s : string; count : integer; value : shortword)` -  Fill string s with character value until `s` is `count`-1 characters long
 - `Val(str : string; VAR numvar : integer; VAR code : integer)` – Convert a string to a numeric value.  `strvar` is a string variable to be converted, numvar is any numeric variable either `Integer`, `Longinteger`, `ShortInteger`, or `Real`, and if the conversion isn't successful, then the parameter `code` contains the index of the character in `S` which prevented the conversion.
 
+In addition to these built-in, *intrinsic* string operations.  Additional string support is provided throught the unit `StringUtils.pas`.  This additional support includes:
+
+- `function TokenizeString(str, tokenDelimiter : string; VAR strPos : integer) : string` - Returns the next *token* from the string `str` on each call.  A *token* is defined to be a substring of `str` delimited by one of the characters from the string `tokenDelimiter`.  The integer `VAR` parameter `strPos` must be provided so that `TokenizeString` can continue parsing the string `str` from call-to-call.  `strPos` simply holds the position in the string `str` where `TokenizeString` will resume parsing on the next call.
+
 #### File I/O
 - `Append` - Opens an existing file for appending data to end of file
 - `AssignFile` - Assign a name to a file (Assign is an alias)
@@ -172,7 +176,7 @@ Other directory operations inspired by Free Pascal are provided in the unit `Fil
 - `function RewindDir(VAR dir : TDir) : boolean` - Reset the read position of the beginning of the directory.  *True* is returned if the directory read was successfully reset.
 - `function CloseDir(VAR dir : TDir) : boolean` - Close the directory and release any resources.  *True* is returned if the directory was successfully closed.
 
-Where the definition of `TDir` is implementation specific and should have be accessed by application code.  And `TSearchRec` is a `record` type with several fields, some are internal to the implemenation but the following are available to your program:
+Where the definition of `TDir` is implementation specific and should *not* have be accessed by application code.  And `TSearchRec` is a `record` type with several fields, some are internal to the implemenation but the following are available to your program:
 
 - `name` - Name of the file found.
 - `size` - The size of the file in bytes.
