@@ -44,7 +44,7 @@ include $(PASCAL)/tools/Config.mk
 # Objects and targets
 #
 
-LIBPASSRCS = pextension.c psignextend8.c psignextend16.c pswap.c
+LIBPASSRCS = pextension.c pbasename.c psignextend8.c psignextend16.c pswap.c
 LIBPASOBJS = $(LIBPASSRCS:.c=.o)
 
 OBJS       = $(LIBPASOBJS)

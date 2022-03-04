@@ -494,8 +494,8 @@ void pas_OpenNestedFile(const char *fileName)
 
       /* Setup the newly opened file */
 
-      fprintf(g_errFile, "%01x=%s\n", FP->include, fullpath);
       FP->include = poffAddFileName(g_poffHandle, fullpath);
+      fprintf(g_errFile, "%01x=%s\n", FP->include, fullpath);
 
       /* The caller may change this, but the default behavior is
        * to inherit the kind and section of the including file

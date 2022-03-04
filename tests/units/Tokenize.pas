@@ -1,18 +1,16 @@
-PROGRAM PShell;
+PROGRAM Tokenize;
 
   USES
     StringUtils in 'StringUtils.pas'
 
   CONST
     MaxCmdTokens = 5;
-    MaxLineSize  = 80;
-    MaxTokenSize = 20;
 
   TYPE
 
   VAR
-    CommandLine    : STRING[MaxLineSize];
-    CommandTokens  : ARRAY[1..MaxCmdTokens] OF STRING[MaxTokenSize];
+    CommandLine    : STRING;
+    CommandTokens  : ARRAY[1..MaxCmdTokens] OF STRING;
     NumTokens      : integer;
     DisplayIndex   : integer
 
@@ -39,9 +37,9 @@ PROGRAM PShell;
 
 BEGIN
   CommandLine := 'This is a string';
-  WRITELN('String: ', CommandLine);
+  WRITELN('String: ''', CommandLine, '''');
   ParseLine;
-  WRITELN('Tokens:');
+  WRITELN(NumTokens, ' Tokens in string:');
   FOR DisplayIndex := 1 TO NumTokens DO
     WRITELN(CommandTokens[DisplayIndex])
 END.

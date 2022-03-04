@@ -38,6 +38,6 @@ include $(APPDIR)/Make.defs
 PASCAL = $(APPDIR)/pascal
 include $(PASCAL)/tools/Config.mk
 
-CSRCS = pextension.c psignextend8.c psignextend16.c pswap.c
+CSRCS = pextension.c pbasename.c psignextend8.c psignextend16.c pswap.c
 
 include $(APPDIR)/Application.mk

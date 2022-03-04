@@ -55,12 +55,16 @@ PASOPTS   = -I$(PUNITDIR)
 # Objects and targets
 #
 
-SUFFIXES  += .pas .o1 .o .pex .err .lst
+SUFFIXES += .pas .o1 .o .pex .err .lst
 
-PSRCS   = pshell.pas
-POBJS1  = $(PSRCS:.pas=.o1)
-POBJS   = $(PSRCS:.pas=.o)
-PEX     = $(PSRCS:.pas=.pex)
+UNITSRCS  = $(PUNITDIR)/FileUtils.pas $(PUNITDIR)/StringUtils.pas
+UOBJS1    = $(UNITSRCS:.pas=.o1)
+UOBJS     = $(UNITSRCS:.pas=.o)
+
+PSRCS     = pshell.pas
+POBJS1    = $(PSRCS:.pas=.o1)
+POBJS     = $(PSRCS:.pas=.o)
+PEX       = $(PSRCS:.pas=.pex)
 
 #
 # Targets
@@ -69,17 +73,17 @@ PEX     = $(PSRCS:.pas=.pex)
 all: pshell
 .PHONY: all pshell clean distclean
 
-$(POBJS1): %.o1: %.pas
+$(POBJS1) $(UOBJS1) : %.o1: %.pas
 	$(Q) echo "  $@"
 	$(Q) $(PAS) $(PASOPTS) $<
 
-$(POBJS): %.o: %.o1
+$(POBJS) $(UOBJS): %.o: %.o1
 	$(Q) echo "  $@"
 	$(Q) $(POPT) $(POPTOPTS) $<
 
 $(PEX): %.pex: %.o
 	$(Q) echo "  $@"
-	$(Q) $(PLINK) $(PLINKOPTS) $< $@
+	$(Q) $(PLINK) $(PLINKOPTS) $(POBJS) $(UOBJS) $@
 
 $(PIMAGEDIR)/pshell.pex: $(PEX)
 	$(Q) echo "  $@"

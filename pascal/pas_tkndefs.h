@@ -110,6 +110,7 @@
 /* Token Values 0x61-0x7a are SYMBOL TABLE definitions */
 
 #define sVAR_PARM        0x61
+#define sUNITNAME        0x62
 
 /* Token Values 0x7b-0x7f are for ASCII character tokens:
  * '{', '|', '}''~', DEL

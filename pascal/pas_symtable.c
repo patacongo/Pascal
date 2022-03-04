@@ -478,6 +478,27 @@ symbol_t *pas_AddFile(char *name, uint16_t kind, uint16_t offset,
 
 /****************************************************************************/
 
+symbol_t *pas_AddUnitName(char *name, uint16_t index)
+{
+  symbol_t *fileNamePtr;
+
+  /* Get a slot in the symbol table */
+
+  fileNamePtr = pas_AddSymbol(name, sUNITNAME);
+  if (fileNamePtr)
+    {
+      /* Add the unit name info to the symbol table */
+
+      fileNamePtr->sParm.u.fIndex = index;   /* Index into g_fileState[] */
+    }
+
+  /* Return a pointer to the new unit name symbol */
+
+  return fileNamePtr;
+}
+
+/****************************************************************************/
+
 symbol_t *pas_AddProcedure(char *name, uint8_t type, uint16_t label,
                            uint16_t nParms, symbol_t *parent)
 {

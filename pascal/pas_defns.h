@@ -95,6 +95,7 @@ enum fileKind_e
   eIsProgram = 0,
   eIsUnit
 };
+
 typedef enum fileKind_e fileKind_t;
 
 /* This enumeration determines what part of a file that we are
@@ -109,6 +110,7 @@ enum fileSection_e
   eIsImplementationSection, /* IMPLEMENTATION section of a unit file */
   eIsInitializationSection, /* INITIALIZATION section of a unit file */
 };
+
 typedef enum fileSection_e fileSection_t;
 
 /***********************************************************************
@@ -123,6 +125,7 @@ struct reservedWord_s
   uint8_t rtype;            /* reserved word type */
   uint8_t subtype;          /* reserved word extended type */
 };
+
 typedef struct reservedWord_s reservedWord_t;
 
 /* Symbol table entry */
@@ -140,6 +143,7 @@ struct symType_s            /* for sKind = sTYPE */
   struct symbol_s *tParent; /* pointer to parent type */
   struct symbol_s *tIndex;  /* pointer to index subrange type (arrays)*/
 };
+
 typedef struct symType_s symType_t;
 
 struct symConst_s           /* for sKind == constant type */
@@ -153,6 +157,7 @@ struct symConst_s           /* for sKind == constant type */
 
   struct symbol_s *cParent;  /* pointer to parent type */
 };
+
 typedef struct symConst_s symConst_t;
 
 struct symStringConst_s     /* for sKind == sSTRING_CONST */
@@ -160,6 +165,7 @@ struct symStringConst_s     /* for sKind == sSTRING_CONST */
   uint32_t roOffset;        /* RO data section offset of string */
   uint32_t roSize;          /* length of string in bytes */
 };
+
 typedef struct symStringConst_s symStringConst_t;
 
 struct symLabel_s           /* for sKind == sLABEL */
@@ -167,6 +173,7 @@ struct symLabel_s           /* for sKind == sLABEL */
   uint16_t lLabel;          /* label number */
   bool     lUnDefined;      /* set false when defined */
 };
+
 typedef struct symLabel_s symLabel_t;
 
 struct symVar_s             /* for sKind == Variable type identifier */
@@ -179,6 +186,7 @@ struct symVar_s             /* for sKind == Variable type identifier */
 
   struct symbol_s *vParent; /* pointer to parent type */
 };
+
 typedef struct symVar_s symVar_t;
 
 struct symProc_s            /* for sKind == sPROC or sFUNC */
@@ -190,6 +198,7 @@ struct symProc_s            /* for sKind == sPROC or sFUNC */
 
   struct symbol_s *pParent; /* pointer to parent type (sFUNC only) */
 };
+
 typedef struct symProc_s symProc_t;
 
 struct symRecord_s          /* for sKind == sRECORD_OBJECT */
@@ -201,7 +210,15 @@ struct symRecord_s          /* for sKind == sRECORD_OBJECT */
   struct symbol_s *rParent; /* pointer to parent field type */
   struct symbol_s *rNext;   /* pointer to next sRECORD_OBJECT */
 };
+
 typedef struct symRecord_s symRecord_t;
+
+struct symUnitName_s        /* for sKind == sUNITNAME */
+{
+  uint16_t fIndex;          /* Index into g_fileState[] (not used) */
+};
+
+typedef struct symUnitName_s symUnitName_t;
 
 struct symbol_s
 {
@@ -217,8 +234,10 @@ struct symbol_s
     symVar_t         v;     /* for variables */
     symProc_t        p;     /* for functions & procedures */
     symRecord_t      r;     /* for files of RECORDS */
+    symUnitName_t    u;     /* for program and unit filenames */
   } sParm;
 };
+
 typedef struct symbol_s symbol_t;
 
 /* WITH structure */
@@ -232,6 +251,7 @@ struct with_s
   uint16_t  wIndex;         /* RECORD offset (if pointer) */
   symbol_t *wParent;        /* pointer to parent RECORD type */
 };
+
 typedef struct with_s with_t;
 
 /* This structure captures the parsing state of the compiler for a particular
@@ -275,6 +295,7 @@ struct fileState_s
   unsigned char *cp;
   unsigned char  buffer[LINE_SIZE + 1];
 };
+
 typedef struct fileState_s fileState_t;
 
 #endif /* __PAS_DEFNS_H */

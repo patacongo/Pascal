@@ -71,6 +71,7 @@
 
 bool     extension(const char *inName, const char *ext, char *outName,
                    int outSize, bool force_default);
+char    *pbasename(char *path);
 
 /* Math helpers */
 

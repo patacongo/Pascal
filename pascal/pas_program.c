@@ -1,4 +1,4 @@
-/**********************************************************************
+/***************************************************************************
  * pas_program.c
  * main - process PROGRAM
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- **********************************************************************/
+ ***************************************************************************/
 
-/**********************************************************************
+/***************************************************************************
  * Included Files
- **********************************************************************/
+ ***************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -66,9 +66,9 @@
 #include "pas_unit.h"        /* for unit() */
 #include "pas_program.h"
 
-/***********************************************************************
+/****************************************************************************
  * Public Functions
- ***********************************************************************/
+ ****************************************************************************/
 
 void pas_Program(void)
 {
@@ -164,105 +164,140 @@ void pas_Program(void)
   pas_GenerateSimple(opEND);
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 void pas_UsesSection(void)
 {
-  uint16_t saveToken;
-  char defaultUnitFileName[PATH_MAX];
-  char *unitFileName = NULL;
-  char *saveTknStrt;
-  char *unitName;
-
   /* FORM: uses-section = 'uses' [ uses-unit-list ] ';'
    * FORM: uses-unit-list = unit-import {';' uses-unit-list }
    * FORM: unit-import = identifier ['in' non-empty-string ]
    *
    * On entry, g_token will point to the token just after
-   * the 'uses' reservers word.
+   * the 'uses' reserved word.  If this is the first time that
+   * the UNIT file has been included at this scope, the unit
+   * name will be an unrecognized identifier; if the unit was
+   * previously included within the current scope, it will be
+   * recognized as a unit name.
    */
 
-  while (g_token == tIDENT)
+  while (g_token == tIDENT || g_token == sUNITNAME)
     {
-      /* Save the unit name identifier and skip over the identifier */
-
-      unitName = g_tokenString;
-      getToken();
-
-      /* Check for the optional 'in' */
-
-      saveTknStrt = g_tokenString;
-      if (g_token == tIN)
+      if (g_token == tIDENT)
         {
-          /* Skip over 'in' and verify that a string constant representing
-           * the file name follows.
+          char defaultUnitFileName[PATH_MAX];
+          char *unitFileName = NULL;
+          char *saveTknStrt;
+          char *unitName;
+          uint16_t saveToken;
+
+          /* This is the first time that this unit has been incountered.
+           * Save the unit name identifier and skip over the identifier
            */
 
+          unitName = g_tokenString;
           getToken();
-          if (g_token != tSTRING_CONST) error(eSTRING);
-          else
+
+          /* Check for the optional 'in' */
+
+          saveTknStrt = g_tokenString;
+          if (g_token == tIN)
             {
-              /* Save the unit file name and skip to the
-               * next token.
+              /* Skip over 'in' and verify that a string constant representing
+               * the file name follows.
                */
 
-              unitFileName = g_tokenString;
-              saveTknStrt  = g_tokenString;
               getToken();
+              if (g_token != tSTRING_CONST) error(eSTRING);
+              else
+                {
+                  /* Save the unit file name and skip to the next token. */
+
+                  unitFileName = g_tokenString;
+                  saveTknStrt  = g_tokenString;
+                  getToken();
+                }
+            }
+
+          /* If the file name is not present following the IN token, then form
+           * the file name from the unit name with the extension .pas.
+           */
+
+          else
+            {
+              /* Create a default filename */
+
+              (void)extension(unitName, "pas", defaultUnitFileName, PATH_MAX, 1);
+              unitFileName = defaultUnitFileName;
+            }
+
+          /* Open the unit file */
+
+          saveToken   = g_token;
+
+          pas_OpenNestedFile(unitFileName);
+
+          FP->kind    = eIsUnit;
+          FP->section = eIsOtherSection;
+
+          /* Verify that this is a unit file */
+
+          if (g_token != tUNIT) error(eUNIT);
+          else getToken();
+
+          /* Release the unit file name from the string stack (preserving the
+           * unit name).
+           */
+
+          g_stringSP = saveTknStrt;
+
+          /* Verify that the file provides the unit that we are looking
+           * for (only one unit per file is supported).
+           *
+           * Note that this is case sensitive.
+           */
+
+          if (g_token != tIDENT) error(eIDENT);
+          else if (strcmp(unitName, g_tokenString) != 0) error(eUNITNAME);
+
+          /* Add the unit name to the symbol table so that we do not include it
+           * again at this static nesting level or at higher nesting levels.
+           */
+
+          pas_AddUnitName(unitName, g_includeIndex);
+
+          /* Parse the interface from the unit file (token must refer
+           * to the unit name on entry into unit().
+           */
+
+          pas_UnitInterface();
+          pas_CloseNestedFile();
+
+          g_token = saveToken;
+        }
+      else /* if (g_token == sUNITNAME */
+        {
+          /* We have alread including this UNIT.  Just parse over the line.  */
+          /* Check for the optional 'in' */
+
+          getToken();
+          if (g_token == tIN)
+            {
+              /* Skip over 'in' and verify that a string constant representing
+               * the file name follows.
+               */
+
+              getToken();
+              if (g_token != tSTRING_CONST) error(eSTRING);
+              else getToken();
             }
         }
 
-      /* If the file name is not present following the IN token, then form
-       * the file name from the unit name with the extension .pas.
+      /* A colon should not be needed in this case.  But we will skip over it if
+       * one is present.
        */
 
-      else
-        {
-          /* Create a default filename */
-
-          (void)extension(unitName, "pas", defaultUnitFileName, PATH_MAX, 1);
-          unitFileName = defaultUnitFileName;
-        }
-
-      /* Open the unit file */
-
-      saveToken   = g_token;
-      pas_OpenNestedFile(unitFileName);
-      FP->kind    = eIsUnit;
-      FP->section = eIsOtherSection;
-
-      /* Verify that this is a unit file */
-
-      if (g_token != tUNIT) error(eUNIT);
-      else getToken();
-
-      /* Release the file name from the string stack */
-
-      g_stringSP = saveTknStrt;
-
-      /* Verify that the file provides the unit that we are looking
-       * for (only one unit per file is supported).
-       *
-       * Note that this is case sensitive.
-       */
-
-      if (g_token != tIDENT) error(eIDENT);
-      else if (strcmp(unitName, g_tokenString) != 0) error(eUNITNAME);
-
-      /* Parse the interface from the unit file (token must refer
-       * to the unit name on entry into unit().
-       */
-
-      pas_UnitInterface();
-      pas_CloseNestedFile();
-
-      /* Verify the terminating condition.  A colon should not be needed
-       * in this case.  But we will skip over it if one is present.
-       */
-
-      g_token = saveToken;
       if (g_token ==  ';') getToken();
     }
 }
 
-/***********************************************************************/
+/*********************************************************************************/

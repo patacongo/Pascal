@@ -74,7 +74,10 @@ WKSCHDOBJS = $(WKSCHDSRC:.pas=.o)
 RDDIRSRC   = ReadDir.pas $(PUNITDIR)/Machine.pas $(PUNITDIR)/FileUtils.pas
 RDDIROBJS  = $(RDDIRSRC:.pas=.o)
 
-PEX        = ReadDir.pex worksched.pex sinecos.pex DoIt.pex
+TOKENSRC   = Tokenize.pas $(PUNITDIR)/Machine.pas $(PUNITDIR)/StringUtils.pas
+TOKENOBJS  = $(TOKENSRC:.pas=.o)
+
+PEX        = ReadDir.pex worksched.pex sinecos.pex DoIt.pex Tokenize.pex
 
 #
 # Targets
@@ -106,6 +109,10 @@ worksched.pex : $(WKSCHDOBJS)
 ReadDir.pex : $(RDDIROBJS)
 	$(Q) echo "  $@"
 	$(Q) $(PLINK) $(RDDIROBJS) $@
+
+Tokenize.pex : $(TOKENOBJS)
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(TOKENOBJS) $@
 
 clean:
 	$(Q) $(RM) *.o *.o1 *.pex *.err *.lst core *~

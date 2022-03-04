@@ -1526,7 +1526,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         index    = sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE;
         strAlloc = strPtr[index];
 
-        errorCode = libexec_ReadString(st, fileNumber, strPtr,strAlloc);
+        errorCode = libexec_ReadString(st, fileNumber, strPtr, strAlloc);
       }
       break;
 

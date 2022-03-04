@@ -125,5 +125,6 @@ if [ "${DOLIST}" == "A" -o "${DOLIST}" == "5" ]; then
     ./testmulti.sh sinecos.pex sinecos.inp
     ./testmulti.sh worksched.pex
     ./testmulti.sh ReadDir.pex
+    ./testmulti.sh Tokenize.pex
 fi
 exit

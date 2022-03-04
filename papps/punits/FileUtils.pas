@@ -26,9 +26,9 @@ INTERFACE
     END
 
   FUNCTION  ExtractFilePath (fullPath : string ) : string;
+  FUNCTION  FindNext(VAR searchResult : TSearchRec) : BOOLEAN;
   FUNCTION  FindFirst(pathTemplate : string; attributes : ShortWord;
                       VAR searchResult : TSearchRec ) : BOOLEAN;
-  FUNCTION  FindNext(VAR searchResult : TSearchRec) : BOOLEAN;
   PROCEDURE FindClose(VAR searchResult : TSearchRec);
 
 IMPLEMENTATION
@@ -51,26 +51,6 @@ IMPLEMENTATION
       string to the position just before the delimiter }
 
     ExtractFilePath := Copy(fullPath, 1, lastPosition - 1);
-  END;
-
-  FUNCTION FindFirst(pathTemplate : string; attributes : ShortWord;
-                     VAR searchResult : TSearchRec ) : BOOLEAN;
-  VAR
-    dirPath : string;
-    success : boolean
-
-  BEGIN
-    (* Open the directory *)
-
-    dirPath := ExtractFilePath(pathTemplate);
-    success := OpenDir(dirPath, searchResult.dir);
-    IF success THEN
-    BEGIN
-      searchResult.sattr := attributes;
-      FindFirst := FindNext(searchResult)
-    END
-    ELSE
-      FindFirst := false
   END;
 
   FUNCTION FindNext(VAR searchResult : TSearchRec) : BOOLEAN;
@@ -105,6 +85,26 @@ IMPLEMENTATION
     UNTIL found OR NOT success;
 
     FindNext := found
+  END;
+
+  FUNCTION FindFirst(pathTemplate : string; attributes : ShortWord;
+                     VAR searchResult : TSearchRec ) : BOOLEAN;
+  VAR
+    dirPath : string;
+    success : boolean
+
+  BEGIN
+    (* Open the directory *)
+
+    dirPath := ExtractFilePath(pathTemplate);
+    success := OpenDir(dirPath, searchResult.dir);
+    IF success THEN
+    BEGIN
+      searchResult.sattr := attributes;
+      FindFirst := FindNext(searchResult)
+    END
+    ELSE
+      FindFirst := false
   END;
 
   PROCEDURE FindClose(VAR searchResult : TSearchRec);

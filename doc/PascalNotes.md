@@ -125,7 +125,7 @@ Borland style string operators
 
 In addition to these built-in, *intrinsic* string operations.  Additional string support is provided throught the unit `StringUtils.pas`.  This additional support includes:
 
-- `function TokenizeString(str, tokenDelimiter : string; VAR strPos : integer) : string` - Returns the next *token* from the string `str` on each call.  A *token* is defined to be a substring of `str` delimited by one of the characters from the string `tokenDelimiter`.  The integer `VAR` parameter `strPos` must be provided so that `TokenizeString` can continue parsing the string `str` from call-to-call.  `strPos` simply holds the position in the string `str` where `TokenizeString` will resume parsing on the next call.
+- `function TokenizeString(str, tokenDelimiter : string; VAR token : string; VAR strPos : integer) : boolean` - Gets the next *token* from the string `str` on each call.  A *token* is defined to be a substring of `str` delimited by one of the characters from the string `tokenDelimiter`.  The integer `VAR` parameter `strPos` must be provided so that `TokenizeString` can continue parsing the string `str` from call-to-call.  `strPos` simply holds the position in the string `str` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
 
 #### File I/O
 - `Append` - Opens an existing file for appending data to end of file
