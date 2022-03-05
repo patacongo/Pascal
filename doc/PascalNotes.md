@@ -246,7 +246,7 @@ Pascal runtime memory is divided into four regions:  String stack, RO data, the 
 
 This problem is largely alleviated by using short strings that do not require such large string stack allocations.
 
-* The actual size of the string allocations is controlled by a command option to prun, -a.
+* The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
 
 ## BUGS, ISSUES, and QUIRKS
 
@@ -274,7 +274,6 @@ Provide instrumentation to use the line number data in the object files.  In deb
 
 ### Strings
 
-- All RO strings should be represented as short strings when converted to Pascal strings
 - Should check for duplicate strings in the RO string area.
 
 ## Components

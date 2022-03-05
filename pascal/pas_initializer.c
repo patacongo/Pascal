@@ -119,6 +119,7 @@ struct initializer_s
       struct
         {
           symbol_t *recordObjectPtr;
+          bool pops;                /* true if RECORD contains a string */
         } r;
     };
 };
@@ -312,10 +313,11 @@ static void pas_BasicInitialization(void)
                   pas_GenerateDataOperation(opPUSH, fOffset);
                   pas_GenerateSimple(opADD);
 
-                  /* Then initialize the short string */
+                  /* Then initialize the string */
 
                   pas_StandardFunctionCall(lbSTRINIT);
                   pushs = true;
+                  initializer->r.pops = true;
                 }
 
               /* Check if the base type of the field is a file */
@@ -556,19 +558,19 @@ void pas_InitializeNewString(symbol_t *typePtr)
   baseTypePtr = pas_GetBaseTypePointer(typePtr);
   if (baseTypePtr->sParm.t.tType == sSTRING)
     {
-      /* Get TOS = Size of the short string's string memory allocation. */
+      /* Get TOS = Size of the string's string memory allocation. */
 
       pas_GenerateDataOperation(opPUSH, baseTypePtr->sParm.t.tMaxValue);
 
       /* Correct the order of the stack variables so that we have:
        *
-       *   TOS(0) = Address of short string variable
-       *   TOS(1) = Short string memory allocation.
+       *   TOS(0) = Address of string variable
+       *   TOS(1) = Short memory allocation.
        */
 
       pas_GenerateSimple(opXCHG);
 
-      /* Initialize the short string */
+      /* Initialize the string */
 
       pas_StandardFunctionCall(lbSTRINIT);
     }
@@ -621,6 +623,10 @@ void pas_Finalization(void)
 
               case sSTRING :
                   pops = true;
+                  break;
+
+              case sRECORD:
+                  pops |= initializer->r.pops;
                   break;
 
               default:
