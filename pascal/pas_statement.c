@@ -278,7 +278,6 @@ void pas_Statement(void)
       break;
 
     case sSTRING :
-    case sSHORTSTRING :
       symPtr = g_tknPtr;
       getToken();
       pas_StringAssignment(symPtr, symPtr->sParm.v.vParent, 0);
@@ -762,7 +761,6 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
       break;
 
     case sSTRING :
-    case sSHORTSTRING :
       pas_StringAssignment(varPtr, typePtr, assignFlags);
       break;
 
@@ -1029,7 +1027,7 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         baseTypePtr = pas_GetBaseTypePointer(typePtr);
         baseType    = baseTypePtr->sParm.t.tType;
 
-        if ((baseType != sSTRING && baseType != sSHORTSTRING) &&
+        if (baseType != sSTRING &&
             (assignFlags & ASSIGN_DEREFERENCE) == 0)
           {
             pas_GenerateStackReference(opLDS, varPtr);
@@ -1283,9 +1281,7 @@ static void pas_PointerAssignment(symbol_t *varPtr, symbol_t *typePtr,
 }
 
 /***********************************************************************/
-/* Process the assignment to a variable length string record, either
- * type sSTRING or sSHORTSTRING.
- */
+/* Process the assignment to a variable length string record. */
 
 static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
                                  uint8_t assignFlags)
@@ -1306,7 +1302,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
    * of string expression.
    */
 
-  rValueExprType = pas_Expression(exprAnyString, typePtr);
+  rValueExprType = pas_Expression(exprString, typePtr);
   lValueType     = varPtr->sKind;
 
   /* Is the address of the LValue already on the stack?  This is usually
@@ -1342,125 +1338,34 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
    * runtime call will account for any necesary string type conversion.
    */
 
-  if (lValueType == sSTRING)
+  if (lValueType == sSTRING && rValueExprType == exprString)
     {
-      if (rValueExprType == exprString)
+      /* It is a pascal string type. Current stack representation is:
+       *
+       *   TOS(0) = Address of dest sting variable
+       *   TOS(1) = Size of string buffer allocation
+       *   TOS(1) = Pointer to source sting buffer
+       *   TOS(2) = Length of source sting
+       *
+       * And in the indexed case:
+       *
+       *   TOS(3) = Dest sting variable address offset
+       *
+       * REVISIT:  This is awkward.  Life would be much easier if the
+       * array index could be made to be emitted later in the stack and
+       * so could be added to the dest sting variable address easily.
+       */
+
+      if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
         {
-          /* It is a standard pascal string type. Current stack
-           * representation is:
-           *
-           *   TOS(0)=Address of dest standard string variable
-           *   TOS(1)=Pointer to source standard string buffer
-           *   TOS(2)=Length of source standard string
-           *
-           * And in the indexed case:
-           *
-           *   TOS(3)=Dest standard string variable address offset
-           *
-           * REVISIT:  This is awkward.  Life would be much easier if the
-           * array index could be made to be emitted later in the stack and
-           * so could be added to the dest sting variable address easily.
-           */
-
-          if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
-            {
-              libOpcode = destFirst ? lbSTRCPYX : lbSTRCPYX2;
-            }
-          else
-            {
-              libOpcode = destFirst ? lbSTRCPY : lbSTRCPY2;
-            }
-
-          pas_StandardFunctionCall(libOpcode);
+          libOpcode = destFirst ? lbSTRCPYX : lbSTRCPYX2;
         }
-      else if (rValueExprType == exprShortString)
+      else
         {
-          /* It is a pascal short string type. Current stack
-           * representation is:
-           *
-           *   TOS(0)=Address of dest standard string variable
-           *   TOS(1)=Pointer to source short string buffer
-           *   TOS(2)=Length of source shot string
-           *   TOS(3)=Short string buffer size
-           *
-           * And in the indexed case:
-           *
-           *   TOS(4)=Dest standard string variable address offset
-           *
-           * REVISIT:  This is awkward.  Life would be much easier if the
-           * array index could be made to be emitted later in the stack and
-           * so could be added to the dest sting variable address easily.
-           */
-
-          if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
-            {
-              libOpcode = destFirst ? lbSSTR2STRX : lbSSTR2STRX2;
-            }
-          else
-            {
-              libOpcode = destFirst ? lbSSTR2STR : lbSSTR2STR2;
-            }
-
-          pas_StandardFunctionCall(libOpcode);
+          libOpcode = destFirst ? lbSTRCPY : lbSTRCPY2;
         }
-    }
-  else /* (lValueTpe == sSHORTSTRING) */
-    {
-      if (rValueExprType == exprString)
-        {
-          /* It is a standard pascal string type. Current stack
-           * representation is:
-           *
-           *   TOS(0)=Address of dest short string variable
-           *   TOS(1)=Pointer to source standard string buffer
-           *   TOS(2)=Length of source standard string
-           *
-           * And in the indexed case:
-           *
-           *   TOS(3)=Dest short string variable address offset
-           */
 
-          if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
-            {
-              libOpcode = destFirst ? lbSTR2SSTRX : lbSTR2SSTRX2;
-            }
-          else
-            {
-              libOpcode = destFirst ? lbSTR2SSTR : lbSTR2SSTR2;
-            }
-
-          pas_StandardFunctionCall(libOpcode);
-        }
-      else if (rValueExprType == exprShortString)
-        {
-          /* It is a pascal short string type. Current stack
-           * representation is:
-           *
-           *   TOS(0)=Address of dest short standard string variable
-           *   TOS(1)=Pointer to source short string buffer
-           *   TOS(2)=Length of source short string
-           *   TOS(3)=Short string buffer size
-           *
-           * And in the indexed case:
-           *
-           *   TOS(4)=Dest short string variable address offset
-           *
-           * REVISIT:  This is awkward.  Life would be much easier if the
-           * array index could be made to be emitted later in the stack and
-           * so could be added to the dest sting variable address easily.
-           */
-
-          if ((assignFlags & (ASSIGN_INDEXED | ASSIGN_OUTER_INDEXED)) != 0)
-            {
-              libOpcode = destFirst ? lbSSTRCPYX : lbSSTRCPYX2;
-            }
-          else
-            {
-              libOpcode = destFirst ? lbSSTRCPY : lbSSTRCPY2;
-            }
-
-          pas_StandardFunctionCall(libOpcode);
-        }
+      pas_StandardFunctionCall(libOpcode);
     }
 }
 

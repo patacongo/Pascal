@@ -1,4 +1,4 @@
-/***************************************************************
+/****************************************************************************
  * pas_builtin.c
  * Functions built into the code at compile time
  *
@@ -32,11 +32,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************/
+ ****************************************************************************/
 
-/***************************************************************
+/****************************************************************************
  * Included Files
- ***************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -52,18 +52,18 @@
 #include "pas_codegen.h"
 #include "pas_function.h"
 
-/***************************************************************
+/****************************************************************************
  * Private Function Prototypes
- ***************************************************************/
+ ****************************************************************************/
 
 static exprType_t pas_BuiltInSizeOf(void);
 static exprType_t pas_BuiltInLength(void);
 
-/***************************************************************
+/****************************************************************************
  * Private Functions
- ***************************************************************/
+ ****************************************************************************/
 
-/***********************************************************************/
+/****************************************************************************/
 
 static exprType_t pas_BuiltInSizeOf(void)
 {
@@ -88,7 +88,6 @@ static exprType_t pas_BuiltInSizeOf(void)
       case sCHAR :
       case sREAL :
       case sSTRING :
-      case sSHORTSTRING :
       case sSCALAR :
       case sSUBRANGE :
       case sSET :
@@ -125,7 +124,7 @@ static exprType_t pas_BuiltInSizeOf(void)
   return exprInteger;
 }
 
-/***********************************************************************/
+/****************************************************************************/
 
 static exprType_t pas_BuiltInLength(void)
 {
@@ -137,35 +136,20 @@ static exprType_t pas_BuiltInLength(void)
 
   /* Process the string-expression */
 
-  exprType = pas_Expression(exprAnyString, NULL);
+  exprType = pas_Expression(exprString, NULL);
   if (exprType == exprString)
     {
       /* The top of the stack now holds:
        *
-       *   TOS(0) - Standard string buffer address
-       *   TOS(1) - Standard tring length
+       *   TOS(0) - String buffer allocation
+       *   TOS(1) - String buffer address
+       *   TOS(2) - String length
        *
-       * Just pop off the string address, leaving the length at the top of
-       * the stack.
+       * Discard the buffer address and buffer allocation, leaving
+       * the string length on the stack.
        */
 
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
-  else if (exprType == exprShortString)
-    {
-      /* The top of the stack now holds:
-       *
-       *   TOS(0) - Short string buffer address
-       *   TOS(1) - Short string length
-       *   TOS(2) - Short string buffer allocation
-       *
-       * Discard the buffer address, exchange the string length and buffer allocation,
-       * then discard the buffer allocation.
-       */
-
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-      pas_GenerateSimple(opXCHG);
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+      pas_GenerateDataOperation(opINDS, -2 * sINT_SIZE);
     }
   else
     {
@@ -176,11 +160,11 @@ static exprType_t pas_BuiltInLength(void)
   return exprInteger;
 }
 
-/***************************************************************
+/****************************************************************************
  * Public Functions
- ***************************************************************/
+ ****************************************************************************/
 
-/***************************************************************/
+/****************************************************************************/
 /* Process a built-in function */
 
 exprType_t pas_BuiltInFunction(void)

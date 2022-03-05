@@ -86,8 +86,7 @@ static int16_t popt_StringConstOptimize(void)
    * looking for these sequences:
    *
    * CASE 1:  Standard strings:
-   *    lbSTRCPY2, lbSTRCPYX2, lbSTR2SSTR2, lbSTR2SSTRX2, lbSTRDUP, lbSTRCAT,
-   *    lbSSTRCATSTR, lbSTRCMP, lbSSTRCMPSTR
+   *    lbSTRCPY2, lbSTRCPYX2, lbSTRDUP, lbSTRCAT, lbSTRCMP
    *
    *    LAC
    *    LIB STRDUP
@@ -98,39 +97,17 @@ static int16_t popt_StringConstOptimize(void)
    * read-only (final) parameter.
    *
    * CASE 2: Alternatively:
-   *   lbSTRCPY, lbSTRCPYX, lbSTR2SSTR, lbSTR2SSTRX,
+   *   lbSTRCPY, lbSTRCPYX
    *
    *    LAC
    *    LIB STRDUP
    *    LA/LAS
    *    LIB bbb
    *
-   * Where bbb is some operation that takes a standard string as a
-   * read-only as a first parameter: lbSTRCPY, lbSTRCPY2, lbSTRCPYX,
-   * lbSTRCPYX2
-   *
-   * CASE 3:  And for short strings:
-   *    lbSSTRCPY2, lbSSTRCPYX2, lbSSTR2STR2, lbSSTR2STRX2, lbSSTRDUP,
-   *    lbSSTRCAT, lbSTRCATSSTR, lbSSTRCMP, lbSTRCMPSSTR
-   *
-   *    LAC
-   *    LIB STRDUP
-   *    LD/LDS/PUSH string-allocation
-   *    LIB aaa
-   *
-   * CASE 4:
-   *    lbSSTRCPY, lbSSTRCPYX, lbSSTR2STR, lbSSTR2STRX,
-   *
-   *    LAC
-   *    LIB STRDUP
-   *    LD/LDS/PUSH string-allocation
-   *    LA/LAS
-   *    LIB aabbba
-   *
    * REVIST:  Other cases to be addressed:
    *
    * - There are two read-only parameters to all string comparison library functions:
-   *   lbSTRCMP, lbSSTRCMP, lbSSTRCMPSTR, lbSTRCMPSSTR
+   *   lbSTRCMP.
    * - lbSTR2BSTR, lbSTR2BSTRX have a slightly incompatible form.
    */
 
@@ -149,72 +126,26 @@ static int16_t popt_StringConstOptimize(void)
        *
        *    LAC
        *    LIB STRDUP
-       *    LIB aaa
-       */
-
-      else if (g_opPtr[i + 2]->op    == oLIB         &&
-              (g_opPtr[i + 2]->arg2 == lbSTRCPY2    ||
-               g_opPtr[i + 2]->arg2 == lbSTRCPYX2   ||
-               g_opPtr[i + 2]->arg2 == lbSTRDUP     ||
-               g_opPtr[i + 2]->arg2 == lbSTRCAT     ||
-               g_opPtr[i + 2]->arg2 == lbSSTRCATSTR ||
-               g_opPtr[i + 2]->arg2 == lbSTRCMP     ||
-               g_opPtr[i + 2]->arg2 == lbSSTRCMPSTR))
-        {
-          popt_DeletePCode(i + 1);
-          nchanges++;
-        }
-
-      /* CASE 2:
-       *
-       *    LAC
-       *    LIB STRDUP
-       *    LA/LAS
-       *    LIB bbb
-       */
-
-      else if (i < g_nOpPtrs - 3 &&
-               (g_opPtr[i + 2]->op   == oLA          ||
-                g_opPtr[i + 2]->op   == oLAS)        &&
-                g_opPtr[i + 3]->op   == oLIB         &&
-               (g_opPtr[i + 3]->arg2 == lbSTRCPY     ||
-                g_opPtr[i + 3]->arg2 == lbSTRCPYX    ||
-                g_opPtr[i + 3]->arg2 == lbSTR2SSTR   ||
-                g_opPtr[i + 3]->arg2 == lbSTR2SSTRX))
-        {
-          popt_DeletePCode(i + 1);
-          nchanges++;
-        }
-
-      /* CASE 3:
-       *
-       *    LAC
-       *    LIB STRDUP
        *    LD/LDS/PUSH string-allocation
        *    LIB aaa
        */
 
       else if (i < g_nOpPtrs - 3 &&
-               (g_opPtr[i + 2]->op   == oLD           ||
-                g_opPtr[i + 2]->op   == oLDS          ||
-                g_opPtr[i + 2]->op   == oPUSH         ||
-                g_opPtr[i + 2]->op   == oPUSHB)       &&
-                g_opPtr[i + 3]->op   == oLIB          &&
-               (g_opPtr[i + 3]->arg2 == lbSSTRCPY2    ||
-                g_opPtr[i + 3]->arg2 == lbSSTRCPYX2   ||
-                g_opPtr[i + 3]->arg2 == lbSSTR2STR2   ||
-                g_opPtr[i + 3]->arg2 == lbSSTR2STRX2  ||
-                g_opPtr[i + 3]->arg2 == lbSSTRDUP     ||
-                g_opPtr[i + 3]->arg2 == lbSSTRCAT     ||
-                g_opPtr[i + 3]->arg2 == lbSTRCATSSTR  ||
-                g_opPtr[i + 3]->arg2 == lbSSTRCMP     ||
-                g_opPtr[i + 3]->arg2 == lbSTRCMPSSTR))
+               (g_opPtr[i + 2]->op   == oLD          ||
+                g_opPtr[i + 2]->op   == oLDS         ||
+                g_opPtr[i + 2]->op   == oPUSH        ||
+                g_opPtr[i + 2]->op   == oPUSHB)      &&
+                g_opPtr[i + 3]->op   == oLIB         &&
+               (g_opPtr[i + 3]->arg2 == lbSTRCPY2    ||
+                g_opPtr[i + 3]->arg2 == lbSTRCPYX2   ||
+                g_opPtr[i + 3]->arg2 == lbSTRDUP     ||
+                g_opPtr[i + 3]->arg2 == lbSTRCAT     ||
+                g_opPtr[i + 3]->arg2 == lbSTRCMP))
         {
           popt_DeletePCode(i + 1);
         }
 
-      /* CASE 4:
-       *    , , , ,
+      /* CASE 2:
        *
        *    LAC
        *    LIB STRDUP
@@ -231,10 +162,8 @@ static int16_t popt_StringConstOptimize(void)
                (g_opPtr[i + 3]->op   == oLA          ||
                 g_opPtr[i + 3]->op   == oLAS)        &&
                 g_opPtr[i + 4]->op   == oLIB         &&
-               (g_opPtr[i + 4]->arg2 == lbSSTRCPY    ||
-                g_opPtr[i + 4]->arg2 == lbSSTRCPYX   ||
-                g_opPtr[i + 4]->arg2 == lbSSTR2STR   ||
-                g_opPtr[i + 4]->arg2 == lbSSTR2STRX))
+               (g_opPtr[i + 4]->arg2 == lbSTRCPY    ||
+                g_opPtr[i + 4]->arg2 == lbSTRCPYX))
         {
           popt_DeletePCode(i + 1);
           nchanges++;

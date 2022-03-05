@@ -92,16 +92,16 @@
 #define sCHAR            0x4e
 #define sREAL            0x4f
 #define sSTRING          0x50
-#define sSHORTSTRING     0x51
-#define sSTRING_CONST    0x52
-#define sPOINTER         0x53
-#define sSCALAR          0x54
-#define sSCALAR_OBJECT   0x55
-#define sSUBRANGE        0x56
-#define sSET             0x57
-#define sARRAY           0x58
-#define sRECORD          0x59
-#define sRECORD_OBJECT   0x5a
+#define sSTRING_CONST    0x51
+#define sPOINTER         0x52
+#define sSCALAR          0x53
+#define sSCALAR_OBJECT   0x54
+#define sSUBRANGE        0x55
+#define sSET             0x56
+#define sARRAY           0x57
+#define sRECORD          0x58
+#define sRECORD_OBJECT   0x59
+#define sVAR_PARM        0x5a
 
 /* Token Values 0x5B-0x60 (except 0x5F) are for ASCII character tokens:
  * '[', '\', ']', '^', '_', '`'
@@ -109,8 +109,7 @@
 
 /* Token Values 0x61-0x7a are SYMBOL TABLE definitions */
 
-#define sVAR_PARM        0x61
-#define sUNITNAME        0x62
+#define sUNITNAME        0x61
 
 /* Token Values 0x7b-0x7f are for ASCII character tokens:
  * '{', '|', '}''~', DEL

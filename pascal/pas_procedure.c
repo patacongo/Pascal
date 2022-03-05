@@ -644,10 +644,6 @@ static void pas_ReadText(void)
         pas_GenerateIoOperation(xREAD_STRING);
         break;
 
-      case exprShortStringPtr :
-        pas_GenerateIoOperation(xREAD_SHORTSTRING);
-        break;
-
       default :
         error(eINVARG);
         break;
@@ -697,7 +693,6 @@ static void pas_ReadBinary(uint16_t fileSize)
       /* Complex types */
 
       case sSTRING :
-      case sSHORTSTRING :
       case sARRAY :
       case sRECORD :
         size = g_tknPtr->sParm.v.vSize;
@@ -1162,14 +1157,16 @@ static void pas_WriteText(void)
         /* Set the file number, offset and size on the stack
          *
          * WRITE_STRING: TOS(0) = Field width
-         *               TOS(1) = Write address
-         *               TOS(2) = Write size
-         *               TOS(3) = File number
+         *               TOS(1) = Fake write string buffer allocation size
+         *               TOS(2) = Write string buffer address
+         *               TOS(3) = Write string size
+         *               TOS(4) = File number
          */
 
         pas_GenerateSimple(opDUP);
         pas_GenerateDataOperation(opPUSH, size);
         pas_GenerateDataOperation(opLAC, (uint16_t)offset);
+        pas_GenerateDataOperation(opPUSH, size);
         pas_GenerateDataOperation(opPUSH, fieldWidth);
         pas_GenerateIoOperation(xWRITE_STRING);
 
@@ -1185,14 +1182,16 @@ static void pas_WriteText(void)
         uint16_t fieldWidth = pas_WriteFieldWidth();
 
         /* WRITE_STRING: TOS(0) = Field width
-         *               TOS(1) = Write address
-         *               TOS(2) = Write size
-         *               TOS(3) = File number
+         *               TOS(1) = Fake buffer allocation size
+         *               TOS(2) = Write address
+         *               TOS(3) = Write size
+         *               TOS(4) = File number
          */
 
         pas_GenerateSimple(opDUP);
         pas_GenerateDataOperation(opPUSH, size);
         pas_GenerateDataOperation(opLAC, offset);
+        pas_GenerateDataOperation(opPUSH, size);
         pas_GenerateDataOperation(opPUSH, fieldWidth);
         pas_GenerateIoOperation(xWRITE_STRING);
 
@@ -1314,17 +1313,6 @@ static void pas_WriteText(void)
             pas_GenerateIoOperation(xWRITE_STRING);
             break;
 
-          case exprShortString :
-            /* WRITE_SHORTSTRING: TOS(0) = Field width
-             *                    TOS(1) = Write address
-             *                    TOS(2) = Write size
-             *                    TOS(3) = String allocation size (not used)
-             *                    TOS(4) = File number
-             */
-
-            pas_GenerateIoOperation(xWRITE_SHORTSTRING);
-            break;
-
           default :
             error(eWRITEPARM);
             break;
@@ -1421,7 +1409,6 @@ static void pas_WriteBinary(uint16_t fileSize)
       /* Complex types */
 
       case sSTRING :
-      case sSHORTSTRING :
       case sARRAY :
       case sRECORD :
         size = g_tknPtr->sParm.v.vSize;
@@ -1473,8 +1460,6 @@ static void pas_WriteBinary(uint16_t fileSize)
 
 static void pas_DirectoryProc(uint16_t opCode)
 {
-  exprType_t exprType;
-
   /* FORM: 'chdir' '(' string-expression ')' */
 
   getToken();
@@ -1483,19 +1468,7 @@ static void pas_DirectoryProc(uint16_t opCode)
 
   /* Get the string expression */
 
-  exprType = pas_Expression(exprString, NULL);
-
-  /* If this is a short string, then discard the string alloc size at the
-   * top of the stack in order to convert to a standard (but read-only)
-   * string.  The optimizer should remove these.
-   *
-   * This allows us to have a single xCHDIR or all string types.
-   */
-
-  if (exprType == exprShortString)
-    {
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
+  pas_Expression(exprString, NULL);
 
   /* Now we can generate the directory operation */
 
@@ -1574,7 +1547,7 @@ static void pas_NewProc(void)
            * time.
            */
 
-          if (varType == sSTRING || varType == sSHORTSTRING)
+          if (varType == sSTRING)
             {
               pas_InitializeNewString(baseTypePtr);
             }
@@ -1775,7 +1748,6 @@ static void pas_StrProc(void)
   exprType_t exprType;
   uint16_t fieldWidth;
   uint16_t stdOpCode;
-  uint16_t shortOpCode;
   uint16_t opCode;
 
   /* FORM: 'str' '(' integer-expression ',' string-variable  ')'
@@ -1794,27 +1766,22 @@ static void pas_StrProc(void)
   if (exprType == exprInteger || exprType == exprShortInteger)
     {
       stdOpCode   = lbINTSTR;
-      shortOpCode = lbINTSSTR;
     }
   else if (exprType == exprWord || exprType == exprShortWord)
     {
       stdOpCode   = lbWORDSTR;
-      shortOpCode = lbWORDSSTR;
     }
   else if (exprType == exprLongInteger)
     {
       stdOpCode   = lbLONGSTR;
-      shortOpCode = lbLONGSSTR;
     }
   else if (exprType == exprLongWord)
     {
       stdOpCode   = lbULONGSTR;
-      shortOpCode = lbULONGSSTR;
     }
   else if (exprType == exprReal)
     {
       stdOpCode   = lbREALSTR;
-      shortOpCode = lbREALSSTR;
     }
   else
     {
@@ -1836,10 +1803,6 @@ static void pas_StrProc(void)
   if (g_token == sSTRING)
     {
       opCode = stdOpCode;
-    }
-  else if (g_token == sSHORTSTRING)
-    {
-      opCode = shortOpCode;
     }
   else
     {
@@ -1883,16 +1846,8 @@ static void pas_InsertProc(void)
 
   /* The first argument must be an string value */
 
-  exprType = pas_Expression(exprAnyString, NULL);
-  if (exprType == exprShortString)
-    {
-      /* Short strings can be converted to read-only standard strings by
-       * simply discarding the allocation size at the top of the stack.
-       */
-
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
-  else if (exprType != exprString)
+  exprType = pas_Expression(exprString, NULL);
+  if (exprType != exprString)
     {
       error(eINVARG);
     }
@@ -1905,10 +1860,6 @@ static void pas_InsertProc(void)
   if (g_token == sSTRING)
     {
       pas_GenerateStackReference(opLAS, g_tknPtr);
-    }
-  else if (g_token == sSHORTSTRING)
-    {
-      error(eNOTYET);
     }
   else
     {
@@ -1959,10 +1910,6 @@ static void pas_DeleteProc(void)
   if (g_token == sSTRING)
     {
       pas_GenerateStackReference(opLAS, g_tknPtr);
-    }
-  else if (g_token == sSHORTSTRING)
-    {
-      error(eNOTYET);
     }
   else
     {
@@ -2021,9 +1968,9 @@ static void pas_FillCharProc(void)
 
   /* The first parameter must be a standard string LValue */
 
-  if (g_token == sSTRING || g_token == sSHORTSTRING)
+  if (g_token == sSTRING)
     {
-      opCode = (g_token == sSHORTSTRING) ? lbSFILLCHAR : lbFILLCHAR;
+      opCode = lbFILLCHAR;
       pas_GenerateStackReference(opLAS, g_tknPtr);
     }
   else
@@ -2096,16 +2043,8 @@ static void pas_ValProc(void)  /* VAL procedure */
 
   /* The first argument must be an string value */
 
-  exprType = pas_Expression(exprAnyString, NULL);
-  if (exprType == exprShortString)
-    {
-      /* Short strings can be converted to read-only standard strings by
-       * simply discarding the allocation size at the top of the stack.
-       */
-
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
-  else if (exprType != exprString)
+  exprType = pas_Expression(exprString, NULL);
+  if (exprType != exprString)
     {
       error(eINVARG);
     }
@@ -2219,8 +2158,7 @@ static void pas_InitializeNewRecord(symbol_t *typePtr)
             {
               error(eHUH);
             }
-          else if (parentTypePtr->sParm.t.tType == sSTRING ||
-                   parentTypePtr->sParm.t.tType == sSHORTSTRING)
+          else if (parentTypePtr->sParm.t.tType == sSTRING)
             {
               /* Get the address of the string field to be initialized at the
                * top of the stack.
@@ -2304,7 +2242,6 @@ static void pas_InitializeNewArray(symbol_t *typePtr)
   if (baseTypePtr->sParm.t.tType == sFILE        ||
       baseTypePtr->sParm.t.tType == sTEXTFILE    ||
       baseTypePtr->sParm.t.tType == sSTRING      ||
-      baseTypePtr->sParm.t.tType == sSHORTSTRING ||
       baseTypePtr->sParm.t.tType == sRECORD      ||
       baseTypePtr->sParm.t.tType == sARRAY)
     {
@@ -2360,7 +2297,6 @@ static void pas_InitializeNewArray(symbol_t *typePtr)
                 break;
 
               case sSTRING :
-              case sSHORTSTRING :
                 pas_InitializeNewString(baseTypePtr);
                 break;
 
@@ -2585,9 +2521,6 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
     case sSTRING :
       return sSTRING_SIZE;
 
-    case sSHORTSTRING :
-      return sSHORTSTRING_SIZE;
-
     case sARRAY :
     case sRECORD :
       return baseTypePtr->sParm.t.tAllocSize;
@@ -2700,11 +2633,6 @@ int pas_ActualParameterList(symbol_t *procPtr)
               size += sSTRING_SIZE;
               break;
 
-            case sSHORTSTRING :
-              pas_Expression(exprShortString, typePtr);
-              size += sSHORTSTRING_SIZE;
-              break;
-
             case sSUBRANGE :
               pas_Expression(exprInteger, typePtr);
               size += sINT_SIZE;
@@ -2785,7 +2713,6 @@ int pas_ActualParameterList(symbol_t *procPtr)
                     case sSET :
                     case sREAL :
                     case sSTRING :
-                    case sSHORTSTRING :
                     case sRECORD :
                     case sRECORD_OBJECT :
                     case sFILE :

@@ -244,17 +244,13 @@ struct libexec_attr_s
   /* Read-only data block */
 
   uint8_t  *rodata;   /* Address of read-only data block */
-  pasSize_t rosize;   /* Size of read-only data block */
+  pasSize_t roSize;   /* Size of read-only data block */
 
   /* Allocate for variable storage */
 
-  pasSize_t strsize;  /* String storage size */
-  pasSize_t stksize;  /* Pascal stack size */
-  pasSize_t hpsize;   /* Heap storage size */
-
-  /* String allocation configuration */
-
-  pasSize_t stralloc; /* Size of string buffer allocation */
+  pasSize_t strSize;  /* String storage size */
+  pasSize_t stkSize;  /* Pascal stack size */
+  pasSize_t hpSize;   /* Heap storage size */
 };
 
 /* This structure defines the current state of the p-code interpreter.  It
@@ -307,20 +303,19 @@ struct libexec_s
   /* Info needed to perform a simulated reset.  Memory organization:
    *
    *  0                                   : String stack
-   *  strsize                             : RO-only data
-   *  strsize + rosize                    : "Normal" Pascal stack
-   *  strsize + rosize + stksize          : Heap stack
-   *  strsize + rosize + stksize + hpsize : "Normal" Pascal stack
+   *  strSize                             : RO-only data
+   *  strSize + roSize                    : "Normal" Pascal stack
+   *  strSize + roSize + stkSize          : Heap stack
+   *  strSize + roSize + stkSize + hpSize : "Normal" Pascal stack
    */
 
-  pasSize_t strsize;    /* String stack size */
-  pasSize_t rosize;     /* Read-only stack size */
-  pasSize_t stksize;    /* Pascal stack size */
-  pasSize_t hpsize;     /* Heap stack size */
-  pasSize_t stacksize;  /* Total memory allocation */
+  pasSize_t strSize;    /* String stack size */
+  pasSize_t roSize;     /* Read-only stack size */
+  pasSize_t stkSize;    /* Pascal stack size */
+  pasSize_t hpSize;     /* Heap stack size */
+  pasSize_t stackSize;  /* Total memory allocation */
 
   pasSize_t entry;      /* Entry point */
-  pasSize_t stralloc;   /* String buffer allocation size */
   int16_t   exitCode;
 
   /* Memory management */

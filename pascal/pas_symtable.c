@@ -51,6 +51,7 @@
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "pas_errcodes.h"
+#include "pas_machine.h"
 
 #include "pas_main.h"
 #include "pas_initializer.h" /* for pas_AddFileInitializer() */
@@ -709,8 +710,9 @@ void pas_PrimeSymbolTable(unsigned long symbolTableSize)
   typePtr = pas_AddTypeDefine("STRING", sSTRING, sSTRING_SIZE, NULL);
   if (typePtr)
     {
-      g_parentString            = typePtr;
-      typePtr->sParm.t.tSubType = sCHAR;
+      g_parentString             = typePtr;
+      typePtr->sParm.t.tSubType  = sCHAR;
+      typePtr->sParm.t.tMaxValue = STRING_BUFFER_SIZE;
     }
 
   /* Add the standard files to the symbol table */

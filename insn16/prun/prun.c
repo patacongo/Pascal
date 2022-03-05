@@ -63,7 +63,6 @@ struct prunArgs_s
   int32_t     strStackSize;  /* String stack size to allocate */
   int32_t     pasStackSize;  /* Pascal run-time stack to allocate */
   int32_t     hpStackSize;   /* Heap memory to allocate */
-  int32_t     strAllocSize;  /* Allocation size per standard string */
 #ifdef CONFIG_PASCAL_DEBUGGER
   int         debugger;      /* > 0:  Run the debug monitor */
 #endif
@@ -140,7 +139,6 @@ static void prun_showusage(const char *progname)
 static void prun_ParseArgs(int argc, char **argv, prunArgs_t *args)
 {
   int option_index;
-  int alloc;
   int size;
   int c;
 
@@ -150,7 +148,6 @@ static void prun_ParseArgs(int argc, char **argv, prunArgs_t *args)
   args->strStackSize = DEFAULT_STKSTR_SIZE;
   args->pasStackSize = DEFAULT_STACK_SIZE;
   args->hpStackSize  = DEFAULT_HPSTK_SIZE;
-  args->strAllocSize = STRING_BUFFER_SIZE;
 #ifdef CONFIG_PASCAL_DEBUGGER
   args->debugger     = 0;
 #endif
@@ -173,17 +170,6 @@ static void prun_ParseArgs(int argc, char **argv, prunArgs_t *args)
         {
           switch (c)
             {
-            case 'a' :
-              alloc = atoi(optarg);
-              if (alloc < 0)
-                {
-                  fprintf(stderr, "ERROR: String buffer size\n");
-                  prun_showusage(argv[0]);
-                }
-
-              args->strAllocSize = (alloc + 1) & ~1;
-              break;
-
             case 'n' :
               size = atoi(optarg);
               if (size < 0)
@@ -272,8 +258,8 @@ int main(int argc, char *argv[], char *envp[])
 
   /* Initialize the P-machine and load the POFF file */
 
-  handle = libexec_Load(fileName, args.strAllocSize, args.strStackSize,
-                        args.pasStackSize, args.hpStackSize);
+  handle = libexec_Load(fileName, args.strStackSize, args.pasStackSize,
+                        args.hpStackSize);
   if (handle == NULL)
     {
       fprintf(stderr, "ERROR: Could not load %s\n", fileName);

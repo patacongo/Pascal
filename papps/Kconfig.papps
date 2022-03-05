@@ -53,12 +53,6 @@ config PASCAL_STARTUP_STRSIZE
 	---help---
 		Total stack memory set aside for strings.
 
-config PASCAL_STARTUP_STRALLOC
-	int "Pascal start-up string stack alloc"
-	default 128
-	---help---
-		String memory allocation per standard string instantiation.
-
 config PASCAL_STARTUP_HEAPSIZE
 	int "Pascal start-up heap size"
 	default 256

@@ -206,7 +206,7 @@ static void pdbg_ExecCommand(struct libexec_s *st, enum command_e cmd, uint32_t 
           printf("Too many watchpoints\n");
           st->lastCmd = eCMD_NONE;
         }
-      else if (value >= st->stacksize)
+      else if (value >= st->stackSize)
         {
           printf("Invalid address for watchpoint\n");
           st->lastCmd = eCMD_NONE;
@@ -403,7 +403,7 @@ static pasSize_t pdbg_PrintStack(struct libexec_s *st, pasSize_t sp, int16_t nit
 {
   int32_t isp;
 
-  if ((st->sp < st->stacksize) && (sp <= st->sp))
+  if ((st->sp < st->stackSize) && (sp <= st->sp))
     {
       isp = BTOISTACK(sp);
       printf("SP:%04" PRIx16 "  %04" PRIx16 "\n",
@@ -624,7 +624,7 @@ static void pdbg_DebugPCode(struct libexec_s *st)
           st->traceArray[st->traceIndex].wp = 0;
         }
 
-      if (st->sp < st->stacksize)
+      if (st->sp < st->stackSize)
         {
           st->traceArray[st->traceIndex].tos = st->dstack.i[BTOISTACK(st->sp)];
         }

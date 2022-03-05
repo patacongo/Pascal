@@ -106,9 +106,8 @@ enum exprType_e
 
   exprUnknown         = 0x00,  /* value unknown */
   exprAnyOrdinal      = 0x01,  /* any ordinal type */
-  exprAnyString       = 0x02,  /* any string type */
-  exprAnyPointer      = 0x03,  /* any pointer type */
-  exprEmptySet        = 0x04,  /* the empty set */
+  exprAnyPointer      = 0x02,  /* any pointer type */
+  exprEmptySet        = 0x03,  /* the empty set */
 
   /* Standard expression types */
 
@@ -123,10 +122,9 @@ enum exprType_e
   exprReal            = 0x18,  /* real value */
   exprScalar          = 0x19,  /* scalar(integer) value */
   exprString          = 0x1a,  /* variable length string reference */
-  exprShortString     = 0x1b,  /* variable length string reference */
-  exprSet             = 0x1c,  /* set(integer) value */
-  exprFile            = 0x1d,  /* file */
-  exprRecord          = 0x1e,  /* record */
+  exprSet             = 0x1b,  /* set(integer) value */
+  exprFile            = 0x1c,  /* file */
+  exprRecord          = 0x1d,  /* record */
 
   /* Expressions that evaluate to pointers to standard type */
 
@@ -141,10 +139,9 @@ enum exprType_e
   exprRealPtr         = 0x98,  /* pointer to a real value */
   exprScalarPtr       = 0x99,  /* pointer to a scalar value */
   exprStringPtr       = 0x9a,  /* variable length string reference */
-  exprShortStringPtr  = 0x9b,  /* variable length string reference */
-  exprSetPtr          = 0x9c,  /* pointer to a set value */
-  exprFilePtr         = 0x9d,  /* pointer to a file */
-  exprRecordPtr       = 0x9e   /* pointer to a record */
+  exprSetPtr          = 0x9b,  /* pointer to a set value */
+  exprFilePtr         = 0x9c,  /* pointer to a file */
+  exprRecordPtr       = 0x9d   /* pointer to a record */
 };
 
 typedef enum exprType_e exprType_t;

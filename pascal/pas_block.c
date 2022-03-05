@@ -445,7 +445,7 @@ static symbol_t *pas_DeclareVar(bool *pInitializer)
            * must be set up at run time.
            */
 
-          if (varType == sSTRING || varType == sSHORTSTRING)
+          if (varType == sSTRING)
             {
               pas_AddStringInitializer(varPtr);
             }
@@ -755,7 +755,7 @@ static void pas_FunctionDeclaration(void)
        * should export every function declared at level zero.
        */
 
-      if ((g_level == 1) && (FP->kind == eIsUnit))
+      if (g_level == 1 && FP->kind == eIsUnit)
         {
           /* EXPORT the function symbol. */
 
@@ -873,10 +873,10 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
       else if (g_constantInt <= 0) error(eINVCONST);
       else
         {
-          /* Create a new, unique, un-named SHORTSTRING type. */
+          /* Create a new, unique, un-named STRING type. */
 
-          typePtr = pas_AddTypeDefine(typeName, sSHORTSTRING,
-                                      sSHORTSTRING_SIZE, NULL);
+          typePtr = pas_AddTypeDefine(typeName, sSTRING,
+                                      sSTRING_SIZE, NULL);
 
           /* Save the size of the short string buffer allocation in the
            * tMaxValue field.
@@ -884,12 +884,13 @@ static symbol_t *pas_CheckShortString(symbol_t *typePtr, char *typeName)
 
           if (typePtr != NULL)
             {
+              typePtr->sParm.t.tSubType  = sCHAR;
               typePtr->sParm.t.tMaxValue = g_tknUInt;
+
+              /* Return the size of an allocated instance of this type. */
+
+              g_dwVarSize = typePtr->sParm.t.tAllocSize;
             }
-
-          /* Return the size of an allocated instance of this type. */
-
-          g_dwVarSize = typePtr->sParm.t.tAllocSize;
 
           /* Verify that the correct token terminated the size
            * specification.  This could be either ')' or ']'
@@ -2664,7 +2665,7 @@ static void pas_AddVarInitializer(symbol_t *varPtr, symbol_t *typePtr)
 
       /* Check for string initializers */
 
-      else if (baseType == sSTRING || baseType == sSHORTSTRING)
+      else if (baseType == sSTRING)
         {
           /* Let the common constant expression logic handle this case */
 
@@ -2770,8 +2771,7 @@ static void pas_AddRecordInitializers(symbol_t *varPtr, symbol_t *typePtr)
             {
               error(eHUH);
             }
-          else if (parentTypePtr->sParm.t.tType == sSTRING ||
-                   parentTypePtr->sParm.t.tType == sSHORTSTRING)
+          else if (parentTypePtr->sParm.t.tType == sSTRING)
             {
                pas_AddRecordObjectInitializer(varPtr, recordObjectPtr);
             }
@@ -2830,7 +2830,6 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
   if (baseTypePtr->sParm.t.tType == sFILE        ||
       baseTypePtr->sParm.t.tType == sTEXTFILE    ||
       baseTypePtr->sParm.t.tType == sSTRING      ||
-      baseTypePtr->sParm.t.tType == sSHORTSTRING ||
       baseTypePtr->sParm.t.tType == sRECORD)
     {
       symbol_t  varInfo;
@@ -2876,7 +2875,6 @@ static void pas_AddArrayInitializers(symbol_t *varPtr, symbol_t *typePtr)
                 break;
 
               case sSTRING :
-              case sSHORTSTRING :
                 pas_AddStringInitializer(&varInfo);
                 break;
 

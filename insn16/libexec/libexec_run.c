@@ -1357,12 +1357,11 @@ static int pexec32(struct libexec_s *st, uint8_t opcode, uint8_t imm8,
 struct libexec_s *libexec_Initialize(struct libexec_attr_s *attr)
 {
   struct libexec_s *st;
-  pasSize_t stacksize;
-  pasSize_t adjusted_strsize;
-  pasSize_t adjusted_rosize;
-  pasSize_t adjusted_stksize;
-  pasSize_t adjusted_hpsize;
-  pasSize_t adjusted_stralloc;
+  pasSize_t stackSize;
+  pasSize_t adjustedStrSize;
+  pasSize_t adjustedRoSize;
+  pasSize_t adjustedStkSize;
+  pasSize_t adjustedHpSize;
 
   /* Allocate the p-machine state stucture */
 
@@ -1379,20 +1378,18 @@ struct libexec_s *libexec_Initialize(struct libexec_attr_s *attr)
 
   /* Align sizes of memory regions to 16-bit boundaries. */
 
-  adjusted_strsize  = (attr->strsize + 1) & ~1;
-  adjusted_rosize   = (attr->rosize  + 1) & ~1;
-  adjusted_stksize  = (attr->stksize + 1) & ~1;
-  adjusted_hpsize   = (attr->hpsize  + 1) & ~1;
-
-  adjusted_stralloc = (attr->stralloc  + 1) & ~1;
+  adjustedStrSize  = INT_ALIGNUP(attr->strSize);
+  adjustedRoSize   = INT_ALIGNUP(attr->roSize);
+  adjustedStkSize  = INT_ALIGNUP(attr->stkSize);
+  adjustedHpSize   = INT_ALIGNUP(attr->hpSize);
 
   /* Allocate the pascal stack.  Organization is string stack, then
    * constant data, then "normal" pascal stack, ending with the heap area.
    */
 
-  stacksize    = adjusted_strsize + adjusted_rosize + adjusted_stksize +
-                 adjusted_hpsize;
-  st->dstack.b = (uint8_t *)malloc(stacksize);
+  stackSize    = adjustedStrSize + adjustedRoSize + adjustedStkSize +
+                 adjustedHpSize;
+  st->dstack.b = (uint8_t *)malloc(stackSize);
   if (!st->dstack.b)
     {
       free(st);
@@ -1401,20 +1398,19 @@ struct libexec_s *libexec_Initialize(struct libexec_attr_s *attr)
 
   /* Copy the rodata into the stack */
 
-  if (attr->rodata != NULL && attr->rosize > 0)
+  if (attr->rodata != NULL && attr->roSize > 0)
     {
-      memcpy(&st->dstack.b[attr->strsize], attr->rodata, attr->rosize);
+      memcpy(&st->dstack.b[attr->strSize], attr->rodata, attr->roSize);
     }
 
   /* Set up info needed to perform a simulated reset */
 
-  st->strsize      = adjusted_strsize;
-  st->rosize       = adjusted_rosize;
-  st->stksize      = adjusted_stksize;
-  st->hpsize       = adjusted_hpsize;
-  st->stacksize    = stacksize;
+  st->strSize      = adjustedStrSize;
+  st->roSize       = adjustedRoSize;
+  st->stkSize      = adjustedStkSize;
+  st->hpSize       = adjustedHpSize;
+  st->stackSize    = stackSize;
 
-  st->stralloc     = adjusted_stralloc;
   st->entry        = attr->entry;
 
   /* Set certain critical variables to a known state */
@@ -1512,15 +1508,15 @@ void libexec_Reset(struct libexec_s *st)
   /* Set up the memory map.  Memory organization will be:
    *
    *  0                                   : String stack
-   *  strsize                             : RO-only data
-   *  strsize + rosize                    : "Normal" Pascal stack
-   *  strsize + rosize + stksize          : Heap stack
-   *  strsize + rosize + stksize + hpsize : "Normal" Pascal stack
+   *  strSize                             : RO-only data
+   *  strSize + roSize                    : "Normal" Pascal stack
+   *  strSize + roSize + stkSize          : Heap stack
+   *  strSize + roSize + stkSize + hpSize : "Normal" Pascal stack
   */
 
-  st->rop   = st->strsize;
-  st->spb   = st->rop + st->rosize;
-  st->hpb   = st->spb + st->stksize;
+  st->rop   = st->strSize;
+  st->spb   = st->rop + st->roSize;
+  st->hpb   = st->spb + st->stkSize;
 
   /* Initialize the emulated P-Machine registers */
 
@@ -1551,6 +1547,8 @@ void libexec_Reset(struct libexec_s *st)
   st->dstack.i[dndx + 2] = 0;      /* Nesting Level */
 
   st->spb               += _FSIZE;
+
+  st->exitCode           = 0;
 
   /* [Re]-initialize the memory manager */
 

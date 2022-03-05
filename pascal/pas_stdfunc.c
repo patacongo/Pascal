@@ -176,7 +176,6 @@ static exprType_t pas_AddrFunc(void)
       case sCHAR :
       case sREAL :
       case sSTRING :
-      case sSHORTSTRING :
       case sPOINTER :
       case sSCALAR :
       case sSUBRANGE :
@@ -523,8 +522,6 @@ static void pas_CardFunc(void)
 
 static void pas_CopyFunc(void)
 {
-  exprType_t exprType;
-
   /* FORM: 'copy' '(' string-expression ',' integer-expression ','
    *        integer-expression ')'
    */
@@ -535,19 +532,7 @@ static void pas_CopyFunc(void)
 
   /* Get the string expression */
 
-  exprType = pas_Expression(exprString, NULL);
-
-  /* If this is a short string, then discard the string alloc size at the
-   * top of the stack in order to convert to a standard (but read-only)
-   * string.  The optimizer should remove these.
-   *
-   * This allows us to have a single lbCOPYSUBSTR or all string types.
-   */
-
-  if (exprType == exprShortString)
-    {
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
+  pas_Expression(exprString, NULL);
 
   /* A comma should separate the arguments */
 
@@ -583,8 +568,6 @@ static void pas_CopyFunc(void)
 
 static void pas_PosFunc(void)
 {
-  exprType_t exprType;
-
   /* FORM: 'pos' '(' string-expression ',' string-expression [',' integer-expression ')' */
 
   /* Verify that the argument list is enclosed in parentheses */
@@ -593,19 +576,7 @@ static void pas_PosFunc(void)
 
   /* Get the first string expression */
 
-  exprType = pas_Expression(exprString, NULL);
-
-  /* If this is a short string, then discard the string alloc size at the
-   * top of the stack in order to convert to a standard (but read-only)
-   * string.  The optimizer should remove these.
-   *
-   * This allows us to have a single lbFINDSUBSTR or all string types.
-   */
-
-  if (exprType == exprShortString)
-    {
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
+  pas_Expression(exprString, NULL);
 
   /* A comma should separate the arguments */
 
@@ -614,11 +585,7 @@ static void pas_PosFunc(void)
 
   /* Get the second string expression */
 
-  exprType = pas_Expression(exprString, NULL);
-  if (exprType == exprShortString)
-    {
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
+  pas_Expression(exprString, NULL);
 
   /* The second string may be followed by an optional start offset */
 
@@ -675,10 +642,6 @@ static void pas_ConcatFunc(void)
         {
           opCode = lbSTRCAT;
         }
-      else if (exprType == exprShortString)
-        {
-          opCode = lbSTRCATSSTR;
-        }
       else
         {
           error(eEXPRTYPE);
@@ -704,8 +667,6 @@ static void pas_ConcatFunc(void)
 
 static void pas_DirectoryFunc(uint16_t opCode)
 {
-  exprType_t exprType;
-
   /* FORM: 'setcurrentdir | createdir | removedir' '(' string-expression ')' */
 
   /* Verify that the argument list is enclosed in parentheses */
@@ -714,19 +675,7 @@ static void pas_DirectoryFunc(uint16_t opCode)
 
   /* Get the string expression */
 
-  exprType = pas_Expression(exprString, NULL);
-
-  /* If this is a short string, then discard the string alloc size at the
-   * top of the stack in order to convert to a standard (but read-only)
-   * string.  The optimizer should remove these.
-   *
-   * This allows us to have a single xCHDIR or all string types.
-   */
-
-  if (exprType == exprShortString)
-    {
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
+  pas_Expression(exprString, NULL);
 
   /* Now we can generate the directory operation */
 
@@ -842,8 +791,6 @@ static void pas_ParseDirSearchRec(void)
 
 static void pas_OpenDirFunc(void)
 {
-  exprType_t exprType;
-
   /* FORM: 'opendir' '(' string-expression ',' direntry-variable ')' */
 
   /* Verify that the argument list is enclosed in parentheses */
@@ -852,17 +799,7 @@ static void pas_OpenDirFunc(void)
 
   /* Get the string expression */
 
-  exprType = pas_Expression(exprString, NULL);
-
-  /* If this is a short string, then discard the string alloc size at the
-   * top of the stack in order to convert to a standard (but read-only)
-   * string.  The optimizer should remove these.
-   */
-
-  if (exprType == exprShortString)
-    {
-      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-    }
+  pas_Expression(exprString, NULL);
 
   /* Verify that the two arguments are separated with a comma */
 

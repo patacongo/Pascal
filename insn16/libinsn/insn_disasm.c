@@ -473,12 +473,12 @@ static const char * const xName[MAX_XOP] =
 /* 0x08 */ "SEEKEOF",   "SEEKEOLN",   "ASSIGNFILE", "RESET",
 /* 0x0c */ "RESETR",    "REWRITE",    "REWRITER",   "APPEND",
 /* 0x10 */ "CLOSEFILE", "READLN",     "READPG",     "READBIN",
-/* 0x14 */ "READINT",   "READCHR",    "READSTR",    "READSSTR",
-/* 0x18 */ "READRL",    "WRITELN",    "WRITEPG",    "WRITEBIN",
-/* 0x1c */ "WRITEINT",  "WRITEWORD",  "WRITELONG",  "WRITEULONG",
-/* 0x20 */ "WRITECHR",  "WRITESTR",   "WRITESSTR",  "WRITERL",
-/* 0x24 */ "CHDIR",     "GETDIR",     "MKDIR",      "RMDIR",
-/* 0x28 */ "OPENDIR",   "READDIR",    "REWINDDIR",  "CLOSEDIR"
+/* 0x14 */ "READINT",   "READCHR",    "READSTR",    "READRL",
+/* 0x18 */ "WRITELN",   "WRITEPG",    "WRITEBIN",   "WRITEINT",
+/* 0x1c */ "WRITEWORD", "WRITELONG",  "WRITEULONG", "WRITECHR",
+/* 0x20 */ "WRITESTR",  "WRITERL",    "CHDIR",      "GETDIR",
+/* 0x24 */ "MKDIR",     "RMDIR",      "OPENDIR",    "READDIR",
+/* 0x28 */ "REWINDDIR",  "CLOSEDIR"
 };
 
 static const char invSetOp[] = "Invalid SETOP";
@@ -493,20 +493,14 @@ static const char * const sName[MAX_SETOP] =
 static const char invLbOp[] = "Invalid runtime code";
 static const char * const lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "EXIT",       "NEW",        "DISPOSE",     "GETENV",
-/* 0x04 */ "STRCPY",     "STRCPY2",    "STRCPYX",     "STRCPYX2",
-/* 0x08 */ "SSTRCPY",    "SSTRCPY2",   "SSTRCPYX",    "SSTRCPYX2",
-/* 0x0c */ "SSTR2STR",   "SSTR2STR2",  "SSTR2STRX",   "SSTR2STRX2",
-/* 0x10 */ "STR2SSTR",   "STR2SSTR2",  "STR2SSTRX",   "STR2SSTRX2",
-/* 0x14 */ "BSTR2STR",   "STR2BSTR",   "STR2BSTRX",   "STRINIT",
-/* 0x18 */ "SSTRINIT",   "STRTMP",     "STRDUP",      "SSTRDUP",
-/* 0x1c */ "MKSTKC",     "STRCAT",     "SSTRCAT",     "SSTRCATSTR",
-/* 0x20 */ "STRCATSSTR", "STRCATC",    "SSTRCATC",    "STRCMP",
-/* 0x24 */ "SSTRCMP",    "SSTRCMPSTR", "STRCMPSSTR",  "COPYSUBSTR",
-/* 0x28 */ "FINDSUBSTR", "INSERTSTR",  "DELSUBSTR",   "FILLCHAR",
-/* 0x2c */ "SFILLCHAR",  "INTSTR",     "INTSSTR",     "WORDSTR",
-/* 0x30 */ "WORDSSTR",   "LONGSTR",    "LONGSSTR",    "ULONGSTR",
-/* 0x34 */ "ULONGSSTR",  "REALSTR",    "REALSSTR",    "VAL"
+/* 0x00 */ "EXIT",      "NEW",       "DISPOSE",    "GETENV",
+/* 0x04 */ "STRCPY",    "STRCPY2",   "STRCPYX",    "STRCPYX2",
+/* 0x08 */ "BSTR2STR",  "STR2BSTR",  "STR2BSTRX",  "STRINIT",
+/* 0x0c */ "STRTMP",    "STRDUP",    "MKSTKC",     "STRCAT",
+/* 0x10 */ "STRCATC",   "STRCMP",    "COPYSUBSTR", "FINDSUBSTR",
+/* 0x14 */ "INSERTSTR", "DELSUBSTR", "FILLCHAR ",  "INTSTR",
+/* 0x18 */ "WORDSTR",   "LONGSTR",   "ULONGSTR ",  "REALSTR",
+/* 0x1c */ "VAL"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";

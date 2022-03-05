@@ -334,10 +334,10 @@ void libexec_InitializeHeap(struct libexec_s *st)
 {
   /* We can't use the memory manager if no heap was specified */
 
-  if (st->hpsize > 2 * HEAP_ALLOC_UNIT)
+  if (st->hpSize > 2 * HEAP_ALLOC_UNIT)
     {
       uint16_t     heapStart = HEAP_ALIGNUP(st->hpb);
-      uint16_t     heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpsize);
+      uint16_t     heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpSize);
       uint16_t     heapSize;
       memChunk_t  *terminus;
       freeChunk_t *initialChunk;
@@ -467,7 +467,7 @@ int libexec_Dispose(struct libexec_s *st, uint16_t address)
   /* Verify that the address being freed lies in the heap region */
 
   if (address < st->hpb + sizeof(memChunk_t) ||
-      address >= (st->hpb + st->hpsize - HEAP_ALLOC_UNIT))
+      address >= (st->hpb + st->hpSize - HEAP_ALLOC_UNIT))
     {
       return eHUH;
     }

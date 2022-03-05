@@ -136,7 +136,6 @@ static exprType_t pas_GetSetFactor(void);
 static bool       pas_GetSubSet(symbol_t *setTypePtr, bool first);
 static exprType_t pas_TypeCast(symbol_t *typePtr);
 static bool       pas_IsOrdinalExpression(exprType_t testExprType);
-static bool       pas_IsStringExpression(exprType_t testExprType);
 
 /****************************************************************************
  * Public Data
@@ -241,15 +240,9 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
         {
           if (term1Type == exprString)
             {
-              /* Duplicate the standard string on the string stack. */
+              /* Duplicate the sting on the string stack. */
 
               pas_StandardFunctionCall(lbSTRDUP);
-            }
-          else if (term1Type == exprShortString)
-            {
-              /* Duplicate the short string on the string stack. */
-
-              pas_StandardFunctionCall(lbSSTRDUP);
             }
 
           /* If we are going to add something to a char, then the result
@@ -282,7 +275,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
 
       /* Skip over string types.  These will be handled below */
 
-      if (!pas_IsStringExpression(term1Type))
+      if (term1Type != exprString)
         {
           /* Handle the case where the type of the terms differ. */
 
@@ -396,42 +389,11 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
 
                   pas_StandardFunctionCall(lbSTRCAT);
                 }
-              else if (term2Type == exprShortString)
-                {
-                  /* We are concatenating one string with another.*/
-
-                  pas_StandardFunctionCall(lbSTRCATSSTR);
-                }
               else if (term2Type == exprChar)
                 {
                   /* We are concatenating a character to the end of a string */
 
                   pas_StandardFunctionCall(lbSTRCATC);
-                }
-              else
-                {
-                  error(eTERMTYPE);
-                }
-              break;
-
-            case exprShortString :
-              if (term2Type == exprString)
-                {
-                  /* We are concatenating one string with another.*/
-
-                  pas_StandardFunctionCall(lbSSTRCATSTR);
-                }
-              else if (term2Type == exprShortString)
-                {
-                  /* We are concatenating one string with another.*/
-
-                  pas_StandardFunctionCall(lbSSTRCAT);
-                }
-              else if (term2Type == exprChar)
-                {
-                  /* We are concatenating a character to the end of a string */
-
-                  pas_StandardFunctionCall(lbSSTRCATC);
                 }
               else
                 {
@@ -1028,8 +990,9 @@ static exprType_t pas_Factor(exprType_t findExprType)
       {
         /* Final run-time stack representation is:
          *
-         *   TOS(0) : pointer to string copied to
-         *   TOS(1) : size in bytes
+         *   TOS(0) : Fake buffer allocation size
+         *   TOS(1) : Pointer to string to be copied
+         *   TOS(2) : Size of the string in bytes
          *
          * Add the string to the RO data section of the output
          * and get the offset to the string location.
@@ -1041,6 +1004,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
 
         pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
         pas_GenerateDataOperation(opLAC, offset);
+        pas_GenerateDataOperation(opPUSH, strlen(g_tokenString));
 
         /* And copy the string to string memory.  NOTE:  In many cases this
          * STRDUP is not necessary.  It is not necessary when the string is
@@ -1061,26 +1025,24 @@ static exprType_t pas_Factor(exprType_t findExprType)
     case sSTRING_CONST :
       /* Final stack representation is:
        *
-       *   TOS(0) : pointer to string
-       *   TOS(1) : size in bytes
+       *   TOS(0) : Fake buffer alloction size
+       *   TOS(1) : Pointer to string
+       *   TOS(2) : Size of string in bytes
        */
 
       pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.s.roSize);
       pas_GenerateDataOperation(opLAC, g_tknPtr->sParm.s.roOffset);
+      pas_GenerateDataOperation(opPUSH, g_tknPtr->sParm.s.roSize);
       getToken();
       factorType = exprString;
       break;
 
     case sSTRING :
-    case sSHORTSTRING :
       /* Stack representation for sSTRING is:
        *
-       *   TOS(0) = pointer to string data
-       *   TOS(1) = size in bytes
-       *
-       * For sSHORTSTRING there is also:
-       *
-       *   TOS(2) = size of string buffer
+       *   TOS(0) = Size of the allocated string buffer
+       *   TOS(1) = Pointer to string data
+       *   TOS(2) = Length of the string in bytes
        */
 
       pas_GenerateDataSize(g_tknPtr->sParm.v.vSize);
@@ -2069,7 +2031,6 @@ static exprType_t pas_BaseFactor(varInfo_t *varInfo, exprFlag_t factorFlags)
     case sLONGWORD     :
     case sREAL         :
     case sSTRING       :
-    case sSHORTSTRING  :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           symbol_t *baseTypePtr;
@@ -2322,7 +2283,6 @@ static exprType_t pas_PointerFactor(void)
 
       case sREAL :
       case sSTRING :
-      case sSHORTSTRING :
       case sFILE :
       case sTEXTFILE :
         pas_GenerateStackReference(opLAS, g_tknPtr);
@@ -2814,7 +2774,6 @@ static exprType_t pas_BasePointerFactor(symbol_t *varPtr,
 
     case sREAL         :
     case sSTRING       :
-    case sSHORTSTRING  :
       if ((factorFlags & FACTOR_INDEXED) != 0)
         {
           if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
@@ -2962,9 +2921,7 @@ static exprType_t pas_FunctionDesignator(void)
    * STRING return value containers need some special initialization.
    */
 
-  if (typePtr->sKind == sTYPE &&
-      (typePtr->sParm.t.tType == sSTRING ||
-       typePtr->sParm.t.tType == sSHORTSTRING))
+  if (typePtr->sKind == sTYPE && typePtr->sParm.t.tType == sSTRING)
     {
       /* REVISIT:  This string container really needs to be enclosed in PUSHS
        * and POPS.  Need to assure that in order to release string stack as
@@ -3468,21 +3425,6 @@ static bool pas_IsOrdinalExpression(exprType_t testExprType)
     }
 }
 
-/****************************************************************************/
-
-static bool pas_IsStringExpression(exprType_t testExprType)
-{
-  if (testExprType == exprString      ||
-      testExprType == exprShortString)
-    {
-      return true;
-    }
-  else
-    {
-      return false;
-    }
-}
-
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -3823,7 +3765,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
           haveSimple2 = true;
         }
 
-      /* Was the first expression a standard string? */
+      /* Was the first expression a sting? */
 
       if (simple1Type == exprString)
         {
@@ -3839,53 +3781,13 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
               simple1Type = exprBoolean;
               handled     = true;
             }
-          else if (simple2Type == exprShortString)
-            {
-              pas_StandardFunctionCall(lbSTRCMPSSTR);
-              pas_GenerateSimple(exprOpCodes.strOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
           else if (simple2Type == exprChar)
             {
               /* Add the character of the second simple expression to the
                * string of the first expression.
                */
 
-              pas_StandardFunctionCall(lbSSTRCATC);
-              pas_GenerateSimple(exprOpCodes.strOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
-          else
-            {
-              error(eCOMPARETYPE);
-            }
-        }
-
-      /* Was the first expression a short string? */
-
-      else if (simple1Type == exprShortString)
-        {
-          if (simple2Type == exprString)
-            {
-              pas_StandardFunctionCall(lbSSTRCMPSTR);
-              pas_GenerateSimple(exprOpCodes.strOpCode);
-
-              /* The resulting type is boolean */
-
-              simple1Type = exprBoolean;
-              handled     = true;
-            }
-          else if (simple2Type == exprShortString)
-            {
-              pas_StandardFunctionCall(lbSSTRCMP);
+              pas_StandardFunctionCall(lbSTRCATC);
               pas_GenerateSimple(exprOpCodes.strOpCode);
 
               /* The resulting type is boolean */
@@ -4139,12 +4041,8 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
       findExprType != simple1Type &&
       (findExprType != exprAnyOrdinal ||
        !pas_IsOrdinalExpression(simple1Type)) &&
-      (findExprType != exprAnyString ||
-       !pas_IsStringExpression(simple1Type)) &&
       (findExprType != exprAnyPointer ||
-       !IS_POINTER_EXPRTYPE(simple1Type)) &&
-      (!pas_IsStringExpression(findExprType) ||
-       !pas_IsStringExpression(simple1Type)))
+       !IS_POINTER_EXPRTYPE(simple1Type)))
     {
       /* Automatic conversions from INTEGER to REAL will be performed */
 
@@ -4175,7 +4073,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
        * found, then we should* convert that character to a string.
        */
 
-      else if (pas_IsStringExpression(findExprType) && simple1Type == exprChar)
+      else if (findExprType == exprString && simple1Type == exprChar)
         {
           /* Expand the character to a string on the string stack.  And
            * change the expression type to reflect this.
@@ -4191,41 +4089,6 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
         {
           error(eEXPRTYPE);
         }
-    }
-
-  /* Standard strings can be converted to whatever type of string the caller
-   * needs.  In this the TOS will be a pointer to the string in memory,
-   * preceded by the size of length of the string.
-   *
-   * Stack representation of the standard string:
-   *
-   *   TOS(0) : Address of the string in the string stack.
-   *   TOS(1) : Length of the string in bytes
-   *
-   * Stack representation of the short string:
-   *
-   *   TOS(0) - Size of the size string allocation
-   *   TOS(1) : Address of the string in the string stack.
-   *   TOS(2) : Length of the string in bytes
-   *
-   * In order to do a this conversation to a matching short string, the
-   * caller must have 1) explicitly asked for a short string, and 2) must
-   * have provided type information.  The type information is needed because
-   * we need to know the allocation size of the short string.
-   */
-
-  if (findExprType == exprShortString && simple1Type == exprString &&
-      typePtr != NULL)
-    {
-      symbol_t *baseTypePtr;
-
-      /* Convert the standard string to a short string by adding the size of
-       * short string at the top of the stack.
-       */
-
-      baseTypePtr = pas_GetBaseTypePointer(typePtr);
-      pas_GenerateDataOperation(opPUSH, baseTypePtr->sParm.t.tMaxValue);
-      simple1Type = exprShortString;
     }
 
   return simple1Type;
@@ -4246,29 +4109,14 @@ exprType_t pas_VarParameter(exprType_t varExprType, symbol_t *typePtr)
   if (typePtr != NULL && typePtr->sKind != sTYPE) error(eINVTYPE);
   g_abstractTypePtr = typePtr;
 
-  /* This function is really just an interface to the
-   * static function pas_PointerFactor with some extra error
-   * checking.
+  /* This function is really just an interface to the static function
+   * pas_PointerFactor with some extra error checking.
    */
 
   factorType = pas_PointerFactor();
   if (varExprType != exprUnknown && factorType != varExprType)
     {
-      /* Allow automatic conversions between strings and short strings */
-
-      if ((factorType == exprStringPtr &&
-           varExprType == exprShortStringPtr) ||
-          (factorType == exprShortStringPtr &&
-           varExprType == exprStringPtr))
-        {
-          /* The supplied string pointer *almost* matches.
-           * REVISIT:  Do we need to take any specific conversion actions?
-           */
-        }
-      else
-        {
-          error(eINVVARPARM);
-        }
+      error(eINVVARPARM);
     }
 
   return factorType;
@@ -4457,10 +4305,6 @@ exprType_t pas_GetExpressionType(symbol_t *sType)
           factorType = exprString;
           break;
 
-        case sSHORTSTRING :
-          factorType = exprShortString;
-          break;
-
         case sSUBRANGE :
           switch (sType->sParm.t.tSubType)
             {
@@ -4615,9 +4459,6 @@ exprType_t pas_MapVariable2ExprType(uint16_t varType, bool ordinal)
                 case sSTRING :
                 case sSTRING_CONST :
                   return exprString;  /* variable length string reference */
-
-                case sSHORTSTRING :
-                  return exprShortString;  /* short string reference */
 
                 case sFILE :
                 case sTEXTFILE :

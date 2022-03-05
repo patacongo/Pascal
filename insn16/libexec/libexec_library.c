@@ -71,6 +71,9 @@ static int      libexec_BStr2Str(struct libexec_s *st, uint16_t arrayAddress,
 static int      libexec_Str2BStr(struct libexec_s *st, uint16_t arrayAddress,
                    uint16_t arraySize, uint16_t stringBufferAddress,
                    uint16_t stringSize, uint16_t offset);
+static int      libexec_StrDup(struct libexec_s *st, uint16_t strAlloc,
+                   uint16_t strAddr, uint16_t strSize,
+                   uint16_t *strClone);
 static int      libexec_StrCat(struct libexec_s *st, uint16_t srcStringAddr,
                    uint16_t srcStringSize, uint16_t destStringAddr,
                    uint16_t *pDestStringSize, uint16_t destStrAlloc);
@@ -106,9 +109,6 @@ static int libexec_StrInit(struct libexec_s *st, uint16_t strVarAddr,
        *
        *   TOS(n)     = 16-bit pointer to the string data.
        *   TOS(n + 1) = String size
-       *
-       * NOTE:  This depends on the fact that these two fields appear at the
-       * same offset for both sSTRING and sSHORTSTRING.
        */
 
       PUTSTACK(st, strAllocAddr, strVarAddr + sSTRING_DATA_OFFSET);
@@ -188,15 +188,15 @@ static int libexec_BStr2Str(struct libexec_s *st, uint16_t arrayAddress,
 
   /* Clip the string if necessary to fit into the string buffer allocation */
 
-  if (len > st->stralloc)
+  if (len > STRING_BUFFER_SIZE)
    {
-     len = st->stralloc;
+     len = STRING_BUFFER_SIZE;
    }
 
   /* Check if there is space on the string stack for the new string buffer. */
 
 
-  if (st->csp + st->stralloc >= st->spb)
+  if (st->csp + STRING_BUFFER_SIZE >= st->spb)
     {
       errorCode = eSTRSTKOVERFLOW;
     }
@@ -205,7 +205,7 @@ static int libexec_BStr2Str(struct libexec_s *st, uint16_t arrayAddress,
       /* Allocate a string buffer on the string stack for the new string. */
 
       bufferAddress = INT_ALIGNUP(st->csp);
-      st->csp       = bufferAddress + st->stralloc;
+      st->csp       = bufferAddress + STRING_BUFFER_SIZE;
 
       /* Copy the array into the string buffer */
 
@@ -218,8 +218,9 @@ static int libexec_BStr2Str(struct libexec_s *st, uint16_t arrayAddress,
        *   TOS(n + 1) = String size
        */
 
-      PUSH(st, len);           /* String size */
-      PUSH(st, bufferAddress); /* String buffer address */
+      PUSH(st, len);                /* String size */
+      PUSH(st, bufferAddress);      /* String buffer address */
+      PUSH(st, STRING_BUFFER_SIZE); /* String buffer allocated size */
     }
 
   return errorCode;
@@ -256,6 +257,60 @@ static int libexec_Str2BStr(struct libexec_s *st, uint16_t arrayAddress,
   return errorCode;
 }
 
+static int libexec_StrDup(struct libexec_s *st, uint16_t strAlloc,
+                   uint16_t strAddr, uint16_t strSize,
+                   uint16_t *StrClone)
+{
+  const char *copySource;
+  char *copyDest;
+  int errorCode = eNOERROR;
+  uint16_t cloneAddr;
+
+  /* How big should we make the dup'ed clone string?  The same size might to
+   * small so let's use the default to be safe.
+   */
+
+  /* Check if there is space on the string stack for the new string */
+
+  if (st->csp + STRING_BUFFER_SIZE >= st->spb)
+    {
+      errorCode = eSTRSTKOVERFLOW;
+    }
+  else
+    {
+      /* Allocate space on the string stack for the new string of the same
+       * size.
+       */
+
+      cloneAddr = INT_ALIGNUP(st->csp);
+      st->csp  += STRING_BUFFER_SIZE;
+
+      /* Limit the size to the maximum size of the allocated string buffer.
+       * This can happen in cases where the string address lies in RO string
+       * memory.
+       */
+
+      if (strSize > STRING_BUFFER_SIZE)
+        {
+          strSize = STRING_BUFFER_SIZE;
+        }
+
+      /* Copy the string into the string stack */
+
+      copySource = (const char *)ATSTACK(st, strAddr); /* Pointer to original string */
+      copyDest   = (char *)ATSTACK(st, cloneAddr);     /* Pointer to new string */
+      memcpy(copyDest, copySource, strSize);
+
+      /* Return the cloned string */
+
+      StrClone[BTOISTACK(sSTRING_SIZE_OFFSET)]  = strSize;
+      StrClone[BTOISTACK(sSTRING_DATA_OFFSET)]  = cloneAddr;
+      StrClone[BTOISTACK(sSTRING_ALLOC_OFFSET)] = STRING_BUFFER_SIZE;
+    }
+
+  return errorCode;
+}
+
 static int libexec_StrCat(struct libexec_s *st, uint16_t srcStringAddr,
                           uint16_t srcStringSize, uint16_t destStringAddr,
                           uint16_t *pDestStringSize, uint16_t destStrAlloc)
@@ -265,11 +320,13 @@ static int libexec_StrCat(struct libexec_s *st, uint16_t srcStringAddr,
   char *dest;
   int errorCode = eNOERROR;
 
-  /* Check for string overflow. */
+  /* Will the concatenated string fit in the destination.  No?  Should we
+   * force a run-time error?  Or just truncate it to fit?
+   */
 
   if (srcStringSize + destStringSize > destStrAlloc)
     {
-      errorCode = eSTRSTKOVERFLOW;
+      srcStringSize = destStrAlloc - destStringSize;
     }
   else
     {
@@ -475,7 +532,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
               {
                 /* Allocate tempororary string stack */
 
-                if (st->csp + st->stralloc >= st->spb)
+                if (st->csp + STRING_BUFFER_SIZE >= st->spb)
                   {
                     errorCode = eSTRSTKOVERFLOW;
                   }
@@ -486,19 +543,19 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
                      */
 
                     addr2   = INT_ALIGNUP(st->csp);
-                    st->csp = addr2 + st->stralloc;
+                    st->csp = addr2 + STRING_BUFFER_SIZE;
 
-                    if (size > st->stralloc)
+                    if (size > STRING_BUFFER_SIZE)
                       {
-                        size = st->stralloc;
+                        size = STRING_BUFFER_SIZE;
                       }
 
                     /* Copy the string into the string stack */
 
                     size = strlen((char *)src);
-                    if (size > st->stralloc)
+                    if (size > STRING_BUFFER_SIZE)
                       {
-                        size = st->stralloc;
+                        size = STRING_BUFFER_SIZE;
                       }
 
                     dest  = (char *)ATSTACK(st, addr2);
@@ -517,285 +574,47 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       }
       break;
 
-      /* Copy pascal standard string to a pascal standard string
-       *
-       *   procedure strcpy(src : string; var dest : string)
+      /* Copy pascal string to a pascal string
        *
        * ON INPUT:
-       *   TOS(0) = address of dest string variable
-       *   TOS(1) = pointer to source string buffer
-       *   TOS(2) = length of source string
+       *   TOS(0) = Address of dest string variable
+       *   TOS(1) = String buffer size
+       *   TOS(2) = Pointer to source string buffer
+       *   TOS(3) = Length of source string
        * ON RETURN (input consumed):
        *
        * NOTE:  The alternate version is equivalent but has the dest
        * address and source string reversed.
        */
+
+    case lbSTRCPY2 :
+
+      /* "Pop" in the input parameters from the stack */
+
+      DISCARD(st, 1);  /* Source string buffer allocation */
+      POP(st, addr2);  /* Address of source string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, addr1);  /* Address of dest string variable  */
+      goto strcpy_common;
 
     case lbSTRCPY :
 
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest string variable  */
+      DISCARD(st, 1);  /* Source string buffer allocation */
       POP(st, addr2);  /* Address of source string buffer */
       POP(st, size);   /* Length of valid source data */
 
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
-      break;
-
-    case lbSTRCPY2 :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr2);  /* Address of source string buffer */
-      POP(st, size);   /* Length of valid source data */
-      POP(st, addr1);  /* Address of dest string variable  */
-
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
-      break;
-
-      /* Copy pascal standard string to a element of a pascal standard string
-       * array
-       *
-       *   procedure strcpyx(src : string; var dest : string;
-       *                     offset : integer)
-       *
-       * ON INPUT:
-       *   TOS(0) = Address of dest string variable
-       *   TOS(1) = Pointer to source string buffer
-       *   TOS(2) = Length of source string
-       *   TOS(3) = Dest string variable address offset
-       * ON RETURN: actual parameters released.
-       *
-       * NOTE:  The alternate version is equivalent but has the dest
-       * address and source string reversed.
-       */
-
-    case lbSTRCPYX :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr1);  /* Address of dest string variable  */
-      POP(st, addr2);  /* Address of source string buffer */
-      POP(st, size);   /* Length of valid source data */
-      POP(st, offset); /* Offset from dest string address */
-
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
-      break;
-
-    case lbSTRCPYX2 :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr2);  /* Address of source string buffer */
-      POP(st, size);   /* Length of valid source data */
-      POP(st, offset); /* Offset from dest string address */
-      POP(st, addr1);  /* Address of dest string variable  */
-
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
-      break;
-
-      /* Copy pascal short string to a pascal short string
-       *
-       * ON INPUT:
-       *   TOS(0) = Address of dest short short string variable
-       *   TOS(1) = Short string buffer size
-       *   TOS(2) = Pointer to source short string buffer
-       *   TOS(3) = Length of source short string
-       * ON RETURN (input consumed):
-       *
-       * NOTE:  The alternate version is equivalent but has the dest
-       * address and source string reversed.
-       */
-
-    case lbSSTRCPY2 :
-
-      /* "Pop" in the input parameters from the stack */
-
-      DISCARD(st, 1);  /* Source short string buffer allocation */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid source data */
-      POP(st, addr1);  /* Address of dest short string variable  */
-      goto sstrcpy_common;
-
-    case lbSSTRCPY :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr1);  /* Address of dest short string variable  */
-      DISCARD(st, 1);  /* Source short string buffer allocation */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid source data */
-      goto sstrcpy_common;
-
-      /* Copy pascal short string to a element of a pascal short string
-       * array
-       *
-       * ON INPUT:
-       *   TOS(0) = Address of dest short short string variable
-       *   TOS(1) = Short string buffer size
-       *   TOS(2) = Pointer to source short string buffer
-       *   TOS(3) = Length of source short string
-       *   TOS(4) = Dest short string variable address offset
-       * ON RETURN (input consumed):
-       *
-       * NOTE:  The alternate version is equivalent but has the dest
-       * address and source string reversed.
-       */
-
-    case lbSSTRCPYX2 :
-
-      /* "Pop" in the input parameters from the stack */
-
-      DISCARD(st, 1);  /* Source short string buffer allocation */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid source data */
-      POP(st, offset); /* Offset from dest string address */
-      POP(st, addr1);  /* Address of dest short string variable  */
-      goto sstrcpyx_common;
-
-    case lbSSTRCPYX :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr1);  /* Address of dest short string variable  */
-      DISCARD(st, 1);  /* Source short string buffer allocation */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid source data */
-      POP(st, offset); /* Offset from dest string address */
-      goto sstrcpyx_common;
-
-      /* Copy pascal short string to a pascal standard string
-       *
-       * ON INPUT:
-       *   TOS(0) = Address of dest standard standard string variable
-       *   TOS(1) = Short string buffer size
-       *   TOS(2) = Pointer to source short string buffer
-       *   TOS(3) = Length of source short string
-       * ON RETURN (input consumed):
-       *
-       * NOTE:  The alternate version is equivalent but has the dest
-       * address and source string reversed.
-       */
-
-    case lbSSTR2STR :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr1);  /* Address of dest standard string variable  */
-      DISCARD(st, 1);  /* Short string buffer size */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid short string source data */
-
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
-      break;
-
-    case lbSSTR2STR2 :
-
-      /* "Pop" in the input parameters from the stack */
-
-      DISCARD(st, 1);  /* Short string buffer size */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid short string source data */
-      POP(st, addr1);  /* Address of dest standard string variable  */
-
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, 0);
-      break;
-
-      /* Copy pascal short string to an element of a pascal standard string
-       * array
-       *
-       * ON INPUT:
-       *   TOS(0) = Address of dest standard standard string variable
-       *   TOS(1) = Short string buffer size
-       *   TOS(2) = Pointer to source short string buffer
-       *   TOS(3) = Length of source short string
-       *   TOS(4) = Dest standard string variable address offset
-       * ON RETURN (input consumed):
-       *
-       * NOTE:  The alternate version is equivalent but has the dest
-       * address and source string reversed.
-       */
-
-    case lbSSTR2STRX :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr1);  /* Address of dest standard string variable  */
-      DISCARD(st, 1);  /* Short string buffer size */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid short string source data */
-      POP(st, offset); /* Offset from dest string address */
-
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
-      break;
-
-    case lbSSTR2STRX2 :
-
-      /* "Pop" in the input parameters from the stack */
-
-      DISCARD(st, 1);  /* Short string buffer size */
-      POP(st, addr2);  /* Address of source short string buffer */
-      POP(st, size);   /* Length of valid short string source data */
-      POP(st, offset); /* Offset from dest string address */
-      POP(st, addr1);  /* Address of dest standard string variable  */
-
-      /* And perform the string copy */
-
-      libexec_StrCpy(st, addr2, size, addr1, st->stralloc, offset);
-      break;
-
-      /* Copy pascal standard string to a pascal short string
-       *
-       * ON INPUT:
-       *   TOS(0) = Address of dest short short string variable
-       *   TOS(1) = Pointer to source standard string buffer
-       *   TOS(2) = Length of source standard string
-       * ON RETURN (input consumed):
-       *
-       * NOTE:  The alternate version is equivalent but has the dest
-       * address and source string reversed.
-       */
-
-    case lbSTR2SSTR2 :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr2);  /* Address of source standard string buffer */
-      POP(st, size);   /* Length of source standard string */
-      POP(st, addr1);  /* Address of dest short string variable  */
-      goto sstrcpy_common;
-
-    case lbSTR2SSTR :
-
-      /* "Pop" in the input parameters from the stack */
-
-      POP(st, addr1);  /* Address of dest short string variable  */
-      POP(st, addr2);  /* Address of source standard string buffer */
-      POP(st, size);   /* Length of source standard string */
-
-    sstrcpy_common :
+    strcpy_common :
       {
         uint16_t *strPtr;
         uint16_t  strAlloc;
 
-        /* Get the allocation size of the short string destination */
+        /* Get the allocation size of the string destination */
 
         strPtr = (uint16_t *)&st->dstack.b[addr1];
-        strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
+        strAlloc = strPtr[sSTRING_ALLOC_OFFSET / sINT_SIZE];
 
         /* And perform the string copy */
 
@@ -803,51 +622,54 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       }
       break;
 
-      /* Copy pascal standard string to an element of a pascal short string
+      /* Copy pascal string to a element of a pascal string
        * array
        *
        * ON INPUT:
-       *   TOS(0) = Address of dest short short string variable
-       *   TOS(1) = Pointer to source standard string buffer
-       *   TOS(2) = Length of source standard string
-       *   TOS(3) = Dest short string variable address offset
+       *   TOS(0) = Address of dest string variable
+       *   TOS(1) = String buffer size
+       *   TOS(2) = Pointer to source string buffer
+       *   TOS(3) = Length of source string
+       *   TOS(4) = Dest string variable address offset
        * ON RETURN (input consumed):
        *
        * NOTE:  The alternate version is equivalent but has the dest
        * address and source string reversed.
        */
 
-    case lbSTR2SSTRX2 :
+    case lbSTRCPYX2 :
 
       /* "Pop" in the input parameters from the stack */
 
-      POP(st, addr2);  /* Address of source standard string buffer */
-      POP(st, size);   /* Length of source standard string */
-      POP(st, offset); /* Dest short string variable address offset */
-      POP(st, addr1);  /* Address of dest short string variable  */
-      goto sstrcpyx_common;
+      DISCARD(st, 1);  /* Source string buffer allocation */
+      POP(st, addr2);  /* Address of source string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, offset); /* Offset from dest string address */
+      POP(st, addr1);  /* Address of dest string variable  */
+      goto strcpyx_common;
 
-    case lbSTR2SSTRX :
+    case lbSTRCPYX :
 
       /* "Pop" in the input parameters from the stack */
 
-      POP(st, addr1);  /* Address of dest short string variable  */
-      POP(st, addr2);  /* Address of source standard string buffer */
-      POP(st, size);   /* Length of source standard string */
-      POP(st, offset); /* Dest short string variable address offset */
+      POP(st, addr1);  /* Address of dest string variable  */
+      DISCARD(st, 1);  /* Source string buffer allocation */
+      POP(st, addr2);  /* Address of source string buffer */
+      POP(st, size);   /* Length of valid source data */
+      POP(st, offset); /* Offset from dest string address */
 
-    sstrcpyx_common :
+    strcpyx_common :
       {
         uint16_t *strPtr;
         uint16_t  strAlloc;
 
-        /* Get the allocation size of the short string destination.
+        /* Get the allocation size of the string destination.
          * REVISIT:  This is wrong.  We need to apply the indexing before
-         * accing the dest short string array entry.
+         * accing the dest string array entry.
          */
 
         strPtr = (uint16_t *)&st->dstack.b[addr1];
-        strAlloc = strPtr[sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE];
+        strAlloc = strPtr[sSTRING_ALLOC_OFFSET / sINT_SIZE];
 
         /* And perform the string copy */
 
@@ -865,8 +687,9 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
      *   TOS(0) = Array address
      *   TOS(1) = Array size
      * ON RETURN:
-     *   TOS(0) = String character buffer address
-     *   TOS(1) = String size
+     *   TOS(0) = String character buffer size
+     *   TOS(1) = String character buffer address
+     *   TOS(2) = String size
      */
 
     case lbBSTR2STR :
@@ -891,8 +714,9 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
      * ON INPUT:
      *   TOS(0) = Address of the array (destination)
      *   TOS(1) = Size of the array
-     *   TOS(2) = Address of the string (source)
-     *   TOS(3) = Size of the string
+     *   TOS(2) = Size of the alloated string buffer (source)
+     *   TOS(3) = Address of the string buffer address
+     *   TOS(4) = Size of the string
      * ON RETURN:
      *   All inputs consumbed
      */
@@ -904,6 +728,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       POP(st, addr1);  /* Address of the array */
       POP(st, uparm1); /* Size of the array */
 
+      DISCARD(st, 1);  /* Discard the size of the allocated string buffer */
       POP(st, addr2);  /* Address of the array */
       POP(st, uparm2); /* Size of the array */
 
@@ -923,11 +748,12 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
      * ON INPUT:
      *   TOS(0) = Address of the array (destination)
      *   TOS(1) = Size of the array
-     *   TOS(2) = Address of the string (source)
-     *   TOS(3) = Size of the string
-     *   TOS(4) = Array address offset
+     *   TOS(2) = Size of the allocated string buffer (source)
+     *   TOS(3) = Address of the string buffer
+     *   TOS(4) = Size of the string
+     *   TOS(5) = Array address offset
      * ON RETURN:
-     *   All inputs consumbed
+     *   All inputs consumed
      */
 
     case lbSTR2BSTRX :
@@ -937,49 +763,31 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       POP(st, addr1);  /* Address of the array */
       POP(st, uparm1); /* Size of the array */
 
-      POP(st, addr2);  /* Address of the array */
-      POP(st, uparm2); /* Size of the array */
+      DISCARD(st, 1);  /* Discard the size of the allocated string buffer */
+      POP(st, addr2);  /* Address of the string buffer */
+      POP(st, uparm2); /* Size of the string */
 
-      POP(st, offset); /* Address offset */
+      POP(st, offset); /* Array address offset */
 
       /* And perform the copy */
 
       errorCode = libexec_Str2BStr(st, addr1, uparm1, addr2, uparm2, offset);
       break;
 
-      /* Initialize a new string variable. Create a string buffer.
-       *   procedure mkstk(VAR str : string);
+      /* Initialize a new string variable. Create a string buffer.  This
+       * is called only at entrance into a new Pascal block.
+       *
+       *   TYPE
+       *     string : string[size]
+       *   procedure strinit(VAR str : string);
        *
        * ON INPUT
-       *   TOS(1) = pointer to the newly string variable to be initialized
+       *   TOS(0) = address of the newly string variable to be initialized
+       *   TOS(1) = size of the string memory allocation
        * ON RETURN
        */
 
     case lbSTRINIT :
-
-      /* Get input parameters */
-
-      POP(st, addr1);  /* Address of dest string variable */
-
-      /* And perform the variable initialization */
-
-      errorCode = libexec_StrInit(st, addr1, INT_ALIGNUP(st->stralloc));
-      break;
-
-      /* Initialize a new short string variable. Create a string buffer.  This
-       * is called only at entrance into a new Pascal block.
-       *
-       *   TYPE
-       *     shortstring : string[size]
-       *   procedure sstrinit(VAR str : shortstring);
-       *
-       * ON INPUT
-       *   TOS(0) = address of the newly string variable to be initialized
-       *   TOS(1) = size of the short string memory allocation
-       * ON RETURN
-       */
-
-    case lbSSTRINIT :
 
       /* Get input parameters */
 
@@ -993,7 +801,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
       /* And save the allocated size in the variable's memory */
 
-      PUTSTACK(st, size, addr1 + sSHORTSTRING_ALLOC_OFFSET);
+      PUTSTACK(st, size, addr1 + sSTRING_ALLOC_OFFSET);
       break;
 
       /* Initialize a temporary string variable on the stack. It is similar
@@ -1006,8 +814,9 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        *
        * ON INPUT
        * ON RETURN
-       *   TOS(0) = Pointer to the string buffer on the stack.
-       *   TOS(1) = String size (zero)
+       *   TOS(0) = Size of the allocated string buffer
+       *   TOS(1) = Pointer to the string buffer
+       *   TOS(2) = String size (zero)
        */
 
     case lbSTRTMP :
@@ -1015,7 +824,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        * buffer.
        */
 
-      if (st->csp + st->stralloc >= st->spb)
+      if (st->csp + STRING_BUFFER_SIZE >= st->spb)
         {
           errorCode = eSTRSTKOVERFLOW;
         }
@@ -1024,7 +833,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           /* Allocate a string buffer on the string stack for the new string. */
 
           addr1   = INT_ALIGNUP(st->csp);
-          st->csp = addr1 + st->stralloc;
+          st->csp = addr1 + STRING_BUFFER_SIZE;
 
           /* Create the new string.  Order:
            *
@@ -1032,100 +841,61 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
            *   TOS(n + 1) = String size
            */
 
-          PUSH(st, 0);     /* String size */
-          PUSH(st, addr1); /* String buffer address */
+          PUSH(st, 0);                  /* String size */
+          PUSH(st, addr1);              /* String buffer address */
+          PUSH(st, STRING_BUFFER_SIZE); /* String buffer address */
         }
       break;
 
-      /* Replace a standard string with a duplicate string residing in
+      /* Replace a string with a duplicate string residing in
        * allocated string stack.
        *
        *   function strdup(name : string) : string;
        *
        * ON INPUT
-       *   TOS(0) = pointer to original string data
-       *   TOS(1) = length of original string
+       *   TOS(0) = Allocation size of original string
+       *   TOS(1) = Pointer to original string
+       *   TOS(2) = Length of original string
        * ON RETURN
-       *   TOS(0) = pointer to new string data
-       *   TOS(1) = length of new string (unchanged)
+       *   TOS(0) = Allocation size of new string (set to default string size)
+       *   TOS(1) = Pointer to new string
+       *   TOS(2) = Length of new string
        */
 
     case lbSTRDUP :
+      {
+        uint16_t *sptr;
+        uint16_t alloc;
 
-      /* Get the parameters from the stack (leaving the string reference
-       * in place.
-       */
+        /* Get the parameters from the stack (leaving the string reference
+         * in place).
+         */
 
-      addr1 = TOS(st, 0);     /* Original string data pointer */
-      size  = TOS(st, 1);     /* Original string size */
+        alloc     = TOS(st, 0);  /* Original string allocated buffer size */
+        addr1     = TOS(st, 1);  /* Original string data pointer */
+        size      = TOS(st, 2);  /* Original string size */
 
-      /* Check if there is space on the string stack for the new string */
-
-      if (st->csp + st->stralloc >= st->spb)
-        {
-          errorCode = eSTRSTKOVERFLOW;
-        }
-      else
-        {
-          /* Allocate space on the string stack for the new string */
-
-          addr2    = INT_ALIGNUP(st->csp);
-          st->csp += st->stralloc;                    /* Allocate max size */
-
-          /* Limit the size to the maximum size of a standard string.  This
-           * can happen in cases where the string address lies in RO string
-           * memory.
-           */
-
-          if (size > st->stralloc)
-            {
-              size = st->stralloc;
-            }
-
-          /* Copy the string into the string stack */
-
-          src      = (char *)ATSTACK(st, addr1); /* Pointer to original string */
-          dest     = (char *)ATSTACK(st, addr2); /* Pointer to new string */
-          memcpy(dest, src, size);
-
-          /* Update the string buffer address */
-
-          TOS(st, 0) = addr2;
-        }
-      break;
-
-      /* Replace a short string with a duplicate string residing in allocated
-       * string stack.
-       *
-       *   function strdup(name : shortstring) : shortstring;
-       *
-       * ON INPUT
-       *   TOS(0) = allocation of original short string
-       *   TOS(1) = pointer to original short string
-       *   TOS(2) = length of original short string
-       * ON RETURN
-       *   TOS(0) = allocation of new short string (unchanged)
-       *   TOS(1) = pointer to new short string
-       *   TOS(2) = length of new short string
-       */
-
-    case lbSSTRDUP :
-      errorCode = eNOTYET;
+        sptr      = (uint16_t *)&TOS(st, 2);
+        errorCode = libexec_StrDup(st, alloc, addr1, size, sptr);
+      }
       break;
 
       /* Replace a character with a string residing in allocated string stack.
+       *
        *   function mkstkc(c : char) : string;
+       *
        * ON INPUT
        *   TOS(0) = Character value
        * ON RETURN
-       *   TOS(0) = pointer to new string
-       *   TOS(1) = length of new string
+       *   TOS(0) = Size of the new string buffer (default)
+       *   TOS(1) = Address of the new string buffer
+       *   TOS(2) = Length of new string (1)
        */
 
     case lbMKSTKC :
       /* Check if there is space on the string stack for the new string */
 
-      if (st->csp + st->stralloc >= st->spb)
+      if (st->csp + STRING_BUFFER_SIZE >= st->spb)
         {
           errorCode = eSTRSTKOVERFLOW;
         }
@@ -1134,7 +904,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           /* Allocate space on the string stack for the new string */
 
           addr2    = INT_ALIGNUP(st->csp);
-          st->csp += st->stralloc;                   /* Allocate max size */
+          st->csp += STRING_BUFFER_SIZE;             /* Allocate max size */
 
           /* Save the length at the beginning of the copy */
 
@@ -1147,22 +917,26 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
           /* Update the stack content */
 
           TOS(st, 0) = 1;                            /* String length */
-          PUSH(st, addr2);                           /* String address */
+          PUSH(st, addr2);                           /* String buffer address */
+          PUSH(st, STRING_BUFFER_SIZE);              /* String buffer size */
         }
       break;
 
-      /* Concatenate a standard string to the end of a standard string.
+      /* Concatenate a string to the end of a string.
        *
        *   function strcat(string1 : string, string2 : string) : string;
        *
        * ON INPUT
-       *   TOS(0) = pointer to source standard string2 data
-       *   TOS(1) = length of source standard string2
-       *   TOS(2) = pointer to dest standard string1 data
-       *   TOS(3) = length of dest standard string1
+       *   TOS(0) = string1 allocation size
+       *   TOS(1) = pointer to source string1 data
+       *   TOS(2) = length of source string1
+       *   TOS(3) = string2 allocation size
+       *   TOS(4) = pointer to dest string2 data
+       *   TOS(5) = length of dest string2
        * ON OUTPUT
-       *   TOS(0) = pointer to dest standard string1 (unchanged)
-       *   TOS(1) = new length of dest standard string1
+       *   TOS(0) = string2 allocation size (unchanged)
+       *   TOS(1) = pointer to dest string2 (unchanged)
+       *   TOS(2) = new length of dest string2
        */
 
     case lbSTRCAT :
@@ -1171,170 +945,54 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        * place).
        */
 
-      POP(st, addr1);      /* source string1 string stack address */
-      POP(st, uparm1);     /* source string1 size */
+      DISCARD(st, 1);      /* Discard the source string allocation size */
+      POP(st, addr1);      /* Source string stack address */
+      POP(st, uparm1);     /* Source string size */
 
       /* Concatenate the strings */
 
-      errorCode = libexec_StrCat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
-                                 st->stralloc);
-      break;
-
-      /* Concatenate a short string to the end of a short string.
-       *
-       *   function sstrcat(string1 : shortstring, string2 : shortstring) : shortstring;
-       *
-       * ON INPUT
-       *   TOS(0) = string1 allocation size
-       *   TOS(1) = pointer to source short string1 data
-       *   TOS(2) = length of source short string1
-       *   TOS(3) = string2 allocation size
-       *   TOS(4) = pointer to dest short string2 data
-       *   TOS(5) = length of dest short string2
-       * ON OUTPUT
-       *   TOS(0) = string2 allocation size (unchanged)
-       *   TOS(1) = pointer to dest short string2 (unchanged)
-       *   TOS(2) = new length of dest short string2
-       */
-
-    case lbSSTRCAT :
-
-      /* Get the parameters from the stack (leaving the dest string info in
-       * place).
-       */
-
-      DISCARD(st, 1);      /* discard the source string allocation size */
-      POP(st, addr1);      /* source short string stack address */
-      POP(st, uparm1);     /* source short string size */
-
-      /* Concatenate the strings */
-
-      errorCode = libexec_StrCat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
+      errorCode = libexec_StrCat(st, addr1, uparm1, TOS(st, 1), &TOS(st, 2),
                                  TOS(st, 0));
       break;
 
-      /* Concatenate a standard string to the end of a short string.
+      /* Concatenate a character to the end of a string.
        *
-       *   function sstrcat(string1 : shortstring, string2 : standard) : shortstring;
-       *
-       * ON INPUT
-       *   TOS(0) = pointer to source standard string1 data
-       *   TOS(1) = length of source standard string1
-       *   TOS(2) = string2 allocation size
-       *   TOS(3) = pointer to dest short string2 data
-       *   TOS(4) = length of dest short string2
-       * ON OUTPUT
-       *   TOS(0) = string2 allocation size (unchanged)
-       *   TOS(1) = pointer to dest short string2 (unchanged)
-       *   TOS(2) = new length of dest short string2
-       */
-
-    case lbSSTRCATSTR :
-
-      /* Get the parameters from the stack (leaving the dest string info in
-       * place).
-       */
-
-      POP(st, addr1);      /* source short string stack address */
-      POP(st, uparm1);     /* source short string size */
-
-      /* Concatenate the strings */
-
-      errorCode = libexec_StrCat(st, addr1, uparm1, TOS(st, 2), &TOS(st, 1),
-                                 TOS(st, 0));
-      break;
-
-      /* Concatenate a short string to the end of a standard string.
-       *
-       *   function sstrcat(string1 : shortstring, string2 : standard) : shortstring;
-       *
-       * ON INPUT
-       *   TOS(0) = string1 allocation size
-       *   TOS(1) = pointer to source short string1 data
-       *   TOS(2) = length of source short string1
-       *   TOS(3) = pointer to dest standard string2 data
-       *   TOS(4) = length of dest standard string2
-       * ON OUTPUT
-       *   TOS(0) = pointer to dest standard string2 (unchanged)
-       *   TOS(1) = new length of dest standard string2
-       */
-
-    case lbSTRCATSSTR :
-
-      /* Get the parameters from the stack (leaving the dest string info in
-       * place).
-       */
-
-      DISCARD(st, 1);      /* discard the source string allocation size */
-      POP(st, addr1);      /* source short string stack address */
-      POP(st, uparm1);     /* source short string size */
-
-      /* Concatenate the strings */
-
-      errorCode = libexec_StrCat(st, addr1, uparm1, TOS(st, 0), &TOS(st, 1),
-                                 st->stralloc);
-      break;
-
-      /* Concatenate a character  to the end of a string.
        *   function strcatc(name : string, c : char) : string;
        *
        * ON INPUT
-       *   TOS(0) = character to concatenate
-       *   TOS(1) = pointer to string
-       *   TOS(2) = length of string
+       *   TOS(0) = Character to concatenate
+       *   TOS(1) = String buffer allocation size
+       *   TOS(2) = Pointer to string buffer
+       *   TOS(3) = Length of string
        * ON OUTPUT
-       *   TOS(0) = pointer to string
-       *   TOS(1) = new length of string
+       *   TOS(0) = String buffer allocation size (unchanged)
+       *   TOS(1) = Pointer to string buffer (unchanged)
+       *   TOS(2) = new length of string
        */
 
     case lbSTRCATC :
 
       /* Get the parameters from the stack (leaving the string reference
-       * in place.
+       * in place).
        */
 
       POP(st, uparm1);    /* Character to concatenate */
 
-      errorCode = libexec_StrCatC(st, uparm1, TOS(st, 0), &TOS(st, 1),
-                                  st->stralloc);
-      break;
-
-      /* Concatenate a character to the end of a short string.
-       *
-       *   function strcatc(name : shortstring, c : char) : shortstring;
-       *
-       * ON INPUT
-       *   TOS(0) = character to concatenate
-       *   TOS(1) = short string allocation
-       *   TOS(2) = pointer to short string allocation
-       *   TOS(3) = length of short string
-       * ON OUTPUT
-       *   TOS(0) = short string allocation (unchanged)
-       *   TOS(1) = pointer to short string allocation (unchanged)
-       *   TOS(2) = new length of short string
-       */
-
-    case lbSSTRCATC :
-
-      /* Get the parameters from the stack (leaving the string reference
-       * in place.
-       */
-
-      POP(st, uparm1);    /* Character to concatenate */
-
-      errorCode = libexec_StrCatC(st, uparm1, TOS(st, 2), &TOS(st, 1),
+      errorCode = libexec_StrCatC(st, uparm1, TOS(st, 1), &TOS(st, 2),
                                   TOS(st, 0));
       break;
 
-      /* Compare two pascal standard strings
+      /* Compare two pascal strings
        *
        *   function strcmp(name1 : string, name2 : string) : integer;
        *
        * ON INPUT
-       *   TOS(0) = address of standard string2 data
-       *   TOS(1) = length of standard string2
-       *   TOS(2) = address of standard string1 data
-       *   TOS(3) = length of sstandard tring1
+       *   TOS(0) = Size of string2 allocation
+       *   TOS(1) = Address of string2 data
+       *   TOS(2) = Length of string2
+       *   TOS(3) = Size of string1 allocation
+       *   TOS(4) = Address of string1 data
+       *   TOS(5) = Length of string1
        * ON OUTPUT
        *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
        */
@@ -1347,8 +1005,11 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
          * return value);
          */
 
+        DISCARD(st, 1);      /* Discard allocation size of string2 buffer */
         POP(st, addr2);      /* Address of string2 data */
         POP(st, uparm2);     /* Length of string2 */
+
+        DISCARD(st, 1);      /* Discard allocation size of string1 buffer */
         POP(st, addr1);      /* Address of string1 data */
         uparm1 = TOS(st, 0); /* Length of string1 */
 
@@ -1392,146 +1053,101 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       }
       break;
 
-      /* Compare two pascal short strings
-       *
-       *   function sstrcmp(name1 : shortstring, name2 : shortstring) : integer;
-       *
-       * ON INPUT
-       *   TOS(0) = size of short string2 allocation
-       *   TOS(1) = address of short string2 data
-       *   TOS(2) = length of short string2
-       *   TOS(3) = size of short string1 allocation
-       *   TOS(4) = address of short string1 data
-       *   TOS(5) = length of short string1
-       * ON OUTPUT
-       *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
-       */
-
-    case lbSSTRCMP :
-      errorCode = eNOTYET;
-      break;
-
-      /* Compare a pascal short string to a pascal standard string
-       *
-       *   function sstrcmpstr(name1 : shortstring, name2 : string) : integer;
-       *
-       * ON INPUT
-       *   TOS(0) = address of standard string2 data
-       *   TOS(1) = length of standard string2
-       *   TOS(2) = size of short string1 allocation
-       *   TOS(3) = address of short string1 data
-       *   TOS(4) = length of short string1
-       * ON OUTPUT
-       *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
-       */
-
-    case lbSSTRCMPSTR :
-      errorCode = eNOTYET;
-      break;
-
-
-      /* Compare a pascal standard string to a pascal short string
-       *
-       *   function sstrcmpstr(name1 : string, name2 : shortstring) : integer;
-       *
-       * ON INPUT
-       *   TOS(0) = address of standard string2 data
-       *   TOS(1) = length of standard string2
-       *   TOS(2) = size of short string1 allocation
-       *   TOS(3) = address of short string1 data
-       *   TOS(4) = length of short string1
-       * ON OUTPUT
-       *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
-       */
-
-    case lbSTRCMPSSTR :
-      errorCode = eNOTYET;
-      break;
-
       /* Copy a substring from a string.
        *
        *   Copy(from : string, from, howmuch: integer) : string
        *
+
        * ON INPUT
        *   TOS(0) = Integer value that provides the length of the substring
        *   TOS(1) = Integer value that provides the (1-based) string position
-       *   TOS(2) = Address of string data
-       *   TOS(3) = Length of the string
+       *   TOS(2) = Size of string buffer
+       *   TOS(3) = Address of string data
+       *   TOS(4) = Length of the string
        * ON OUTPUT
-       *   TOS(0) = Address of the substring data
-       *   TOS(1) = Length of the substring
+       *   TOS(0) = Size of string buffer
+       *   TOS(1) = Address of the substring data
+       *   TOS(2) = Length of the substring
        */
 
     case lbCOPYSUBSTR :
-      POP(st, size);
-      POP(st, offset);
-      addr1  = TOS(st, 0);
-      uparm1 = TOS(st, 1);
+      {
+        uint16_t alloc;
 
-      /* Initialize a temporary string on the stack.
-       *
-       * First, check if there is space on the string stack for the new string
-       * buffer.
-       */
+        POP(st, size);
+        POP(st, offset);
+        alloc  = TOS(st, 0);
+        addr1  = TOS(st, 1);
+        uparm1 = TOS(st, 2);
 
-      if (st->csp + st->stralloc >= st->spb)
-        {
-          errorCode = eSTRSTKOVERFLOW;
-        }
-      else
-        {
-          /* Allocate and initialize a string buffer on the string stack for
-           * the new string.
-           */
+        /* Initialize a temporary string of the same size on the stack.
+         *
+         * First, check if there is space on the string stack for the new string
+         * buffer.
+         */
 
-          addr2   = INT_ALIGNUP(st->csp);
-          st->csp = addr2 + st->stralloc;
+        if (st->csp + alloc >= st->spb)
+          {
+            errorCode = eSTRSTKOVERFLOW;
+          }
+        else
+          {
+            /* Allocate and initialize a string buffer on the string stack for
+             * the new string.
+             */
 
-          TOS(st, 0) = addr2;
-          TOS(st, 1) = 0;
+            addr2   = INT_ALIGNUP(st->csp);
+            st->csp = addr2 + alloc;
 
-          /* Limit the indices to fit within the string */
+            TOS(st, 1) = addr2;
+            TOS(st, 2) = 0;
 
-          if (offset >= 1 && offset <= uparm1 && size > 0)
-            {
-              /* Make the character position a zero-based index */
+            /* Limit the indices to fit within the string */
 
-              offset--;
+            if (offset >= 1 && offset <= uparm1 && size > 0)
+              {
+                /* Make the character position a zero-based index */
 
-              /* Limit the substring size if necesssary */
+                offset--;
 
-              if (size > st->stralloc)
-                {
-                  size = st->stralloc;
-                }
+                /* Limit the substring size if necesssary */
 
-              if (offset + size > uparm1)
-                {
-                  size = uparm1 - offset;
-                }
+                if (size > alloc)
+                  {
+                    size = alloc;
+                  }
 
-              /* And copy the substring */
+                if (offset + size > uparm1)
+                  {
+                    size = uparm1 - offset;
+                  }
 
-              src  = (char *)ATSTACK(st, addr1);
-              dest = (char *)ATSTACK(st, addr2);
-              memcpy(dest, &src[offset], size);
+                /* And copy the substring */
 
-              TOS(st, 1) = size;
-            }
-        }
+                src  = (char *)ATSTACK(st, addr1);
+                dest = (char *)ATSTACK(st, addr2);
+                memcpy(dest, &src[offset], size);
+
+                TOS(st, 2) = size;
+              }
+          }
+      }
       break;
 
       /* Find a substring in a string.  Returns the (1-based) character position of
        * the substring or zero if the substring is not found.
        *
-       *   Pos(substr, s : string) : integer
+       *   Pos(substr, s : string, start : integer) : integer
        *
+
        * ON INPUT
        *   TOS(0) = Start position
-       *   TOS(1) = Address of string data
-       *   TOS(2) = Length of the string
-       *   TOS(3) = Address of substring data
-       *   TOS(4) = Length of the substring
+       *   TOS(1) = Size of string buffer
+       *   TOS(2) = Address of string buffer
+       *   TOS(3) = Length of the string
+       *   TOS(4) = Size of substring buffer
+       *   TOS(5) = Address of substring data
+       *   TOS(6) = Length of the substring
        * ON OUTPUT
        *   TOS(0) = Position of the substring (or zero if not present)
        */
@@ -1547,8 +1163,12 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
         char *result;
 
         POP(st, pos);
+
+        DISCARD(st, 1);
         POP(st, addr1);
         POP(st, uparm1);
+
+        DISCARD(st, 1);
         POP(st, addr2);
         POP(st, uparm2);
 
@@ -1598,8 +1218,9 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        * ON INPUT
        *   TOS(0) = Integer value that provides the (1-based) string position
        *   TOS(1) = Address of the target string to be modified
-       *   TOS(2) = Address of source string data
-       *   TOS(3) = Length of the source string
+       *   TOS(2) = Size of source string buffer
+       *   TOS(3) = Address of source string buffer
+       *   TOS(4) = Length of the source string
        * ON OUTPUT
        */
 
@@ -1608,6 +1229,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
         ustack_t *dptr;
         ustack_t ulimit1;
         ustack_t ulimit2;
+        ustack_t alloc;
         int i;
         int j;
 
@@ -1617,13 +1239,15 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
         /* Get the string to be modified */
 
         dptr     = (ustack_t *)ATSTACK(st, addr2);
+        alloc    = dptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
         addr1    = dptr[BTOISTACK(sSTRING_DATA_OFFSET)];
         uparm1   = dptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
         /* Get the source string to be inserted */
 
-        POP(st, addr2);
-        POP(st, uparm2);
+        DISCARD(st, 1);    /* Discard the size of the source string buffer */
+        POP(st, addr2);    /* Get the address of the source string buffer */
+        POP(st, uparm2);   /* and the length of the source string */
 
         /* Make the character position a zero-based index */
 
@@ -1639,9 +1263,9 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
         dest = (char *)ATSTACK(st, addr1);
 
         ulimit1 = uparm1 + uparm2;
-        if (ulimit1 > st->stralloc)
+        if (ulimit1 > alloc)
           {
-            ulimit1 = st->stralloc;
+            ulimit1 = alloc;
           }
 
         for (i = ulimit1 - uparm2 - 1, j = ulimit1 - 1; i >= offset; i--, j--)
@@ -1677,7 +1301,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        * ON INPUT
        *   TOS(0) = Integer value that provides the length of the substring
        *   TOS(1) = Integer value that provides the (1-based) string position
-       *   TOS(3) = Address of the string variable to modify
+       *   TOS(2) = Address of string variable to be modified
        * ON OUTPUT
        */
 
@@ -1731,7 +1355,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        * ON INPUT
        *   TOS(0) = Integer 'value' value
        *   TOS(1) = Integer 'count' value
-       *   TOS(2) = Address of string (or short string) variable
+       *   TOS(2) = Address of string (or string) variable
        * ON OUTPUT
        */
 
@@ -1740,31 +1364,13 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
         ustack_t *sptr;
 
         POP(st, uparm2);   /* Fill character value */
-        POP(st, uparm1);   /* Fill count value */
-        POP(st, addr1);    /* Address of the string to be filled */
-
-        /* Get the short string to be modified and its allocation size. */
-
-        sptr = (ustack_t *)ATSTACK(st, addr1);
-
-        /* Then let common logic do the actual fill */
-
-        errorCode = libexec_FillChar(st, sptr, uparm1, uparm2, st->stralloc);
-      }
-      break;
-
-    case lbSFILLCHAR :
-      {
-        ustack_t *sptr;
-
-        POP(st, uparm2);   /* Fill character value */
         POP(st, size);     /* Fill count value */
         POP(st, addr1);    /* Address of the string to be filled */
 
-        /* Get the short string to be modified and its allocation size. */
+        /* Get the string to be modified and its allocation size. */
 
         sptr   = (ustack_t *)ATSTACK(st, addr1);
-        uparm1 = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
+        uparm1 = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
 
         /* Then let common logic do the actual fill */
 
@@ -1775,16 +1381,14 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       /* Convert a numeric value to a string
        *
        * ON INPUT
-       *   TOS(0)   = Address of standard or short string
+       *   TOS(0)   = Address of the string
        *   TOS(1)   = Field width
        *   TOS(2-n) = Numeric value.  The actual length varies with type.
        * ON OUTPUT
        */
 
     case lbINTSTR :
-    case lbINTSSTR :
     case lbWORDSTR :
-    case lbWORDSSTR :
       {
         const char *fmt;
         const char *fmtCh;
@@ -1803,23 +1407,16 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
          * allocation size.
          */
 
-        sptr = (ustack_t *)ATSTACK(st, addr1);
-        if (subfunc == lbINTSSTR || subfunc == lbWORDSSTR)
-          {
-            strAlloc = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
-          }
-        else
-          {
-            strAlloc = st->stralloc;
-          }
+        sptr     = (ustack_t *)ATSTACK(st, addr1);
+        strAlloc = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
 
         /* Get the appropriate format string */
 
-        if (subfunc == lbINTSTR || subfunc == lbINTSSTR)
+        if (subfunc == lbINTSTR)
           {
             fmtCh = "d";
           }
-        else
+        else /* if (subfunc == lbWORDSTR) */
           {
             fmtCh = "u";
           }
@@ -1846,9 +1443,7 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       break;
 
     case lbLONGSTR :
-    case lbLONGSSTR :
     case lbULONGSTR :
-    case lbULONGSSTR :
       {
         const char *fmt;
         const char *fmtCh;
@@ -1867,23 +1462,16 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
          * allocation size.
          */
 
-        sptr = (ustack_t *)ATSTACK(st, addr1);
-        if (subfunc == lbLONGSSTR || subfunc == lbULONGSSTR)
-          {
-            strAlloc = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
-          }
-        else
-          {
-            strAlloc = st->stralloc;
-          }
+        sptr     = (ustack_t *)ATSTACK(st, addr1);
+        strAlloc = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
 
         /* Get the appropriate format string */
 
-        if (subfunc == lbLONGSTR || subfunc == lbLONGSSTR)
+        if (subfunc == lbLONGSTR)
           {
             fmtCh = PRId32;
           }
-        else
+        else /* if (subfunc == lbULONGSTR) */
           {
             fmtCh = PRIu32;
           }
@@ -1910,7 +1498,6 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       break;
 
     case lbREALSTR :
-    case lbREALSSTR :
       {
         const char *fmt;
         ustack_t   *sptr;
@@ -1931,15 +1518,8 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
          * allocation size.
          */
 
-        sptr = (ustack_t *)ATSTACK(st, addr1);
-        if (subfunc == lbREALSSTR)
-          {
-            strAlloc = sptr[BTOISTACK(sSHORTSTRING_ALLOC_OFFSET)];
-          }
-        else
-          {
-            strAlloc = st->stralloc;
-          }
+        sptr     = (ustack_t *)ATSTACK(st, addr1);
+        strAlloc = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
 
         /* Get the appropriate format string */
 
@@ -1982,17 +1562,21 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
        * If the conversion doesn't succeed, the value of Code indicates the
        * position where the conversion went wrong.
        *
+
        * ON INPUT
-       *   TOS(0) = address of code
-       *   TOS(1) = address of value
-       *   TOS(2) = length of source string
-       *   TOS(3) = pointer to source string
+       *   TOS(0) = address of Code
+       *   TOS(1) = address of v
+       *   TOS(2) = Source string buffer size
+       *   TOS(3) = Pointer to source string buffer
+       *   TOS(4) = Length of source string
        * ON RETURN: actual parameters released
        */
 
     case lbVAL :
       POP(st, addr1);                            /* Pointer to error code */
       POP(st, addr2);                            /* Pointer to string value */
+
+      DISCARD(st, 1);                            /* Discard string buffer allocation size */
       POP(st, size);                             /* Size of string */
       POP(st, uparm1);                           /* Address of string buffer */
 

@@ -55,9 +55,8 @@ typedef void *EXEC_HANDLE_t;
  * Public Function Prototypes
  ***************************************************************************/
 
-EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t stralloc,
-                           pasSize_t strsize, pasSize_t stksize,
-                           pasSize_t hpsize);
+EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t strSize,
+                           pasSize_t stkSize, pasSize_t hpSize);
 void libexec_Release(EXEC_HANDLE_t handle);
 void libexec_RunLoop(EXEC_HANDLE_t handle);
 void libexec_DebugLoop(EXEC_HANDLE_t handle);

@@ -71,7 +71,6 @@ int main(int argc, char *argv[], char *envp[])
   /* Initialize the P-machine and load the POFF file */
 
   handle = libexec_Load(fileName,
-                        CONFIG_PASCAL_STARTUP_STRALLOC,
                         CONFIG_PASCAL_STARTUP_STRSIZE,
                         CONFIG_PASCAL_STARTUP_STKSIZE,
                         CONFIG_PASCAL_STARTUP_HEAPSIZE);

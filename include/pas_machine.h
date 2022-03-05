@@ -104,50 +104,39 @@
 
 /* Pascal string variables consist of:
  *
- * - A fixed size, large string buffer, and
+ * - A variable size, string buffer, and
  * - A small string variable that includes the size of the string and a
  *   pointer to the string buffer.  It must always appear on the stack
  *   in this order.
  *
- *      TOS(n)     = 16-bit pointer to the string data.
- *      TOS(n + 1) = String size
+ *      TOS(n)     = Maximum string size.  Allocated size of string data.
+ *      TOS(n + 1) = 16-bit pointer to the string data.
+ *      TOS(n + 2) = Current string size
  *
  * The string is usually access via opLDSM or opSTSM instructions.  The
  * relation ship between the ordering is confusing.  It is a push up stack.
  * when the memory is copied onto the stack:
  *
- *    STORAGE LOCATION      -> STACK
- *      Size    (Offset 0)  -> TOS(1)
- *      Pointer (Offset 4)  -> TOS(0)
+ *    STORAGE LOCATION         -> STACK
+ *      Size       (Offset 0)  -> TOS(2)
+ *      Pointer    (Offset 2)  -> TOS(1)
+ *      Allocation (Offset 4)  -> TOS(0)
  *
- * The size is pushed then the pointer is pushed.  The order is retained in
- * memory, but the offset relative to TOS is confusing.
+ * The allocation size is pushed, then the string size is pushed and finally
+ * the pointer is pushed.  The order is retained in memory, but the notation
+ * is confusing.
  */
 
-#define sSTRING_SIZE        (sINT_SIZE + sPTR_SIZE)
-#define sSTRING_SIZE_OFFSET (0)         /* Byte offset to string size */
-#define sSTRING_DATA_OFFSET (sINT_SIZE) /* Byte offset to buffer pointer */
-#define STRING_BUFFER_SIZE  (80)        /* Default size of string buffer */
+#define sSTRING_SIZE         (sINT_SIZE + sPTR_SIZE + sINT_SIZE)
+#define sSTRING_SIZE_OFFSET  (0)         /* Byte offset to string size */
+#define sSTRING_DATA_OFFSET  (sINT_SIZE) /* Byte offset to buffer pointer */
+#define sSTRING_ALLOC_OFFSET (sINT_SIZE + sPTR_SIZE)
 
-/* ShortStrings are also supported.  ShortStrings differ in that they are
- * declared with a (usually smaller) maximum string size.  ShortStrings can 
- * make much better use of string memory because you can use a priori
- * knowledge of the optimal, maximum string size.
- *
- * The ShortString representation differs some what.  A ShortString must
- * always appear on the stack in this order.
- *
- *      TOS(n)     = 16-bit pointer to the string data.
- *      TOS(n + 1) = Current string size
- *      TOS(n + 2) = Maximum string size.  Allocated size of string data.
- *
- * With the additional value that provides the maximum size of the ShortString:
+/* Default size of the string buffer allocation.  Used only when a string
+ * variable is declared with no size.
  */
 
-#define sSHORTSTRING_SIZE         (sINT_SIZE + sPTR_SIZE + sINT_SIZE)
-#define sSHORTSTRING_SIZE_OFFSET  (0)         /* Byte offset to string size */
-#define sSHORTSTRING_DATA_OFFSET  (sINT_SIZE) /* Byte offset to buffer pointer */
-#define sSHORTSTRING_ALLOC_OFFSET (sINT_SIZE + sPTR_SIZE)
+#define STRING_BUFFER_SIZE   INT_ALIGNUP(CONFIG_PASCAL_DEFAULT_STRALLOC)
 
 /* BOOLEAN constant values */
 

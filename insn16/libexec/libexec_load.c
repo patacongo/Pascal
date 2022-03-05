@@ -55,9 +55,8 @@
  * Public Functions
  ****************************************************************************/
 
-EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t stralloc,
-                           pasSize_t strsize, pasSize_t stksize,
-                           pasSize_t hpsize)
+EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t strSize,
+                           pasSize_t stkSize, pasSize_t hpSize)
 {
   struct libexec_attr_s attr;
   struct libexec_s *st;
@@ -107,11 +106,9 @@ EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t stralloc,
 
   /* Initialize the attribute structure */
 
-  attr.strsize  = strsize;
-  attr.stksize  = stksize;
-  attr.hpsize   = hpsize;
-
-  attr.stralloc = stralloc;
+  attr.strSize  = strSize;
+  attr.stkSize  = stkSize;
+  attr.hpSize   = hpSize;
 
   /* Extract the program entry point from the pascal executable */
 
@@ -127,7 +124,7 @@ EXEC_HANDLE_t libexec_Load(const char *filename, pasSize_t stralloc,
 
   /* Extract the read-only data from the POFF image */
 
-  attr.rosize = poffExtractRoData(phandle, &attr.rodata);
+  attr.roSize = poffExtractRoData(phandle, &attr.rodata);
 
   /* Destroy the POFF image */
 

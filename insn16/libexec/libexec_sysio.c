@@ -1385,12 +1385,15 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       errorCode = libexec_SeekEoln(st, fileNumber);
       break;
 
-    /* ASSIGNFILE: TOS(0) = File name pointer
-     *             TOS(1) = 0:binary 1:textfile
-     *             TOS(2) = File number
+    /* ASSIGNFILE: TOS(0) = File name string buffer allocation size
+     *             TOS(1) = File name string pointer
+     *             TOS(2) = File name string size
+     *             TOS(3) = 0:binary 1:textfile
+     *             TOS(4) = File number
      */
 
     case xASSIGNFILE :
+      DISCARD(st, 1);       /* Discard the strung buffer allocation size */
       POP(st, address);     /* File name string address */
       POP(st, size);        /* File name string size */
       POP(st, uValue);      /* Binary/text boolean from stack */
@@ -1503,27 +1506,18 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
      */
 
     case xREAD_STRING :
-      POP(st, address);     /* Standard string variable address */
-      POP(st, fileNumber);  /* File number */
-
-      errorCode = libexec_ReadString(st, fileNumber,
-                                     (uint16_t *)&st->dstack.b[address],
-                                     st->strsize);
-      break;
-
-    case xREAD_SHORTSTRING :
       {
         uint16_t *strPtr;
         uint16_t  strAlloc;
         int       index;
 
-        POP(st, address);     /* Short string variable address */
+        POP(st, address);     /* String variable address */
         POP(st, fileNumber);  /* File number */
 
-        /* Get the allocation size of the short string */
+        /* Get the allocation size of the string */
 
         strPtr   = (uint16_t *)&st->dstack.b[address];
-        index    = sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE;
+        index    = sSTRING_ALLOC_OFFSET / sINT_SIZE;
         strAlloc = strPtr[index];
 
         errorCode = libexec_ReadString(st, fileNumber, strPtr, strAlloc);
@@ -1650,30 +1644,13 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       break;
 
     /* WRITE_STRING: TOS(0) = Field width
-     *               TOS(1) = Write standard string buffer address
-     *               TOS(2) = Write standard string size
-     *               TOS(3) = File number
+     *               TOS(1) = Write string allocation (not used)
+     *               TOS(2) = Write string buffer address
+     *               TOS(3) = Write string size
+     *               TOS(4) = File number
      */
 
     case xWRITE_STRING :
-      POP(st, fieldWidth);  /* Field width */
-      POP(st, address);     /* String address */
-      POP(st, size);        /* String size */
-      POP(st, fileNumber);  /* File number */
-
-      errorCode = libexec_WriteString(st, fileNumber,
-                                      (const char *)&st->dstack.b[address],
-                                      size, fieldWidth);
-      break;
-
-    /* WRITE_SHORTSTRING: TOS(0) = Field width
-     *                    TOS(1) = Write short string allocation (not used)
-     *                    TOS(2) = Write short string buffer address
-     *                    TOS(3) = Write short string size
-     *                    TOS(4) = File number
-     */
-
-    case xWRITE_SHORTSTRING :
       POP(st, fieldWidth);  /* Field width */
       DISCARD(st, 1);       /* Discard the unused stack allocation */
       POP(st, address);     /* String address */
@@ -1701,12 +1678,15 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       errorCode = libexec_WriteReal(st, fileNumber, fp.f, fieldWidth);
       break;
 
-    /* CHDIR : TOS(0) = Directory name string address
-     *         TOS(1) = Directory name string size
-     * MKDIR : TOS(0) = Directory name string address
-     *         TOS(1) = Directory name string size
-     * RMDIR : TOS(0) = Directory name string address
-     *         TOS(1) = Directory name string size
+    /* CHDIR : TOS(0) = Directory string buffer allocation size
+     *         TOS(1) = Directory name string address
+     *         TOS(2) = Directory name string size
+     * MKDIR : TOS(0) = Directory string buffer allocation size
+     *         TOS(1) = Directory name string address
+     *         TOS(2) = Directory name string size
+     * RMDIR : TOS(0) = Directory string buffer allocation size
+     *         TOS(1) = Directory name string address
+     *         TOS(2) = Directory name string size
      *
      * All return a boolean value on the stack.
      */
@@ -1715,24 +1695,36 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     case xMKDIR :
     case xRMDIR :
       {
-        const char *strBuffer;
+        char *strBuffer;
         char *dirPath;
+        uint16_t alloc;
         uint16_t result;
 
         /* Get the string argument */
 
-        POP(st, address);     /* Directory name string address */
-        POP(st, size);        /* Directory name string size */
+        POP(st, alloc);     /* Buffer allocation size */
+        POP(st, address);   /* Directory name string address */
+        POP(st, size);      /* Directory name string size */
 
         /* Convert to a NUL terminated C string */
 
-        strBuffer = (const char *)ATSTACK(st, address);
+        strBuffer = (char *)ATSTACK(st, address);
 
-        /* We don't know the size of the string allocation, so we need to
-         * copy the string in order to append the NUL termination.
+        /* Append A NUL terminator to the string.  Assure that there is
+         * a free byte at the end of the string buffer.  If not, then use
+         * libexec_MkCString to duplicate the string with the NUL terminator.
          */
 
-        dirPath = libexec_MkCString(st, strBuffer, size, false);
+        if (size < alloc)
+          {
+            strBuffer[size] = '\0';
+            dirPath         = strBuffer;
+          }
+        else
+          {
+            dirPath         = libexec_MkCString(st, strBuffer, size, false);
+          }
+
         if (dirPath == NULL)
           {
             errorCode = eSTRSTKOVERFLOW;
@@ -1761,7 +1753,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       }
       break;
 
-    /* GETDIR : TOS(0) = Address of standard string variable */
+    /* GETDIR : TOS(0) = Address of string variable */
 
     case xGETDIR :
       /* Get the current working directory  */
@@ -1778,15 +1770,15 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
           st->ioBuffer[LINE_SIZE] = '\0';
           size = strlen((char *)st->ioBuffer);
-          if (size > st->stralloc)
+          if (size > STRING_BUFFER_SIZE)
             {
-              size = st->stralloc;
+              size = STRING_BUFFER_SIZE;
             }
 
           /* Allocate storage in the string stack */
 
           address = INT_ALIGNUP(st->csp);
-          st->csp = address + st->stralloc;
+          st->csp = address + STRING_BUFFER_SIZE;
 
           /* Copy the string into the string stack */
 
@@ -1797,6 +1789,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
           PUSH(st, size);
           PUSH(st, address);
+          PUSH(st, STRING_BUFFER_SIZE);
         }
       break;
 
@@ -1806,8 +1799,9 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
      *
      * ON INPUT:
      *   TOS(0) = Address of dir
-     *   TOS(1) = dirPath string memory address
-     *   TOS(2) = The length of the dirPath string
+     *   TOS(1) = Dirpath string buffer allocation size
+     *   TOS(2) = dirPath string memory address
+     *   TOS(3) = The length of the dirPath string
      * ON OUTPUT
      *   TOS(0) = Boolean result of the OpenDir operation
      */
@@ -1825,6 +1819,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         /* Get the stack arguments */
 
         POP(st, dirAddr);
+        DISCARD(st, 1);
         POP(st, strAddr);
         POP(st, strSize);
 
@@ -1918,7 +1913,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
             /* Copy the file name and type from the dirent structure */
 
             copySize  = strnlen(dirent->d_name, NAME_MAX);
-            index     = sSHORTSTRING_ALLOC_OFFSET / sINT_SIZE;
+            index     = sSTRING_ALLOC_OFFSET / sINT_SIZE;
             allocSize = searchRec->name[index];
 
             if (copySize > allocSize)
@@ -1926,11 +1921,11 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
                 copySize = allocSize;
               }
 
-            index     = sSHORTSTRING_DATA_OFFSET / sINT_SIZE;
+            index     = sSTRING_DATA_OFFSET / sINT_SIZE;
             aStrPtr   = (char *)ATSTACK(st, searchRec->name[index]);
             memcpy(aStrPtr, dirent->d_name, copySize);
 
-            index     = sSHORTSTRING_SIZE_OFFSET / sINT_SIZE;
+            index     = sSTRING_SIZE_OFFSET / sINT_SIZE;
             searchRec->name[index] = copySize;
 
             /* Convert the dirent file type into a FileUtils file type */

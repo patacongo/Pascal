@@ -75,14 +75,22 @@ config PASCAL_PRUN_STACKSIZE
 
 endmenu # Target tool options
 
+config PASCAL_DEFAULT_STRALLOC
+	int "Default string size"
+	default 80
+	---help---
+		When a string variable is declared without a size, then this is the
+		default size of the string buffer allocation.  The default of 80 is
+		typical.
+
 config PASCAL_DEBUG
-	bool "Enable Debug Features"
+	bool "Enable debug features"
 	default n
 	---help---
 		Enable DEBUG features in tools and run-time code.
 
 config PASCAL_DEBUGGER
-	bool "Enable Debug Monitor"
+	bool "Enable debug monitor"
 	default n
 	---help---
 		Enable building a Pascal run-time debug monitor into the run-time

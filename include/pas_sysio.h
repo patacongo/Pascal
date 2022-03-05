@@ -84,32 +84,30 @@
 #define xREAD_INT          (0x0014)  /* Read an integer from a text file */
 #define xREAD_CHAR         (0x0015)  /* Read an character from a text file */
 #define xREAD_STRING       (0x0016)  /* Read an string from a text file */
-#define xREAD_SHORTSTRING  (0x0017)  /* Read an string from a text file */
-#define xREAD_REAL         (0x0018)  /* Read an real value from a text file */
+#define xREAD_REAL         (0x0017)  /* Read an real value from a text file */
 
-#define xWRITELN           (0x0019)  /* Move to the next line */
-#define xWRITE_PAGE        (0x001a)  /* Move to the next page */
-#define xWRITE_BINARY      (0x001b)  /* Write to a binary file */
-#define xWRITE_INT         (0x001c)  /* Write a signed integer to a text file */
-#define xWRITE_WORD        (0x001d)  /* Write an unsigned integer to a text file */
-#define xWRITE_LONGINT     (0x001e)  /* Write an long integer to a text file */
-#define xWRITE_LONGWORD    (0x001f)  /* Write an unsigned integer to a text file */
-#define xWRITE_CHAR        (0x0020)  /* Write an character to a text file */
-#define xWRITE_STRING      (0x0021)  /* Write an string to a text file */
-#define xWRITE_SHORTSTRING (0x0022)  /* Write an string to a text file */
-#define xWRITE_REAL        (0x0023)  /* Write an real value to a text file */
+#define xWRITELN           (0x0018)  /* Move to the next line */
+#define xWRITE_PAGE        (0x0019)  /* Move to the next page */
+#define xWRITE_BINARY      (0x001a)  /* Write to a binary file */
+#define xWRITE_INT         (0x001b)  /* Write a signed integer to a text file */
+#define xWRITE_WORD        (0x001c)  /* Write an unsigned integer to a text file */
+#define xWRITE_LONGINT     (0x001d)  /* Write an long integer to a text file */
+#define xWRITE_LONGWORD    (0x001e)  /* Write an unsigned integer to a text file */
+#define xWRITE_CHAR        (0x001f)  /* Write an character to a text file */
+#define xWRITE_STRING      (0x0020)  /* Write an string to a text file */
+#define xWRITE_REAL        (0x0021)  /* Write an real value to a text file */
 
-#define xCHDIR             (0x0024)  /* Set current working directory */
-#define xGETDIR            (0x0025)  /* Get the current working directory */
-#define xMKDIR             (0x0026)  /* Create a new directory */
-#define xRMDIR             (0x0027)  /* Remove an existing directory */
+#define xCHDIR             (0x0022)  /* Set current working directory */
+#define xGETDIR            (0x0023)  /* Get the current working directory */
+#define xMKDIR             (0x0024)  /* Create a new directory */
+#define xRMDIR             (0x0025)  /* Remove an existing directory */
 
-#define xOPENDIR           (0x0028)  /* Open a directory for reading */
-#define xREADDIR           (0x0029)  /* Read the next directory entry */
-#define xREWINDDIR         (0x002a)  /* Read the next directory entry */
-#define xCLOSEDIR          (0x002b)  /* Terminate the directory read */
+#define xOPENDIR           (0x0026)  /* Open a directory for reading */
+#define xREADDIR           (0x0027)  /* Read the next directory entry */
+#define xREWINDDIR         (0x0028)  /* Read the next directory entry */
+#define xCLOSEDIR          (0x0029)  /* Terminate the directory read */
 
-#define MAX_XOP            (0x002c)
+#define MAX_XOP            (0x002a)
 
 /* File attribute characters.  Default:  Non-hidden, regular files. */
 
