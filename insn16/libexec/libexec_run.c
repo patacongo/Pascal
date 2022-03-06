@@ -462,7 +462,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oLT   :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
-      if (sparm < (sstack_t)TOS(st, 0))
+      if (sparm > (sstack_t)TOS(st, 0))
         {
           uparm1 = PASCAL_TRUE;
         }
@@ -473,7 +473,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oGTE  :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
-      if (sparm >= (sstack_t)TOS(st, 0))
+      if (sparm <= (sstack_t)TOS(st, 0))
         {
           uparm1 = PASCAL_TRUE;
         }
@@ -484,7 +484,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oGT   :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
-      if (sparm > (sstack_t)TOS(st, 0))
+      if (sparm < (sstack_t)TOS(st, 0))
         {
           uparm1 = PASCAL_TRUE;
         }
@@ -495,7 +495,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oLTE  :
       POP(st, sparm);
       uparm1 = PASCAL_FALSE;
-      if (sparm <= (sstack_t)TOS(st, 0))
+      if (sparm >= (sstack_t)TOS(st, 0))
         {
           uparm1 = PASCAL_TRUE;
         }
@@ -506,7 +506,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oULT   :
       POP(st, uparm1);
       uparm2 = PASCAL_FALSE;
-      if (uparm1 < (ustack_t)TOS(st, 0))
+      if (uparm1 > (ustack_t)TOS(st, 0))
         {
           uparm2 = PASCAL_TRUE;
         }
@@ -517,7 +517,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oUGTE  :
       POP(st, uparm1);
       uparm2 = PASCAL_FALSE;
-      if (uparm1 >= (ustack_t)TOS(st, 0))
+      if (uparm1 <= (ustack_t)TOS(st, 0))
         {
           uparm2 = PASCAL_TRUE;
         }
@@ -528,7 +528,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oUGT   :
       POP(st, uparm1);
       uparm2 = PASCAL_FALSE;
-      if (uparm1 > (ustack_t)TOS(st, 0))
+      if (uparm1 < (ustack_t)TOS(st, 0))
         {
           uparm2 = PASCAL_TRUE;
         }
@@ -539,7 +539,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oULTE  :
       POP(st, uparm1);
       uparm2 = PASCAL_FALSE;
-      if (uparm1 <= (ustack_t)TOS(st, 0))
+      if (uparm1 >= (ustack_t)TOS(st, 0))
         {
           uparm2 = PASCAL_TRUE;
         }

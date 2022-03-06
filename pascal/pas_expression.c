@@ -2932,7 +2932,7 @@ static exprType_t pas_FunctionDesignator(void)
     }
   else
     {
-      pas_GenerateDataOperation(opINDS, typePtr->sParm.t.tAllocSize);
+      pas_GenerateDataOperation(opINDS, INT_ALIGNUP(typePtr->sParm.t.tAllocSize));
     }
 
   /* Get the type of the function */
@@ -2946,7 +2946,8 @@ static exprType_t pas_FunctionDesignator(void)
 
   /* Get the actual parameters (if any) associated with the procedure
    * call.  This will lie in the stack "above" the function return
-   * value container.
+   * value container.  The returned size accounts for all of the parameters
+   * with each aligned in integer-size address boundaries.
    */
 
   size = pas_ActualParameterList(funcPtr);

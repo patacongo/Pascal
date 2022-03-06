@@ -254,24 +254,25 @@
 /* Borland-style string procedures and functions */
 
 #define txLENGTH         0x9c
-#define txCHDIR          0x9d
-#define txCLOSEDIR       0x9e
-#define txCOPY           0x9f
-#define txCREATEDIR      0xa0
-#define txFILLCHAR       0xa1
-#define txGETDIR         0xa2
-#define txMKDIR          0xa3
-#define txOPENDIR        0xa4
-#define txPOS            0xa5
-#define txREADDIR        0xa6
-#define txREMOVEDIR      0xa7
-#define txREWINDDIR      0xa8
-#define txRMDIR          0xa9
-#define txVAL            0xaa
-#define txSETCURRDIR     0xab
-#define txSTR            0xac
-#define txCONCAT         0xad
-#define txINSERT         0xae
-#define txDELETE         0xaf
+#define txCHARAT         0x9d
+#define txCHDIR          0x9e
+#define txCLOSEDIR       0x9f
+#define txCOPY           0xa0
+#define txCREATEDIR      0xa1
+#define txFILLCHAR       0xa2
+#define txGETDIR         0xa3
+#define txMKDIR          0xa4
+#define txOPENDIR        0xa5
+#define txPOS            0xa6
+#define txREADDIR        0xa7
+#define txREMOVEDIR      0xa8
+#define txREWINDDIR      0xa9
+#define txRMDIR          0xaa
+#define txVAL            0xab
+#define txSETCURRDIR     0xac
+#define txSTR            0xad
+#define txCONCAT         0xae
+#define txINSERT         0xaf
+#define txDELETE         0xb0
 
 #endif /* __PAS_TKNDEFS_H */

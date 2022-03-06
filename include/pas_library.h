@@ -369,6 +369,21 @@
 
 #define lbFILLCHAR      (0x0016)
 
+/* Extract a character from a string.
+ *
+ *   function CharAt(inString : string; charPos : integer) : char
+ *
+ * ON INPUT
+ *   TOS(0) = Integer 'charPos' value
+ *   TOS(1) = Size of the string allocations
+ *   TOS(2) = Address of the allocated string buffer
+ *   TOS(3) = Current size of the string
+ * ON OUTPUT
+ *   TOS(0) = Character from 'inString' at 'charPos'
+ */
+
+#define lbCHARAT        (0x0017)
+
 /* Convert a numeric value to a string
  *
  * ON INPUT
@@ -378,11 +393,11 @@
  * ON OUTPUT
  */
 
-#define lbINTSTR        (0x0017)
-#define lbWORDSTR       (0x0018)
-#define lbLONGSTR       (0x0019)
-#define lbULONGSTR      (0x001a)
-#define lbREALSTR       (0x001b)
+#define lbINTSTR        (0x0018)
+#define lbWORDSTR       (0x0019)
+#define lbLONGSTR       (0x001a)
+#define lbULONGSTR      (0x001b)
+#define lbREALSTR       (0x001c)
 
 /* Convert a string to a numeric value
  *
@@ -412,8 +427,8 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x001c)
+#define lbVAL           (0x001d)
 
-#define MAX_LBOP        (0x001d)
+#define MAX_LBOP        (0x001e)
 
 #endif /* __PAS_LIBRARY_H */

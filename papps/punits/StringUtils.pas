@@ -4,14 +4,46 @@ INTERFACE
   USES
     Machine in 'Machine.pas'
 
-  CONST
-
   TYPE
 
+  FUNCTION UpperCase(ch : char) : char;
+  FUNCTION LowerCase(ch : char) : char;
   FUNCTION TokenizeString(inputLine, tokenDelimiter : string;
                           VAR Token : string; VAR strPos : integer) : boolean;
 
 IMPLEMENTATION
+
+  CONST
+    LowerA = Ord('a');
+    LowerZ = Ord('z');
+    UpperA = Ord('A');
+    UpperZ = Ord('Z')
+
+  { Convert characters from upper to lower case, and vice versa }
+
+  FUNCTION UpperCase(ch : char) : char;
+  VAR
+    Ascii : integer
+
+  BEGIN
+    Ascii := Ord(ch);
+    IF (Ascii >= LowerA) AND (Ascii <= LowerZ) THEN
+      ch := Chr(Ascii - LowerA + UpperA);
+
+    UpperCase := ch;
+  END;
+
+  FUNCTION LowerCase(ch : char) : char;
+  VAR
+    Ascii : integer
+
+  BEGIN
+    Ascii := Ord(ch);
+    IF (Ascii >= UpperA) AND (Ascii <= UpperZ) THEN
+      ch := Chr(Ascii - UpperA + LowerA);
+
+    LowerCase := ch;
+  END;
 
   { TokenizeString gets the next token from the string 'inputLine' on each
     call.  A token is defined to be a substring of 'inputLine' delimited by
@@ -31,35 +63,46 @@ IMPLEMENTATION
     TokenSize : integer
 
   BEGIN
-    (* Skip over leading delimiters *)
+    TokenizeString := false; (* Assume failure *)
 
-    REPEAT
-      ChStr := Copy(inputLine, strPos, 1);
-      DelimPos := Pos(ChStr, tokenDelimiter);
-      strPos := strPos + 1;
-    UNTIL DelimPos = 0;
+    (* Verify that we have not parsed to the end of the string *)
 
-    (* Then scan to the dimiter position after the token *)
-
-    StartPos := strPos;
-    REPEAT
-      ChStr := Copy(inputLine, strPos, 1);
-      DelimPos := Pos(ChStr, tokenDelimiter);
-      strPos := strPos + 1;
-    UNTIL DelimPos > 0;
-
-    (* Return the delimited substring *)
-
-    TokenSize := strPos - StartPos;
-    IF (TokenSize > 0) THEN
+    IF strPos < Length(inputLine) THEN
     BEGIN
-      Token := Copy(inputLine, StartPos, TokenSize);
-      TokenizeString := true
+      (* Skip over leading delimiters *)
+
+      REPEAT
+        ChStr := Copy(inputLine, strPos, 1);
+        DelimPos := Pos(ChStr, tokenDelimiter);
+        IF DelimPos <> 0 THEN
+          strPos := strPos + 1;
+      UNTIL DelimPos = 0;
+
+      (* Verify that There is something other than delimiters at the end of *)
+      (* the string                                                         *)
+
+      IF strPos < Length(inputLine) THEN
+      BEGIN
+        (* Then scan to the dimiter position after the token *)
+
+        StartPos := strPos;
+        strPos   := strPos + 1;
+
+        REPEAT
+          ChStr := Copy(inputLine, strPos, 1);
+          DelimPos := Pos(ChStr, tokenDelimiter);
+          strPos := strPos + 1;
+        UNTIL DelimPos > 0;
+
+        (* Return the delimited substring *)
+
+        TokenSize := strPos - StartPos;
+        IF (TokenSize > 0) THEN
+        BEGIN
+          Token := Copy(inputLine, StartPos, TokenSize);
+          TokenizeString := true
+        END
+      END
     END
-    ELSE
-    BEGIN
-      Token := '';
-      TokenizeString := false
-    END;
   END;
 END.

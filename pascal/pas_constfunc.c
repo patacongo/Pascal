@@ -119,6 +119,7 @@ static void pas_ConstantOrdFunc(void)
   pas_CheckLParen();
   pas_ConstantExpression(exprScalar, NULL);
   pas_IsOrdinalConstant();
+  g_constantToken = tINT_CONST;
   pas_CheckRParen();
 }
 
@@ -215,7 +216,8 @@ static void pas_ConstantChrFunc(void)
    *
    * char(val) is only defined if there exists a character ch such
    * that ord(ch) = val.  If this is not the case, we will simply
-   * let the returned value exceed the range of type char. */
+   * let the returned value exceed the range of type char.
+   */
 
   pas_CheckLParen();
   pas_ConstantExpression(exprInteger, NULL);

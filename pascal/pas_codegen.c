@@ -321,11 +321,11 @@ void pas_GenerateDebugInfo(symbol_t *pProc, uint32_t dwReturnSize)
   pContainer->retsize = dwReturnSize;
   pContainer->nparms  = nparms;
 
-  /* Add the argument information to the container */
+  /* Add the argument list size information to the container */
 
    for (i = 0; i < nparms; i++)
      {
-       pContainer->argsize[i] = pas_ActualParameterSize(pProc, i+1);
+       pContainer->argsize[i] = pas_ActualParameterSize(pProc, i + 1);
      }
 
    /* Add the contained information to the library */

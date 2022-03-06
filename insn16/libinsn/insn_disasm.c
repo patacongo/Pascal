@@ -498,9 +498,9 @@ static const char * const lbName[MAX_LBOP] =
 /* 0x08 */ "BSTR2STR",  "STR2BSTR",  "STR2BSTRX",  "STRINIT",
 /* 0x0c */ "STRTMP",    "STRDUP",    "MKSTKC",     "STRCAT",
 /* 0x10 */ "STRCATC",   "STRCMP",    "COPYSUBSTR", "FINDSUBSTR",
-/* 0x14 */ "INSERTSTR", "DELSUBSTR", "FILLCHAR ",  "INTSTR",
-/* 0x18 */ "WORDSTR",   "LONGSTR",   "ULONGSTR ",  "REALSTR",
-/* 0x1c */ "VAL"
+/* 0x14 */ "INSERTSTR", "DELSUBSTR", "FILLCHAR ",  "CHARAT",
+/* 0x18 */ "INTSTR",    "WORDSTR",   "LONGSTR",    "ULONGSTR ",
+/* 0x1c */ "REALSTR",   "VAL"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";

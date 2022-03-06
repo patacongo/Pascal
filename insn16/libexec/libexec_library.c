@@ -1378,6 +1378,43 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
       }
       break;
 
+      /* Extract a character from a string.
+       *
+       *   function CharAt(inString : string; charPos : integer) : char
+       *
+       * ON INPUT
+       *   TOS(0) = Integer 'charPos' value
+       *   TOS(1) = Size of the string allocations
+       *   TOS(2) = Address of the allocated string buffer
+       *   TOS(3) = Current size of the string
+       * ON OUTPUT
+       *   TOS(0) = Character from 'inString' at 'charPos'
+       */
+
+    case lbCHARAT :
+      {
+        uint16_t pos;
+        uint16_t result = 0;
+
+        /* Get the parameters off of the stack */
+
+        POP(st, pos);
+        DISCARD(st, 1);
+        POP(st, addr1);
+        POP(st, size);
+
+        /* Verify that the position is within range */
+
+        if (pos > 0 && pos <= size)
+          {
+            const char *sptr = (const char *)ATSTACK(st, addr1);
+            result = (uint16_t)sptr[pos - 1];
+          }
+
+        PUSH(st, result);
+      }
+      break;
+
       /* Convert a numeric value to a string
        *
        * ON INPUT

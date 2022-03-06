@@ -111,7 +111,7 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 
 #### String Operations
 
-Borland style string operators
+Borland style string operators,
 
 - `Length( s : string)` – Return the length of a string.
 - `Copy(s : string, from, howmuch: integer) : string` - Get a substring from a string.
@@ -121,11 +121,17 @@ Borland style string operators
 - `insert(source : string, VAR target : string; index : integer)` - Insert a string inside another string from at the indexth character.
 - `delete(VAR s : string; i, n: integer)` - Deletes `n` characters from string `s` starting from index `i`.
 - `fillchar(VAR s : string; count : integer; value : shortword)` -  Fill string s with character value until `s` is `count`-1 characters long
-- `Val(str : string; VAR numvar : integer; VAR code : integer)` – Convert a string to a numeric value.  `strvar` is a string variable to be converted, numvar is any numeric variable either `Integer`, `Longinteger`, `ShortInteger`, or `Real`, and if the conversion isn't successful, then the parameter `code` contains the index of the character in `S` which prevented the conversion.
+- `Val(inString : string; VAR numvar : integer; VAR code : integer)` – Convert a string to a numeric value.  `strvar` is a string variable to be converted, numvar is any numeric variable either `Integer`, `Longinteger`, `ShortInteger`, or `Real`, and if the conversion isn't successful, then the parameter `code` contains the index of the character in `S` which prevented the conversion.
 
 In addition to these built-in, *intrinsic* string operations.  Additional string support is provided throught the unit `StringUtils.pas`.  This additional support includes:
 
-- `function TokenizeString(str, tokenDelimiter : string; VAR token : string; VAR strPos : integer) : boolean` - Gets the next *token* from the string `str` on each call.  A *token* is defined to be a substring of `str` delimited by one of the characters from the string `tokenDelimiter`.  The integer `VAR` parameter `strPos` must be provided so that `TokenizeString` can continue parsing the string `str` from call-to-call.  `strPos` simply holds the position in the string `str` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
+- `function UpperCase(ch : char) : char` - Convert the input `ch` character from lower- to upper-case.  if `ch` is not a lower case character, it is returned unaltered.
+- `function LowerCase(ch : char) : char` - Convert the input `ch` character from upper- to lower-case.  if `ch` is not an upper lower case character, it is returned unaltered.
+- `function TokenizeString(inString, tokenDelimiter : string; VAR token : string; VAR strPos : integer) : boolean` - Gets the next *token* from the string `inString` on each call.  A *token* is defined to be a substring of `inString` delimited by one of the characters from the string `tokenDelimiter`.  The integer `VAR` parameter `strPos` must be provided so that `TokenizeString` can continue parsing the string `inString` from call-to-call.  `strPos` simply holds the position in the string `inString` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
+
+Non-standard string operations.
+
+- `function CharAt(inString : string; charPos : integer) : char` - Returns the character at position `charPos` in `inString`.  NUL is returned if the character position is invalid.  The only precedent that I am aware of is Delphi that uses an array like syntax to peek at specific characters.  The Delphi syntax would be `inString[charPos]`.
 
 #### File I/O
 - `Append` - Opens an existing file for appending data to end of file

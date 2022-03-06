@@ -3456,8 +3456,7 @@ int16_t pas_FormalParameterList(symbol_t *procPtr)
        * multiples of size of INTEGER).
        */
 
-      parameterOffset -= procPtr[i].sParm.v.vSize;
-      parameterOffset  = INT_ALIGNUP(parameterOffset);
+      parameterOffset -= INT_ALIGNUP(procPtr[i].sParm.v.vSize);
       procPtr[i].sParm.v.vOffset = parameterOffset;
     }
 

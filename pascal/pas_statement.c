@@ -1539,7 +1539,8 @@ static void pas_ProcStatement(void)
   getToken();
 
   /* Get the actual parameters (if any) associated with the procedure
-   * call.
+   * call.  The returned size accounts for all of the parameters with
+   * each aligned in integer-size address boundaries.
    */
 
   size = pas_ActualParameterList(procPtr);

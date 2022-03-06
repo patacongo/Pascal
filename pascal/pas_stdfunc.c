@@ -102,6 +102,7 @@ static void       pas_ReadDirectoryFunc(uint16_t opCode);
 
 /* Non-standard C-library interface functions */
 
+static void       pas_CharAtFunc(void);
 static exprType_t pas_GetEnvFunc (void);  /* Get environment string value */
 
 /****************************************************************************
@@ -877,6 +878,32 @@ static void pas_ReadDirectoryFunc(uint16_t opCode)
 }
 
 /****************************************************************************/
+/* Extract a character from a string */
+
+static void pas_CharAtFunc(void)
+{
+  /* FORM:  charat '(' string-expression ',' integer-expression ')' */
+
+  pas_CheckLParen();
+
+  /* Get the string expression */
+
+  pas_Expression(exprString, NULL);
+
+  /* Verify that the two arguments are separated with a comma */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Get the integer expression (position in the string) */
+
+  pas_Expression(exprInteger, NULL);
+
+  pas_StandardFunctionCall(lbCHARAT);
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
 /* C library getenv interface */
 
 static exprType_t pas_GetEnvFunc(void)
@@ -1004,6 +1031,11 @@ exprType_t pas_StandardFunction(void)
           break;
 
           /* Non-standard C library interfaces */
+
+        case txCHARAT :
+          pas_CharAtFunc();
+          funcType = exprChar;
+          break;
 
         case txGETENV :
           funcType = pas_GetEnvFunc();

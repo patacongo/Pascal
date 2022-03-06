@@ -16,6 +16,12 @@ PROGRAM PShell;
     NumTokens      : integer;
     DisplayIndex   : integer
 
+  PROCEDURE ShowUsage;
+  BEGIN
+    WRITELN('PShell Commands:');
+    WRITELN('  Q[uit] - Exit');
+  END;
+
   PROCEDURE ParseLine;
   VAR
     TokenPosition  : integer;
@@ -37,11 +43,27 @@ PROGRAM PShell;
      END
   END;
 
-BEGIN
-  CommandLine := 'This is a string';
-  WRITELN('String: ', CommandLine);
-  ParseLine;
-  WRITELN('Tokens:');
-  FOR DisplayIndex := 1 TO NumTokens DO
-    WRITELN(CommandTokens[DisplayIndex])
-END.
+  PROCEDURE ExecuteCommand;
+  VAR
+    FirstCh : char
+
+  BEGIN
+     FirstCh := UpperCase(CharAt(CommandTokens[1], 1));
+     CASE FirstCh OF
+       'Q' : Exit(0);
+       ELSE ShowUsage
+     END
+  END;
+
+  BEGIN
+    REPEAT
+      WRITE('psh> ');
+      READLN(CommandLine);
+      ParseLine;
+      WRITELN(NumTokens, ' Tokens in Command:');
+      FOR DisplayIndex := 1 TO NumTokens DO
+        WRITELN(DisplayIndex, ' [', CommandTokens[DisplayIndex], ']');
+      IF NumTokens > 0 THEN
+        ExecuteCommand;
+    UNTIL false
+  END.

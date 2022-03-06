@@ -48,6 +48,7 @@
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
+#include "pas_machine.h"
 #include "pas_sysio.h"
 #include "pas_library.h"
 
@@ -2487,6 +2488,11 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
 
   /* These sizes must agree with the sizes used in
    * pas_ActualParameterList() below.
+   *
+   * REVISIT:  This alignment is only necessary on odd byte-size data
+   * types because they may be followed by a parameter that does require
+   * alignment.  We could probably pack byte-sized parameters if we were
+   * more clever.
    */
 
   baseTypePtr = pas_GetBaseTypePointer(procPtr[parmNo].sParm.v.vParent);
@@ -2496,45 +2502,45 @@ int pas_ActualParameterSize(symbol_t *procPtr, int parmNo)
     case sWORD :
     case sSUBRANGE :
     case sSCALAR :
-      return sINT_SIZE;
+      return INT_ALIGNUP(sINT_SIZE);
 
     case sSHORTINT :
     case sSHORTWORD :
-      return sSHORTINT_SIZE;
+      return INT_ALIGNUP(sSHORTINT_SIZE);
 
     case sLONGINT :
     case sLONGWORD :
-      return sLONGINT_SIZE;
+      return INT_ALIGNUP(sLONGINT_SIZE);
 
     case sCHAR :
-      return sCHAR_SIZE;
+      return INT_ALIGNUP(sCHAR_SIZE);
 
     case sBOOLEAN :
-      return sBOOLEAN_SIZE;
+      return INT_ALIGNUP(sBOOLEAN_SIZE);
 
     case sREAL :
-      return sREAL_SIZE;
+      return INT_ALIGNUP(sREAL_SIZE);
 
     case sSET :
-      return sSET_SIZE;
+      return INT_ALIGNUP(sSET_SIZE);
 
     case sSTRING :
-      return sSTRING_SIZE;
+      return INT_ALIGNUP(sSTRING_SIZE);
 
     case sARRAY :
     case sRECORD :
-      return baseTypePtr->sParm.t.tAllocSize;
+      return INT_ALIGNUP(baseTypePtr->sParm.t.tAllocSize);
 
     case sFILE :
     case sTEXTFILE :
-      return sINT_SIZE;
+      return INT_ALIGNUP(sINT_SIZE);
 
     case sVAR_PARM :
-      return sPTR_SIZE;
+      return INT_ALIGNUP(sPTR_SIZE);
 
     default:
       error(eINVPARMTYPE);
-      return sINT_SIZE;
+      return INT_ALIGNUP(sINT_SIZE);
     }
 }
 
@@ -2588,6 +2594,11 @@ int pas_ActualParameterList(symbol_t *procPtr)
        * argument descriptions follow the procedure/function description
        * as an array of variable declarations. (These sizes below must
        * agree with pas_ActualParameterSize() above);
+       *
+       * REVISIT:  This alignment is only necessary on odd byte-size data
+       * types because they may be followed by a parameter that does require
+       * alignment.  We could probably pack byte-sized parameters if we were
+       * more clever.
        */
 
       for (parmIndex = 1;
@@ -2601,51 +2612,51 @@ int pas_ActualParameterList(symbol_t *procPtr)
             case sWORD :
               exprType = pas_MapVariable2ExprType(procPtr[parmIndex].sKind, true);
               pas_Expression(exprType, typePtr);
-              size += sINT_SIZE;
+              size += INT_ALIGNUP(sINT_SIZE);
               break;
 
             case sSHORTINT :
             case sSHORTWORD :
               exprType = pas_MapVariable2ExprType(procPtr[parmIndex].sKind, true);
               pas_Expression(exprType, typePtr);
-              size += sSHORTINT_SIZE;
+              size += INT_ALIGNUP(sSHORTINT_SIZE);
               break;
 
             case sLONGINT :
             case sLONGWORD :
               exprType = pas_MapVariable2ExprType(procPtr[parmIndex].sKind, true);
               pas_Expression(exprType, typePtr);
-              size += sLONGINT_SIZE;
+              size += INT_ALIGNUP(sLONGINT_SIZE);
               break;
 
             case sCHAR :
               pas_Expression(exprChar, typePtr);
-              size += sCHAR_SIZE;
+              size += INT_ALIGNUP(sCHAR_SIZE);
               break;
 
             case sREAL :
               pas_Expression(exprReal, typePtr);
-              size += sREAL_SIZE;
+              size += INT_ALIGNUP(sREAL_SIZE);
               break;
 
             case sSTRING :
               pas_Expression(exprString, typePtr);
-              size += sSTRING_SIZE;
+              size += INT_ALIGNUP(sSTRING_SIZE);
               break;
 
             case sSUBRANGE :
               pas_Expression(exprInteger, typePtr);
-              size += sINT_SIZE;
+              size += INT_ALIGNUP(sINT_SIZE);
               break;
 
             case sSCALAR :
               pas_Expression(exprScalar, typePtr);
-              size += sINT_SIZE;
+              size += INT_ALIGNUP(sINT_SIZE);
               break;
 
             case sSET :
               pas_Expression(exprSet, typePtr);
-              size += sSET_SIZE;
+              size += INT_ALIGNUP(sSET_SIZE);
               break;
 
             case sARRAY :
@@ -2673,13 +2684,13 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                 exprType = pas_MapVariable2ExprType(arrayKind, false);
                 pas_Expression(exprType, typePtr);
-                size += typePtr->sParm.t.tAllocSize;
+                size += INT_ALIGNUP(typePtr->sParm.t.tAllocSize);
               }
               break;
 
             case sRECORD :
               pas_Expression(exprRecord, typePtr);
-              size += typePtr->sParm.t.tAllocSize;
+              size += INT_ALIGNUP(typePtr->sParm.t.tAllocSize);
               break;
 
             case sVAR_PARM :
@@ -2705,7 +2716,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
                     case sSCALAR_OBJECT :
                       varExprType = pas_MapVariable2ExprPtrType(varType, true);
                       pas_VarParameter(varExprType, typePtr);
-                      size += sPTR_SIZE;
+                      size += INT_ALIGNUP(sPTR_SIZE);
                       break;
 
                     /* Simple non-ordinal types */
@@ -2719,7 +2730,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
                     case sTEXTFILE :
                       varExprType = pas_MapVariable2ExprPtrType(varType, false);
                       pas_VarParameter(varExprType, typePtr);
-                      size += sPTR_SIZE;
+                      size += INT_ALIGNUP(sPTR_SIZE);
                       break;
 
                     /* Not so simple types that require a little more effort */
@@ -2749,7 +2760,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
 
                         exprType = pas_MapVariable2ExprPtrType(arrayKind, false);
                         pas_VarParameter(exprType, typePtr);
-                        size += sPTR_SIZE;
+                        size += INT_ALIGNUP(sPTR_SIZE);
                       }
                       break;
 
