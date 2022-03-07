@@ -72,7 +72,7 @@
 /* Align to integer stack boundaries */
 
 #define INT_ALIGNUP(n)      (((n) + sINT_SIZE - 1) & ~(sINT_SIZE - 1))
-#define INT_ALIGNDOWN(n)    ((n) & ~sINT_SIZE)
+#define INT_ALIGNDOWN(n)    ((n) & ~(sINT_SIZE - 1))
 #define INT_ISALIGNED(n)    (((n) & (sINT_SIZE - 1)) == 0)
 
 #define sSHORTINT_SIZE      1

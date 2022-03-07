@@ -14,7 +14,8 @@ PROGRAM PShell;
     CommandLine    : STRING[MaxLineSize];
     CommandTokens  : ARRAY[1..MaxCmdTokens] OF STRING[MaxTokenSize];
     NumTokens      : integer;
-    DisplayIndex   : integer
+    DisplayIndex   : integer;
+    Quit           : boolean
 
   PROCEDURE ShowUsage;
   BEGIN
@@ -50,12 +51,14 @@ PROGRAM PShell;
   BEGIN
      FirstCh := UpperCase(CharAt(CommandTokens[1], 1));
      CASE FirstCh OF
-       'Q' : Exit(0);
+       'Q' : Quit := true;
        ELSE ShowUsage
      END
   END;
 
   BEGIN
+    Quit := false;
+
     REPEAT
       WRITE('psh> ');
       READLN(CommandLine);
@@ -65,5 +68,5 @@ PROGRAM PShell;
         WRITELN(DisplayIndex, ' [', CommandTokens[DisplayIndex], ']');
       IF NumTokens > 0 THEN
         ExecuteCommand;
-    UNTIL false
+    UNTIL Quit
   END.

@@ -735,7 +735,7 @@ static void pas_FunctionDeclaration(void)
        */
 
       parameterOffset        -= g_dwVarSize;
-      parameterOffset         = INT_ALIGNUP(parameterOffset);
+      parameterOffset         = INT_ALIGNDOWN(parameterOffset);
 
       /* Save the TYPE for the function return value local variable */
 

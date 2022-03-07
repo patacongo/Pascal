@@ -67,8 +67,6 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 
 - `GOTO` only partially implemented -- no stack corrections for GOTOs between loops, blocks, etc.  Use is *DANGEROUS*.
 - Expressions are not strongly typed across different `SCALAR` types (see exprEnum in expr.h)
-- `CASE` statement expects integer expression for the switch variable
-- `ELSE` in `CASE` statement
 
 ## Standard Procedures and Functions
 
@@ -127,7 +125,8 @@ In addition to these built-in, *intrinsic* string operations.  Additional string
 
 - `function UpperCase(ch : char) : char` - Convert the input `ch` character from lower- to upper-case.  if `ch` is not a lower case character, it is returned unaltered.
 - `function LowerCase(ch : char) : char` - Convert the input `ch` character from upper- to lower-case.  if `ch` is not an upper lower case character, it is returned unaltered.
-- `function TokenizeString(inString, tokenDelimiter : string; VAR token : string; VAR strPos : integer) : boolean` - Gets the next *token* from the string `inString` on each call.  A *token* is defined to be a substring of `inString` delimited by one of the characters from the string `tokenDelimiter`.  The integer `VAR` parameter `strPos` must be provided so that `TokenizeString` can continue parsing the string `inString` from call-to-call.  `strPos` simply holds the position in the string `inString` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
+- `function CharPos(StrInput : STRING; CheckChar : char; StartPos : integer) : integer` - Return the position of the next occurence of `CheckChar` in `StrInput` after position `CheckPos`.  Position zero is returned if there is character meeting these conditions
+- `function TokenizeString(inString, tokenDelimiters : string; VAR token : string; VAR StrPos : integer) : boolean` - Gets the next *token* from the string `inString` on each call.  A *token* is defined to be a substring of `inString` delimited by one of the characters from the string `tokenDelimiters`.  The integer `VAR` parameter `StrPos` must be provided so that `TokenizeString` can continue parsing the string `inString` from call-to-call.  `StrPos` simply holds the position in the string `inString` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
 
 Non-standard string operations.
 
@@ -417,3 +416,5 @@ Precedence is given to the interpretation of the identifier as a field name in b
 - There are probably other bad behaviors that might happen(?).  Maybe crashes or hangs.  The error conditions all need to be analyzed and tested.
 
 **64-Bit Integer Types**.  I believe that the `INT64` type is needed only for long file positions in procedures like `SEEK` and functions like `FILEPOS` and `FILESIZE`.  Currently, `INT64` is  simply aliased inside the compiler to `LONGINTEGER`, thus limiting the size of files that can be handled.
+
+**NULL Statements**.  In some cases, the compiler allows a *NULL Statement*, i.e., an extra semi-colon in contexts where one is not needed.  In other cases, it does not permit these NULL statements.  Need to make this consistent.

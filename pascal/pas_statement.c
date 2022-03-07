@@ -1857,7 +1857,7 @@ static void pas_CaseStatement(void)
                 {
                   /* Generate jump to <statement> */
 
-                  pas_GenerateDataOperation(opJEQUZ, this_case);
+                  pas_GenerateDataOperation(opJEQU, this_case);
 
                   /* Skip over comma */
 
@@ -1867,7 +1867,7 @@ static void pas_CaseStatement(void)
                 {
                   /* else jump to the next case */
 
-                  pas_GenerateDataOperation(opJNEQZ, next_case);
+                  pas_GenerateDataOperation(opJNEQ, next_case);
                   break;
                 }
             }

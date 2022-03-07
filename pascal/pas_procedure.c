@@ -1536,8 +1536,8 @@ static void pas_NewProc(void)
 
           pas_GenerateStackReference(opSTS, varPtr);
 
-          /* If we just allocated a string, shortstring, or file type, then we
-           * have to initialize the allocated instance.
+          /* If we just allocated a string or file type, then we  have to
+           * initialize the allocated instance.
            */
 
           baseTypePtr = pas_GetBaseTypePointer(parentTypePtr);
@@ -1548,6 +1548,12 @@ static void pas_NewProc(void)
            * time.
            */
 
+          /* Dereference the new pointer variable and place the address of
+           * the new variable at the top of the stack.  If don't actually use
+           * the value, then the optimizer should remove it.
+           */
+
+          pas_GenerateStackReference(opLDS, varPtr);
           if (varType == sSTRING)
             {
               pas_InitializeNewString(baseTypePtr);
@@ -1578,6 +1584,12 @@ static void pas_NewProc(void)
             {
               pas_InitializeNewArray(parentTypePtr);
             }
+
+           /* Discard the variable value at the top of the stack.  It was
+            * duplicated before being used, so this clean-up is necessary.
+            */
+
+           pas_GenerateDataOperation(opINDS, -sPTR_SIZE);
         }
     }
 
