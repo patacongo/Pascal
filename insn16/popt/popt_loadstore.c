@@ -73,6 +73,10 @@ int16_t popt_StackOrderOptimize(void)
 
       switch (g_opPtr[i]->op)
         {
+          /* If we are exchanging two data operations, then swap the two
+           * data operations and delete the exchange instruction.
+           */
+
         case oXCHG :  /* (Two 16-bit stack arguments) */
           if (popt_CheckDataOperation(i - 1) &&
               popt_CheckDataOperation(i - 2))
@@ -86,16 +90,21 @@ int16_t popt_StackOrderOptimize(void)
             }
           break;
 
+          /* If a data load operation is followed by a stack decrement, then
+           * the loaded data is being discarded.  Remove the load and
+           * decrease the stack decrement (maybe removing it altogether.
+           */
+
         case oINDS :  /* (Variable number of 16-bit stack arguments) */
-          if (g_opPtr[i]->arg2 >= sINT_SIZE && popt_CheckDataOperation(i - 1))
+          if (g_opPtr[i]->arg2 <= sINT_SIZE && popt_CheckDataOperation(i - 1))
             {
-              if (g_opPtr[i]->arg2 == sINT_SIZE)
+              if (g_opPtr[i]->arg2 == -sINT_SIZE)
                 {
                   popt_DeletePCodePair(i, i - 1);
                 }
               else
                 {
-                  g_opPtr[i]->arg2 -= sINT_SIZE;
+                  g_opPtr[i]->arg2 += sINT_SIZE;
                   popt_DeletePCode(i - 1);
                 }
             }

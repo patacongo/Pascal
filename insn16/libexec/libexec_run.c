@@ -155,7 +155,7 @@ static int libexec_ProcedureCall(struct libexec_s *st, level_t nestingLevel)
           return eNESTINGLEVEL;
         }
 
-      /* It would be an error if we went all the zero to level 0 and never
+      /* It would be an error if we went all the way to level 0 and never
        * found the frame we are looking for.
        */
 
@@ -1544,7 +1544,8 @@ void libexec_Reset(struct libexec_s *st)
   dndx                   = BTOISTACK(st->spb);
   st->dstack.i[dndx + 0] = 0;      /* FP */
   st->dstack.i[dndx + 1] = -1;     /* Return address */
-  st->dstack.i[dndx + 2] = 0;      /* Nesting Level */
+  st->dstack.i[dndx + 2] = 0;      /* Return Address */
+  st->dstack.i[dndx + 3] = 0;      /* Nesting Level */
 
   st->spb               += _FSIZE;
 

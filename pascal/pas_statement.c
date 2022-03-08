@@ -1798,7 +1798,13 @@ static void pas_CaseStatement(void)
 
           for (; ; )
             {
-              /* Generate a comparison of the CASE expression and the constant. */
+              /* Generate a comparison of the CASE expression and the
+               * constant.  Duplicate the case expression value at the TOP
+               * of the stack.  The "dangling" value will be discarded by
+               * end-of-case logic below.
+               */
+
+              pas_GenerateSimple(opDUP);
 
               /* Verify that we have a constant.  This could be  literal constant,
                * defined constant, or perhaps a standard function operating on
