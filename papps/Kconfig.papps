@@ -22,12 +22,12 @@ endchoice # Pascal Start-Up Media
 
 #config PASCAL_STARTUP_FILENAME
 #	string "Pascal start-up file name"
-#	default "pstartup.pex"
+#	default "pshell.pex"
 #	depends on PASCAL_STARTUP_FILE
 
 config PASCAL_STARTUP_FILENAME
 	string
-	default "pstartup.pex"
+	default "pshell.pex"
 
 #config PASCAL_STARTUP_INMEMORY
 #	string "Pascal start-up in-memory symbol name"

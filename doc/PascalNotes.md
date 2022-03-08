@@ -200,6 +200,8 @@ The `attr` is a integer constant the identifies the type(s) of the file:
 
 Using these intrinic functions, `FileUtils.pas` can then provide:
 
+- `function  ExtractFilePath(FullPath : string ) : string` - `ExtractFilePath` returns the path part (including drive letter, if applicable) from `FullPath`.  The returned path consists of all characters before the last directory separator character ('/' or '\'), including the directory separator itself. In case there is only a drive letter, that will be returned.
+- `function  ExtractFileName(FullPath : string ) : string` - `ExtractFileName` returns the filename part from `FullPath`.  The returned filename consists of all characters after the last directory separator character ('/' or '\') or drive letter.
 - `function FindFirst(pathTemplate : string; attributes : ShortWord, VAR searchResult : TSearchRec ) : boolean` - `FindFirst` function searches for files matching a `pathTemplate` and `attributes`.  If successful, `FindFirst` returns *true* and the first match in `searchResult`.
 - `function FindNext(VAR searchResults : TSearchRec) : boolean` - The `FindNext` function looks for the next matching file, as defined in the search criteria given by the preceding `FindFirst` call.
 - `procedure FindClose(VAR searchResults : TSearchRec) - The `FindClose` function closes a successful FindFirst (and FindNext) file search. It frees up the resources used by the search in 'searchResults`.
@@ -417,4 +419,4 @@ Precedence is given to the interpretation of the identifier as a field name in b
 
 **64-Bit Integer Types**.  I believe that the `INT64` type is needed only for long file positions in procedures like `SEEK` and functions like `FILEPOS` and `FILESIZE`.  Currently, `INT64` is  simply aliased inside the compiler to `LONGINTEGER`, thus limiting the size of files that can be handled.
 
-**NULL Statements**.  In some cases, the compiler allows a *NULL Statement*, i.e., an extra semi-colon in contexts where one is not needed.  In other cases, it does not permit these NULL statements.  Need to make this consistent.
+**NULL Statements**.  In some cases, the compiler allows a *NULL Statement*, i.e., an extra semi-colon in contexts where one is not needed.  In other cases, it does not permit these NULL statements.  Need to make this consistent:  Either be consistently strict or consistently permissive.
