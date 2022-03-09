@@ -2413,16 +2413,38 @@ static exprType_t pas_SimplePointerFactor(varInfo_t *varInfo,
               error(ePOINTERTYPE);
             }
 
-          if ((factorFlags & FACTOR_INDEXED) != 0)
+          if ((factorFlags & FACTOR_VAR_PARM) != 0)
             {
-              pas_GenerateStackReference(opLASX, varPtr);
+              /* Load the address from the VAR parameter */
+
+              if ((factorFlags & FACTOR_INDEXED) != 0)
+                {
+                  pas_GenerateStackReference(opLDSX, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLDS, varPtr);
+                }
+
+              /* I would expect FACTOR_LOAD_ADDRESS to be set in this case */
+
+              factorType = exprRecordPtr;
             }
           else
             {
-              pas_GenerateStackReference(opLAS, varPtr);
-            }
+              /* Get the address from the variable */
 
-          factorType = exprRecordPtr;
+              if ((factorFlags & FACTOR_INDEXED) != 0)
+                {
+                  pas_GenerateStackReference(opLASX, varPtr);
+                }
+              else
+                {
+                  pas_GenerateStackReference(opLAS, varPtr);
+                }
+
+              factorType = exprRecordPtr;
+            }
         }
       else
         {
@@ -2674,6 +2696,36 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
       varPtr->sParm.v.vSize = baseTypePtr->sParm.t.tAllocSize;
     }
 
+  /* Perhaps this is a pointer to an array or an array VAR parameter.
+   * In that case, we need to load the address of the array by
+   * dereferencing the pointer/VAR parameter.
+   */
+
+  else if ((factorFlags & (FACTOR_DEREFERENCE | FACTOR_VAR_PARM)) != 0)
+    {
+     /* Load the address of the array by dereferencing the pointer. */
+
+     pas_GenerateStackReference(opLDS, varPtr);
+
+     /* If the varPtr offset is really to a RECORD and if the array
+      * type is really a field of the RECORD, then we need to add
+      * the offset of the array field to this address.
+      */
+
+     if ((factorFlags & FACTOR_FIELD_OFFSET) != 0)
+       {
+         pas_GenerateDataOperation(opPUSH, varInfo->fOffset);
+         pas_GenerateSimple(opADD);
+       }
+
+     /* The expression type is still a pointer to the base type of the
+      * array.
+      */
+
+     factorType = pas_MapVariable2ExprPtrType(baseTypePtr->sParm.t.tType,
+                                              false);
+    }
+
   /* But a more typical case in the context of this function is to have no
    * index on the array.  This would be the case if the array is passed by
    * reference as a VAR.
@@ -2681,9 +2733,14 @@ static exprType_t pas_ArrayPointerFactor(varInfo_t *varInfo,
 
   else
    {
-     /* Just load the address of the array */
+     /* Just load the address of the array. */
 
      pas_GenerateStackReference(opLAS, varPtr);
+
+     /* The expression type is then a pointer to the base type of the
+      * array.
+      */
+
      factorType = pas_MapVariable2ExprPtrType(baseTypePtr->sParm.t.tType,
                                               false);
    }

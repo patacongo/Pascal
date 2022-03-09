@@ -834,6 +834,20 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
               varPtr->sKind           = typePtr->sParm.t.tType;
               varPtr->sParm.v.vParent = typePtr;
 
+              /* REVISIT:  If this is a string VAR parm, then we already
+               * made a mistake:  Strings are handled differently; the value
+               * is assigned via STRCPY and not via a store to an address.
+               * But we already screwed up while processing the VAR parameter
+               * before we need it was a string field of a RECORD.  The
+               * following is a hack that might undo that mistake.
+               */
+
+              if (varPtr->sKind == sSTRING &&
+                  (assignFlags & ASSIGN_VAR_PARM) != 0)
+                {
+                  assignFlags |= ASSIGN_LVALUE_ADDR;
+                }
+
               /* Adjust the variable size and offset.  Add the RECORD offset
                * to the RECORD data stack offset to get the data stack
                * offset to the record object; Change the size to match the
@@ -1019,9 +1033,14 @@ static void pas_SimpleAssignment(symbol_t *varPtr, uint8_t assignFlags)
         if (assignFlags != 0) error(eVARPARMTYPE);
 
         /* Load the address provided by the VAR parameter now.  An exception
-         * is for string assignments; they work differently:  The RValue is not
-         * simply stored to the LValue, rather the RValue string is copied to
-         * the LValue string reference through a run-time library call.
+         * is for string assignments; they work differently:  The RValue is
+         * not simply stored to the LValue, rather the RValue string is
+         * copied to the LValue string reference through a run-time library
+         * call.
+         *
+         * A problematic case is if the base type is a RECORD and we will
+         * eventually find that the record field is a string.  Then the
+         * generation of this opLDS will be an error.
          */
 
         baseTypePtr = pas_GetBaseTypePointer(typePtr);
