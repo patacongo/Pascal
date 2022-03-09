@@ -1278,7 +1278,7 @@ int16_t popt_BinaryOptimize(void)
        */
 
       else if (popt_CheckPushConstant(i) &&
-               popt_CheckDataOperation(i + 1) &&
+               popt_CheckLoadOperation(i + 1) &&
                popt_CheckBinaryOperator(i + 2))
         {
           /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */

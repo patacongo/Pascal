@@ -430,17 +430,12 @@ void popt_SwapPCodePair(int16_t swapIndex1, int16_t swapIndex2)
   popt_SetupOpcodePointerList();  /* Shouldn't be necessary */
 }
 
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
 /****************************************************************************/
 /* Check if the opcode at this peephole index:  (1) pushs some data on the
  * stack and (2) does not depend on prior stack content.
  */
 
-bool popt_CheckDataOperation(int16_t chkIndex)
+bool popt_CheckLoadOperation(int16_t chkIndex)
 {
   return (g_opPtr[chkIndex]->op == oPUSH   || g_opPtr[chkIndex]->op == oPUSHB ||
           g_opPtr[chkIndex]->op == oUPUSHB ||
@@ -450,6 +445,17 @@ bool popt_CheckDataOperation(int16_t chkIndex)
           g_opPtr[chkIndex]->op == oULDSB  ||
           g_opPtr[chkIndex]->op == oLA     || g_opPtr[chkIndex]->op == oLAS   ||
           g_opPtr[chkIndex]->op == oLAC);
+}
+
+/****************************************************************************/
+/* Check if the opcode at this peephole index:  (1) removes some data on the
+ * stack and (2) does not depend on any other prior stack content.
+ */
+
+bool popt_CheckStoreOperation(int16_t chkIndex)
+{
+  return (g_opPtr[chkIndex]->op == oST  || g_opPtr[chkIndex]->op == oSTB  ||
+          g_opPtr[chkIndex]->op == oSTS || g_opPtr[chkIndex]->op == oSTSB);
 }
 
 /****************************************************************************/

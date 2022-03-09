@@ -78,8 +78,8 @@ int16_t popt_StackOrderOptimize(void)
            */
 
         case oXCHG :  /* (Two 16-bit stack arguments) */
-          if (popt_CheckDataOperation(i - 1) &&
-              popt_CheckDataOperation(i - 2))
+          if (popt_CheckLoadOperation(i - 1) &&
+              popt_CheckLoadOperation(i - 2))
             {
               popt_SwapPCodePair(i - 1, i - 2);
               popt_DeletePCode(i);
@@ -96,7 +96,9 @@ int16_t popt_StackOrderOptimize(void)
            */
 
         case oINDS :  /* (Variable number of 16-bit stack arguments) */
-          if (g_opPtr[i]->arg2 <= sINT_SIZE && popt_CheckDataOperation(i - 1))
+          if ((int16_t)g_opPtr[i]->arg2 <= -sINT_SIZE &&
+              (popt_CheckLoadOperation(i - 1) ||
+               g_opPtr[i - 1]->op == oDUP))
             {
               if (g_opPtr[i]->arg2 == -sINT_SIZE)
                 {
@@ -106,6 +108,20 @@ int16_t popt_StackOrderOptimize(void)
                 {
                   g_opPtr[i]->arg2 += sINT_SIZE;
                   popt_DeletePCode(i - 1);
+                }
+            }
+          else if ((int16_t)g_opPtr[i]->arg2 <= -sINT_SIZE &&
+                   popt_CheckStoreOperation(i - 1) &&
+                   g_opPtr[i - 2]->op == oDUP)
+            {
+              if (g_opPtr[i]->arg2 == -sINT_SIZE)
+                {
+                  popt_DeletePCodePair(i, i - 2);
+                }
+              else
+                {
+                  g_opPtr[i]->arg2 += sINT_SIZE;
+                  popt_DeletePCode(i - 2);
                 }
             }
           else

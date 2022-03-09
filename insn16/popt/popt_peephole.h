@@ -87,7 +87,8 @@ void popt_SwapPCodePair          (int16_t swapIndex1, int16_t swapIndex2);
 
 /* Peephole queries */
 
-bool popt_CheckDataOperation     (int16_t chkIndex);
+bool popt_CheckLoadOperation     (int16_t chkIndex);
+bool popt_CheckStoreOperation    (int16_t chkIndex);
 bool popt_CheckAddressOperation  (int16_t chkIndex);
 bool popt_CheckBinaryOperator    (int16_t chkIndex);
 bool popt_CheckTransitiveOperator(int16_t chkIndex);
