@@ -1,70 +1,7 @@
 menu "Pascal Applications"
 
-config PASCAL_STARTUP
-	bool "Enable Pascal Start-Up Application"
-	default n
-	depends on PASCAL_BUILD_NUTTX
-	---help---
-		Enable building of the the Pascal initialization task for NuttX.
-
-if PASCAL_STARTUP
-
-choice
-	prompt "Pascal Start-Up Media"
-
-config PASCAL_STARTUP_FILE
-	bool "Pascal start-up resides in a file"
-
-#config PASCAL_STARTUP_INMEMORY
-#	bool "Pascal start-up resides in memory"
-
-endchoice # Pascal Start-Up Media
-
-#config PASCAL_STARTUP_FILENAME
-#	string "Pascal start-up file name"
-#	default "pshell.pex"
-#	depends on PASCAL_STARTUP_FILE
-
-config PASCAL_STARTUP_FILENAME
-	string
-	default "pshell.pex"
-
-#config PASCAL_STARTUP_INMEMORY
-#	string "Pascal start-up in-memory symbol name"
-#	default "g_pStartUpPex"
-#	depends on PASCAL_STARTUP_INMEMORY
-
-config PASCAL_STARTUP_DEBUG
-	bool "Enable P-Code debugger at startup"
-	default n
-	depends on PASCAL_DEBUGGER
-	---help---
-		The start-up Pascal program with begin in the Pascal P-code debugger.
-
-config PASCAL_STARTUP_STKSIZE
-	int "Pascal start-up stack size"
-	default 4096
-	---help---
-		Stack memory set aside for code execution.
-
-config PASCAL_STARTUP_STRSIZE
-	int "Pascal start-up string stack size (total)"
-	default 1024
-	---help---
-		Total stack memory set aside for strings.
-
-config PASCAL_STARTUP_HEAPSIZE
-	int "Pascal start-up heap size"
-	default 256
-	---help---
-		Memory set aside for usage with new and dispose.
-
-endif # PASCAL_STARTUP
-
-config PASCAL_HELLO
-	bool "Hello, World! Pascal Example"
-	default n
-	---help---
-		Enable building of the the Pascal "Hello, World!" sample application.
+source "$PASTOPDIR/papps/pstart/Kconfig.pstart"
+source "$PASTOPDIR/papps/phello/Kconfig.phello"
+source "$PASTOPDIR/papps/pshell/Kconfig.pshell"
 
 endmenu # Pascal Applications

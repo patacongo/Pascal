@@ -37,34 +37,37 @@
 # Directories
 #
 
-PSHELLDIR = ${shell pwd}
-PAPPSDIR  = $(PSHELLDIR)/..
-PIMAGEDIR = $(PAPPSDIR)/image
-PUNITDIR  = $(PAPPSDIR)/punits
+PSHELLDIR  = ${shell pwd}
+PAPPSDIR   = $(PSHELLDIR)/..
+PIMAGEDIR  = $(PAPPSDIR)/image
+PUNITDIR   = $(PAPPSDIR)/punits
 
-PASCAL    = $(PAPPSDIR)/..
+PASCAL     = $(PAPPSDIR)/..
 include $(PASCAL)/tools/Config.mk
 
 #
 # Tools
 #
 
-PASOPTS   = -I$(PUNITDIR)
+PASOPTS    = -I$(PUNITDIR)
 
 #
 # Objects and targets
 #
 
-SUFFIXES += .pas .o1 .o .pex .err .lst
+SUFFIXES  += .pas .o1 .o .pex .err .lst
 
-UNITSRCS  = $(PUNITDIR)/FileUtils.pas $(PUNITDIR)/StringUtils.pas
-UOBJS1    = $(UNITSRCS:.pas=.o1)
-UOBJS     = $(UNITSRCS:.pas=.o)
+UNITSRCS   = PshCommands.pas $(PUNITDIR)/FileUtils.pas $(PUNITDIR)/StringUtils.pas
+UOBJS1     = $(UNITSRCS:.pas=.o1)
+UOBJS      = $(UNITSRCS:.pas=.o)
 
-PSRCS     = pshell.pas
-POBJS1    = $(PSRCS:.pas=.o1)
-POBJS     = $(PSRCS:.pas=.o)
-PEX       = $(PSRCS:.pas=.pex)
+PMAINSRC   = Pshell.pas
+PMAINOBJS1 = $(PMAINSRC:.pas=.o1)
+PMAINOBJS  = $(PMAINSRC:.pas=.o)
+PMAINPEX   = $(PMAINSRC:.pas=.pex)
+
+POBJS1     = $(UOBJS1) $(PMAINOBJS1)
+POBJS      = $(UOBJS) $(PMAINOBJS)
 
 #
 # Targets
@@ -73,23 +76,23 @@ PEX       = $(PSRCS:.pas=.pex)
 all: pshell
 .PHONY: all pshell clean distclean
 
-$(POBJS1) $(UOBJS1) : %.o1: %.pas
+$(POBJS1) : %.o1: %.pas
 	$(Q) echo "  $@"
 	$(Q) $(PAS) $(PASOPTS) $<
 
-$(POBJS) $(UOBJS): %.o: %.o1
+$(POBJS) : %.o: %.o1
 	$(Q) echo "  $@"
 	$(Q) $(POPT) $(POPTOPTS) $<
 
-$(PEX): %.pex: %.o
+$(PMAINPEX): $(POBJS)
 	$(Q) echo "  $@"
-	$(Q) $(PLINK) $(PLINKOPTS) $(POBJS) $(UOBJS) $@
+	$(Q) $(PLINK) $(PLINKOPTS) $(POBJS) $@
 
-$(PIMAGEDIR)/pshell.pex: $(PEX)
+$(PIMAGEDIR)/$(PMAINPEX): $(PMAINPEX)
 	$(Q) echo "  $@"
 	$(Q) $(INSTALL) $< $@
 
-pshell: $(PIMAGEDIR)/pshell.pex
+pshell: $(PIMAGEDIR)/$(PMAINPEX)
 
 clean:
 	$(Q) $(RM) pshell *.o *.o1 *.pex *.err *.lst core *~

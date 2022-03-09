@@ -86,9 +86,9 @@ Kconfig:
 	$(Q) echo "	bool" >>Kconfig
 	$(Q) echo "	default y" >>Kconfig
 	$(Q) echo "" >>Kconfig
-	$(Q) echo "config PASDIR" >>Kconfig
+	$(Q) echo "config PASTOPDIR" >>Kconfig
 	$(Q) echo "	string" >>Kconfig
-	$(Q) echo "	default $(PASDIR)" >>Kconfig
+	$(Q) echo "	default $(PASCAL)" >>Kconfig
 	$(Q) echo "" >>Kconfig
 	$(Q) echo "config PASCAL_BUILD_LINUX" >>Kconfig
 	$(Q) echo "	bool" >>Kconfig

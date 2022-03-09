@@ -76,9 +76,9 @@ $(foreach DIR, $(BUILDDIRS), $(eval $(call Make_template,$(DIR),distclean)))
 Kconfig:
 	$(Q) echo "# Configuration for use with kconfig-frontends" >Kconfig
 	$(Q) echo "" >>Kconfig
-	$(Q) echo "config PASDIR" >>Kconfig
+	$(Q) echo "config PASTOPDIR" >>Kconfig
 	$(Q) echo "	string" >>Kconfig
-	$(Q) echo "	default $(PASDIR)" >>Kconfig
+	$(Q) echo "	default $(PASCAL)" >>Kconfig
 	$(Q) echo "" >>Kconfig
 	$(Q) echo "menu \"Pascal Support\"" >>Kconfig
 	$(Q) echo "" >>Kconfig

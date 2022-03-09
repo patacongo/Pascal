@@ -196,21 +196,28 @@ int16_t popt_LoadOptimize(void)
               val = g_opPtr[i]->arg1;
             }
 
-          /* If the following instruction is a load, add the constant
-           * index value to the address and switch the opcode to the
+          /* If the following instruction is an indexed load, add the
+           * constant index value to the address and switch the opcode to the
            * unindexed form.
            */
 
-          if (g_opPtr[i + 1]->op == oLDSX)
+          if (g_opPtr[i + 1]->op == oLDX)
+            {
+              g_opPtr[i + 1]->op    = oLD;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
+              nchanges++;
+            }
+          else if (g_opPtr[i + 1]->op == oLDSX)
             {
               g_opPtr[i + 1]->op    = oLDS;
               g_opPtr[i + 1]->arg2 += val;
               popt_DeletePCode(i);
               nchanges++;
             }
-          else if (g_opPtr[i + 1]->op == oLASX)
+          else if (g_opPtr[i + 1]->op == oLDXB)
             {
-              g_opPtr[i + 1]->op    = oLAS;
+              g_opPtr[i + 1]->op    = oLDB;
               g_opPtr[i + 1]->arg2 += val;
               popt_DeletePCode(i);
               nchanges++;
@@ -222,6 +229,13 @@ int16_t popt_LoadOptimize(void)
               popt_DeletePCode(i);
               nchanges++;
             }
+          else if (g_opPtr[i + 1]->op == oULDXB)
+            {
+              g_opPtr[i + 1]->op    = oULDB;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
+              nchanges++;
+            }
           else if (g_opPtr[i + 1]->op == oULDSXB)
             {
               g_opPtr[i + 1]->op    = oULDSB;
@@ -229,36 +243,47 @@ int16_t popt_LoadOptimize(void)
               popt_DeletePCode(i);
               nchanges++;
             }
-          else if (g_opPtr[i + 1]->op == oLDSXM)
+          else if (g_opPtr[i + 1]->op == oLAX)
             {
-              g_opPtr[i + 1]->op    = oLDSM;
+              g_opPtr[i + 1]->op    = oLA;
+              g_opPtr[i + 1]->arg2 += val;
+              popt_DeletePCode(i);
+              nchanges++;
+            }
+          else if (g_opPtr[i + 1]->op == oLASX)
+            {
+              g_opPtr[i + 1]->op    = oLAS;
               g_opPtr[i + 1]->arg2 += val;
               popt_DeletePCode(i);
               nchanges++;
             }
 
-#if 0 /* Done elsewhere */
-          else if (g_opPtr[i]->op == oPUSH)
-            {
-              if ((int16_t)val >= MINSHORTINT &&
-                  (int16_t)val <= MAXSHORTINT)
-                {
-                  g_opPtr[i]->op   = oPUSHB;
-                  g_opPtr[i]->arg1 = val;
-                  g_opPtr[i]->arg2 = 0;
-                  nchanges++;
-                }
-              else if ((uint16_t)val <= MAXSHORTWORD)
-                {
-                  g_opPtr[i]->op   = oUPUSHB;
-                  g_opPtr[i]->arg1 = val;
-                  g_opPtr[i]->arg2 = 0;
-                  nchanges++;
-                }
+          /* If the PUSH instruction is followed by an indexed multiple word
+           * load, then again add the constant index value to the address and
+           * switch the opcode to the unindexed form.
+           */
 
-              i++;
+          else if (i < g_nOpPtrs - 2 && popt_CheckLoadOperation(i + 1))
+            {
+              if (g_opPtr[i + 2]->op == oLDXM)
+                {
+                  g_opPtr[i + 2]->op    = oLDM;
+                  g_opPtr[i + 2]->arg2 += val;
+                  popt_DeletePCode(i);
+                  nchanges++;
+                }
+              else if (g_opPtr[i + 2]->op == oLDSXM)
+                {
+                  g_opPtr[i + 2]->op    = oLDSM;
+                  g_opPtr[i + 2]->arg2 += val;
+                  popt_DeletePCode(i);
+                  nchanges++;
+                }
+              else
+                {
+                  i++;
+                }
             }
-#endif
           else
             {
               i++;

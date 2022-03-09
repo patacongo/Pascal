@@ -56,6 +56,7 @@ endif
 
 PASOPTS   = -I$(PUNITDIR)
 
+EXECPATH  = ${shell echo $(CONFIG_PASTOPDIR) | sed -e s/\"//g}
 #
 # Objects and targets
 #
@@ -87,7 +88,8 @@ Machine.pas :
 	$(Q) echo "    MachinePointerSize = $(CONFIG_PASCAL_POINTERSIZE);" >>$(PUNITDIR)/Machine.pas
 	$(Q) echo "    MachinePointerWords = MachinePointerSize DIV 2;" >>$(PUNITDIR)/Machine.pas
 	$(Q) echo "    NameSize = 40;" >>$(PUNITDIR)/Machine.pas
-	$(Q) echo "    DirSeparator = '/'" >>$(PUNITDIR)/Machine.pas
+	$(Q) echo "    DirSeparator = '/';" >>$(PUNITDIR)/Machine.pas
+	$(Q) echo "    ExecPath = '$(EXECPATH)/'" >>$(PUNITDIR)/Machine.pas
 	$(Q) echo "" >>$(PUNITDIR)/Machine.pas
 	$(Q) echo "  TYPE" >>$(PUNITDIR)/Machine.pas
 	$(Q) echo "    TMachinePointer = ARRAY[1..MachinePointerWords] OF WORD" >>$(PUNITDIR)/Machine.pas

@@ -1794,6 +1794,12 @@ static void pas_CaseStatement(void)
 
       else
         {
+          uint16_t statement_label  = ++g_label;
+
+          /* Generate the CASE label */
+
+          pas_GenerateDataOperation(opLABEL, this_case);
+
           /* Loop for each <constant> in the case list */
 
           for (; ; )
@@ -1863,7 +1869,7 @@ static void pas_CaseStatement(void)
                 {
                   /* Generate jump to <statement> */
 
-                  pas_GenerateDataOperation(opJEQU, this_case);
+                  pas_GenerateDataOperation(opJEQU, statement_label);
 
                   /* Skip over comma */
 
@@ -1885,11 +1891,11 @@ static void pas_CaseStatement(void)
           if (g_token != ':') error(eCOLON);
           else getToken();
 
-          /* Set CASE label */
+          /* Generate the statement label */
 
-          pas_GenerateDataOperation(opLABEL, this_case);
+          pas_GenerateDataOperation(opLABEL, statement_label);
 
-          /* Evaluate <statement> */
+          /* Evaluate the CASE <statement> */
 
           pas_Statement();
 

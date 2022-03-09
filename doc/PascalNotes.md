@@ -113,7 +113,7 @@ Borland style string operators,
 
 - `Length( s : string)` – Return the length of a string.
 - `Copy(s : string, from, howmuch: integer) : string` - Get a substring from a string.
-- `Pos(substr, s : string) : integer` - Get the position of a substring within a string. If the substring is not found, it returns 0.
+- `Pos(substr, s : string) : integer` - Get the position of substring `substr` within stringi `s`. If the substring is not found, `Pos` will return 0.
 - `Str(numvar : integer, VAR strvar : string)` – Converts a numeric value into a string.  `numvar` may include a fieldwidth and, for the case of real values, a precision.
 - `concat(s1,s2,...,sn : string) : string` – Concatenate one or more strings.
 - `insert(source : string, VAR target : string; index : integer)` - Insert a string inside another string from at the indexth character.
@@ -249,11 +249,14 @@ The back-end is modular and can be change.  However, most of the development so 
 
 ### Run-time String Memory
 
-Pascal runtime memory is divided into four regions:  String stack, RO data, the Pascal run-time stack, and a heap region.  The size of the string stack is set with the -t option to prun and 1024 is the default size used by the testone.sh script.  String allocations are large, the default size is 80 bytes*, and the string stack cleanup is lazy; perhaps only when a procedure/function returns.  As a result, programs with functions that do a lot of string  operations may need a start larger than the 1024 default.  All of the test files here work OK with a string stack of 1024.
+Pascal runtime memory is divided into four regions:  String stack, RO data, the Pascal run-time stack, and a heap region.  The size of the string stack is set with the -t option to prun and 1024 is the default size used by the testone.sh script.  String allocations are large, the default size is 80 bytes (note 1), and the string stack cleanup is lazy; perhaps only when a procedure/function returns and local string variables go out of scope.  As a result, programs with functions that do a lot of string  operations may need a start larger than the 1024 default.  All of the test files here work OK with a string stack of 1024.
 
 This problem is largely alleviated by using short strings that do not require such large string stack allocations.
 
-* The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
+In order manage the string stack, two special instructions are supported:  `PUSHS` which pushes the string stack pointer and `POPS` that recovers the string stack pointer.  The compiler generates these on entry and exit from each dynamic nesting level.  In addition, the compiler generates numerous `PUSHS`/`POPS` pairs around each statement and the optimizer is tasked with remove the unnecessary pairs (Note 2).
+
+Note 1: The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
+Note 2: The algorithm in the optimizer is lame at the moment.  It tends to leave unnecesary (but harmless) stack operations in the code.  I have some concerns that it might also release string stack space while it is still in use.  I haven't seen this, but I suspect it is possible.  Eventually, the optimizer should track usage of all string memory and free it the stack space when the variables are no longer used.
 
 ## BUGS, ISSUES, and QUIRKS
 

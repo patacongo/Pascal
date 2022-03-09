@@ -1,5 +1,5 @@
 {
-  phello.pas
+  PshCommands.pas
 
     Copyright (C) 2022 Gregory Nutt. All rights reserved.
     Author: Gregory Nutt <gnutt@nuttx.org>
@@ -32,7 +32,31 @@
   POSSIBILITY OF SUCH DAMAGE.
 }
 
-PROGRAM HelloWorld;
-BEGIN
-  WRITELN('Hello, World!');
+UNIT PshCommands;
+
+INTERFACE
+  USES
+    FileUtils in 'FileUtils.pas'
+
+  PROCEDURE PshShowExecutables;
+
+IMPLEMENTATION
+
+  PROCEDURE PshShowExecutables;
+  VAR
+    PathTemplate : STRING;
+    SearchResult : TSearchRec;
+    Success : boolean
+
+  BEGIN
+    PathTemplate := ExecPath + '*.pex';
+    Success := FindFirst(PathTemplate, 0, SearchResult);
+    WHILE Success DO
+    BEGIN
+      WRITELN('  ', SearchResult.name);
+      Success := FindNext(SearchResult)
+    END;
+
+    FindClose(SearchResult)
+  END;
 END.

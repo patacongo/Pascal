@@ -1883,7 +1883,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         POP(st, searchAddr);
         POP(st, dirAddr);
 
-        /* Get the pointer from the stack (it may not be aligend) */
+        /* Get the pointer from the stack (it may not be aligned) */
 
         stkDir = (uint16_t *)ATSTACK(st, dirAddr);
         for (i = 0; i < PASCAL_POINTERWORDS; i++)

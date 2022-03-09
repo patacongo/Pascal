@@ -1,0 +1,5 @@
+config PASCAL_HELLO
+	bool "Hello, World! Pascal Example"
+	default n
+	---help---
+		Enable building of the the Pascal "Hello, World!" sample application.

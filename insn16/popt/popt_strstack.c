@@ -678,6 +678,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
           case oEND:
             /* What?  No matching POPS? */
 
+            fprintf(stderr, "ERROR: No matching POPS!\n");
             fatal(eHUH);
             break;
 
@@ -727,6 +728,7 @@ void popt_StringStackOptimize(poffHandle_t poffHandle,
     {
       if (g_nestLevel[i].head != NULL)
         {
+          fprintf(stderr, "ERROR: Unwritten program data!\n");
           popt_FreeCodeChunks(g_nestLevel[i].head);
         }
 

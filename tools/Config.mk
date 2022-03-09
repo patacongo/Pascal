@@ -107,8 +107,6 @@ PASOPTS      = -I$(PUNITDIR)
 POPTOPTS     =
 PLINKOPTS    =
 
-
-
 #
 # Executable File Extension
 #
