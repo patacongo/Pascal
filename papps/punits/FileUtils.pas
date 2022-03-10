@@ -155,10 +155,12 @@ IMPLEMENTATION
     TmpNamePosition  : integer;
     NameLength       : integer;
     MatchPosition    : integer;
+    TmpMatchPosition : integer;
     MatchLength      : integer;
     NoMatchHere      : boolean;
     NameChar         : char;
     MatchChar        : char;
+    NextMatchChar    : char
 
   BEGIN
     (* Get the position of the last delimiter                              *)
@@ -173,8 +175,8 @@ IMPLEMENTATION
     NamePosition  := 1;
     WHILE (NamePosition <= NameLength) AND NOT MatchFileName DO
     BEGIN
-      MatchPosition := 1;
-      TmpNamePosition   := NamePosition;
+      MatchPosition   := 1;
+      TmpNamePosition := NamePosition;
 
       WHILE (MatchPosition   <= MatchLength) AND
             (TmpNamePosition <= NameLength) AND
@@ -202,21 +204,23 @@ IMPLEMENTATION
             (* Get the next character after the '*'.  Additional '*' or    *)
             (* '?' characters after the '*' are ignored.                   *)
 
+            TmpMatchPosition   := MatchPosition;
             REPEAT
-              MatchPosition := MatchPosition + 1;
-              MatchChar     := CharAt(MatchString, MatchPosition)
-            UNTIL (MatchPosition <= MatchLength) AND (MatchChar <> '*') AND
-                  (MatchChar <> '?');
+              TmpMatchPosition := TmpMatchPosition + 1;
+              NextMatchChar    := CharAt(MatchString, TmpMatchPosition)
+            UNTIL (TmpMatchPosition > MatchLength) OR
+                  ((NextMatchChar <> '*') AND
+                   (NextMatchChar <> '?'));
 
             (* Check for a match to the end of the line.                   *)
 
-            IF (MatchPosition > MatchLength) THEN
+            IF (TmpMatchPosition > MatchLength) THEN
               MatchFileName := true
             ELSE
             BEGIN
               NameChar          := CharAt(FileName, TmpNamePosition);
-              WHILE (NameChar <> MatchChar) OR
-                    (TmpNamePosition > NameLength) DO
+              WHILE (NameChar <> NextMatchChar) AND
+                    (TmpNamePosition <= NameLength) DO
               BEGIN
                 TmpNamePosition := TmpNamePosition + 1;
                 NameChar        := CharAt(FileName, TmpNamePosition);
@@ -226,9 +230,9 @@ IMPLEMENTATION
                 NoMatchHere     := true
               ELSE
               BEGIN
-                (* We have a matching after skipping 0 or more characters. *)
+                (* We have a match character after skipping 0 or more. *)
 
-                MatchPosition   := MatchPosition + 1;
+                MatchPosition   := TmpMatchPosition + 1;
                 TmpNamePosition := TmpNamePosition + 1;
 
                 (* Check if the whole file name matches.                   *)
@@ -254,9 +258,9 @@ IMPLEMENTATION
                                (TmpNamePosition > NameLength)
           END
         END;
+      END;
 
-        NamePosition := NamePosition + 1
-      END
+      NamePosition := NamePosition + 1
     END
   END;
 
@@ -277,21 +281,40 @@ IMPLEMENTATION
       (* Visible, regular files always accepted, directories, system files,
          and hidden files are only reported if so requested. *)
 
-       FirstChar := CharAt(SearchResult.name, 1);
-       IF Success AND (Length(FirstChar) > 0) THEN
-       BEGIN
-         IF (FirstChar = '.') AND ((SearchResult.sattr & faHidden) <> 0) THEN
-           Found := true
-         ELSE IF (SearchResult.attr & SearchResult.sattr & faSysFile) <> 0 THEN
-           Found := true
-         ELSE IF (SearchResult.attr & SearchResult.sattr & faDirectory) <> 0 THEN
-           Found := true
-         ELSE IF (SearchResult.attr & SearchResult.sattr & faVolumeId) <> 0 THEN
-           Found := true;
-       END;
+      FirstChar := CharAt(SearchResult.name, 1);
+      IF Success AND (Length(FirstChar) > 0) THEN
+      BEGIN
+        { Include hidden files in the results }
 
-       IF Found AND NOT MatchFileName(SearchResult.name, SearchResult.match) THEN
-         Found := false
+        IF (FirstChar = '.') AND ((SearchResult.sattr & faHidden) <> 0) THEN
+          Found := true
+
+        { Include system files in the results }
+
+        ELSE IF (SearchResult.attr & SearchResult.sattr & faSysFile) <> 0 THEN
+          Found := true
+
+        { Include directories in the results }
+
+        ELSE IF (SearchResult.attr & SearchResult.sattr & faDirectory) <> 0 THEN
+          Found := true
+
+        { Include volume ID files in the results }
+
+        ELSE IF (SearchResult.attr & SearchResult.sattr & faVolumeId) <> 0 THEN
+          Found := true
+
+        { Regular files are always included in the results }
+
+        ELSE IF SearchResult.attr = 0 THEN
+          Found := true;
+      END;
+
+      { If the file attributes match, then compare the file names }
+
+      IF Found THEN
+        IF NOT MatchFileName(SearchResult.name, SearchResult.match) THEN
+          Found := false
     UNTIL Found OR NOT Success;
 
     FindNext := Found

@@ -50,7 +50,7 @@ IMPLEMENTATION
 
   BEGIN
     PathTemplate := ExecPath + '*.pex';
-    Success := FindFirst(PathTemplate, 0, SearchResult);
+    Success      := FindFirst(PathTemplate, 0, SearchResult);
     WHILE Success DO
     BEGIN
       WRITELN('  ', SearchResult.name);

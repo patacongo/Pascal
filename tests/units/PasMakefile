@@ -77,7 +77,11 @@ RDDIROBJS  = $(RDDIRSRC:.pas=.o)
 TOKENSRC   = Tokenize.pas $(PUNITDIR)/Machine.pas $(PUNITDIR)/StringUtils.pas
 TOKENOBJS  = $(TOKENSRC:.pas=.o)
 
+MATCHNSRC  = MatchName.pas $(PUNITDIR)/Machine.pas $(PUNITDIR)/FileUtils.pas
+MATCHNOBJS = $(MATCHNSRC:.pas=.o)
+
 PEX        = ReadDir.pex worksched.pex sinecos.pex DoIt.pex Tokenize.pex
+PEX       += MatchName.pex
 
 #
 # Targets
@@ -113,6 +117,10 @@ ReadDir.pex : $(RDDIROBJS)
 Tokenize.pex : $(TOKENOBJS)
 	$(Q) echo "  $@"
 	$(Q) $(PLINK) $(TOKENOBJS) $@
+
+MatchName.pex : $(MATCHNOBJS)
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(MATCHNOBJS) $@
 
 clean:
 	$(Q) $(RM) *.o *.o1 *.pex *.err *.lst core *~

@@ -2174,7 +2174,8 @@ static void pas_InitializeNewRecord(symbol_t *typePtr)
           else if (parentTypePtr->sParm.t.tType == sSTRING)
             {
               /* Get the address of the string field to be initialized at the
-               * top of the stack.
+               * top of the stack.  pas_InitializeNewString() will call
+               * lbSTRINIT which will consume that address.
                */
 
               pas_GenerateSimple(opDUP);
@@ -2182,13 +2183,13 @@ static void pas_InitializeNewRecord(symbol_t *typePtr)
                                         recordObjectPtr->sParm.r.rOffset);
               pas_GenerateSimple(opADD);
               pas_InitializeNewString(parentTypePtr);
-              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
             }
           else if (parentTypePtr->sParm.t.tType == sFILE ||
                    parentTypePtr->sParm.t.tType == sTEXTFILE)
             {
               /* Get the address of the file field to be initialized at the
-               * top of the stack.
+               * top of the stack.  pas_InitializeNewString() will call
+               * xALLOCFILE
                */
 
               pas_GenerateSimple(opDUP);
@@ -2196,14 +2197,22 @@ static void pas_InitializeNewRecord(symbol_t *typePtr)
                                         recordObjectPtr->sParm.r.rOffset);
               pas_GenerateSimple(opADD);
               pas_InitializeNewFile(parentTypePtr);
-              pas_GenerateDataOperation(opINDS, -sINT_SIZE);
             }
           else if (parentTypePtr->sParm.t.tType == sRECORD)
             {
+              /* Duplicate record address and offset it to the record field
+               * of interest.
+               */
+
               pas_GenerateSimple(opDUP);
               pas_GenerateDataOperation(opPUSH,
                                         recordObjectPtr->sParm.r.rOffset);
               pas_GenerateSimple(opADD);
+
+              /* Process any initializers for the record and free the
+               * duplicated address.
+               */
+
               pas_InitializeNewRecord(parentTypePtr);
               pas_GenerateDataOperation(opINDS, -sINT_SIZE);
             }
@@ -2217,6 +2226,11 @@ static void pas_InitializeNewRecord(symbol_t *typePtr)
               pas_GenerateDataOperation(opPUSH,
                                         recordObjectPtr->sParm.r.rOffset);
               pas_GenerateSimple(opADD);
+
+              /* Process any initializers for the record and free the
+               * duplicated address.
+               */
+
               pas_InitializeNewArray(parentTypePtr);
               pas_GenerateDataOperation(opINDS, -sINT_SIZE);
             }

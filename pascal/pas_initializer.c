@@ -577,17 +577,18 @@ void pas_InitializeNewString(symbol_t *typePtr)
 }
 
 /****************************************************************************/
-/* Initialize a new file type created with new().  That happens AFTER the
- * normal initialization of pas_Initialization().
+/* Initialize a new file type.  That happens AFTER the normal initialization
+ * of pas_Initialization().
  */
 
 void pas_InitializeNewFile(symbol_t *typePtr)
 {
   /* At run-time, the address of the allocated file variable will be at
-   * the top of the stack.
+   * the top of the stack.  xALLOCFILE has not stack arguments; it will push
+   * the new, allocated file number to the top of the stack.  We simply need
+   * to store the allocated file number to that address.
    */
 
-  pas_GenerateStackReference(opLDS, g_tknPtr);
   pas_GenerateIoOperation(xALLOCFILE);
   pas_GenerateSimple(opSTI);
 }
