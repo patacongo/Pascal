@@ -46,17 +46,26 @@ PROGRAM PShell;
   TYPE
 
   VAR
-    CommandLine    : STRING[MaxLineSize];
-    CommandTokens  : ARRAY[1..MaxCmdTokens] OF STRING[MaxTokenSize];
-    NumTokens      : integer;
-    DisplayIndex   : integer;
-    Quit           : boolean
+    CommandLine       : STRING[MaxLineSize];
+    CommandTokens     : ARRAY[1..MaxCmdTokens] OF STRING[MaxTokenSize];
+    StringBufferAlloc : integer  = 1024;
+    HeapAlloc         : integer  = 256;
+    NumTokens         : integer;
+    DisplayIndex      : integer;
+    Wait              : boolean  = true;
+    Quit              : boolean  = false
 
   PROCEDURE PshShowUsage;
   BEGIN
     WRITELN('PShell Commands:');
-    WRITELN('  L[ist] - Show Pascal Executables');
-    WRITELN('  Q[uit] - Exit');
+    WRITELN('  L[ist]');
+    WRITELN('    Show Pascal Executables');
+    WRITELN('  R[un] <PexFileName>');
+    WRITELN('    Run a Pascal Executable');
+    WRITELN('  D[bg] <PexFileName>');
+    WRITELN('    Debug a Pascal Executable');
+    WRITELN('  Q[uit]');
+    WRITELN('    Exit');
   END;
 
   PROCEDURE ParseLine;
@@ -88,14 +97,16 @@ PROGRAM PShell;
      FirstCh := UpperCase(CharAt(CommandTokens[1], 1));
      CASE FirstCh OF
        'L' : PshShowExecutables;
+       'R' : PshRunExecutable(CommandTokens[2], StringBufferAlloc,
+                              HeapAlloc, Wait, false);
+       'D' : PshRunExecutable(CommandTokens[2], StringBufferAlloc,
+                              HeapAlloc, Wait, true);
        'Q' : Quit := true;
        ELSE PshShowUsage
      END
   END;
 
   BEGIN
-    Quit := false;
-
     REPEAT
       WRITE('psh> ');
       READLN(CommandLine);

@@ -2637,6 +2637,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
             {
             case sINT :
             case sWORD :
+            case sBOOLEAN :
               exprType = pas_MapVariable2ExprType(procPtr[parmIndex].sKind, true);
               pas_Expression(exprType, typePtr);
               size += INT_ALIGNUP(sINT_SIZE);
@@ -2807,7 +2808,7 @@ int pas_ActualParameterList(symbol_t *procPtr)
               break;
 
             default :
-              error (eVARPARMTYPE);
+              error (eINVPARMTYPE);
             }
 
           if (parmIndex < procPtr->sParm.p.pNParms)

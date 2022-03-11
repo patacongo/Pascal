@@ -39,14 +39,16 @@ INTERFACE
     FileUtils in 'FileUtils.pas'
 
   PROCEDURE PshShowExecutables;
-
+  PROCEDURE PshRunExecutable(PexFileName : STRING;
+                             StringBufferAlloc, HeapAlloc : Integer;
+                             Wait, Debug : Boolean);
 IMPLEMENTATION
 
   PROCEDURE PshShowExecutables;
   VAR
     PathTemplate : STRING;
     SearchResult : TSearchRec;
-    Success : boolean
+    Success : Boolean
 
   BEGIN
     PathTemplate := ExecPath + '*.pex';
@@ -58,5 +60,15 @@ IMPLEMENTATION
     END;
 
     FindClose(SearchResult)
+  END;
+
+  PROCEDURE PshRunExecutable(PexFileName : STRING;
+                             StringBufferAlloc, HeapAlloc : Integer;
+                             Wait, Debug : Boolean);
+  VAR
+    Result : Boolean
+
+  BEGIN
+    Result := Spawn(PexFileName, StringBufferAlloc, HeapAlloc, Wait, Debug)
   END;
 END.

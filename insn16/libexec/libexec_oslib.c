@@ -148,7 +148,7 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
                   uint16_t stringBufferSize, uint16_t heapSize,
                   bool waitForTask, bool enablePCodeDebugger)
 {
-  char       *argv[7];
+  char       *argv[8];
   const char *nameSrc;
   char       *cName;
   char       *pexPath;
@@ -199,21 +199,22 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
 
   /* Build the argv list */
 
-  argv[0] = "-t";
-  argv[1] = strStringBufferSize;
-  argv[2] = "-n";
-  argv[3] = strHeapSize;
+  argv[0] = "posix_spawnp";
+  argv[1] = "-t";
+  argv[2] = strStringBufferSize;
+  argv[3] = "-n";
+  argv[4] = strHeapSize;
 
   if (enablePCodeDebugger)
     {
-      argv[4] = "--debug";
-      argv[5] = pexPath;
-      argv[6] = NULL;
+      argv[5] = "--debug";
+      argv[6] = pexPath;
+      argv[7] = NULL;
     }
   else
     {
-      argv[4] = pexPath;
-      argv[5] = NULL;
+      argv[5] = pexPath;
+      argv[6] = NULL;
     }
 
   /* Spawn the prun program, providing path to the Pascal executable
