@@ -75,11 +75,12 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 
 ### System Procedures/Functions:
 
-- `Exit(exitCode : integer)`
-- `Halt`
-- `New(<pointer-variable>)`
-- `Dispose(<pointer-variable>)`
-- `GetEnv(name: string) : string`
+- `procedure Exit(exitCode : integer)`
+- `procedure Halt`
+- `procedure New(<pointer-variable>)`
+- `procedure Dispose(<pointer-variable>)`
+- `function GetEnv(name: string) : string`
+- `function Spawn(PexFileName : string; StringBufferAlloc, HeapAlloc : integer; Wait, Debug : boolean) : boolean`
 
 - `Addr(<any-variable>`.  Returns the address of the variable.  Similar to `@` except that it is not typed.
 - `Card`

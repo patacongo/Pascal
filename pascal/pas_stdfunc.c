@@ -104,6 +104,7 @@ static void       pas_ReadDirectoryFunc(uint16_t opCode);
 /* Non-standard C-library interface functions */
 
 static void       pas_CharAtFunc(void);
+static void       pas_SpawnFunc(void);
 static exprType_t pas_GetEnvFunc (void);  /* Get environment string value */
 
 /****************************************************************************
@@ -905,6 +906,56 @@ static void pas_CharAtFunc(void)
 }
 
 /****************************************************************************/
+/* Spawn a Pascal task */
+
+static void pas_SpawnFunc(void)
+{
+  /* FORM:  function Spawn(PexFileName : string; StringBufferAlloc,
+   *                       HeapAlloc : integer; Wait, Debug : boolean) :
+   *                       boolean
+   */
+
+  pas_CheckLParen();
+
+  /* Get the string expression representing the .pex filename. */
+
+  pas_Expression(exprString, NULL);
+
+  /* Get the string buffer allocation */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  pas_Expression(exprInteger, NULL);
+
+  /* Get the heap allocation */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  pas_Expression(exprInteger, NULL);
+
+  /* Get the Wait boolean value */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  pas_Expression(exprBoolean, NULL);
+
+  /* Get the Debug boolean value */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  pas_Expression(exprBoolean, NULL);
+
+  /* And generate the OS call */
+
+  pas_OsInterfaceCall(osSPAWN);
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
 /* C library getenv interface */
 
 static exprType_t pas_GetEnvFunc(void)
@@ -1036,6 +1087,11 @@ exprType_t pas_StandardFunction(void)
         case txCHARAT :
           pas_CharAtFunc();
           funcType = exprChar;
+          break;
+
+        case txSPAWN :
+          pas_SpawnFunc();
+          funcType = exprBoolean;
           break;
 
         case txGETENV :

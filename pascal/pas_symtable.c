@@ -195,6 +195,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"SHR",            tSHR,            txNONE},       /* (4) */
   {"SIN",            tSTDFUNC,        txSIN},        /* (2) */
   {"SIZEOF",         tBUILTIN,        txSIZEOF},     /* (7) */
+  {"SPAWN",          tSTDFUNC,        txSPAWN},      /* (5) */
   {"SQR",            tSTDFUNC,        txSQR},        /* (2) */
   {"SQRT",           tSTDFUNC,        txSQRT},       /* (2) */
   {"STR",            tSTDPROC,        txSTR},        /* (8) */

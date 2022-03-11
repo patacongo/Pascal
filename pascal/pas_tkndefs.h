@@ -270,9 +270,10 @@
 #define txRMDIR          0xaa
 #define txVAL            0xab
 #define txSETCURRDIR     0xac
-#define txSTR            0xad
-#define txCONCAT         0xae
-#define txINSERT         0xaf
-#define txDELETE         0xb0
+#define txSPAWN          0xad
+#define txSTR            0xae
+#define txCONCAT         0xaf
+#define txINSERT         0xb0
+#define txDELETE         0xb1
 
 #endif /* __PAS_TKNDEFS_H */

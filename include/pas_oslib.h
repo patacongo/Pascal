@@ -85,15 +85,39 @@
  *   function getenv(name : string) : string;
  *
  * ON INPUT:
- *   TOS(0) = Address of variable name string
- *   TOS(1) = Length of variable name string
+ *   TOS(0) = Size of variable name buffer allocation
+ *   TOS(1) = Address of variable name string
+ *   TOS(2) = Length of variable name string
  * ON RETURN:
- *   TOS(0) = Address of variable value string
- *   TOS(1) = Length of variable value string
+ *   TOS(0) = Address of variable buffer allocation
+ *   TOS(1) = Address of variable value string
+ *   TOS(2) = Length of variable value string
  */
 
 #define osGETENV        (0x0003)
 
-#define MAX_OSOP        (0x0004)
+/* Spawn a Pascal task.
+ *
+ *   function spawn(PexFileName : string;
+ *                  StringBufferAlloc, HeapAlloc : integer;
+ *                  Wait, Debug : boolean) : boolean;
+ *
+ * PexFileName is a simple file name and does not include any path components.
+ *
+ * ON INPUT:
+ *   TOS(0) = Boolean true: Enable P-Code debugger
+ *   TOS(1) = Boolean true: Wait for spawned task to exit
+ *   TOS(2) = Size of heap memory to allocate
+ *   TOS(3) = Size of string memory to allocate
+ *   TOS(4) = Size of PexFileName buffer allocation
+ *   TOS(5) = Address of PexFileName name string
+ *   TOS(6) = Length of PexFileName name string
+ * ON RETURN:
+ *   TOS(0) = Boolean true: Successfully started
+ */
+
+#define osSPAWN         (0x0004)
+
+#define MAX_OSOP        (0x0005)
 
 #endif /* __PAS_OSLIB_H */

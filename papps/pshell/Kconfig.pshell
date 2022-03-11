@@ -6,12 +6,4 @@ config PASCAL_PSHELL
 
 if PASCAL_PSHELL
 
-config PASCAL_PSHELL_EXECDIR
-	string "Path to Pascal executables"
-	default "papps/image/"
-	---help---
-		Path to the directory contain the Pascal executable file (.pex) that
-		are available to the shell.  This path is assumed to contain the final
-		delimiter (probably '/') after which file names may be appended.
-
 endif # PASCAL_PSHELL

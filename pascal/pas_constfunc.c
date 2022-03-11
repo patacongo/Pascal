@@ -345,7 +345,6 @@ void pas_StandardFunctionOfConstant(void)
           pas_ConstantRealFunc(fpEXP);
           break;
 
-        case txGETENV : /* Non-standard C library interfaces */
         case txEOLN :
         case txEOF :
         default :

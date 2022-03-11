@@ -1,5 +1,13 @@
 menu "Pascal Applications"
 
+config PASCAL_EXECDIR
+	string "Path to Pascal executables"
+	default "papps/image/"
+	---help---
+		Path to the directory contain the Pascal executable file (.pex) that
+		are available to the shell.  This path is assumed to contain the final
+		delimiter (probably '/') after which file names may be appended.
+
 source "$PASTOPDIR/papps/pstart/Kconfig.pstart"
 source "$PASTOPDIR/papps/phello/Kconfig.phello"
 source "$PASTOPDIR/papps/pshell/Kconfig.pshell"

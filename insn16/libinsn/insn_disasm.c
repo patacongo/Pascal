@@ -495,7 +495,8 @@ static const char * const sName[MAX_SETOP] =
 static const char invOSOp[] = "Invalid OSOP";
 static const char * const osName[MAX_OSOP] =
 { /* OS opcode mnemonics */
-/* 0x00 */ "EXIT",       "NEW",       "DISPOSE",      "GETENV"
+/* 0x00 */ "EXIT",       "NEW",       "DISPOSE",      "GETENV",
+/* 0x04 */ "SPAWN"
 };
 
 static const char invLbOp[] = "Invalid runtime code";

@@ -56,7 +56,7 @@ endif
 
 PASOPTS   = -I$(PUNITDIR)
 
-EXECPATH  = $(patsubst "%",%,$(CONFIG_PASCAL_PSHELL_EXECDIR))
+EXECPATH  = $(patsubst "%",%,$(CONFIG_PASCAL_EXECDIR))
 
 #
 # Objects and targets
