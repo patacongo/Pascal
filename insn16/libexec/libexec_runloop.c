@@ -43,7 +43,7 @@
 #include "pas_errcodes.h"
 
 #include "libexec.h"
-#include "libexec_library.h"
+#include "libexec_stringlib.h"
 
 /****************************************************************************
  * Public Functions

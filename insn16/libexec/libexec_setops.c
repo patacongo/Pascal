@@ -366,14 +366,14 @@ static uint16_t libexec_BitsInNibble(uint8_t nibble)
  ****************************************************************************/
 
 /****************************************************************************
- * Name: libexec_setops
+ * Name: libexec_SetOperations
  *
  * Description:
  *   This function handles operations on SETs.
  *
  ****************************************************************************/
 
-int libexec_setops(struct libexec_s *st, uint8_t subfunc)
+int libexec_SetOperations(struct libexec_s *st, uint8_t subfunc)
 {
   const uint16_t *src1;
   const uint16_t *src2;

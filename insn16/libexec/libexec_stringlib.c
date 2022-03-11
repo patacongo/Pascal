@@ -1,8 +1,8 @@
 /****************************************************************************
- * libexec_library.c
+ * libexec_stringlib.c
  * Pascal run-time library
  *
- *   Copyright (C) 2008-2009, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,14 +48,14 @@
 
 #include "pas_debug.h"
 #include "pas_machine.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
 #include "pas_errcodes.h"
 
 #include "libexec.h"
 #include "libexec_heap.h"
-#include "libexec_longops.h"  /* For libexec_UPop32() */
-#include "libexec_sysio.h"    /* For libexec_GetFormat() */
-#include "libexec_library.h"
+#include "libexec_longops.h"   /* For libexec_UPop32() */
+#include "libexec_sysio.h"     /* For libexec_GetFormat() */
+#include "libexec_stringlib.h"
 
 /****************************************************************************
  * Private Function Prototypes
@@ -419,14 +419,14 @@ static int libexec_FillChar(struct libexec_s *st, ustack_t *sptr, uint16_t count
  ****************************************************************************/
 
 /****************************************************************************
- * Name: libexec_LibraryOps
+ * Name: libexec_StringOperations
  *
  * Description:
- *   This function process a system I/O operation
+ *   This function process a string operation
  *
  ****************************************************************************/
 
-uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
+uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 {
   ustack_t  uparm1;
   ustack_t  uparm2;
@@ -441,139 +441,6 @@ uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc)
 
   switch (subfunc)
     {
-      /* Exit processing
-       *
-       *   procedure exit(exitCode : integer);
-       *
-       * ON INPUT:
-       *   TOS(0) - Exit code
-       * ON RETURN:
-       *   Does not return
-       */
-
-    case lbEXIT:
-      POP(st, st->exitCode);
-      errorCode = eEXIT;
-      break;
-
-      /* Heap allocation:
-       *
-       *   function new(size : integer) : integer;
-       *
-       * ON INPUT:
-       *   TOS(0) - Size of the heap region to allocate
-       *
-       * ON RETURN:
-       *   TOS(0) - The allocated heap region
-       */
-
-    case lbNEW :
-      POP(st, size);  /* Size of allocation */
-
-      /* Allocate the memory */
-
-      errorCode = libexec_New(st, size);
-      break;
-
-      /* Dispose of a previous heap allocation:
-       *
-       *   procedure despose(VAR alloc : integer);
-       *
-       * ON INPUT:
-       *   TOS(0) - Address of the heap region to dispose of
-       *
-       * ON RETURN:
-       *   No value is returned
-       */
-
-    case lbDISPOSE :
-      POP(st, addr1);  /* Address of allocation to be freed */
-
-      /* Free the memory */
-
-      errorCode = libexec_Dispose(st, addr1);
-      break;
-
-      /* Get the value of an environment string
-       *
-       *   function getent(name : string) : string;
-       *
-       * ON INPUT:
-       *   TOS(0) = Address of variable name string
-       *   TOS(1) = Length of variable name string
-       * ON RETURN:
-       *   TOS(0) = Address of variable value string
-       *   TOS(1) = Length of variable value string
-       */
-
-    case lbGETENV :
-      {
-        addr1 = TOS(st, 0);
-        size  = TOS(st, 1);
-
-        /* Make a C string out of the pascal string */
-
-        src = (char *)ATSTACK(st, addr1);
-        name = libexec_MkCString(st, src, size, false);
-        if (name == NULL)
-          {
-            errorCode = eNOMEMORY;
-          }
-        else
-          {
-            /* Make the C-library call and free the string copy */
-
-            src = (char *)getenv((char *)name);
-
-            /* Is the environment variable defined? */
-
-            size = 0;
-            if (src != NULL)
-              {
-                /* Allocate tempororary string stack */
-
-                if (st->csp + STRING_BUFFER_SIZE >= st->spb)
-                  {
-                    errorCode = eSTRSTKOVERFLOW;
-                  }
-                else
-                  {
-                    /* Allocate a string buffer on the string stack for the
-                     * new string.
-                     */
-
-                    addr2   = INT_ALIGNUP(st->csp);
-                    st->csp = addr2 + STRING_BUFFER_SIZE;
-
-                    if (size > STRING_BUFFER_SIZE)
-                      {
-                        size = STRING_BUFFER_SIZE;
-                      }
-
-                    /* Copy the string into the string stack */
-
-                    size = strlen((char *)src);
-                    if (size > STRING_BUFFER_SIZE)
-                      {
-                        size = STRING_BUFFER_SIZE;
-                      }
-
-                    dest  = (char *)ATSTACK(st, addr2);
-                    memcpy(dest, src, size);
-
-                    /* Save the allocated string buffer pointer */
-
-                    TOS(st, 1) = addr2;
-                  }
-              }
-
-            /* Save the environment variable length */
-
-            TOS(st, 1) = size;
-          }
-      }
-      break;
-
       /* Copy pascal string to a pascal string
        *
        * ON INPUT:

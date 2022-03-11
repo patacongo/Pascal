@@ -55,7 +55,7 @@
 
 #include "paslib.h"
 #include "libexec_sysio.h"
-#include "libexec_library.h"
+#include "libexec_stringlib.h"
 #include "libexec.h"
 
 /****************************************************************************

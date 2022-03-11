@@ -49,7 +49,7 @@
 #include "pas_defns.h"
 #include "pas_tkndefs.h"
 #include "pas_sysio.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
 #include "pas_errcodes.h"
 
 #include "pas_main.h"
@@ -258,7 +258,7 @@ static void pas_BasicInitialization(void)
               /* Get the address of string variable to be initialized */
 
               pas_GenerateStackReference(opLAS, varPtr);
-              pas_StandardFunctionCall(lbSTRINIT);
+              pas_StringLibraryCall(lbSTRINIT);
               pushs = true;
             }
             break;
@@ -315,7 +315,7 @@ static void pas_BasicInitialization(void)
 
                   /* Then initialize the string */
 
-                  pas_StandardFunctionCall(lbSTRINIT);
+                  pas_StringLibraryCall(lbSTRINIT);
                   pushs = true;
                   initializer->r.pops = true;
                 }
@@ -429,7 +429,7 @@ static void pas_SetInitialValues(void)
                 /* And copy the string to the string valiable */
 
                 pas_GenerateStackReference(opLAS, varPtr);
-                pas_StandardFunctionCall(lbSTRCPY);
+                pas_StringLibraryCall(lbSTRCPY);
                 break;
 
               case sSET :
@@ -572,7 +572,7 @@ void pas_InitializeNewString(symbol_t *typePtr)
 
       /* Initialize the string */
 
-      pas_StandardFunctionCall(lbSTRINIT);
+      pas_StringLibraryCall(lbSTRINIT);
     }
 }
 

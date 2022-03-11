@@ -50,7 +50,8 @@
 #include "pas_errcodes.h"
 #include "pas_machine.h"
 #include "pas_sysio.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
+#include "pas_oslib.h"
 
 #include "pas_main.h"
 #include "pas_expression.h"
@@ -381,7 +382,7 @@ static void pas_ExitProc(void)
   if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
   else getToken();
 
-  pas_StandardFunctionCall(lbEXIT);
+  pas_OsInterfaceCall(osEXIT);
 }
 
 /***********************************************************************/
@@ -394,7 +395,7 @@ static void pas_HaltProc(void)
 
   getToken();
   pas_GenerateDataOperation(opPUSH, 0);
-  pas_StandardFunctionCall(lbEXIT);
+  pas_OsInterfaceCall(osEXIT);
 }
 
 /****************************************************************************/
@@ -1530,7 +1531,7 @@ static void pas_NewProc(void)
            */
 
           pas_GenerateDataOperation(opPUSH, parentTypePtr->sParm.t.tAllocSize);
-          pas_StandardFunctionCall(lbNEW);
+          pas_OsInterfaceCall(osNEW);
 
           /* Save this into the pointer variable */
 
@@ -1638,7 +1639,7 @@ static void pas_DisposeProc(void)
        * free it.
        */
 
-      pas_StandardFunctionCall(lbDISPOSE);
+      pas_OsInterfaceCall(osDISPOSE);
     }
 
   if (g_token != ')') error(eRPAREN);  /* Skip over ')' */
@@ -1828,7 +1829,7 @@ static void pas_StrProc(void)
 
   /* Now we can generate the string operation */
 
-  pas_StandardFunctionCall(opCode);
+  pas_StringLibraryCall(opCode);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
 
@@ -1892,7 +1893,7 @@ static void pas_InsertProc(void)
 
   /* Now we can generate the string operation */
 
-  pas_StandardFunctionCall(lbINSERTSTR);
+  pas_StringLibraryCall(lbINSERTSTR);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
 
@@ -1951,7 +1952,7 @@ static void pas_DeleteProc(void)
 
   /* Now we can generate the string operation */
 
-  pas_StandardFunctionCall(lbDELSUBSTR);
+  pas_StringLibraryCall(lbDELSUBSTR);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
 
@@ -2013,7 +2014,7 @@ static void pas_FillCharProc(void)
 
   /* Now we can generate the string operation */
 
-  pas_StandardFunctionCall(opCode);
+  pas_StringLibraryCall(opCode);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
 
@@ -2110,7 +2111,7 @@ static void pas_ValProc(void)  /* VAL procedure */
    * having to generate the INDS here.
    */
 
-  pas_StandardFunctionCall(lbVAL);
+  pas_StringLibraryCall(lbVAL);
 }
 
 /****************************************************************************/

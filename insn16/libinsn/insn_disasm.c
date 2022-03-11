@@ -48,7 +48,8 @@
 #include "pas_fpops.h"
 #include "pas_sysio.h"
 #include "pas_setops.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
+#include "pas_oslib.h"
 #include "paslib.h"
 
 #include "pas_insn.h"
@@ -64,6 +65,7 @@
 #define SHORTWORD     2    /* Show ARG8 as an unsigned integer */
 #define fpOP          3    /* Show ARG8 as encoded floating point operation */
 #define setOP         4    /* Show ARG8 as encoded SET operation */
+#define osOP          5    /* Show ARG8 as encoded OS operation */
 
 #define NOARG16       0
 #define HEX           1    /* Show ARG16 as hexadecimal */
@@ -191,7 +193,7 @@ static const struct
 
 /* System functions */
 
-/* 0x3f */ { "EXIT ",   MKFMT(NOARG8, NOARG16) },
+/* 0x3f */ { "END  ",   MKFMT(NOARG8, NOARG16) },
 
 /************** OPCODES WITH SINGLE BYTE ARGUMENT (arg8) ***************/
 
@@ -253,7 +255,7 @@ static const struct
 /* 0x70 */ { "FLOAT",   MKFMT(fpOP,   NOARG16) },
 /* 0x71 */ { "SETOP",   MKFMT(setOP,  NOARG16) },
 /* 0x72 */ { invOp,     MKFMT(NOARG8, NOARG16) },
-/* 0x73 */ { invOp,     MKFMT(NOARG8, NOARG16) },
+/* 0x73 */ { "OSOP",    MKFMT(osOP,   NOARG16) },
 /* 0x74 */ { "PUSHB",   MKFMT(SHORTINT, NOARG16) },
 /* 0x75 */ { "UPUSHB",  MKFMT(SHORTWORD, NOARG16) },
 /* 0x76 */ { invOp,     MKFMT(NOARG8, NOARG16) },
@@ -490,17 +492,22 @@ static const char * const sName[MAX_SETOP] =
 /* 0x0c */ "CARD",       "SINGLETON", "SUBRANGE"
 };
 
+static const char invOSOp[] = "Invalid OSOP";
+static const char * const osName[MAX_OSOP] =
+{ /* OS opcode mnemonics */
+/* 0x00 */ "EXIT",       "NEW",       "DISPOSE",      "GETENV"
+};
+
 static const char invLbOp[] = "Invalid runtime code";
 static const char * const lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "EXIT",      "NEW",       "DISPOSE",    "GETENV",
-/* 0x04 */ "STRCPY",    "STRCPY2",   "STRCPYX",    "STRCPYX2",
-/* 0x08 */ "BSTR2STR",  "STR2BSTR",  "STR2BSTRX",  "STRINIT",
-/* 0x0c */ "STRTMP",    "STRDUP",    "MKSTKC",     "STRCAT",
-/* 0x10 */ "STRCATC",   "STRCMP",    "COPYSUBSTR", "FINDSUBSTR",
-/* 0x14 */ "INSERTSTR", "DELSUBSTR", "FILLCHAR ",  "CHARAT",
-/* 0x18 */ "INTSTR",    "WORDSTR",   "LONGSTR",    "ULONGSTR ",
-/* 0x1c */ "REALSTR",   "VAL"
+/* 0x00 */ "STRCPY",    "STRCPY2",   "STRCPYX",    "STRCPYX2",
+/* 0x04 */ "BSTR2STR",  "STR2BSTR",  "STR2BSTRX",  "STRINIT",
+/* 0x08 */ "STRTMP",    "STRDUP",    "MKSTKC",     "STRCAT",
+/* 0x0c */ "STRCATC",   "STRCMP",    "COPYSUBSTR", "FINDSUBSTR",
+/* 0x10 */ "INSERTSTR", "DELSUBSTR", "FILLCHAR ",  "CHARAT",
+/* 0x14 */ "INTSTR",    "WORDSTR",   "LONGSTR",    "ULONGSTR ",
+/* 0x18 */ "REALSTR",   "VAL"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";
@@ -603,6 +610,17 @@ void insn_DisassemblePCode(FILE* lfile, opType_t *pop)
                 else
                   {
                     fprintf(lfile, "%s", invSetOp);
+                  }
+                break;
+
+              case osOP :        /* Show ARG8 as encoded OS operation */
+                if (pop->arg1 < MAX_OSOP)
+                  {
+                    fprintf(lfile, "%s", osName[pop->arg1]);
+                  }
+                else
+                  {
+                    fprintf(lfile, "%s", invOSOp);
                   }
                 break;
 

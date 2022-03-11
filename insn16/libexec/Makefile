@@ -57,8 +57,8 @@ CFLAGS      += $(EXTRA_INCLUDES)
 #
 
 LIBEXECSRCS  = libexec_runloop.c libexec_load.c libexec_run.c libexec_float.c
-LIBEXECSRCS += libexec_sysio.c libexec_library.c libexec_setops.c
-LIBEXECSRCS += libexec_longops.c libexec_heap.c
+LIBEXECSRCS += libexec_sysio.c libexec_stringlib.c libexec_setops.c
+LIBEXECSRCS += libexec_longops.c libexec_oslib.c libexec_heap.c
 
 ifeq ($(CONFIG_PASCAL_DEBUGGER),y)
 LIBEXECSRCS += libexec_debug.c

@@ -1,8 +1,8 @@
-/***************************************************************************
- * libexec_setops.h
- * External Declarations associated with the run-time file table
+/****************************************************************************
+ * libexec_oslib.h
+ * External Declarations associated with the run-time library
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,23 +32,22 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************************/
+ ****************************************************************************/
 
-#ifndef __LIBEXEC_SETOPS_H
-#define __LIBEXEC_SETOPS_H
+#ifndef __LIBEXEC_OSLIB_H
+#define __LIBEXEC_OSLIB_H
 
-/***************************************************************************
+/****************************************************************************
  * Included Files
- ***************************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "libexec.h"
 
-/***************************************************************************
+/****************************************************************************
  * Public Function Prototypes
- ***************************************************************************/
+ ****************************************************************************/
 
-int libexec_SetOperations(struct libexec_s *st, uint8_t subfunc);
+uint16_t libexec_OsOperations(struct libexec_s *st, uint8_t subfunc);
 
-#endif /* __LIBEXEC_SETOPS_H */
+#endif /* __LIBEXEC_OSLIB_H */

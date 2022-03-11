@@ -1,8 +1,8 @@
-/***************************************************************************
- * libexec_setops.h
- * External Declarations associated with the run-time file table
+/****************************************************************************
+ * libexec_stringlib.h
+ * External Declarations associated with the run-time library
  *
- *   Copyright (C) 2008, 2021 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,23 +32,24 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ***************************************************************************/
+ ****************************************************************************/
 
-#ifndef __LIBEXEC_SETOPS_H
-#define __LIBEXEC_SETOPS_H
+#ifndef __LIBEXEC_STRINGLIB_H
+#define __LIBEXEC_STRINGLIB_H
 
-/***************************************************************************
+/****************************************************************************
  * Included Files
- ***************************************************************************/
+ ****************************************************************************/
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "libexec.h"
 
-/***************************************************************************
+/****************************************************************************
  * Public Function Prototypes
- ***************************************************************************/
+ ****************************************************************************/
 
-int libexec_SetOperations(struct libexec_s *st, uint8_t subfunc);
+uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc);
+char    *libexec_MkCString(struct libexec_s *st, const char *src, int size,
+                           bool keep);
 
-#endif /* __LIBEXEC_SETOPS_H */
+#endif /* __LIBEXEC_STRINGLIB_H */

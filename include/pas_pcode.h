@@ -111,9 +111,9 @@ enum pcode_e
    ** OPCODES WITH ONE ARGUMENT
    **-------------------------------------------------------------------**/
 
-  /* Floating point/Set operations: arg = FP/SET op-code */
+  /* Floating point/Set operations: arg = FP/SET/OSIF op-code */
 
-  opFLOAT,  opSETOP,
+  opFLOAT,  opSETOP, opOSOP,
 
   /* Program control:  arg = unsigned label (One stack argument) */
 
@@ -161,7 +161,7 @@ enum pcode_e
 
   /* System functions: arg = 16-bit library/system call identifier */
 
-  opLIB, opSYSIO,
+  opSTRLIB, opSYSIO,
 
   /* Program control:  arg = unsigned label (no stack arguments) */
 

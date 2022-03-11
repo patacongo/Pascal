@@ -50,7 +50,7 @@
 #include "pas_longops.h"    /* Long integer operation codes */
 #include "pas_fpops.h"      /* floating point operations */
 #include "pas_setops.h"     /* set operators */
-#include "pas_library.h"    /* library operations */
+#include "pas_stringlib.h"  /* library operations */
 #include "pas_errcodes.h"
 
 #include "pas_main.h"
@@ -242,7 +242,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
             {
               /* Duplicate the sting on the string stack. */
 
-              pas_StandardFunctionCall(lbSTRDUP);
+              pas_StringLibraryCall(lbSTRDUP);
             }
 
           /* If we are going to add something to a char, then the result
@@ -256,7 +256,7 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
                * change the expression type to reflect this.
                */
 
-              pas_StandardFunctionCall(lbMKSTKC);
+              pas_StringLibraryCall(lbMKSTKC);
               term1Type = exprString;
             }
         }
@@ -387,13 +387,13 @@ static exprType_t pas_SimpleExpression(exprType_t findExprType)
                 {
                   /* We are concatenating one string with another.*/
 
-                  pas_StandardFunctionCall(lbSTRCAT);
+                  pas_StringLibraryCall(lbSTRCAT);
                 }
               else if (term2Type == exprChar)
                 {
                   /* We are concatenating a character to the end of a string */
 
-                  pas_StandardFunctionCall(lbSTRCATC);
+                  pas_StringLibraryCall(lbSTRCATC);
                 }
               else
                 {
@@ -1012,7 +1012,7 @@ static exprType_t pas_Factor(exprType_t findExprType)
          * such cases when the STRDUP is not needed and remove it.
          */
 
-        pas_StandardFunctionCall(lbSTRDUP);
+        pas_StringLibraryCall(lbSTRDUP);
 
         /* Release the tokenized string */
 
@@ -1796,7 +1796,7 @@ static exprType_t pas_SimpleFactor(varInfo_t *varInfo,
           pas_GenerateDataOperation(opPUSH, varPtr->sParm.v.vSize);
           pas_GenerateSimple(opXCHG);
 
-          pas_StandardFunctionCall(lbBSTR2STR);
+          pas_StringLibraryCall(lbBSTR2STR);
           factorType = exprString;
         }
 
@@ -2985,7 +2985,7 @@ static exprType_t pas_FunctionDesignator(void)
        * soon as possible after the temporary container is released.
        */
 
-      pas_StandardFunctionCall(lbSTRTMP);
+      pas_StringLibraryCall(lbSTRTMP);
     }
   else
     {
@@ -3831,7 +3831,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
 
           if (simple2Type == exprString)
             {
-              pas_StandardFunctionCall(lbSTRCMP);
+              pas_StringLibraryCall(lbSTRCMP);
               pas_GenerateSimple(exprOpCodes.strOpCode);
 
               /* The resulting type is boolean */
@@ -3845,7 +3845,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
                * string of the first expression.
                */
 
-              pas_StandardFunctionCall(lbSTRCATC);
+              pas_StringLibraryCall(lbSTRCATC);
               pas_GenerateSimple(exprOpCodes.strOpCode);
 
               /* The resulting type is boolean */
@@ -4137,7 +4137,7 @@ exprType_t pas_Expression(exprType_t findExprType, symbol_t *typePtr)
            * change the expression type to reflect this.
            */
 
-          pas_StandardFunctionCall(lbMKSTKC);
+          pas_StringLibraryCall(lbMKSTKC);
           simple1Type = exprString;
         }
 

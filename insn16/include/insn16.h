@@ -108,7 +108,7 @@
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS loff,offs
  * xx11 0001  ---        SETOP sop      LAC dlbl       ---
  * xx11 0010  ---        LONGOP lop     ---            LONGOP lop,ilbl
- * xx11 0011  ---        ---            ---            ---
+ * xx11 0011  ---        OSOP osop      ---            ---
  * xx11 0100  ---        PUSHB n        PUSH nn        ---
  * xx11 0101  ---        UPUSHB n       INDS nn        ---
  * xx11 0110  ---        ---            LIB libop      ---
@@ -129,6 +129,8 @@
  *   fop   = 8-bit floating point operation
  *   sop   = 8-bit set operation
  *   lop   = 8-bit long operation.  1-4 bytes follow the LONGOP code.
+ *   osop  = 8-bit OS operation.  Additional arguments may follow the LONGOP
+ *           code.
  *   sysop = 16-bit sysio operation
  *   libop = 16-bit library call identifier
  *   fn    = 8-bit file number
@@ -260,7 +262,9 @@
 
 #define oLONGOP8 (o8|0x32)
 
-/* (o8|0x31)-(o8|0x33) -- unassigned */
+/* OS operations:  arg8  = opcode */
+
+#define oOSOP   (o8|0x33)
 
 /* Data stack:  arg8 = 8 bit data (no stack arguments) */
 
@@ -344,9 +348,9 @@
 
 /* (o16|0x34)-(o16|0x35) -- unassigned */
 
-/* System functions: arg16 = 16-bit library call identifier */
+/* System functions: arg16 = 16-bit string library call identifier */
 
-#define oLIB    (o16|0x36)
+#define oSTRLIB (o16|0x36)
 
 /* System calls:
  * For SYSIO:        arg16 = sub-function code

@@ -1,5 +1,5 @@
 /***********************************************************************
- * pas_library.h
+ * pas_stringlib.h
  * Definitions of the arguments of the Pascal run-time library
  *
  *   Copyright (C) 2008-2009, 2021-2022 Gregory Nutt. All rights reserved.
@@ -34,65 +34,13 @@
  *
  ***********************************************************************/
 
-#ifndef __PAS_LIBRARY_H
-#define __PAS_LIBRARY_H
+#ifndef __PAS_STRINGLIB_H
+#define __PAS_STRINGLIB_H
 
 /***********************************************************************/
-/* Codes for runtime library interfaces.  These must be confined to the
- * range 0x0000 through 0xffff.
+/* Codes for runtime string operations interfaces.  These must be
+ * confined to the range 0x0000 through 0xffff.
  */
-
-/* Exit processing.
- *
- *   procedure hist(exitCode : integer);
- *
- * ON INPUT:
- *   TOS(0) - Exit code
- * ON RETURN:
- *   Does not return
- */
-
-#define lbEXIT          (0x0000)
-
-/* Heap allocation:
- *
- *   function new(size : integer) : integer;
- *
- * ON INPUT:
- *   TOS(0) - Size of the heap region to create
- *
- * ON RETURN:
- *   TOS(0) - The allocated heap region
- */
-
-#define lbNEW           (0x0001)
-
-/* Dispose of a previous heap allocation:
- *
- *   procedure despose(VAR alloc : integer);
- *
- * ON INPUT:
- *   TOS(0) - Address of the heap region to dispose of
- *
- * ON RETURN:
- *   No value is returned
- */
-
-#define lbDISPOSE       (0x0002)
-
-/* Get an environment string.
- *
- *   function getenv(name : string) : string;
- *
- * ON INPUT:
- *   TOS(0) = Address of variable name string
- *   TOS(1) = Length of variable name string
- * ON RETURN:
- *   TOS(0) = Address of variable value string
- *   TOS(1) = Length of variable value string
- */
-
-#define lbGETENV        (0x0003)
 
 /* Copy pascal string to a pascal string
  *
@@ -112,11 +60,11 @@
  * and source string reversed.
  */
 
-#define lbSTRCPY        (0x0004)
-#define lbSTRCPY2       (0x0005)
+#define lbSTRCPY        (0x0000)
+#define lbSTRCPY2       (0x0001)
 
-#define lbSTRCPYX       (0x0006)
-#define lbSTRCPYX2      (0x0007)
+#define lbSTRCPYX       (0x0002)
+#define lbSTRCPYX2      (0x0003)
 
 /* Copy binary file character array to a pascal string.  Used when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as a factor in an RVALUE.
@@ -132,7 +80,7 @@
  *   TOS(2) = String size
  */
 
-#define lbBSTR2STR      (0x0008)
+#define lbBSTR2STR      (0x0004)
 
 /* Copy a pascal string into a binary file character array.  Use when a non-
  * indexed PACKED ARRAY[] OF CHAR appears as the LVALUE in an assignment.
@@ -150,7 +98,7 @@
  *   All inputs consumbed
  */
 
-#define lbSTR2BSTR      (0x0009)
+#define lbSTR2BSTR      (0x0005)
 
 /* Copy a pascal string into a binary file character array.  Use when a non-
  * indexed PACKED ARRAY[] OF CHAR appears within an array element (using as
@@ -170,7 +118,7 @@
  *   All inputs consumed
  */
 
-#define lbSTR2BSTRX     (0x000a)
+#define lbSTR2BSTRX     (0x0006)
 
 /* Initialize a new string variable. Create a string buffer.  This is
  * called only at entrance into a new Pascal block.
@@ -186,7 +134,7 @@
  * ON RETURN
  */
 
-#define lbSTRINIT       (0x000b)
+#define lbSTRINIT       (0x0007)
 
 /* Initialize a temporary string variable on the stack. This is similar to
  * lbSTRINIT except that the form of its arguments are different.  This
@@ -202,7 +150,7 @@
  *   TOS(2) = String size (zero)
  */
 
-#define lbSTRTMP        (0x000c)
+#define lbSTRTMP        (0x0008)
 
 /* Replace a string with a duplicate string residing in allocated
  * string stack.
@@ -219,7 +167,7 @@
  *   TOS(2) = Length of new string
  */
 
-#define lbSTRDUP        (0x000d)
+#define lbSTRDUP        (0x0009)
 
 /* Replace a character with a string residing in allocated string stack
  * memory.
@@ -234,7 +182,7 @@
  *   TOS(2) = Length of new string
  */
 
-#define lbMKSTKC        (0x000e)
+#define lbMKSTKC        (0x000a)
 
 /* Concatenate a string to the end of a string.
  *
@@ -253,7 +201,7 @@
  *   TOS(2) = new length of dest string2
  */
 
-#define lbSTRCAT        (0x000f)
+#define lbSTRCAT        (0x000b)
 
 /* Concatenate a character to the end of a string.
  *
@@ -270,7 +218,7 @@
  *   TOS(2) = new length of string
  */
 
-#define lbSTRCATC       (0x0010)
+#define lbSTRCATC       (0x000c)
 
 /* Compare two pascal strings
  *
@@ -287,7 +235,7 @@
  *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
  */
 
-#define lbSTRCMP        (0x0011)
+#define lbSTRCMP        (0x000d)
 
 /* Borland-style string operations ******************************************/
 
@@ -307,7 +255,7 @@
  *   TOS(2) = Length of the substring
  */
 
-#define lbCOPYSUBSTR    (0x0012)
+#define lbCOPYSUBSTR    (0x000e)
 
 /* Find a substring in a string.  Returns the (1-based) character position of
  * the substring or zero if the substring is not found.
@@ -326,7 +274,7 @@
  *   TOS(0) = Position of the substring (or zero if not present)
  */
 
-#define lbFINDSUBSTR    (0x0013)
+#define lbFINDSUBSTR    (0x000f)
 
 /* Insert a string into another string.
  *
@@ -341,7 +289,7 @@
  * ON OUTPUT
  */
 
-#define lbINSERTSTR     (0x0014)
+#define lbINSERTSTR     (0x0010)
 
 /* Delete a substring from a string.
  *
@@ -354,7 +302,7 @@
  * ON OUTPUT
  */
 
-#define lbDELSUBSTR     (0x0015)
+#define lbDELSUBSTR     (0x0011)
 
 /* Fill string s with character value until s is count-1 char long.
  *
@@ -367,7 +315,7 @@
  * ON OUTPUT
  */
 
-#define lbFILLCHAR      (0x0016)
+#define lbFILLCHAR      (0x0012)
 
 /* Extract a character from a string.
  *
@@ -382,7 +330,7 @@
  *   TOS(0) = Character from 'inString' at 'charPos'
  */
 
-#define lbCHARAT        (0x0017)
+#define lbCHARAT        (0x0013)
 
 /* Convert a numeric value to a string
  *
@@ -393,11 +341,11 @@
  * ON OUTPUT
  */
 
-#define lbINTSTR        (0x0018)
-#define lbWORDSTR       (0x0019)
-#define lbLONGSTR       (0x001a)
-#define lbULONGSTR      (0x001b)
-#define lbREALSTR       (0x001c)
+#define lbINTSTR        (0x0014)
+#define lbWORDSTR       (0x0015)
+#define lbLONGSTR       (0x0016)
+#define lbULONGSTR      (0x0017)
+#define lbREALSTR       (0x0018)
 
 /* Convert a string to a numeric value
  *
@@ -427,8 +375,8 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x001d)
+#define lbVAL           (0x0019)
 
-#define MAX_LBOP        (0x001e)
+#define MAX_LBOP        (0x001a)
 
-#endif /* __PAS_LIBRARY_H */
+#endif /* __PAS_STRINGLIB_H */

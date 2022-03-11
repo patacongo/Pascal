@@ -48,7 +48,7 @@
 #include "pas_tkndefs.h"
 #include "pas_pcode.h"
 #include "pas_errcodes.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
 
 #include "pas_main.h"
 #include "pas_statement.h"
@@ -1384,7 +1384,7 @@ static void pas_StringAssignment(symbol_t *varPtr, symbol_t *typePtr,
           libOpcode = destFirst ? lbSTRCPY : lbSTRCPY2;
         }
 
-      pas_StandardFunctionCall(libOpcode);
+      pas_StringLibraryCall(libOpcode);
     }
 }
 
@@ -1439,7 +1439,7 @@ static void pas_ArrayAssignment(symbol_t *varPtr, symbol_t *typePtr,
       opCode = lbSTR2BSTR;
     }
 
-  pas_StandardFunctionCall(opCode);
+  pas_StringLibraryCall(opCode);
 }
 
 /***********************************************************************/

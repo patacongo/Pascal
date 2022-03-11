@@ -49,7 +49,8 @@
 #include "pas_fpops.h"
 #include "pas_errcodes.h"
 #include "pas_sysio.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
+#include "pas_oslib.h"
 
 #include "pas_main.h"
 #include "pas_expression.h"
@@ -555,7 +556,7 @@ static void pas_CopyFunc(void)
 
   /* Now we can generate the string operation */
 
-  pas_StandardFunctionCall(lbCOPYSUBSTR);
+  pas_StringLibraryCall(lbCOPYSUBSTR);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
 
@@ -604,7 +605,7 @@ static void pas_PosFunc(void)
 
   /* Now we can generate the string operation */
 
-  pas_StandardFunctionCall(lbFINDSUBSTR);
+  pas_StringLibraryCall(lbFINDSUBSTR);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
 
@@ -629,7 +630,7 @@ static void pas_ConcatFunc(void)
 
   /* Create an empty standard string to catch the result of the concatenation */
 
-  pas_StandardFunctionCall(lbSTRTMP);
+  pas_StringLibraryCall(lbSTRTMP);
 
   for (; ; )
     {
@@ -648,7 +649,7 @@ static void pas_ConcatFunc(void)
           error(eEXPRTYPE);
         }
 
-      pas_StandardFunctionCall(opCode);
+      pas_StringLibraryCall(opCode);
 
       /* A comma following the string means that there is another string to
        * be concatenated.  Continue looping.
@@ -899,7 +900,7 @@ static void pas_CharAtFunc(void)
 
   pas_Expression(exprInteger, NULL);
 
-  pas_StandardFunctionCall(lbCHARAT);
+  pas_StringLibraryCall(lbCHARAT);
   pas_CheckRParen();
 }
 
@@ -925,7 +926,7 @@ static exprType_t pas_GetEnvFunc(void)
       error(eINVARG);
     }
 
-  pas_StandardFunctionCall(lbGETENV);
+  pas_OsInterfaceCall(osGETENV);
   pas_CheckRParen();
   return exprString;
 }

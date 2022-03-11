@@ -1,8 +1,8 @@
-/****************************************************************************
- * libexec_library.h
- * External Declarations associated with the run-time library
+/***********************************************************************
+ * pas_oslib.h
+ * Definitions of the arguments of the Pascal run-time library
  *
- *   Copyright (C) 2021-2022 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2022 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,24 +32,68 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ****************************************************************************/
+ ***********************************************************************/
 
-#ifndef __LIBEXEC_LIBRARY_H
-#define __LIBEXEC_LIBRARY_H
+#ifndef __PAS_OSLIB_H
+#define __PAS_OSLIB_H
 
-/****************************************************************************
- * Included Files
- ****************************************************************************/
+/***********************************************************************/
+/* Codes for runtime OS interfaces.  These must be confined to the range
+ * 0x00 through 0xff.
+ */
 
-#include <stdint.h>
-#include <stdbool.h>
+/* Exit processing.
+ *
+ *   procedure hist(exitCode : integer);
+ *
+ * ON INPUT:
+ *   TOS(0) - Exit code
+ * ON RETURN:
+ *   Does not return
+ */
 
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
+#define osEXIT          (0x0000)
 
-uint16_t libexec_LibraryOps(struct libexec_s *st, uint16_t subfunc);
-char    *libexec_MkCString(struct libexec_s *st, const char *src, int size,
-                           bool keep);
+/* Heap allocation:
+ *
+ *   function new(size : integer) : integer;
+ *
+ * ON INPUT:
+ *   TOS(0) - Size of the heap region to create
+ *
+ * ON RETURN:
+ *   TOS(0) - The allocated heap region
+ */
 
-#endif /* __LIBEXEC_LIBRARY_H */
+#define osNEW           (0x0001)
+
+/* Dispose of a previous heap allocation:
+ *
+ *   procedure dispose(VAR alloc : integer);
+ *
+ * ON INPUT:
+ *   TOS(0) - Address of the heap region to dispose of
+ *
+ * ON RETURN:
+ *   No value is returned
+ */
+
+#define osDISPOSE       (0x0002)
+
+/* Get an environment string.
+ *
+ *   function getenv(name : string) : string;
+ *
+ * ON INPUT:
+ *   TOS(0) = Address of variable name string
+ *   TOS(1) = Length of variable name string
+ * ON RETURN:
+ *   TOS(0) = Address of variable value string
+ *   TOS(1) = Length of variable value string
+ */
+
+#define osGETENV        (0x0003)
+
+#define MAX_OSOP        (0x0004)
+
+#endif /* __PAS_OSLIB_H */

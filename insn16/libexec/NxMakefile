@@ -44,7 +44,7 @@ INSN_INCDIR = $(INSNDIR)/include
 CFLAGS += ${shell $(INCDIR) "$(CC)" "$(INSN_INCDIR)"}
 
 CSRCS   = libexec_runloop.c libexec_debug.c libexec_load.c libexec_run.c
-CSRCS  += libexec_float.c libexec_sysio.c libexec_library.c
-CSRCS  += libexec_setops.c libexec_longops.c libexec_heap.c
+CSRCS  += libexec_float.c libexec_sysio.c libexec_stringlib.c
+CSRCS  += libexec_setops.c libexec_longops.c libexec_oslib.c libexec_heap.c
 
 include $(APPDIR)/Application.mk

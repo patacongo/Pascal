@@ -60,7 +60,7 @@
 #include "pas_insn.h"
 #include "insn16.h"
 #include "pas_sysio.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
 
 #include "popt.h"
 #include "pas_error.h"
@@ -586,7 +586,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
             }
             return;
 
-          case oLIB :
+          case oSTRLIB :
             {
               /* Is it LIB STRINIT? STRDUP? or other string library functions
                * that we should not optimize?  These functions all allocate

@@ -61,7 +61,7 @@
 
 #include "pas_debug.h"
 #include "pas_machine.h"
-#include "pas_library.h"
+#include "pas_stringlib.h"
 #include "pas_errcodes.h"
 #include "pas_error.h"
 #include "insn16.h"
@@ -117,7 +117,7 @@ static int16_t popt_StringConstOptimize(void)
        * being converted to a standard string.
        */
 
-      if (g_opPtr[i]->op != oLAC || g_opPtr[i + 1]->op != oLIB ||
+      if (g_opPtr[i]->op != oLAC || g_opPtr[i + 1]->op != oSTRLIB ||
           g_opPtr[i + 1]->arg2 != lbSTRDUP)
         {
         }
@@ -135,7 +135,7 @@ static int16_t popt_StringConstOptimize(void)
                 g_opPtr[i + 2]->op   == oLDS         ||
                 g_opPtr[i + 2]->op   == oPUSH        ||
                 g_opPtr[i + 2]->op   == oPUSHB)      &&
-                g_opPtr[i + 3]->op   == oLIB         &&
+                g_opPtr[i + 3]->op   == oSTRLIB      &&
                (g_opPtr[i + 3]->arg2 == lbSTRCPY2    ||
                 g_opPtr[i + 3]->arg2 == lbSTRCPYX2   ||
                 g_opPtr[i + 3]->arg2 == lbSTRDUP     ||
@@ -161,7 +161,7 @@ static int16_t popt_StringConstOptimize(void)
                 g_opPtr[i + 2]->op   == oPUSHB)      &&
                (g_opPtr[i + 3]->op   == oLA          ||
                 g_opPtr[i + 3]->op   == oLAS)        &&
-                g_opPtr[i + 4]->op   == oLIB         &&
+                g_opPtr[i + 4]->op   == oSTRLIB      &&
                (g_opPtr[i + 4]->arg2 == lbSTRCPY    ||
                 g_opPtr[i + 4]->arg2 == lbSTRCPYX))
         {

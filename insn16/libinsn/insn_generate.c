@@ -120,6 +120,7 @@ static const uint16_t g_opCodeMap[NUM_OPCODES] =
   oEND,     /* opEND */
   oFLOAT,   /* opFLOAT */
   oSETOP,   /* opSETOP */
+  oOSOP,    /* opOSOP */
   oJEQUZ,   /* opJEQUZ */
   oJNEQZ,   /* opJNEQZ */
   oJMP,     /* opJMP */
@@ -148,7 +149,7 @@ static const uint16_t g_opCodeMap[NUM_OPCODES] =
   oPUSH,    /* opPUSH */
   oINDS,    /* opINDS */
   oLAX,     /* opLAX */
-  oLIB,     /* opLIB */
+  oSTRLIB,  /* opSTRLIB */
   oSYSIO,   /* opSYSIO */
   oLABEL,   /* opLABEL */
   oPCAL,    /* opPCAL */
@@ -283,9 +284,16 @@ void insn_GenerateIoOperation(uint16_t ioOpcode)
 
 /***********************************************************************/
 
-void insn_StandardFunctionCall(uint16_t libOpcode)
+void insn_StringLibraryCall(uint16_t strOpcode)
 {
-  insn16_Generate(opLIB, 0, (int32_t)libOpcode);
+  insn16_Generate(opSTRLIB, 0, (int32_t)strOpcode);
+}
+
+/***********************************************************************/
+
+void insn_OsInterfaceCall(uint16_t osOpcode)
+{
+  insn16_Generate(opOSOP, osOpcode, 0);
 }
 
 /***********************************************************************/

@@ -61,7 +61,8 @@
 #include "libexec_sysio.h"
 #include "libexec_setops.h"
 #include "libexec_longops.h"
-#include "libexec_library.h"
+#include "libexec_stringlib.h"
+#include "libexec_oslib.h"
 #include "libexec_heap.h"
 #include "libexec.h"
 
@@ -719,7 +720,11 @@ static inline int pexec16(struct libexec_s *st, uint8_t opcode, uint8_t imm8)
       /* Set operations:  imm8 = SET op-code (varying number of stack arguments) */
 
     case oSETOP :
-      ret = libexec_setops(st, imm8);
+      ret = libexec_SetOperations(st, imm8);
+      break;
+
+    case oOSOP :
+      ret = libexec_OsOperations(st, imm8);
       break;
 
     case oLONGOP8 :
@@ -1087,8 +1092,8 @@ static inline int pexec24(struct libexec_s *st, uint8_t opcode,
        * For LIB:        imm16 = sub-function code
        */
 
-    case oLIB  :
-      ret = libexec_LibraryOps(st, imm16);
+    case oSTRLIB :
+      ret = libexec_StringOperations(st, imm16);
       break;
 
       /* System Functions:

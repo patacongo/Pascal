@@ -58,7 +58,7 @@
 #include "pas_error.h"
 
 #include "libexec_longops.h"
-#include "libexec_library.h"
+#include "libexec_stringlib.h"
 #include "libexec_sysio.h"
 
 /****************************************************************************
