@@ -4,21 +4,21 @@
 
 This compiler is the result of several years of work and is basically an homage to a Language that I loved in my youth.
 
-In the late 1970's, I was in graduate school and scraped enough money together to buy a TRS-8 0 Model I.  That little grey keyboard computer is what caused to to leave graduate school ABD and pursue a career in programming and embedded systems.
+In the late 1970's, I was in graduate school and scraped enough money together to buy a TRS-80 Model I.  That little grey keyboard computer is what caused to to leave graduate school ABD and pursue a career in programming and embedded systems.
 
-Although I had multiple degrees, I was still not properly credentialed for that career and decided to return to graduate school to work on a master's degree.  That was in 1981 and that was when I was first exposed to real Pascal programming.  It was a core part of the culture in the CS department.
+Although I had multiple degrees, I was still not properly credentialed for that career and returned to graduate school to work on a master's degree in Computer Science.  That was in 1981 and that was when I was first exposed to real Pascal programming.  It was a core part of the culture in the CS department.
 
-But I had some previous exposure.  I had subscribed to the *TRS-80 Newsletter* which published programs for the TRS=80 that you could type in yourself.  In 1979, *TRS-80 Newsletter* published the source for People's Pascal, http://www.trs-80.org/tiny-pascal/.  You could either buy the software with documentation or painfully enter it from the listing by hand.  I did the latter and got to know a little bit about the tiny Pascal compiler.
+But I had some previous exposure.  I had subscribed to the *TRS-80 Newsletter* which published programs for the TRS=80 that you could type in yourself and save on cassette tape.  In 1979, *TRS-80 Newsletter* published the source for People's Pascal, http://www.trs-80.org/tiny-pascal/.  You could either buy the software with documentation or painfully enter it from the listing by hand.  I did the latter and got to know a little bit about the design of the tiny Pascal compiler.
 
-In the early/mid 1980's I also upgraded my Trash-80 for a TRS-80 Model IV, my pride and joy at the time. I also purchased the Alcor C compiler on a 5.25 inch floppy.  One of my first programming projects was to write a work-alike tiny Pascal compiler in C.  It was really a pretty nice compiler, but very limited.  It was basically integer Pascal with peek and poke capabilities.
+In the early/mid 1980's I upgraded my Trash-80 for a TRS-80 Model IV, my pride and joy at the time. I also purchased the Alcor C compiler on a 5.25 inch floppy.  One of my first programming projects was to write a work-alike tiny Pascal compiler in C.  It was really a pretty nice compiler, but very limited.  It was basically integer Pascal with peek and poke capabilities built on the TRS-80 ROM.
 
-Some time later, perhaps in the 1990's or early 2000's, I decided to extend the compiler to support full Pascal, with language definitions circa 1980.  I see the last changes in 2004, 2007, and 2008. While the language was much more complete, it was also very unstable and remained unstable until very recently.
+Some time later, perhaps in the 1990's or early 2000's, I decided to extend the compiler to support full Pascal with language definitions circa 1980.  I see the last changes in 2004, 2007, and 2008. While the language was much more complete, the compiler was also more unstable and remained unstable until very recently.
 
-After that I was mostly preoccupied with another project, the NuttX RTOS.  I even incorporated this Pascal into the RTS for a while so that could run the Pascal code under the OS.  But it was just to unstable to be useful.
+After that I was mostly preoccupied with another project, the NuttX RTOS, and the compiler sat gathering dust.  I did incorporat the Pascal P-Code VM into the RTOS for a while so that could run the Pascal code under the OS.  But the compiler was just too unstable to be useful.
  
-In 2019, I granted the NuttX RTOS to Apache Software Foundation.  This freed up a lot of time since I was no longer on the critical path for the RTOS.  So I devoted time again to this compiler.
+In 2019, I granted the NuttX RTOS to *Apache Software Foundation*.  This freed up a lot of my time since I was no longer on the critical path for the RTOS.  So I devoted time again to this compiler.
 
-I extended the language support to include most of the features of recent and contemporary Pascal compilers (while still avoiding the object-based Pascal that is in use today).  I also developed test suites that brought made the compiler pretty stable and certainly usable.
+I extended the language support to include most of the features of recent and contemporary Pascal compilers (while still avoiding the object-based Pascal that is in use today by *FreePascal* and *Lazarus*).  I also developed test suites that brought made the compiler much more stable and certainly usable.
 
 Currently, I am bringing the compiler into the embedded environment.  I would like to see an all Pascal embedded system running on a P-Code VM with a Pascal JIT compiler.  Stay tuned.  Let's see how far I get.
 
