@@ -55,7 +55,7 @@ IMPLEMENTATION
     Success      := FindFirst(PathTemplate, 0, SearchResult);
     WHILE Success DO
     BEGIN
-      WRITELN('  ', SearchResult.name);
+      WRITELN(SearchResult.name:16, ' Size: ', SearchResult.size);
       Success := FindNext(SearchResult)
     END;
 

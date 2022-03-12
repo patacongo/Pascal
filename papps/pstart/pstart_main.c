@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "paslib.h"
 #include "execlib.h"
@@ -60,6 +61,12 @@ int main(int argc, char *argv[], char *envp[])
 {
   EXEC_HANDLE_t handle;
   char fileName[FNAME_SIZE + 1];  /* Object file name */
+
+#ifdef CONFIG_PASCAL_HAVEHOME
+  /* Change to the home directory */
+
+  chdir(CONFIG_PASCAL_HOMEDIR);
+#endif
 
   /* Load the POFF files specified on the command line.
    * Use .pex or command line extension, if supplied.

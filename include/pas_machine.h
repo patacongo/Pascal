@@ -173,7 +173,7 @@ struct opType_s
 typedef struct opType_s opType_t;
 
 /* The tgtPtr_t structure simply represents a target machine pointer to
- * allocated memory.  It is represented by a structure only due to alignment
+ * allocated memory.  It is represented by a union only due to alignment
  * issues.
  */
 
@@ -184,5 +184,17 @@ union tgtPtr_u
 };
 
 typedef union tgtPtr_u tgtPtr_t;
+
+/* The mapInt32_t structure is used to support endian-independent
+ * conversion/formation of 32-bit integer to/from 16-bit integers.
+ */
+
+union mapInt32_u
+{
+  uint32_t u32;
+  uint16_t u16[2];
+};
+
+typedef union mapInt32_u mapInt32_t;
 
 #endif /* __PAS_MACHINE_H */

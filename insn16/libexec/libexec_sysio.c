@@ -37,8 +37,8 @@
  * Included Files
  ****************************************************************************/
 
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -1795,14 +1795,14 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     /* OPENDIR : Open a directory for reading.
      *
-     *   function OpenDir(dirPath : string; VAR dirInfo: TDir) : boolean
+     *   function OpenDir(DirPath : string; VAR dirInfo: TDir) : boolean
      *
      * ON INPUT:
-     *   TOS(0) = Address of dir
+     *   TOS(0) = Address of DirPath
      *   TOS(1) = Dirpath string buffer allocation size
-     *   TOS(2) = dirPath string memory address
-     *   TOS(3) = The length of the dirPath string
-     * ON OUTPUT
+     *   TOS(2) = DirPath string memory address
+     *   TOS(3) = The length of the DirPath string
+     * ON RETURN:
      *   TOS(0) = Boolean result of the OpenDir operation
      */
 
@@ -1859,12 +1859,12 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     /* READDIR : Read the next directory entry.
      *
-     *   function ReadDir(VAR dir : TDir, VAR searchRec : TSearchRec) : boolean
+     *   function ReadDir(VAR DirPath : TDir, VAR SearchRec : TSearchRec) : boolean
      *
      * ON INPUT:
-     *   TOS(0) = Address of searchRec
-     *   TOS(1) = Address of dir
-     * ON OUTPUT
+     *   TOS(0) = Address of SearchRec
+     *   TOS(1) = Address of DirPath
+     * ON RETURN:
      *   TOS(0) = Boolean result of the ReadDir operation
      */
 
@@ -1952,11 +1952,95 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
                 searchRec->attr |= faHidden;
               }
 
-            /* Stat the file to get the size, last modification time, and
-             * read-only attribute.
-             *
-             * REVISIT:  Not yet implemented.
+            result = PASCAL_TRUE;
+          }
+
+        PUSH(st, result);
+      }
+      break;
+
+    /* Get information about a file.  This function will populate the 'size'
+     * and 'time'  fields of the `TSearchRec` record.
+     *
+     *   function FileInfo(FilePath : string; VAR SearchRec : TSearchRec) : boolean
+     *
+     * ON INPUT:
+     *   TOS(0) = Address of SearchRec
+     *   TOS(1) = Size of FilePath allocation
+     *   TOS(2) = Address of FilePath string
+     *   TOS(3) = Length of the FilePath string
+     * ON RETURN:
+     *   TOS(0) = Boolean result of the FileInfo operation
+     */
+
+    case xFILEINFO :
+      {
+        struct stat  statBuf;
+        char        *filePathPtr;
+        uint16_t     searchRecAddr;
+        uint16_t     filePathAlloc;
+        uint16_t     filePathAddr;
+        uint16_t     filePathLength;
+        uint16_t     result;
+        int          ret;
+
+        /* Get the stack addresses */
+
+        POP(st, searchRecAddr);
+        POP(st, filePathAlloc);
+        POP(st, filePathAddr);
+        POP(st, filePathLength);
+
+        /* Convert to a NUL terminated C string by appending A NUL terminator
+         * to the end of string.  Assure that there is a free byte at the end
+         * of the string buffer.  If not, then use libexec_MkCString to
+         * duplicate the string with the NUL terminator.
+         */
+
+        filePathPtr = (char *)ATSTACK(st, filePathAddr);
+
+        if (filePathLength < filePathAlloc)
+          {
+            filePathPtr[filePathLength] = '\0';
+          }
+        else
+          {
+            filePathPtr = libexec_MkCString(st, filePathPtr, filePathLength,
+                                            false);
+          }
+
+        /* Do the stat operation */
+
+        ret = stat(filePathPtr, &statBuf);
+        if (ret < 0)
+          {
+            result = PASCAL_FALSE;
+          }
+        else
+          {
+            searchRec_t *resultPtr; /* Search result record pointer */
+            mapInt32_t   map;
+
+            /* Get a C pointer to the TSearchRec instance on the Pascal stack */
+
+            resultPtr = (searchRec_t *)ATSTACK(st, searchRecAddr);
+
+            /* Copy the last modification date/time and file size from the
+             * statBuf structure.
              */
+
+            map.u32            = (uint32_t)statBuf.st_mtime;
+            resultPtr->time[0] = map.u16[0];
+            resultPtr->time[1] = map.u16[1];
+
+            /* Size only makes sense for regular files */
+
+            if (S_ISREG(statBuf.st_mode))
+              {
+                map.u32            = (uint32_t)statBuf.st_size;
+                resultPtr->size[0] = map.u16[0];
+                resultPtr->size[1] = map.u16[1];
+              }
 
             result = PASCAL_TRUE;
           }
@@ -1973,7 +2057,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
      *
      * ON INPUT:
      *   TOS(0) = Address of dirInfo
-     * ON OUTPUT
+     * ON RETURN:
      *   TOS(0) = Boolean result of the RewindDir operation
      */
 

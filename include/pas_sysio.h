@@ -104,10 +104,11 @@
 
 #define xOPENDIR           (0x0026)  /* Open a directory for reading */
 #define xREADDIR           (0x0027)  /* Read the next directory entry */
-#define xREWINDDIR         (0x0028)  /* Read the next directory entry */
-#define xCLOSEDIR          (0x0029)  /* Terminate the directory read */
+#define xFILEINFO          (0x0028)  /* Get information about a file */
+#define xREWINDDIR         (0x0029)  /* Read the next directory entry */
+#define xCLOSEDIR          (0x002a)  /* Terminate the directory read */
 
-#define MAX_XOP            (0x002a)
+#define MAX_XOP            (0x002b)
 
 /* File attribute characters.  Default:  Non-hidden, regular files. */
 

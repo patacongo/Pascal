@@ -395,11 +395,11 @@ static symContainer_t *insertSymbol(poffLibSymbol_t *sym)
                       sym->name);
               nMultiplyDefined++;
             }
-
-          /* In any case, return the pointer to the old container */
-
-          newsym = curr;
         }
+
+      /* In any case, return the pointer to the old container */
+
+      newsym = curr;
     }
   else
     {
@@ -438,6 +438,7 @@ static void addSymbolToList(symContainer_t *symbol, uint32_t index)
         {
           fatal(eNOMEMORY);
         }
+
       symListAlloc = INITIAL_SYMBOL_LIST_SIZE;
     }
 
@@ -466,6 +467,4 @@ static void addSymbolToList(symContainer_t *symbol, uint32_t index)
 
   symList[index] = symbol;
 }
-
-/*****************************************************************************/
 

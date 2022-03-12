@@ -800,7 +800,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(3) = string2 allocation size
        *   TOS(4) = pointer to dest string2 data
        *   TOS(5) = length of dest string2
-       * ON OUTPUT
+       * ON RETURN:
        *   TOS(0) = string2 allocation size (unchanged)
        *   TOS(1) = pointer to dest string2 (unchanged)
        *   TOS(2) = new length of dest string2
@@ -831,7 +831,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(1) = String buffer allocation size
        *   TOS(2) = Pointer to string buffer
        *   TOS(3) = Length of string
-       * ON OUTPUT
+       * ON RETURN:
        *   TOS(0) = String buffer allocation size (unchanged)
        *   TOS(1) = Pointer to string buffer (unchanged)
        *   TOS(2) = new length of string
@@ -860,7 +860,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(3) = Size of string1 allocation
        *   TOS(4) = Address of string1 data
        *   TOS(5) = Length of string1
-       * ON OUTPUT
+       * ON RETURN:
        *   TOS(0) = (-1=less than, 0=equal, 1=greater than}
        */
 
@@ -931,7 +931,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(2) = Size of string buffer
        *   TOS(3) = Address of string data
        *   TOS(4) = Length of the string
-       * ON OUTPUT
+       * ON RETURN:
        *   TOS(0) = Size of string buffer
        *   TOS(1) = Address of the substring data
        *   TOS(2) = Length of the substring
@@ -1015,7 +1015,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(4) = Size of substring buffer
        *   TOS(5) = Address of substring data
        *   TOS(6) = Length of the substring
-       * ON OUTPUT
+       * ON RETURN:
        *   TOS(0) = Position of the substring (or zero if not present)
        */
 
@@ -1088,7 +1088,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(2) = Size of source string buffer
        *   TOS(3) = Address of source string buffer
        *   TOS(4) = Length of the source string
-       * ON OUTPUT
+       * ON RETURN:
        */
 
     case lbINSERTSTR :
@@ -1169,7 +1169,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(0) = Integer value that provides the length of the substring
        *   TOS(1) = Integer value that provides the (1-based) string position
        *   TOS(2) = Address of string variable to be modified
-       * ON OUTPUT
+       * ON RETURN:
        */
 
     case lbDELSUBSTR :
@@ -1223,7 +1223,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(0) = Integer 'value' value
        *   TOS(1) = Integer 'count' value
        *   TOS(2) = Address of string (or string) variable
-       * ON OUTPUT
+       * ON RETURN:
        */
 
     case lbFILLCHAR :
@@ -1254,7 +1254,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(1) = Size of the string allocations
        *   TOS(2) = Address of the allocated string buffer
        *   TOS(3) = Current size of the string
-       * ON OUTPUT
+       * ON RETURN:
        *   TOS(0) = Character from 'inString' at 'charPos'
        */
 
@@ -1288,7 +1288,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *   TOS(0)   = Address of the string
        *   TOS(1)   = Field width
        *   TOS(2-n) = Numeric value.  The actual length varies with type.
-       * ON OUTPUT
+       * ON RETURN:
        */
 
     case lbINTSTR :

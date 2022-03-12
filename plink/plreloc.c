@@ -126,11 +126,11 @@ void applyRelocations(poffHandle_t outHandle)
 
   progSize = poffExtractProgramData(outHandle, &progData);
 
-  /* Process each text data section reloation */
+  /* Process each text data section relocation */
 
   for (i = 0; i < nRelocs; i++)
     {
-      poffRelocation_t *reloc = &relocList[i];
+      poffRelocation_t *reloc    = &relocList[i];
       uint32_t          symIndex = RLI_SYM(reloc->rl_info);
       uint32_t          relType  = RLI_TYPE(reloc->rl_info);
       poffLibSymbol_t  *sym;

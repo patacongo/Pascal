@@ -8,6 +8,26 @@ config PASCAL_EXECDIR
 		are available to the shell.  This path is assumed to contain the final
 		delimiter (probably '/') after which file names may be appended.
 
+config PASCAL_HAVEHOME
+	bool "CD to a home directory"
+	default y
+	---help---
+		Pascal applications like the Pascal shell or PStart will change to
+		this home directory when they startup up.  This permits you to
+		configure fixed, relative paths to resources needed by the Pascal
+		applications.  For example, the path to the directory where Pascal
+		executables are retained.
+
+config PASCAL_HOMEDIR
+	string "Home directory path"
+	default $PASTOPDIR
+	---help---
+		This is Pascal application home directory.  Pascal applications like
+		Pascal shell or PStart will change to this home directory when they
+		startup up.  This permits you to configure fixed, relative paths to
+		resources needed by the Pascal applications.  For example, the path
+		to the directory where Pascal executables are retained.
+
 source "$PASTOPDIR/papps/pstart/Kconfig.pstart"
 source "$PASTOPDIR/papps/phello/Kconfig.phello"
 source "$PASTOPDIR/papps/pshell/Kconfig.pshell"

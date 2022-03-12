@@ -66,8 +66,8 @@ PMAINOBJS1 = $(PMAINSRC:.pas=.o1)
 PMAINOBJS  = $(PMAINSRC:.pas=.o)
 PMAINPEX   = $(PMAINSRC:.pas=.pex)
 
-POBJS1     = $(UOBJS1) $(PMAINOBJS1)
-POBJS      = $(UOBJS) $(PMAINOBJS)
+POBJS1     = $(PMAINOBJS1) $(UOBJS1)
+POBJS      = $(PMAINOBJS) $(UOBJS)
 
 #
 # Targets

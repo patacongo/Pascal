@@ -2,7 +2,7 @@
 
 ## History
 
-This compiler is the result of several years of work and is basically an homage to a Language that I loved in my youth.
+This compiler is the result of several years of work and is basically an homage to a Language that I loved in my youth.  Pascal was invented around 1970 by Niklaus Wirth https://en.wikipedia.org/wiki/Niklaus_Wirth it became widely popular until destroyed by Brian Kernighan https://www.cs.virginia.edu/~evans/cs655/readings/bwk-on-pascal.html.  Modern Pascal has resolved all of these issues, but it is no longer a language in wide use.  It was widely used not too long ago with Borland Turbo Pascal and Delphi.  There is a modest following for contemporary FreePascal/Lazarus and also GNU Pascal.
 
 In the late 1970's, I was in graduate school and scraped enough money together to buy a TRS-80 Model I.  That little grey keyboard computer is what caused to to leave graduate school ABD and pursue a career in programming and embedded systems.
 
@@ -190,17 +190,18 @@ The following are not currently implemented:
 Variants of the basic directory operations, similar to those from Borland Turbo Pascal or Free Pascal are provided as intrinsic functions.
 
 - `function GetDir : string` - Returns the current working directory.
-- `function SetCurrentDir(dirPath : string) : boolean` - Set the current working directory.  Returns `true` if successful.
-- `procedure ChDir(dirPath : string)` - Set the current working directory.  No failure indication is returned.
-- `function CreateDir(dirPath : string) : boolean` - Create a new directory.  Returns `true` if the directory was create successfully.
-- `procedure MkDir(dirPath : string)` - Create a new directory.  No failure indication is returned.
-- `function RemoveDir(dirPath : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
-- `procedure RmDir(dirPath : string)` - Remove a new directory.  No failure indication is returned.
+- `function SetCurrentDir(DirPath : string) : boolean` - Set the current working directory.  Returns `true` if successful.
+- `procedure ChDir(DirPath : string)` - Set the current working directory.  No failure indication is returned.
+- `function CreateDir(DirPath : string) : boolean` - Create a new directory.  Returns `true` if the directory was create successfully.
+- `procedure MkDir(DirPath : string)` - Create a new directory.  No failure indication is returned.
+- `function RemoveDir(DirPath : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
+- `procedure RmDir(DirPath : string)` - Remove a new directory.  No failure indication is returned.
 
-Other directory operations inspired by Free Pascal are provided in the unit `FileUtils.pas`.  Some primitive directory intrinics are provided in the run-time code to support this unit.  Those intrinsics are very close to the underlying functions from the standard C library, on which the Pascal run-time is built.  As a rule, then should not be used by Pascal application code for portability reasons.  These intrinsics include:
+Other directory operations inspired by Free Pascal are provided in the unit `FileUtils.pas`.  Some primitive directory intrinics are provided in the run-time code to support this unit.  Those intrinsics are very close to the underlying functions from the standard C library, on which the Pascal run-time is built.  As a rule, these should not be used by Pascal application code for portability reasons.  These intrinsics include:
 
-- `function OpenDir(dirPath : string; VAR dir: TDir) : boolean` - Open a directory for reading.  If the directory was successfully opened, *true* is returned and TDir is valid for use with `ReadDir`.
-- `function ReadDir(VAR dir : TDir, VAR result : TSearchRec) : boolean` - Read the next directory entry.  *true* is returned if the directory entry was read successfully and the content of the `result` will be valid.  Only the `name` and `attr` field of the `TSearchRec` record are populated.  The most likely reason for a failure to read the directory entry is that the final directory entry has already been provided.
+- `function OpenDir(DirPath : string; VAR dir: TDir) : boolean` - Open a directory for reading.  If the directory was successfully opened, *true* is returned and TDir is valid for use with `ReadDir`.
+- `function ReadDir(VAR dir : TDir, VAR Result : TSearchRec) : boolean` - Read the next directory entry.  *true* is returned if the directory entry was read successfully and the content of the `Result` will be valid.  Only the `name` and `attr` field of the `TSearchRec` record are populated.  The most likely reason for a failure to read the directory entry is that the final directory entry has already been provided.
+- `function FileInfo(FilePath : string; VAR Result : TSearchRec) : boolean` - This function will populate the remaining fields of the `TSearchRec` record, `size` and `time`.
 - `function RewindDir(VAR dir : TDir) : boolean` - Reset the read position of the beginning of the directory.  *True* is returned if the directory read was successfully reset.
 - `function CloseDir(VAR dir : TDir) : boolean` - Close the directory and release any resources.  *True* is returned if the directory was successfully closed.
 

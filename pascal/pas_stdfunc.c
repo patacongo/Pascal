@@ -856,6 +856,39 @@ static void pas_ReadDirFunc(void)
 }
 
 /****************************************************************************/
+/*  Get information about a file. */
+
+static void pas_FileInfoFunc(void)
+{
+  /* FORM: 'fileinfo' '(' string-expression ',' search-result-variable ')' */
+
+  /* Verify that the argument list is enclosed in parentheses */
+
+  pas_CheckLParen();
+
+  /* Get the directory path string. */
+
+  pas_Expression(exprString, NULL);
+
+  /* Verify that the two arguments are separated with a comma */
+
+  if (g_token != ',') error(eCOMMA);
+  else getToken();
+
+  /* Parse the VAR TSearchRec parameter */
+
+  pas_ParseDirSearchRec();
+
+  /* Generate the directory operation */
+
+  pas_GenerateIoOperation(xFILEINFO);
+
+  /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
 /* Reset the read position of the beginning of the directory. */
 
 static void pas_ReadDirectoryFunc(uint16_t opCode)
@@ -1072,6 +1105,11 @@ exprType_t pas_StandardFunction(void)
           funcType = exprBoolean;
           break;
 
+        case txFILEINFO :
+          pas_FileInfoFunc();
+          funcType = exprBoolean;
+          break;
+
         case txREWINDDIR :
           pas_ReadDirectoryFunc(xREWINDDIR);
           funcType = exprBoolean;
@@ -1215,7 +1253,7 @@ exprType_t pas_StandardFunction(void)
           break;
 
         default :
-          error(eINVALIDPROC);
+          error(eINVALIDFUNC);
           break;
         }
     }

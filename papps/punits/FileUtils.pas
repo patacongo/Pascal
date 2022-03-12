@@ -56,6 +56,7 @@ INTERFACE
       size  : INT64;            (* The size of the file found in bytes *)
 
       match : STRING[NameSize]; (* Match file name template *)
+      path  : STRING[PathSize]; (* Path to directory being searched *)
       dir   : TDir;             (* Used internally *)
       sattr : ShortWord         (* Used internally *)
     END
@@ -112,7 +113,7 @@ IMPLEMENTATION
     (* A zero position means that there is no delimiter in the path and we *)
     (* return an empty string.  Otherwise The directory path is the        *)
     (* substring from the beginning of the string up to and including the  *)
-    (* the delimiter.                                                       *)
+    (* the delimiter.                                                      *)
 
     IF Position = 0 THEN
       ExtractFilePath := ''
@@ -266,6 +267,7 @@ IMPLEMENTATION
 
   FUNCTION FindNext(VAR SearchResult : TSearchRec) : boolean;
   VAR
+    FilePath  : STRING[PathSize];
     Success   : boolean;
     Found     : boolean;
     FirstChar : char
@@ -314,7 +316,15 @@ IMPLEMENTATION
 
       IF Found THEN
         IF NOT MatchFileName(SearchResult.name, SearchResult.match) THEN
-          Found := false
+          Found := false;
+
+      { If everything matches, then get information about the file }
+
+      IF Found THEN
+      BEGIN
+        FilePath := SearchResult.path + SearchResult.name;
+        Success  := FileInfo(FilePath, SearchResult)
+      END
     UNTIL Found OR NOT Success;
 
     FindNext := Found
@@ -323,14 +333,14 @@ IMPLEMENTATION
   FUNCTION FindFirst(PathTemplate : string; attributes : ShortWord;
                      VAR SearchResult : TSearchRec ) : BOOLEAN;
   VAR
-    DirPath : string;
-    Success : boolean
+    FilePath : string;
+    Success  : boolean
 
   BEGIN
     (* Open the directory *)
 
-    DirPath := ExtractFilePath(PathTemplate);
-    Success := OpenDir(DirPath, SearchResult.dir);
+    SearchResult.path    := ExtractFilePath(PathTemplate);
+    Success              := OpenDir(SearchResult.path, SearchResult.dir);
     IF Success THEN
     BEGIN
       SearchResult.sattr := attributes;

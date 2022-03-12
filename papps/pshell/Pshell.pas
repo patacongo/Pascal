@@ -107,13 +107,22 @@ PROGRAM PShell;
   END;
 
   BEGIN
+    (* Set the current working directory *)
+
+    IF (Length(HomeDirectory) > 0) THEN
+      ChDir(HomeDirectory);
+
+    (* Then loop processing commands *)
+
     REPEAT
+      (* Read the command line *)
+
       WRITE('psh> ');
       READLN(CommandLine);
+
+      (* Parse the command line and process the command *)
+
       ParseLine;
-      WRITELN(NumTokens, ' Tokens in Command:');
-      FOR DisplayIndex := 1 TO NumTokens DO
-        WRITELN(DisplayIndex, ' [', CommandTokens[DisplayIndex], ']');
       IF NumTokens > 0 THEN
         ExecuteCommand;
     UNTIL Quit
