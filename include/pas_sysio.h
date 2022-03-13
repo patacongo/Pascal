@@ -97,18 +97,20 @@
 #define xWRITE_STRING      (0x0020)  /* Write an string to a text file */
 #define xWRITE_REAL        (0x0021)  /* Write an real value to a text file */
 
-#define xCHDIR             (0x0022)  /* Set current working directory */
-#define xGETDIR            (0x0023)  /* Get the current working directory */
-#define xMKDIR             (0x0024)  /* Create a new directory */
-#define xRMDIR             (0x0025)  /* Remove an existing directory */
+#define xFLUSH             (0x0022)  /* Flush file buffers */
 
-#define xOPENDIR           (0x0026)  /* Open a directory for reading */
-#define xREADDIR           (0x0027)  /* Read the next directory entry */
-#define xFILEINFO          (0x0028)  /* Get information about a file */
-#define xREWINDDIR         (0x0029)  /* Read the next directory entry */
-#define xCLOSEDIR          (0x002a)  /* Terminate the directory read */
+#define xCHDIR             (0x0023)  /* Set current working directory */
+#define xGETDIR            (0x0024)  /* Get the current working directory */
+#define xMKDIR             (0x0025)  /* Create a new directory */
+#define xRMDIR             (0x0026)  /* Remove an existing directory */
 
-#define MAX_XOP            (0x002b)
+#define xOPENDIR           (0x0027)  /* Open a directory for reading */
+#define xREADDIR           (0x0028)  /* Read the next directory entry */
+#define xFILEINFO          (0x0029)  /* Get information about a file */
+#define xREWINDDIR         (0x002a)  /* Read the next directory entry */
+#define xCLOSEDIR          (0x002b)  /* Terminate the directory read */
+
+#define MAX_XOP            (0x002c)
 
 /* File attribute characters.  Default:  Non-hidden, regular files. */
 

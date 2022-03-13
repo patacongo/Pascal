@@ -261,20 +261,21 @@
 #define txCREATEDIR      0xa1
 #define txFILEINFO       0xa2
 #define txFILLCHAR       0xa3
-#define txGETDIR         0xa4
-#define txMKDIR          0xa5
-#define txOPENDIR        0xa6
-#define txPOS            0xa7
-#define txREADDIR        0xa8
-#define txREMOVEDIR      0xa9
-#define txREWINDDIR      0xaa
-#define txRMDIR          0xab
-#define txVAL            0xac
-#define txSETCURRDIR     0xad
-#define txSPAWN          0xae
-#define txSTR            0xaf
-#define txCONCAT         0xb0
-#define txINSERT         0xb1
-#define txDELETE         0xb2
+#define txFLUSH          0xa4
+#define txGETDIR         0xa5
+#define txMKDIR          0xa6
+#define txOPENDIR        0xa7
+#define txPOS            0xa8
+#define txREADDIR        0xa9
+#define txREMOVEDIR      0xaa
+#define txREWINDDIR      0xab
+#define txRMDIR          0xac
+#define txVAL            0xad
+#define txSETCURRDIR     0xae
+#define txSPAWN          0xaf
+#define txSTR            0xb0
+#define txCONCAT         0xb1
+#define txINSERT         0xb2
+#define txDELETE         0xb3
 
 #endif /* __PAS_TKNDEFS_H */

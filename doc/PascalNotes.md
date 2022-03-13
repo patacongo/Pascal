@@ -161,8 +161,9 @@ Non-standard string operations.
 - `CloseFile` - Close opened file (Close is an alias)
 - `EOF` - Check for end of file
 - `EOLN` – Check for end of line
-- `FilePos` - Get position in file
-- `FileSize` - Get size of file
+- `function FilePos(f : TEXTFILE) : Int64` - Get position in file.  Argument may also be a binary file.
+- `function FileSize(f : TEXTFILE) : Int64` - Get size of file.  Argument may also be a binary file.
+- `procedure Flush(f : TEXTFILE)` - Write file buffers to disk.  Argument may also be a binary file.
 - `Read` - Read from a text file
 - `ReadLn` - Read from a text file and go to the next line
 - `Reset` - Opens a file for reading
@@ -179,7 +180,6 @@ The following are not currently implemented:
 - `BlockRead` - Read data from an untyped file into memory
 - `BlockWrite` - Write data from memory to an untyped file
 - `Erase` - Erase file from disk
-- `Flush` - Write file buffers to disk
 - `Get(f : file-type)` - The get procedure reads the next component from a file into the file's buffer variable. NOTE: This procedure is seldom used since it is usually easier to use the read or readln procedures.IOResult - Return result of last file IO operation
 - `Put(f : file-type)` – The put procedure writes the contents of a file's buffer variable to the file and empties the file's buffer variable leaving it undefined.
 - `Rename` – Rename a filename

@@ -819,13 +819,14 @@ static void pas_OpenFileProc(uint16_t opcode1, uint16_t opcode2)
  *   meaningful only for a text file).
  * - APPEND prepars the file for appeand access.  It is similar to RESET and
  *   REWRITE but has no optional record-size argument.
+ * - FLUSH writes all buffered outgoing data to the open file
  * - CLOSEFILE closes a previously opened file
  */
 
 static void pas_FileProc(uint16_t opcode)
 {
   /* FORM: procedure-name(<file number>)
-   * FORM: procedure-name = PAGE | APPEND | CLOSEFILE
+   * FORM: procedure-name = PAGE | APPEND | FLUSH | CLOSEFILE
    *
    * On entry, g_token refers to the reserved procedure name.  It may
    * be followed with a argument list.
@@ -2470,6 +2471,10 @@ void pas_StandardProcedure(void)
 
         case txWRITELN :
           pas_WritelnProc();
+          break;
+
+        case txFLUSH :
+          pas_FileProc(xFLUSH);
           break;
 
           /* Its not a recognized procedure */

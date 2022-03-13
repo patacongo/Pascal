@@ -478,9 +478,9 @@ static const char * const xName[MAX_XOP] =
 /* 0x14 */ "READINT",   "READCHR",    "READSTR",    "READRL",
 /* 0x18 */ "WRITELN",   "WRITEPG",    "WRITEBIN",   "WRITEINT",
 /* 0x1c */ "WRITEWORD", "WRITELONG",  "WRITEULONG", "WRITECHR",
-/* 0x20 */ "WRITESTR",  "WRITERL",    "CHDIR",      "GETDIR",
-/* 0x24 */ "MKDIR",     "RMDIR",      "OPENDIR",    "READDIR",
-/* 0x28 */ "FILEINFO",  "REWINDDIR",  "CLOSEDIR"
+/* 0x20 */ "WRITESTR",  "WRITERL",    "FLUSH",      "CHDIR",
+/* 0x24 */ "GETDIR",    "MKDIR",      "RMDIR",      "OPENDIR",
+/* 0x28 */ "READDIR",   "FILEINFO",   "REWINDDIR",  "CLOSEDIR"
 };
 
 static const char invSetOp[] = "Invalid SETOP";
