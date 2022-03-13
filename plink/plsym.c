@@ -105,17 +105,24 @@ uint32_t mergeSymbols(poffHandle_t inHandle, uint32_t pcOffset,
                       uint32_t symOffset)
 {
   poffLibSymbol_t symbol;
-  symContainer_t *container;
   int32_t inIndex;
-  uint32_t outIndex;
 
-  do
+  /* Read the first symbol from the input File */
+
+  inIndex = poffGetSymbol(inHandle, &symbol);
+
+  /* Are there any symbols in this file? */
+
+  if (inIndex >= 0)
     {
-      /* Read each symbol from the input File */
+      uint32_t outIndex;
 
-      inIndex = poffGetSymbol(inHandle, &symbol);
-      if (inIndex >= 0)
+      /* Yes, then we need to merge symbols */
+
+      do
         {
+          symContainer_t *container;
+
           /* If the symbol carries a "payload" that is a program
            * section offset, then apply the pcOffset value to
            * that "payload"
@@ -131,15 +138,23 @@ uint32_t mergeSymbols(poffHandle_t inHandle, uint32_t pcOffset,
 
           outIndex = inIndex + symOffset;
           addSymbolToList(container, outIndex);
+
+          /* Read the next symbol from the input File */
+
+          inIndex = poffGetSymbol(inHandle, &symbol);
         }
+      while (inIndex >= 0);
+
+      /* Return the offset to the next symbol symbol offset after the last
+       * one that was inserted.
+       */
+
+      return outIndex + 1;
     }
-  while (inIndex >= 0);
 
-  /* Return the offset to the next symbol symbol offset after the last one
-   * that was inserted.
-   */
+  /* No symbols in this file, return the origin symIndex */
 
-  return outIndex + 1;
+  return symOffset;
 }
 
 /*****************************************************************************/

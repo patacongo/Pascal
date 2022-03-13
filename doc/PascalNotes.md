@@ -4,17 +4,17 @@
 
 This compiler is the result of several years of work and is basically an homage to a Language that I loved in my youth.  Pascal was invented around 1970 by Niklaus Wirth https://en.wikipedia.org/wiki/Niklaus_Wirth it became widely popular until destroyed by Brian Kernighan https://www.cs.virginia.edu/~evans/cs655/readings/bwk-on-pascal.html.  Modern Pascal has resolved all of these issues, but it is no longer a language in wide use.  It was widely used not too long ago with Borland Turbo Pascal and Delphi.  There is a modest following for contemporary FreePascal/Lazarus and also GNU Pascal.
 
-In the late 1970's, I was in graduate school and scraped enough money together to buy a TRS-80 Model I.  That little grey keyboard computer is what caused to to leave graduate school ABD and pursue a career in programming and embedded systems.
+In the late 1970's, I was in graduate school and scraped enough money together to buy a TRS-80 Model I.  That little grey keyboard computer is what caused to to leave graduate school ABD and pursue a career in programming and, eventually, embedded systems.
 
 Although I had multiple degrees, I was still not properly credentialed for that career and returned to graduate school to work on a master's degree in Computer Science.  That was in 1981 and that was when I was first exposed to real Pascal programming.  It was a core part of the culture in the CS department.
 
-But I had some previous exposure.  I had subscribed to the *TRS-80 Newsletter* which published programs for the TRS=80 that you could type in yourself and save on cassette tape.  In 1979, *TRS-80 Newsletter* published the source for People's Pascal, http://www.trs-80.org/tiny-pascal/.  You could either buy the software with documentation or painfully enter it from the listing by hand.  I did the latter and got to know a little bit about the design of the tiny Pascal compiler.
+But I had some previous exposure.  I had subscribed to the *TRS-80 Newsletter* which published programs for the TRS-80 that you could type in yourself and save on cassette tape.  In 1979, *TRS-80 Newsletter* published the source for People's Pascal, http://www.trs-80.org/tiny-pascal/.  You could either buy the software with documentation or painfully enter it from the listing by hand.  I did the latter and got to know a little bit about the design of the tiny Pascal compiler.
 
 In the early/mid 1980's I upgraded my Trash-80 for a TRS-80 Model IV, my pride and joy at the time. I also purchased the Alcor C compiler on a 5.25 inch floppy.  One of my first programming projects was to write a work-alike tiny Pascal compiler in C.  It was really a pretty nice compiler, but very limited.  It was basically integer Pascal with peek and poke capabilities built on the TRS-80 ROM.
 
 Some time later, perhaps in the 1990's or early 2000's, I decided to extend the compiler to support full Pascal with language definitions circa 1980.  I see the last changes in 2004, 2007, and 2008. While the language was much more complete, the compiler was also more unstable and remained unstable until very recently.
 
-After that I was mostly preoccupied with another project, the NuttX RTOS, and the compiler sat gathering dust.  I did incorporat the Pascal P-Code VM into the RTOS for a while so that could run the Pascal code under the OS.  But the compiler was just too unstable to be useful.
+After that I was mostly preoccupied with another project, the NuttX RTOS, and the compiler sat gathering dust.  I did incorporate the Pascal P-Code VM into the RTOS for a while so that could run the Pascal code under the OS.  But the compiler was just too unstable to be useful.
  
 In 2019, I granted the NuttX RTOS to *Apache Software Foundation*.  This freed up a lot of my time since I was no longer on the critical path for the RTOS.  So I devoted time again to this compiler.
 
@@ -59,7 +59,7 @@ Currently, I am bringing the compiler into the embedded environment.  I would li
 
 ### Sets
 
-`SET` is limit to 64-bits adjacent elements
+`SET` is limited to 64-bits adjacent elements. That is more that the traditional 59-bit limit but less than some contemporary Pascal compilers.  *FreePascal*, for example, supports small sets of up to 32 elements and large sets up to 256 elements.  *FreePascal* selects the set size, large or small, at compile time based on the declared size of the set.
 
 ### Records
 
@@ -386,17 +386,42 @@ The P-Code run-time virtual machine can be used execute and/or debugt the `.pex`
 
 ### Debugger
 
+**Starting the Debugger**. The debugger is built in the Pascal run-time progrem, `prun`, and is started by simply adding the command line option `--debug`.
+
+**P-Code Debugger**.  The debugger is a P-code level debugger.  This is very useful for the compiler tool developer but not ideal for the Pascal application developer.  The debugger supports this built-in help text:
+
+    Commands:
+      RE[set]   - Reset
+      RU[n]     - Run
+      S[tep]    - Single Step (Into)
+      N[ext]    - Single Step (Over)
+      G[o]      - Go
+      BS xxxx   - Set Breakpoint
+      BC n      - Clear Breakpoint
+      WS xxxx   - [Re]set Watchpoint
+      WF xxxx   - Level 0 Frame Watchpoint
+      WC        - Clear Watchpoint
+      DP        - Display Program Status
+      DT        - Display Program Trace
+      DS [xxxx] - Display Stack
+      DI [xxxx] - Display Instructions
+      DB        - Display Breakpoints
+      H or ?    - Shows this list
+      Q[uit]    - Quit
+
+**Pascal Source Debugger**.  There is no source-level debugger at present, although all of the components to support such a debugger are present:  The executable format, *POFF* holds the file and line number information that can map any assembly-level instruction address to to a specific line in a specific Pascal source file.  Thetr is also library of *POFF* access helper functionis, `libpoff`, that makes access to the file and line number information very simple.  So a project to develop such a debugger is completely feasible and, in fact, not such a difficult job.
+
 ### Flat Address Space Issues
 
 In a real application, you would probably need to have multiple Pascal programs running cocurrently.  This is not a problem with desktop systems like Linux or Windows where each program execution is encapsulated within its own address space.  But there could be issues in a flat address space such as you would have with an RTOS or on some custom bare-metal platform.
 
 In particular, in these flat address space environments, there will be on a single instance of each global variable that is shared between all instances of the program that are running.  Contrast this to the destktop OS environment where there will be a unique, private copy of each global variable in each process.  This is not a problem for Pascal per se, since it is an interpreted P-Code solution and each instance has its one simulated environment.  However, it can be a problem for the run-time code and, perhaps, tools in that environment.
 
-The run-time code has protections for this case:  The run-time uses no global variables and keeps all state information on the target machine stack (which is not the same as the P-Code stack).  So it should be possible to safely start many Pascal P-Code programs that all run concurrently (although there is not much that they can do to interact with no well-defined Pascial IPCs, Inter-Process Communications).
+The run-time code has protections for this case:  The run-time uses no global variables and keeps all state information on the target machine stack (which is not the same as the P-Code stack).  So it should be possible to safely start many Pascal P-Code programs that all run concurrently (although there is not much that they can do to interact with no well-defined Pascal IPCs, Inter-Process Communications).
 
 The tools do use global variables, however.  So in a flat address space only one instance of the compiler, optimizer, linker, or lister can run at a time (the debugger is part of the protected run-time so there can be multiple, concurrent debug sessions).  This is not thought to be an issue in most cases but could become issue if, for example, the tools are used for JIT (Just-In-Time) compilations in a multi-threaded environment.
 
-## Register Model / Native Code Translation
+## Register Model / Native Code Translation / 32-Machine
 
 - Translation to 32-bit register model.  Support for this model was removed by commit 94a03ca1f2d138b5189924527331fedba2248caa only because I did not  have bandwidth to support it.  That would still be a good starting point.
 - Native code translator
@@ -440,8 +465,8 @@ Precedence is given to the interpretation of the identifier as a field name in b
 
 **Error Handling**.  Error handling is not user friendly at the moment:
 
-- Output is only line number, an error number, and a token ID.
-- One error typically generates numerous, additional, bogus errors if the compiler continues to execute.
+- Output is only line number, an error number, and a token ID.  That information is written to a file with the extenion `.err`.  I am think that a separate error printing program that uses this error file might be the preferred solution because it will keep the size of the compiler as small as possible.
+- One error typically generates numerous, additional, bogus errors if the compiler continues to execute.  What is probably needed here is logic to (1) skip to the end of the statement or perhaps to the end of the line when an error is detected and (2) re-prime the tokenizer to start fresh on the next link.
 - There are probably other bad behaviors that might happen(?).  Maybe crashes or hangs.  The error conditions all need to be analyzed and tested.
 
 **64-Bit Integer Types**.  I believe that the `INT64` type is needed only for long file positions in procedures like `SEEK` and functions like `FILEPOS` and `FILESIZE`.  Currently, `INT64` is  simply aliased inside the compiler to `LONGINTEGER`, thus limiting the size of files that can be handled.

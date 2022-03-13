@@ -80,8 +80,11 @@ TOKENOBJS  = $(TOKENSRC:.pas=.o)
 MATCHNSRC  = MatchName.pas $(PUNITDIR)/Machine.pas $(PUNITDIR)/FileUtils.pas
 MATCHNOBJS = $(MATCHNSRC:.pas=.o)
 
+FUTILSSRC  = FindUtils.pas $(PUNITDIR)/Machine.pas $(PUNITDIR)/FileUtils.pas
+FUTILSOBJS = $(FUTILSSRC:.pas=.o)
+
 PEX        = ReadDir.pex worksched.pex sinecos.pex DoIt.pex Tokenize.pex
-PEX       += MatchName.pex
+PEX       += MatchName.pex FindUtils.pex
 
 #
 # Targets
@@ -121,6 +124,10 @@ Tokenize.pex : $(TOKENOBJS)
 MatchName.pex : $(MATCHNOBJS)
 	$(Q) echo "  $@"
 	$(Q) $(PLINK) $(MATCHNOBJS) $@
+
+FindUtils.pex : $(FUTILSOBJS)
+	$(Q) echo "  $@"
+	$(Q) $(PLINK) $(FUTILSOBJS) $@
 
 clean:
 	$(Q) $(RM) *.o *.o1 *.pex *.err *.lst core *~

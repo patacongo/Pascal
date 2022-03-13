@@ -53,7 +53,7 @@ fi
 
 echo "########${PASFILENAME}########";
 
-make -C ${PASDIRNAME} -f PasMakefile ${PASBASENAME}.pex V=1
+make -C ${PASDIRNAME} -f PasMakefile ${PASBASENAME}.pex
 
 if [ ! -f ${PASDIRNAME}/${PASBASENAME}.pex ]; then
   echo "Failed to build ${PASBASENAME}.pex"

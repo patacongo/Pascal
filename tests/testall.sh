@@ -123,6 +123,7 @@ done
 if [ "${DOLIST}" == "A" -o "${DOLIST}" == "5" ]; then
     ./testmulti.sh DoIt.pex
     ./testmulti.sh ReadDir.pex
+    ./testmulti.sh FindUtils.pex
     ./testmulti.sh Tokenize.pex
     ./testmulti.sh MatchName.pex
     ./testmulti.sh sinecos.pex sinecos.inp

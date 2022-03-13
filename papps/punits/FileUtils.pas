@@ -57,8 +57,8 @@ INTERFACE
 
       match : STRING[NameSize]; (* Match file name template *)
       path  : STRING[PathSize]; (* Path to directory being searched *)
-      dir   : TDir;             (* Used internally *)
-      sattr : ShortWord         (* Used internally *)
+      dir   : TDir;             (* Used internally for readir() *)
+      sattr : ShortWord         (* Used internally for file type matches *)
     END
 
   FUNCTION  ExtractFilePath(FullPath : string ) : string;
