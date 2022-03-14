@@ -58,6 +58,7 @@
 #include "pas_procedure.h"
 #include "pas_initializer.h"
 #include "pas_codegen.h"     /* For pas_Generate*() */
+#include "pas_statement.h"   /* For pas_BreakStatement() and pas_ContinueStatement() */
 #include "pas_token.h"
 #include "pas_symtable.h"    /* For parent symbol references */
 #include "pas_error.h"
@@ -2369,6 +2370,16 @@ void pas_StandardProcedure(void)
 
         case txHALT :
           pas_HaltProc();
+          break;
+
+        case txBREAK :
+          getToken();
+          pas_BreakStatement();
+          break;
+
+        case txCONTINUE :
+          getToken();
+          pas_ContinueStatement();
           break;
 
         case txPAGE :

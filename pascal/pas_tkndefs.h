@@ -253,29 +253,31 @@
 
 /* Borland-style string procedures and functions */
 
-#define txCHARAT         0x9c
-#define txCHDIR          0x9d
-#define txCLOSEDIR       0x9e
-#define txCOPY           0x9f
-#define txCREATEDIR      0xa0
-#define txFILEINFO       0xa1
-#define txFILLCHAR       0xa2
-#define txFLUSH          0xa3
-#define txGETDIR         0xa4
-#define txLENGTH         0xa5
-#define txMKDIR          0xa6
-#define txOPENDIR        0xa7
-#define txPOS            0xa8
-#define txREADDIR        0xa9
-#define txREMOVEDIR      0xaa
-#define txREWINDDIR      0xab
-#define txRMDIR          0xac
-#define txVAL            0xad
-#define txSETCURRDIR     0xae
-#define txSPAWN          0xaf
-#define txSTR            0xb0
-#define txCONCAT         0xb1
-#define txINSERT         0xb2
-#define txDELETE         0xb3
+#define txBREAK          0x9c
+#define txCHARAT         0x9d
+#define txCHDIR          0x9e
+#define txCLOSEDIR       0x9f
+#define txCONTINUE       0xa0
+#define txCOPY           0xa1
+#define txCREATEDIR      0xa2
+#define txFILEINFO       0xa3
+#define txFILLCHAR       0xa4
+#define txFLUSH          0xa5
+#define txGETDIR         0xa6
+#define txLENGTH         0xa7
+#define txMKDIR          0xa8
+#define txOPENDIR        0xa9
+#define txPOS            0xaa
+#define txREADDIR        0xab
+#define txREMOVEDIR      0xac
+#define txREWINDDIR      0xad
+#define txRMDIR          0xae
+#define txVAL            0xaf
+#define txSETCURRDIR     0xb0
+#define txSPAWN          0xb1
+#define txSTR            0xb2
+#define txCONCAT         0xb3
+#define txINSERT         0xb4
+#define txDELETE         0xb5
 
 #endif /* __PAS_TKNDEFS_H */

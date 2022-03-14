@@ -112,6 +112,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"ARRAY",          tARRAY,          txNONE},       /* (1) */
   {"ASSIGNFILE",     tSTDPROC,        txASSIGNFILE}, /* (3) */
   {"BEGIN",          tBEGIN,          txNONE},       /* (1) */
+  {"BREAK",          tSTDPROC,        txBREAK},      /* (3) */
   {"CARD",           tSTDFUNC,        txCARD},       /* (2) */
   {"CASE",           tCASE,           txNONE},       /* (1) */
   {"CHARAT",         tSTDFUNC,        txCHARAT},     /* (8) */
@@ -121,6 +122,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"CLOSEFILE",      tSTDPROC,        txCLOSEFILE},  /* (3) */
   {"CONCAT",         tSTDFUNC,        txCONCAT},     /* (8) */
   {"CONST",          tCONST,          txNONE},       /* (1) */
+  {"CONTINUE",       tSTDPROC,        txCONTINUE},   /* (3) */
   {"COPY",           tSTDFUNC,        txCOPY},       /* (8) */
   {"COS",            tSTDFUNC,        txCOS},        /* (2) */
   {"CREATEDIR",      tSTDFUNC,        txCREATEDIR},  /* (8) */

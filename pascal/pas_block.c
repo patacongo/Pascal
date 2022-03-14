@@ -3054,6 +3054,10 @@ void pas_Block(int32_t preAllocatedDStack)
       pas_GenerateDataOperation(opINDS, (int32_t)g_dStack);
     }
 
+  /* Save the string stack pointer on entry into this static nesting level. */
+
+  pas_GenerateSimple(opPUSHS);
+
   /* Generate the initializers */
 
   g_levelInitializerOffset = saveInitializerOffset;
@@ -3068,6 +3072,10 @@ void pas_Block(int32_t preAllocatedDStack)
 
   g_levelInitializerOffset = saveInitializerOffset;
   pas_Finalization();
+
+  /* Release the string stack pointer for strings going out of scope. */
+
+  pas_GenerateSimple(opPOPS);
 
   /* Release the allocated data stack */
 

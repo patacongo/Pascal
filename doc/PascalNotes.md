@@ -277,14 +277,15 @@ The back-end is modular and can be change.  However, most of the development so 
 
 ### Run-time String Memory
 
-Pascal runtime memory is divided into four regions:  String stack, RO data, the Pascal run-time stack, and a heap region.  The size of the string stack is set with the -t option to prun and 1024 is the default size used by the testone.sh script.  String allocations are large, the default size is 80 bytes (note 1), and the string stack cleanup is lazy; perhaps only when a procedure/function returns and local string variables go out of scope.  As a result, programs with functions that do a lot of string  operations may need a start larger than the 1024 default.  All of the test files here work OK with a string stack of 1024.
+Pascal runtime memory is divided into four regions:  String stack, RO data, the Pascal run-time stack, and a heap region.  The size of the string stack is set with the -t option to prun and 1024 is the default size used by the testone.sh script.  String allocations are large, the default size is 80 bytes (note 1), and the string stack cleanup is lazy; perhaps only when a procedure/function returns and local string variables go out of scope.  As a result, programs with functions that do a lot of string  operations may need a start larger than the 1024 default.  Most but *not* all of the test files here work OK with a string stack of 1024.
 
-This problem is largely alleviated by using short strings that do not require such large string stack allocations.
+This problem is largely alleviated by using short strings that do not require such large string stack allocations.  But this can still be a problem; many simple programs that do string operations may require a rather large string stack for temporary strings.
 
-In order manage the string stack, two special instructions are supported:  `PUSHS` which pushes the string stack pointer and `POPS` that recovers the string stack pointer.  The compiler generates these on entry and exit from each dynamic nesting level.  In addition, the compiler generates numerous `PUSHS`/`POPS` pairs around each statement and the optimizer is tasked with remove the unnecessary pairs (Note 2).
+In order manage the string stack, two special instructions are supported:  `PUSHS` which pushes the string stack pointer and `POPS` that recovers the string stack pointer.  The compiler generates these on entry and exit from each dynamic nesting level, when string variables go out of scope.
+
+At one time, PUSHS and POPS enclosed each statement.  While that did eliminate most of the string memory usage problems, it introduced too much complexity and instability due to the unexpected stack state.
 
 Note 1: The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
-Note 2: The algorithm in the optimizer is lame at the moment.  It tends to leave unnecesary (but harmless) stack operations in the code.  I have some concerns that it might also release string stack space while it is still in use.  I haven't seen this, but I suspect it is possible.  Eventually, the optimizer should track usage of all string memory and free it the stack space when the variables are no longer used.
 
 ## BUGS, ISSUES, and QUIRKS
 

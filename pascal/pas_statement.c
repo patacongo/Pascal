@@ -189,6 +189,7 @@ static exprType_t pas_AssignExprType   (exprType_t baseExprType,
 
 /* Other Statements */
 
+static void       pas_ContinueBreak    (uint16_t label);
 static void       pas_GotoStatement    (void);  /* GOTO statement */
 static void       pas_LabelStatement   (void);  /* Label statement */
 static void       pas_ProcStatement    (void);  /* Procedure method statement */
@@ -202,6 +203,15 @@ static void       pas_WithStatement    (void);  /* With statement */
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+
+/* Labels to jump to for CONTINUE and BREAK */
+
+static uint16_t g_continueLabel;
+static uint16_t g_breakLabel;
+
+/* Stack adjustment that may be needed with CONTINUE and BREAK */
+
+static int16_t  g_stackAdjust;
 
 /****************************************************************************
  * Private Functions
@@ -1331,6 +1341,27 @@ static exprType_t pas_AssignExprType(exprType_t baseExprType,
 }
 
 /***********************************************************************/
+/* Continue/Break procedure */
+
+static void pas_ContinueBreak(uint16_t label)
+{
+  if (label == 0) error(eNOTINLOOP);
+  else
+    {
+      /* Perform any necessary stack adjustment */
+
+      if (g_stackAdjust != 0)
+        {
+          pas_GenerateDataOperation(opINDS, g_stackAdjust);
+        }
+
+      /* And execute a jmp to the continue/break label */
+
+      pas_GenerateDataOperation(opJMP, label);
+    }
+}
+
+/***********************************************************************/
 
 static void pas_GotoStatement(void)
 {
@@ -1533,11 +1564,21 @@ static void pas_IfStatement(void)
 
 static void pas_RepeatStatement(void)
 {
-  uint16_t repeatLabel = ++g_label;
+  uint16_t repeatLabel       = ++g_label;
+  uint16_t endRepeatLabel    = ++g_label;
+  uint16_t saveContinueLabel = g_continueLabel;
+  uint16_t saveBreakLabel    = g_breakLabel;
+  uint16_t saveStackAdjust   = g_stackAdjust;
 
   /* FORM: REPEAT statement-block UNTIL booleanexpression
    *       statement-block = statement [; statement-block]
    */
+
+  /* Set the new (nested) CONTINUE and BREAK labels */
+
+  g_continueLabel = repeatLabel;
+  g_breakLabel    = endRepeatLabel;
+  g_stackAdjust   = 0;
 
   /* Generate top of loop label */
 
@@ -1564,16 +1605,35 @@ static void pas_RepeatStatement(void)
   /* Generate conditional branch to the top of loop */
 
   pas_GenerateDataOperation(opJEQUZ, repeatLabel);
+
+  /* Generate the end of loop label (only needed for BREAK) */
+
+  pas_GenerateDataOperation(opLABEL, endRepeatLabel);
+
+  /* Restore the previous (nested) CONTINUE and BREAK labels */
+
+  g_continueLabel = saveContinueLabel;
+  g_breakLabel    = saveBreakLabel;
+  g_stackAdjust   = saveStackAdjust;
 }
 
 /***********************************************************************/
 
 static void pas_WhileStatement(void)
 {
-  uint16_t whileLabel    = ++g_label;  /* Top of loop label */
-  uint16_t endWhileLabel = ++g_label;  /* End of loop label */
+  uint16_t whileLabel        = ++g_label;  /* Top of loop label */
+  uint16_t endWhileLabel     = ++g_label;  /* End of loop label */
+  uint16_t saveContinueLabel = g_continueLabel;
+  uint16_t saveBreakLabel    = g_breakLabel;
+  uint16_t saveStackAdjust   = g_stackAdjust;
 
   /* FORM: WHILE boolean-expression> DO statement */
+
+  /* Set the new (nested) CONTINUE and BREAK labels */
+
+  g_continueLabel = whileLabel;
+  g_breakLabel    = endWhileLabel;
+  g_stackAdjust   = 0;
 
   /* Skip over WHILE token */
 
@@ -1607,6 +1667,12 @@ static void pas_WhileStatement(void)
   /* Set the bottom of loop label */
 
   pas_GenerateDataOperation(opLABEL, endWhileLabel);
+
+  /* Restore the previous (nested) CONTINUE and BREAK labels */
+
+  g_continueLabel = saveContinueLabel;
+  g_breakLabel    = saveBreakLabel;
+  g_stackAdjust   = saveStackAdjust;
 }
 
 /***********************************************************************/
@@ -1631,6 +1697,12 @@ static void pas_CaseStatement(void)
 
   if (g_token !=  tOF) error (eOF);
   else getToken();
+
+  /* Stack fixup that will be needed to CONTINUE or BREAK out of the
+   * CASE statement.
+   */
+
+  g_stackAdjust -= sINT_SIZE;
 
   /* Loop to process each case until END encountered */
 
@@ -1829,10 +1901,20 @@ static void pas_ForStatement(void)
   symbol_t *varPtr;
   uint16_t forLabel          = ++g_label;
   uint16_t endForLabel       = ++g_label;
+  uint16_t continueLabel     = ++g_label;
+  uint16_t saveContinueLabel = g_continueLabel;
+  uint16_t saveBreakLabel    = g_breakLabel;
+  uint16_t saveStackAdjust   = g_stackAdjust;
   uint16_t jmpOp;
   uint16_t modOp;
 
   /* FORM: FOR <assigment statement> <TO, DOWNTO> <expression> DO <statement> */
+
+  /* Set the new (nested) CONTINUE and BREAK labels */
+
+  g_continueLabel = continueLabel;
+  g_breakLabel    = endForLabel;
+  g_stackAdjust   = 0;
 
   /* Skip over the FOR token */
 
@@ -1927,6 +2009,7 @@ static void pas_ForStatement(void)
        * top of the loop.
        */
 
+      pas_GenerateDataOperation(opLABEL, continueLabel);
       pas_GenerateStackReference(opLDS, varPtr);
       pas_GenerateSimple(modOp);
       pas_GenerateStackReference(opSTS, varPtr);
@@ -1939,6 +2022,12 @@ static void pas_ForStatement(void)
       pas_GenerateDataOperation(opLABEL, endForLabel);
       pas_GenerateDataOperation(opINDS, -sINT_SIZE);
     }
+
+  /* Restore the previous (nested) CONTINUE and BREAK labels */
+
+  g_continueLabel = saveContinueLabel;
+  g_breakLabel    = saveBreakLabel;
+  g_stackAdjust   = saveStackAdjust;
 }
 
 /***********************************************************************/
@@ -2105,18 +2194,6 @@ void pas_Statement(void)
 
   pas_GenerateLineNumber(FP->include, FP->line);
 
-  /* We will push the string stack pointer at the beginning of each
-   * statement and pop the string stack pointer at the end of each
-   * statement.  Subsequent optimization logic will scan the generated
-   * pcode to ascertain if the push and pops were necessary.  They
-   * would be necessary if expression parsing generated temporary usage
-   * of string stack storage.  In this case, the push will save the
-   * value before the temporary usage and the pop will release the
-   * temporaray storage.
-   */
-
-  pas_GenerateSimple(opPUSHS);
-
   /* Process the statement according to the type of the leading token */
 
   switch (g_token)
@@ -2211,12 +2288,6 @@ void pas_Statement(void)
 
     default            : pas_StandardProcedure(); break;
   }
-
-  /* Generate the POPS that matches the PUSHS generated at the begining
-   * of this function (see comments above).
-   */
-
-  pas_GenerateSimple(opPOPS);
 }
 
 /***********************************************************************/
@@ -2236,4 +2307,20 @@ void pas_CompoundStatement(void)
 
    if (g_token != tEND) error (eEND);
    else getToken();
+}
+
+/***********************************************************************/
+/* Loop continuation */
+
+void pas_ContinueStatement(void)
+{
+  pas_ContinueBreak(g_continueLabel);
+}
+
+/***********************************************************************/
+/* Break out of a loop */
+
+void pas_BreakStatement(void)
+{
+  pas_ContinueBreak(g_breakLabel);
 }

@@ -638,7 +638,7 @@ static void popt_DoPop(poffHandle_t poffHandle,
             }
             break;
 
-#if 1       /* REVISIT: Increases code size dramatically. */
+#if 0       /* REVISIT: Too many issues and increases code size dramatically. */
 
             /* If we encounter a label or a jump between the PUSHS and the
              * POPS, then keep both.  Labels are known to happen in loops

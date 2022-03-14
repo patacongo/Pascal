@@ -40,7 +40,8 @@ source ../.config
 PBINDIR=../bin16
 
 PRUN=${PBINDIR}/prun
-PRUNOPTS="-t 1024 -n 256"
+STRSTKSZ=1024
+HEAPSIZE=256
 
 PASFILENAME=${1}
 INPUT=${2}
@@ -49,6 +50,21 @@ PASBASENAME=`basename ${PASFILENAME} .pex`
 PASDIRNAME=`dirname ${PASFILENAME}`
 if [ "${PASDIRNAME}" == "." ]; then
   PASDIRNAME=units
+fi
+
+# See if this test requires special options
+
+OPTFILENAME=${PASDIRNAME}/${PASBASENAME}.opt
+if [ -f ${OPTFILENAME} ]; then
+  LINE=`grep "^T " ${OPTFILENAME}`
+  if [ ! -z "${LINE}" ]; then
+    STRSTKSZ=`echo ${LINE} | cut -d' ' -f2`
+  fi    
+
+  LINE=`grep "^N " ${OPTFILENAME}`
+  if [ ! -z "${LINE}" ]; then
+    HEAPSIZE=`echo ${LINE} | cut -d' ' -f2`
+  fi    
 fi
 
 echo "########${PASFILENAME}########";
@@ -61,6 +77,8 @@ if [ ! -f ${PASDIRNAME}/${PASBASENAME}.pex ]; then
     cat ${PASDIRNAME}/${PASBASENAME}.err | grep Line
   fi
 fi
+
+PRUNOPTS="-t ${STRSTKSZ} -n ${HEAPSIZE}"
 
 if [ -z "${INPUT}" ]; then
     ${PRUN} ${PRUNOPTS} ${PASDIRNAME}/${PASBASENAME}.pex 2>&1

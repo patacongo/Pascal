@@ -43,5 +43,7 @@
 
 void pas_Statement(void);          /* Process Statement */
 void pas_CompoundStatement(void);  /* Compound statement */
+void pas_ContinueStatement(void);       /* Loop continuation */
+void pas_BreakStatement(void);          /* Break out of a loop */
 
 #endif /* __PAS_STATEMENT_H */

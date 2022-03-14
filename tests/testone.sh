@@ -58,9 +58,7 @@ function show_usage ()
     exit 1
 }
 
-# Compile source file
-
-function compile_source ()
+function file_info ()
 {
   PASBASENAME=`basename ${PASFILENAME} .pas`
   PASDIRNAME=`dirname ${PASFILENAME}`
@@ -73,7 +71,12 @@ function compile_source ()
     echo "ERROR: ${PASFILENAME} does not exist"
     exit 1
   fi
+}
 
+# Compile source file
+
+function compile_source ()
+{
   make -C ${PASDIRNAME} -f PasMakefile ${PASBASENAME}.pex
 
   # Was an error file generated?
@@ -101,35 +104,59 @@ function compile_source ()
 
 function test_program ()
 {
-    echo "Using string stack size = ${STRSTKSZ}"
-    PRUNOPTS="-t ${STRSTKSZ} -n ${HEAPSIZE}"
+  # See if this test requires special options
 
-    if [ ! -f src/${PASBASENAME}.pex ]; then
-        echo "No p-code executable"
-    else
-        if [ -f src/${PASBASENAME}.inp ] ; then
-        ${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1 <src/${PASBASENAME}.inp
-        else
-        ${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1
-        fi
+  OPTFILENAME=${PASDIRNAME}/${PASBASENAME}.opt
+  if [ -f ${OPTFILENAME} ]; then
+    if [ "X${USERSTKSZ}" = "Xn" ]; then
+
+      LINE=`grep "^T " ${OPTFILENAME}`
+      if [ ! -z "${LINE}" ]; then
+        STRSTKSZ=`echo ${LINE} | cut -d' ' -f2`
+      fi    
     fi
-}
 
+    if [ "X${USERHPSZ}" = "Xn" ]; then
+
+      LINE=`grep "^N " ${OPTFILENAME}`
+      if [ ! -z "${LINE}" ]; then
+        HEAPSIZE=`echo ${LINE} | cut -d' ' -f2`
+      fi    
+    fi
+  fi
+
+  PRUNOPTS="-t ${STRSTKSZ} -n ${HEAPSIZE}"
+  echo "Using options:  ${PRUNOPTS}"
+
+  if [ ! -f src/${PASBASENAME}.pex ]; then
+    echo "No p-code executable"
+  else
+    if [ -f src/${PASBASENAME}.inp ] ; then
+      ${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1 <src/${PASBASENAME}.inp
+    else
+      ${PRUN} ${PRUNOPTS} src/${PASBASENAME}.pex 2>&1
+    fi
+  fi
+}
 
 # Parse command line
 
 STRSTKSZ=1024
+USERSTKSZ=n
 HEAPSIZE=256
+USERHPSZ=n
 PASFILENAME=
 
 while [ -n "$1" ]; do
     case "$1" in
     -t )
         STRSTKSZ=$2
+        USERSTKSZ=y
         shift
         ;;
     -n )
         HEAPSIZE=$2
+        USERHPSZ=y
         shift
         ;;
     -h )
@@ -150,5 +177,6 @@ fi
 
 # Get the source file name and path
 
+file_info
 compile_source
 test_program

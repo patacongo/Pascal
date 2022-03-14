@@ -119,7 +119,6 @@ struct initializer_s
       struct
         {
           symbol_t *recordObjectPtr;
-          bool pops;                /* true if RECORD contains a string */
         } r;
     };
 };
@@ -189,8 +188,7 @@ static initializer_t *pas_AddInitializer(symbol_t *varPtr,
 
 static void pas_BasicInitialization(void)
 {
-  bool pushs = false;
-  int  index;
+  int index;
 
   /* Generate each index */
 
@@ -234,17 +232,6 @@ static void pas_BasicInitialization(void)
             {
               symbol_t *baseTypePtr;
 
-              /* Generate a PUSHS (push string stack pointer) if we have not
-               * already done so.
-               */
-
-              if (!pushs)
-                {
-                  /* Generate a PUSHS (push string stack pointer) */
-
-                  pas_GenerateSimple(opPUSHS);
-                }
-
               /* Create parameter list like:
                *
                *   TOS(0) = Address of the string variable to be initialized
@@ -259,7 +246,6 @@ static void pas_BasicInitialization(void)
 
               pas_GenerateStackReference(opLAS, varPtr);
               pas_StringLibraryCall(lbSTRINIT);
-              pushs = true;
             }
             break;
 
@@ -284,17 +270,6 @@ static void pas_BasicInitialization(void)
 
               if (baseTypePtr->sParm.t.tType == sSTRING)
                 {
-                  /* Generate a PUSHS (push string stack pointer) if we have not
-                   * already done so.
-                   */
-
-                  if (!pushs)
-                    {
-                      /* Generate a PUSHS (push string stack pointer) */
-
-                      pas_GenerateSimple(opPUSHS);
-                    }
-
                   /* Create parameter list like:
                    *
                    *   TOS(0) = Address of the string variable to be initialized
@@ -316,8 +291,6 @@ static void pas_BasicInitialization(void)
                   /* Then initialize the string */
 
                   pas_StringLibraryCall(lbSTRINIT);
-                  pushs = true;
-                  initializer->r.pops = true;
                 }
 
               /* Check if the base type of the field is a file */
@@ -544,7 +517,7 @@ void pas_Initialization(void)
 /* Initialize a new string type created with new().  That happens AFTER the
  * normal initialization of pas_Initialization().  Note that no special
  * finalization is required for strings since POPS will be generated
- * automatically.
+ * automatically when string variables go out of scope.
  */
 
 void pas_InitializeNewString(symbol_t *typePtr)
@@ -597,7 +570,6 @@ void pas_InitializeNewFile(symbol_t *typePtr)
 
 void pas_Finalization(void)
 {
-  bool pops = false;
   int index;
 
   /* Free resources used by pas_Initialization */
@@ -623,24 +595,11 @@ void pas_Finalization(void)
                   break;
 
               case sSTRING :
-                  pops = true;
-                  break;
-
               case sRECORD:
-                  pops |= initializer->r.pops;
-                  break;
-
               default:
                   break;
             }
         }
-    }
-
-  /* If there are any strings, generate a POPS (pop the saved string stack). */
-
-  if (pops)
-    {
-      pas_GenerateSimple(opPOPS);
     }
 }
 
