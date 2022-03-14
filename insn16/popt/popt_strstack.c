@@ -664,13 +664,28 @@ static void popt_DoPop(poffHandle_t poffHandle,
               popt_DebugMessage("  Keep PUSH at %04x, level %d\n",
                                 pushOffset, g_currentLevel);
 
-              /* Put the instruction in the buffer and remind ourselves
-               * to keep both the PUSHS and the POPS when we find the
-               * matching POPS.
+              /* Remind ourselves to keep both the PUSHS and the POPS when
+               * we find the matching POPS.  There is no point in keeping
+               * the PUSHS/POPS if the code sequence contains an
+               * unconditional branch before the POPS.  This can happen
+               * on Continue and Break.
+               *
+               * But there are issues:
+               * - What if there are both conditional and unconditional
+               *   branches within the code sequence?
+               * - If the target of the branch is constrained to lie within
+               *   the same code sequence, then it should not effect the
+               *   removal decision.
                */
 
+              if (g_opCode.op != oJMP)
+                {
+                  keepPop = true;
+                }
+
+              /* Put the instruction in the buffer */
+
               popt_PutOpCode(poffHandle, poffProgHandle);
-              keepPop = true;
             }
             break;
 #endif

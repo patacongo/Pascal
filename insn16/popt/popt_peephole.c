@@ -177,15 +177,16 @@ static void popt_SetupOpcodePointerList(void)
 
         case oRET   :
         case oEND   :
-        case oJMP   :
         case oLABEL :
         case oPCAL  :
           return;
 
-          /* Terminate list when a condition break from sequential logic is
-           * encountered but include the conditional branch in the list
+          /* Terminate list when a conditional break from sequential logic
+           * due to a brnch is encountered but include the branch instruction
+           * in the in the list
            */
 
+        case oJMP   :
         case oJEQUZ :
         case oJNEQZ :
         case oJLTZ  :
