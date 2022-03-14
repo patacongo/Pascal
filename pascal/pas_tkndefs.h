@@ -253,16 +253,16 @@
 
 /* Borland-style string procedures and functions */
 
-#define txLENGTH         0x9c
-#define txCHARAT         0x9d
-#define txCHDIR          0x9e
-#define txCLOSEDIR       0x9f
-#define txCOPY           0xa0
-#define txCREATEDIR      0xa1
-#define txFILEINFO       0xa2
-#define txFILLCHAR       0xa3
-#define txFLUSH          0xa4
-#define txGETDIR         0xa5
+#define txCHARAT         0x9c
+#define txCHDIR          0x9d
+#define txCLOSEDIR       0x9e
+#define txCOPY           0x9f
+#define txCREATEDIR      0xa0
+#define txFILEINFO       0xa1
+#define txFILLCHAR       0xa2
+#define txFLUSH          0xa3
+#define txGETDIR         0xa4
+#define txLENGTH         0xa5
 #define txMKDIR          0xa6
 #define txOPENDIR        0xa7
 #define txPOS            0xa8

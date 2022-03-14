@@ -164,10 +164,6 @@
         || ((x) == sSCALAR_OBJECT))
 
 /****************************************************************************
- * Private Types
- ****************************************************************************/
-
-/****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
 
@@ -203,130 +199,13 @@ static void       pas_WhileStatement   (void);  /* While statement */
 static void       pas_ForStatement     (void);  /* For statement */
 static void       pas_WithStatement    (void);  /* With statement */
 
-/****************************************************************************/
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
 
-void pas_Statement(void)
-{
-  symbol_t  *symPtr;     /* Save Symbol Table pointer to token */
-  exprType_t exprType;
-
-  /* Generate file/line number pseudo-operation to facilitate P-Code testing */
-
-  pas_GenerateLineNumber(FP->include, FP->line);
-
-  /* We will push the string stack pointer at the beginning of each
-   * statement and pop the string stack pointer at the end of each
-   * statement.  Subsequent optimization logic will scan the generated
-   * pcode to ascertain if the push and pops were necessary.  They
-   * would be necessary if expression parsing generated temporary usage
-   * of string stack storage.  In this case, the push will save the
-   * value before the temporary usage and the pop will release the
-   * temporaray storage.
-   */
-
-  pas_GenerateSimple(opPUSHS);
-
-  /* Process the statement according to the type of the leading token */
-
-  switch (g_token)
-    {
-      /* Simple, ordinal assignment statements */
-
-    case sINT :
-    case sWORD :
-    case sBOOLEAN :
-      symPtr = g_tknPtr;
-      exprType = pas_MapVariable2ExprType(g_token, true);
-      getToken();
-      pas_Assignment(opSTS, exprType, symPtr, symPtr->sParm.v.vParent);
-      break;
-
-    case sSHORTINT :
-    case sSHORTWORD :
-    case sCHAR :
-      symPtr = g_tknPtr;
-      exprType = pas_MapVariable2ExprType(g_token, true);
-      getToken();
-      pas_Assignment(opSTSB, exprType, symPtr, symPtr->sParm.v.vParent);
-      break;
-
-    case sLONGINT :
-    case sLONGWORD :
-      symPtr = g_tknPtr;
-      exprType = pas_MapVariable2ExprType(g_token, true);
-      getToken();
-      pas_LargeAssignment(opSTSM, exprType, symPtr, symPtr->sParm.v.vParent);
-      break;
-
-      /* The only thing that SETs and REAL have in common is that they both
-       * require larger, multi-word assignments.  Same for long integers/word,
-       * but those are grouped with the ordinal types.
-       */
-
-    case sSET :
-    case sREAL :
-      symPtr = g_tknPtr;
-      exprType = pas_MapVariable2ExprType(g_token, false);
-      getToken();
-      pas_LargeAssignment(opSTSM, exprType, symPtr, symPtr->sParm.v.vParent);
-      break;
-
-    case sSCALAR :
-      symPtr = g_tknPtr;
-      getToken();
-      pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.vParent);
-      break;
-
-    case sSTRING :
-      symPtr = g_tknPtr;
-      getToken();
-      pas_StringAssignment(symPtr, symPtr->sParm.v.vParent, 0);
-      break;
-
-      /* Complex assignments statements */
-
-    case sSUBRANGE :
-    case sRECORD :
-    case sRECORD_OBJECT :
-    case sPOINTER :
-    case sVAR_PARM :
-    case sARRAY :
-      pas_ComplexAssignment();
-      break;
-
-      /* Branch, Call and Label statements */
-
-    case sPROC         : pas_ProcStatement(); break;
-    case tGOTO         : pas_GotoStatement(); break;
-    case tINT_CONST    : pas_LabelStatement(); break;
-
-      /* Conditional Statements */
-
-    case tIF           : pas_IfStatement(); break;
-    case tCASE         : pas_CaseStatement(); break;
-
-      /* Loop Statements */
-
-    case tREPEAT       : pas_RepeatStatement(); break;
-    case tWHILE        : pas_WhileStatement(); break;
-    case tFOR          : pas_ForStatement(); break;
-
-      /* Other Statements */
-
-    case tBEGIN        : pas_CompoundStatement(); break;
-    case tWITH         : pas_WithStatement(); break;
-
-      /* None of the above, try standard procedures */
-
-    default            : pas_StandardProcedure(); break;
-  }
-
-  /* Generate the POPS that matches the PUSHS generated at the begining
-   * of this function (see comments above).
-   */
-
-  pas_GenerateSimple(opPOPS);
-}
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
 
 /***********************************************************************/
 /* Process a complex assignment statement */
@@ -1455,8 +1334,8 @@ static exprType_t pas_AssignExprType(exprType_t baseExprType,
 
 static void pas_GotoStatement(void)
 {
-  char     labelname [8];             /* Label symbol table name */
-  symbol_t *label_ptr;                /* Pointer to Label Symbol */
+  char     labelname [8];            /* Label symbol table name */
+  symbol_t *labelPtr;                /* Pointer to Label Symbol */
 
   /* FORM:  GOTO <integer> */
 
@@ -1474,11 +1353,11 @@ static void pas_GotoStatement(void)
       /* Find and verify the symbol associated with the label */
 
       (void)sprintf (labelname, "%" PRIu32, g_tknUInt);
-      if (!(label_ptr = pas_FindSymbol(labelname, 0, NULL)))
+      if (!(labelPtr = pas_FindSymbol(labelname, 0, NULL)))
         {
           error(eUNDECLABEL);
         }
-      else if (label_ptr->sKind != sLABEL)
+      else if (labelPtr->sKind != sLABEL)
         {
           error(eINVLABEL);
         }
@@ -1486,7 +1365,7 @@ static void pas_GotoStatement(void)
         {
           /* Generate the branch to the label */
 
-          pas_GenerateDataOperation(opJMP, label_ptr->sParm.l.lLabel);
+          pas_GenerateDataOperation(opJMP, labelPtr->sParm.l.lLabel);
         }
 
       /* Get the token after the <integer> value */
@@ -1577,8 +1456,8 @@ static void pas_ProcStatement(void)
 
 static void pas_IfStatement(void)
 {
-  uint16_t else_label  = ++g_label;
-  uint16_t endif_label = else_label;
+  uint16_t elseLabel  = ++g_label;
+  uint16_t endIfLabel = elseLabel;
 
   /* FORM: IF <expression> THEN <statement> [ELSE <statement>] */
 
@@ -1600,11 +1479,11 @@ static void pas_IfStatement(void)
 
       getToken();
 
-      /* Generate a conditional branch to the "else_label."  This will be a
+      /* Generate a conditional branch to the "elseLabel."  This will be a
        * branch to either the ENDIF or to the ELSE location (if present).
        */
 
-      pas_GenerateDataOperation(opJEQUZ, else_label);
+      pas_GenerateDataOperation(opJEQUZ, elseLabel);
 
       /* Parse the <statment> following the THEN token */
 
@@ -1619,7 +1498,7 @@ static void pas_IfStatement(void)
            * logic generated here.
            */
 
-          endif_label = ++g_label;
+          endIfLabel = ++g_label;
 
           /* Skip over the ELSE token */
 
@@ -1627,13 +1506,13 @@ static void pas_IfStatement(void)
 
           /* Generate Jump to ENDIF label after the  THEN <statement> */
 
-          pas_GenerateDataOperation(opJMP, endif_label);
+          pas_GenerateDataOperation(opJMP, endIfLabel);
 
           /* Generate the ELSE label here.  This is where we will go if
            * the IF <expression> evaluates to false.
            */
 
-          pas_GenerateDataOperation(opLABEL, else_label);
+          pas_GenerateDataOperation(opLABEL, elseLabel);
 
           /* Generate the ELSE <statement> then fall through to the
            * ENDIF label.
@@ -1643,43 +1522,26 @@ static void pas_IfStatement(void)
         }
 
       /* Generate the ENDIF label here.  Note that if no ELSE <statement>
-       * is present, this will be the same as the else_label.
+       * is present, this will be the same as the elseLabel.
        */
 
-      pas_GenerateDataOperation(opLABEL, endif_label);
+      pas_GenerateDataOperation(opLABEL, endIfLabel);
     }
 }
 
 /***********************************************************************/
 
-void pas_CompoundStatement(void)
+static void pas_RepeatStatement(void)
 {
-   /* Process statements until END encountered */
+  uint16_t repeatLabel = ++g_label;
 
-   do
-     {
-       getToken();
-       pas_Statement();
-     }
-   while (g_token == ';');
-
-   /* Verify that it really was END */
-
-   if (g_token != tEND) error (eEND);
-   else getToken();
-}
-
-/***********************************************************************/
-
-void pas_RepeatStatement ()
-{
-  uint16_t rpt_label = ++g_label;
-
-  /* REPEAT <statement[;statement[statement...]]> UNTIL <expression> */
+  /* FORM: REPEAT statement-block UNTIL booleanexpression
+   *       statement-block = statement [; statement-block]
+   */
 
   /* Generate top of loop label */
 
-  pas_GenerateDataOperation(opLABEL, rpt_label);
+  pas_GenerateDataOperation(opLABEL, repeatLabel);
   do
     {
       getToken();
@@ -1701,59 +1563,59 @@ void pas_RepeatStatement ()
 
   /* Generate conditional branch to the top of loop */
 
-  pas_GenerateDataOperation(opJEQUZ, rpt_label);
+  pas_GenerateDataOperation(opJEQUZ, repeatLabel);
 }
 
 /***********************************************************************/
 
 static void pas_WhileStatement(void)
 {
-   uint16_t while_label    = ++g_label;  /* Top of loop label */
-   uint16_t endwhile_label = ++g_label;  /* End of loop label */
+  uint16_t whileLabel    = ++g_label;  /* Top of loop label */
+  uint16_t endWhileLabel = ++g_label;  /* End of loop label */
 
-   /* Generate WHILE <expression> DO <statement> */
+  /* FORM: WHILE boolean-expression> DO statement */
 
-   /* Skip over WHILE token */
+  /* Skip over WHILE token */
 
-   getToken();
+  getToken();
 
-   /* Set top of loop label */
+  /* Set top of loop label */
 
-   pas_GenerateDataOperation(opLABEL, while_label);
+  pas_GenerateDataOperation(opLABEL, whileLabel);
 
-   /* Evaluate the WHILE <expression> */
+  /* Evaluate the WHILE <expression> */
 
-   pas_Expression(exprBoolean, NULL);
+  pas_Expression(exprBoolean, NULL);
 
-   /* Generate a conditional jump to the end of the loop */
+  /* Generate a conditional jump to the end of the loop */
 
-   pas_GenerateDataOperation(opJEQUZ, endwhile_label);
+  pas_GenerateDataOperation(opJEQUZ, endWhileLabel);
 
-   /* Verify that the DO token follows the expression */
+  /* Verify that the DO token follows the expression */
 
-   if (g_token !=  tDO) error(eDO);
-   else getToken();
+  if (g_token !=  tDO) error(eDO);
+  else getToken();
 
-   /* Generate the <statement> following the DO token */
+  /* Generate the <statement> following the DO token */
 
-   pas_Statement();
+  pas_Statement();
 
-   /* Generate a branch to the top of the loop */
+  /* Generate a branch to the top of the loop */
 
-   pas_GenerateDataOperation(opJMP, while_label);
+  pas_GenerateDataOperation(opJMP, whileLabel);
 
-   /* Set the bottom of loop label */
+  /* Set the bottom of loop label */
 
-   pas_GenerateDataOperation(opLABEL, endwhile_label);
+  pas_GenerateDataOperation(opLABEL, endWhileLabel);
 }
 
 /***********************************************************************/
 
 static void pas_CaseStatement(void)
 {
-  uint16_t this_case;
-  uint16_t next_case  = ++g_label;
-  uint16_t end_case   = ++g_label;
+  uint16_t thisCaseLabel;
+  uint16_t nextCaseLabel = ++g_label;
+  uint16_t endCaseLabel  = ++g_label;
 
   /* Process "CASE <expression> OF" */
 
@@ -1774,8 +1636,8 @@ static void pas_CaseStatement(void)
 
   for (; ; )
     {
-      this_case = next_case;
-      next_case = ++g_label;
+      thisCaseLabel = nextCaseLabel;
+      nextCaseLabel = ++g_label;
 
       /* Process optional ELSE <statement> END */
 
@@ -1785,7 +1647,7 @@ static void pas_CaseStatement(void)
 
           /* Set ELSE statement label */
 
-          pas_GenerateDataOperation(opLABEL, this_case);
+          pas_GenerateDataOperation(opLABEL, thisCaseLabel);
 
           /* Evaluate ELSE statement */
 
@@ -1817,7 +1679,7 @@ static void pas_CaseStatement(void)
 
           /* Generate the CASE label */
 
-          pas_GenerateDataOperation(opLABEL, this_case);
+          pas_GenerateDataOperation(opLABEL, thisCaseLabel);
 
           /* Loop for each <constant> in the case list */
 
@@ -1898,7 +1760,7 @@ static void pas_CaseStatement(void)
                 {
                   /* else jump to the next case */
 
-                  pas_GenerateDataOperation(opJNEQ, next_case);
+                  pas_GenerateDataOperation(opJNEQ, nextCaseLabel);
                   break;
                 }
             }
@@ -1920,7 +1782,7 @@ static void pas_CaseStatement(void)
 
           /* Jump to exit CASE */
 
-          pas_GenerateDataOperation(opJMP, end_case);
+          pas_GenerateDataOperation(opJMP, endCaseLabel);
         }
 
       /* Check if there are more statements.  If not, verify that END is
@@ -1947,7 +1809,7 @@ static void pas_CaseStatement(void)
             {
               /* Generate the next case label for the last case selector */
 
-              pas_GenerateDataOperation(opLABEL, next_case);
+              pas_GenerateDataOperation(opLABEL, nextCaseLabel);
               getToken();
               break;
             }
@@ -1956,7 +1818,7 @@ static void pas_CaseStatement(void)
 
   /* Generate ENDCASE label and Pop CASE <expression> from stack */
 
-  pas_GenerateDataOperation(opLABEL, end_case);
+  pas_GenerateDataOperation(opLABEL, endCaseLabel);
   pas_GenerateDataOperation(opINDS, -sINT_SIZE);
 }
 
@@ -1964,119 +1826,119 @@ static void pas_CaseStatement(void)
 
 static void pas_ForStatement(void)
 {
-   symbol_t *varPtr;
-   uint16_t forLabel    = ++g_label;
-   uint16_t endForLabel = ++g_label;
-   uint16_t jmpOp;
-   uint16_t modOp;
+  symbol_t *varPtr;
+  uint16_t forLabel          = ++g_label;
+  uint16_t endForLabel       = ++g_label;
+  uint16_t jmpOp;
+  uint16_t modOp;
 
-   /* FOR <assigment statement> <TO, DOWNTO> <expression> DO <statement> */
+  /* FORM: FOR <assigment statement> <TO, DOWNTO> <expression> DO <statement> */
 
-   /* Skip over the FOR token */
+  /* Skip over the FOR token */
 
-   getToken();
+  getToken();
 
-   /* Get and verify the left side of the assignment. */
+  /* Get and verify the left side of the assignment. */
 
-   if (g_token != sINT      && g_token != sWORD      &&
-       g_token != sSHORTINT && g_token != sSHORTWORD &&
-       g_token != sLONGINT  && g_token != sLONGWORD &&
-       g_token != sSUBRANGE && g_token != sSCALAR)
-     {
-       error(eINTVAR);
-     }
-   else
-     {
-       exprType_t forExprType;
-       uint16_t forVarType;
+  if (g_token != sINT      && g_token != sWORD      &&
+      g_token != sSHORTINT && g_token != sSHORTWORD &&
+      g_token != sLONGINT  && g_token != sLONGWORD &&
+      g_token != sSUBRANGE && g_token != sSCALAR)
+    {
+      error(eINTVAR);
+    }
+  else
+    {
+      exprType_t forExprType;
+      uint16_t forVarType;
 
-       /* The expression type we need for the FOR index variable type */
+      /* The expression type we need for the FOR index variable type */
 
-       forVarType = g_token;
-       varPtr     = g_tknPtr;
+      forVarType = g_token;
+      varPtr     = g_tknPtr;
 
-       if (forVarType == sSUBRANGE)
-         {
-           symbol_t *baseTypePtr;
+      if (forVarType == sSUBRANGE)
+        {
+          symbol_t *baseTypePtr;
 
-           /* For a sub-range, use the parent type */
+          /* For a sub-range, use the parent type */
 
-           baseTypePtr = pas_GetBaseTypePointer(varPtr->sParm.v.vParent);
-           forVarType  = baseTypePtr->sParm.t.tSubType;
-         }
+          baseTypePtr = pas_GetBaseTypePointer(varPtr->sParm.v.vParent);
+          forVarType  = baseTypePtr->sParm.t.tSubType;
+        }
 
-       /* Then map the FOR index type to an expression type */
+      /* Then map the FOR index type to an expression type */
 
-       forExprType = pas_MapVariable2ExprType(forVarType, true);
+      forExprType = pas_MapVariable2ExprType(forVarType, true);
 
-       /* Generate the assignment to the integer variable */
+      /* Generate the assignment to the integer variable */
 
-       getToken();
-       pas_Assignment(opSTS, forExprType, varPtr, varPtr->sParm.v.vParent);
+      getToken();
+      pas_Assignment(opSTS, forExprType, varPtr, varPtr->sParm.v.vParent);
 
-       /* Determine if this is a TO or a DOWNTO loop and set up the opCodes
-        * to generate appropriately.
-        */
+      /* Determine if this is a TO or a DOWNTO loop and set up the opCodes
+       * to generate appropriately.
+       */
 
-       if (g_token == tDOWNTO)
-         {
-           jmpOp = opJGT;
-           modOp = opDEC;
-           getToken();
-         }
-       else if (g_token == tTO)
-         {
-           jmpOp = opJLT;
-           modOp = opINC;
-           getToken();
-         }
-       else
-         {
-           error (eTOorDOWNTO);
-         }
+      if (g_token == tDOWNTO)
+        {
+          jmpOp = opJGT;
+          modOp = opDEC;
+          getToken();
+        }
+      else if (g_token == tTO)
+        {
+          jmpOp = opJLT;
+          modOp = opINC;
+          getToken();
+        }
+      else
+        {
+          error (eTOorDOWNTO);
+        }
 
-       /* Evaluate <expression> DO */
+      /* Evaluate <expression> DO */
 
-       pas_Expression(forExprType, varPtr->sParm.v.vParent);
+      pas_Expression(forExprType, varPtr->sParm.v.vParent);
 
-       /* Verify that the <expression> is followed by the DO token */
+      /* Verify that the <expression> is followed by the DO token */
 
-       if (g_token != tDO) error (eDO);
-       else getToken();
+      if (g_token != tDO) error (eDO);
+      else getToken();
 
-       /* Generate top of loop label */
+      /* Generate top of loop label */
 
-       pas_GenerateDataOperation(opLABEL, forLabel);
+      pas_GenerateDataOperation(opLABEL, forLabel);
 
-       /* Generate the top of loop comparison.  Duplicate the end of loop
-        * value, push the current value, and perform the comparison.
-        */
+      /* Generate the top of loop comparison.  Duplicate the end of loop
+       * value, push the current value, and perform the comparison.
+       */
 
-       pas_GenerateSimple(opDUP);
-       pas_GenerateStackReference(opLDS, varPtr);
-       pas_GenerateDataOperation(jmpOp, endForLabel);
+      pas_GenerateSimple(opDUP);
+      pas_GenerateStackReference(opLDS, varPtr);
+      pas_GenerateDataOperation(jmpOp, endForLabel);
 
-       /* Evaluate the for statement <statement> */
+      /* Evaluate the for statement <statement> */
 
-       pas_Statement();
+      pas_Statement();
 
-       /* Generate end of loop logic:  Load the variable, modify the
-        * variable, store the variable, and jump unconditionally to the
-        * top of the loop.
-        */
+      /* Generate end of loop logic:  Load the variable, modify the
+       * variable, store the variable, and jump unconditionally to the
+       * top of the loop.
+       */
 
-       pas_GenerateStackReference(opLDS, varPtr);
-       pas_GenerateSimple(modOp);
-       pas_GenerateStackReference(opSTS, varPtr);
-       pas_GenerateDataOperation(opJMP, forLabel);
+      pas_GenerateStackReference(opLDS, varPtr);
+      pas_GenerateSimple(modOp);
+      pas_GenerateStackReference(opSTS, varPtr);
+      pas_GenerateDataOperation(opJMP, forLabel);
 
-       /* Generate the end of loop label.  This is where the conditional
-        * branch at the top of the loop will come to.
-        */
+      /* Generate the end of loop label.  This is where the conditional
+       * branch at the top of the loop will come to.
+       */
 
-       pas_GenerateDataOperation(opLABEL, endForLabel);
-       pas_GenerateDataOperation(opINDS, -sINT_SIZE);
-     }
+      pas_GenerateDataOperation(opLABEL, endForLabel);
+      pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+    }
 }
 
 /***********************************************************************/
@@ -2226,4 +2088,152 @@ static void pas_WithStatement(void)
   /* Restore the previous value of the with record */
 
   g_withRecord = saveWithRecord;
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+
+void pas_Statement(void)
+{
+  symbol_t  *symPtr;     /* Save Symbol Table pointer to token */
+  exprType_t exprType;
+
+  /* Generate file/line number pseudo-operation to facilitate P-Code testing */
+
+  pas_GenerateLineNumber(FP->include, FP->line);
+
+  /* We will push the string stack pointer at the beginning of each
+   * statement and pop the string stack pointer at the end of each
+   * statement.  Subsequent optimization logic will scan the generated
+   * pcode to ascertain if the push and pops were necessary.  They
+   * would be necessary if expression parsing generated temporary usage
+   * of string stack storage.  In this case, the push will save the
+   * value before the temporary usage and the pop will release the
+   * temporaray storage.
+   */
+
+  pas_GenerateSimple(opPUSHS);
+
+  /* Process the statement according to the type of the leading token */
+
+  switch (g_token)
+    {
+      /* Simple, ordinal assignment statements */
+
+    case sINT :
+    case sWORD :
+    case sBOOLEAN :
+      symPtr = g_tknPtr;
+      exprType = pas_MapVariable2ExprType(g_token, true);
+      getToken();
+      pas_Assignment(opSTS, exprType, symPtr, symPtr->sParm.v.vParent);
+      break;
+
+    case sSHORTINT :
+    case sSHORTWORD :
+    case sCHAR :
+      symPtr = g_tknPtr;
+      exprType = pas_MapVariable2ExprType(g_token, true);
+      getToken();
+      pas_Assignment(opSTSB, exprType, symPtr, symPtr->sParm.v.vParent);
+      break;
+
+    case sLONGINT :
+    case sLONGWORD :
+      symPtr = g_tknPtr;
+      exprType = pas_MapVariable2ExprType(g_token, true);
+      getToken();
+      pas_LargeAssignment(opSTSM, exprType, symPtr, symPtr->sParm.v.vParent);
+      break;
+
+      /* The only thing that SETs and REAL have in common is that they both
+       * require larger, multi-word assignments.  Same for long integers/word,
+       * but those are grouped with the ordinal types.
+       */
+
+    case sSET :
+    case sREAL :
+      symPtr = g_tknPtr;
+      exprType = pas_MapVariable2ExprType(g_token, false);
+      getToken();
+      pas_LargeAssignment(opSTSM, exprType, symPtr, symPtr->sParm.v.vParent);
+      break;
+
+    case sSCALAR :
+      symPtr = g_tknPtr;
+      getToken();
+      pas_Assignment(opSTS, exprScalar, symPtr, symPtr->sParm.v.vParent);
+      break;
+
+    case sSTRING :
+      symPtr = g_tknPtr;
+      getToken();
+      pas_StringAssignment(symPtr, symPtr->sParm.v.vParent, 0);
+      break;
+
+      /* Complex assignments statements */
+
+    case sSUBRANGE :
+    case sRECORD :
+    case sRECORD_OBJECT :
+    case sPOINTER :
+    case sVAR_PARM :
+    case sARRAY :
+      pas_ComplexAssignment();
+      break;
+
+      /* Branch, Call and Label statements */
+
+    case sPROC         : pas_ProcStatement(); break;
+    case tGOTO         : pas_GotoStatement(); break;
+    case tINT_CONST    : pas_LabelStatement(); break;
+
+      /* Conditional Statements */
+
+    case tIF           : pas_IfStatement(); break;
+    case tCASE         : pas_CaseStatement(); break;
+
+      /* Loop Statements */
+
+    case tREPEAT       : pas_RepeatStatement(); break;
+    case tWHILE        : pas_WhileStatement(); break;
+    case tFOR          : pas_ForStatement(); break;
+
+      /* Other Statements */
+
+    case tBEGIN        : pas_CompoundStatement(); break;
+    case tWITH         : pas_WithStatement(); break;
+
+      /* None of the above, try standard procedures */
+
+    default            : pas_StandardProcedure(); break;
+  }
+
+  /* Generate the POPS that matches the PUSHS generated at the begining
+   * of this function (see comments above).
+   */
+
+  pas_GenerateSimple(opPOPS);
+}
+
+/***********************************************************************/
+
+void pas_CompoundStatement(void)
+{
+   /* Process statements until END encountered */
+
+   do
+     {
+       getToken();
+       pas_Statement();
+     }
+   while (g_token == ';');
+
+   /* Verify that it really was END */
+
+   if (g_token != tEND) error (eEND);
+   else getToken();
 }

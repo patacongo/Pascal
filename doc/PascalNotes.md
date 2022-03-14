@@ -8,9 +8,11 @@ In the late 1970's, I was in graduate school and scraped enough money together t
 
 Although I had multiple degrees, I was still not properly credentialed for that career and returned to graduate school to work on a master's degree in Computer Science.  That was in 1981 and that was when I was first exposed to real Pascal programming.  It was a core part of the culture in the CS department.
 
-But I had some previous exposure.  I had subscribed to the *TRS-80 Newsletter* which published programs for the TRS-80 that you could type in yourself and save on cassette tape.  In 1979, *TRS-80 Newsletter* published the source for People's Pascal, http://www.trs-80.org/tiny-pascal/.  You could either buy the software with documentation or painfully enter it from the listing by hand.  I did the latter and got to know a little bit about the design of the tiny Pascal compiler.
+But I had some previous exposure.  I had subscribed to the *TRS-80 Newsletter* which published *BASIC* programs for the TRS-80 that you could type in yourself and save on cassette tape.  In 1979, *TRS-80 Newsletter* published the source for People's Pascal, http://www.trs-80.org/tiny-pascal/.  You could either buy the software with documentation or painfully enter it from the listing by hand.  I did the latter and got to know a little bit about the design of the tiny Pascal compiler.
 
-In the early/mid 1980's I upgraded my Trash-80 for a TRS-80 Model IV, my pride and joy at the time. I also purchased the Alcor C compiler on a 5.25 inch floppy.  One of my first programming projects was to write a work-alike tiny Pascal compiler in C.  It was really a pretty nice compiler, but very limited.  It was basically integer Pascal with peek and poke capabilities built on the TRS-80 ROM.
+[Alcor Pascal was also available in 1978 for CP/M and later the TRS-80, but that was out of my reach at $249.95.  http://www.trs-80.org/alcor-pascal/].
+
+In the early/mid 1980's I upgraded my Trash-80 for a TRS-80 Model IV, my pride and joy at the time. I also purchased the Alcor C compiler on a 5.25 inch floppy.  One of my early programming projects was to write a work-alike tiny Pascal compiler in C.  It was really a pretty nice compiler, but very limited.  It was basically integer Pascal with peek and poke capabilities built on the TRS-80 ROM.
 
 Some time later, perhaps in the 1990's or early 2000's, I decided to extend the compiler to support full Pascal with language definitions circa 1980.  I see the last changes in 2004, 2007, and 2008. While the language was much more complete, the compiler was also more unstable and remained unstable until very recently.
 
@@ -99,6 +101,8 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 
 - `procedure Exit(exitCode : integer)`
 - `procedure Halt`
+- `procedure Break` - `Break` jumps to the statement following the end of the current loop (`FOR`, `WHILE`, or `REPEAT` loop), exiting the loop without executing the code between the `BREAK` statement and the end of the loop.
+- `procedure Continue` - `Continue` jumps to the statement at the end of the current loop (`FOR`, `WHILE`, or `REPEAT` loop), skipping to the next cycle through the loop without executing the code between the `CONTINUE` statement and the end of the loop.
 - `procedure New(<pointer-variable>)`
 - `procedure Dispose(<pointer-variable>)`
 - `function GetEnv(name: string) : string`
@@ -132,17 +136,17 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 
 #### String Operations
 
-Borland style string operators,
+Borland style string operators:
 
-- `Length( s : string)` – Return the length of a string.
-- `Copy(s : string, from, howmuch: integer) : string` - Get a substring from a string.
-- `Pos(substr, s : string) : integer` - Get the position of substring `substr` within stringi `s`. If the substring is not found, `Pos` will return 0.
-- `Str(numvar : integer, VAR strvar : string)` – Converts a numeric value into a string.  `numvar` may include a fieldwidth and, for the case of real values, a precision.
-- `concat(s1,s2,...,sn : string) : string` – Concatenate one or more strings.
-- `insert(source : string, VAR target : string; index : integer)` - Insert a string inside another string from at the indexth character.
-- `delete(VAR s : string; i, n: integer)` - Deletes `n` characters from string `s` starting from index `i`.
-- `fillchar(VAR s : string; count : integer; value : shortword)` -  Fill string s with character value until `s` is `count`-1 characters long
-- `Val(inString : string; VAR numvar : integer; VAR code : integer)` – Convert a string to a numeric value.  `strvar` is a string variable to be converted, numvar is any numeric variable either `Integer`, `Longinteger`, `ShortInteger`, or `Real`, and if the conversion isn't successful, then the parameter `code` contains the index of the character in `S` which prevented the conversion.
+- `function Length( s : string)` – Return the length of a string.
+- `function Copy(s : string, from, howmuch: integer) : string` - Get a substring from a string.
+- `function Pos(substr, s : string) : integer` - Get the position of substring `substr` within stringi `s`. If the substring is not found, `Pos` will return 0.
+- `procedure Str(numvar : integer, VAR strvar : string)` – Converts a numeric value into a string.  `numvar` may include a fieldwidth and, for the case of real values, a precision.
+- `function Concat(s1, s2,... ,sn : string) : string` – Concatenate one or more strings.
+- `procedure Insert(source : string, VAR target : string; index : integer)` - Insert a string inside another string from at the indexth character.
+- `procedure Delete(VAR s : string; i, n: integer)` - Deletes `n` characters from string `s` starting from index `i`.
+- `procedure fillchar(VAR s : string; count : integer; value : shortword)` -  Fill string s with character value until `s` is `count`-1 characters long
+- `procedure Val(inString : string; VAR numvar : integer; VAR code : integer)` – Convert a string to a numeric value.  `strvar` is a string variable to be converted, numvar is any numeric variable either `Integer`, `Longinteger`, `ShortInteger`, or `Real`, and if the conversion isn't successful, then the parameter `code` contains the index of the character in `S` which prevented the conversion.
 
 In addition to these built-in, *intrinsic* string operations.  Additional string support is provided throught the unit `StringUtils.pas`.  This additional support includes:
 
@@ -151,14 +155,14 @@ In addition to these built-in, *intrinsic* string operations.  Additional string
 - `function CharPos(StrInput : STRING; CheckChar : char; StartPos : integer) : integer` - Return the position of the next occurence of `CheckChar` in `StrInput` after position `CheckPos`.  Position zero is returned if there is character meeting these conditions
 - `function TokenizeString(inString, tokenDelimiters : string; VAR token : string; VAR StrPos : integer) : boolean` - Gets the next *token* from the string `inString` on each call.  A *token* is defined to be a substring of `inString` delimited by one of the characters from the string `tokenDelimiters`.  The integer `VAR` parameter `StrPos` must be provided so that `TokenizeString` can continue parsing the string `inString` from call-to-call.  `StrPos` simply holds the position in the string `inString` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
 
-Non-standard string operations.
+Non-standard string operations.  These are used internally in the implementation of other string procedures/functions but are available to Pascal applications as well.  Use of non-standard prodecures/functions can make if more difficult to port the Pascal code to other platforms, however.
 
-- `function CharAt(inString : string; charPos : integer) : char` - Returns the character at position `charPos` in `inString`.  NUL is returned if the character position is invalid.  The only precedent that I am aware of is Delphi that uses an array like syntax to peek at specific characters.  The Delphi syntax would be `inString[charPos]`.
+- `function CharAt(inString : string; charPos : integer) : char` - Returns the character at position `charPos` in `inString`.  NUL is returned if the character position is invalid.  The only precedent that I am aware of is Delphi that uses an array like syntax to peek at specific characters.  The Delphi syntax would be `inString[charPos]`.  The name `CharAt` derives from a similar JavaScript method.
 
 #### File I/O
 - `Append` - Opens an existing file for appending data to end of file
-- `AssignFile` - Assign a name to a file (Assign is an alias)
-- `CloseFile` - Close opened file (Close is an alias)
+- `AssignFile` - Assign a name to a file (`Assign` is an alias)
+- `CloseFile` - Close opened file (`Close` is an alias)
 - `EOF` - Check for end of file
 - `EOLN` – Check for end of line
 - `function FilePos(f : TEXTFILE) : Int64` - Get position in file.  Argument may also be a binary file.
@@ -287,8 +291,6 @@ Note 2: The algorithm in the optimizer is lame at the moment.  It tends to leave
 ### BUGS / MISSING FUNCTIONALITY
 
 -See unimplemented standard procedures and functions..
-- In `FUNC`/`PROC` calls, if `simpleExpressio`n fails to find a parameter (eg., proc (,,), no error is detected.
-- There are cases where the string stack is not being managed correctly (e.g., `usesSection()`).
 - Need forward references for procedures.  Necessary to support co-routines.
 
 ### PLANNED IMPROVEMENTS

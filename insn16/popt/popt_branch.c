@@ -544,14 +544,20 @@ int16_t popt_BranchOptimize (void)
             }
           break;
 
+            /* Eliminte unconditional branches to the next instruction.
+             *
+             * REVISIT:  At this point the address of the next instruction is
+             * not known; the arg2 of the oJMP instruction is a label.
+             */
+
         default     :
           i++;
           break;
         }
-    } /* end while */
-  return (nchanges);
+    }
 
-} /* end popt_BranchOptimize */
+  return (nchanges);
+}
 
 /**********************************************************************/
 

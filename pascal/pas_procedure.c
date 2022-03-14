@@ -57,7 +57,7 @@
 #include "pas_expression.h"
 #include "pas_procedure.h"
 #include "pas_initializer.h"
-#include "pas_codegen.h"     /* for pas_Generate*() */
+#include "pas_codegen.h"     /* For pas_Generate*() */
 #include "pas_token.h"
 #include "pas_symtable.h"    /* For parent symbol references */
 #include "pas_error.h"
