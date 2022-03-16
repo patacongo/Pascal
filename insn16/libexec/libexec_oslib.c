@@ -68,6 +68,7 @@
 static int libexec_GetEnv(struct libexec_s *st, const uint16_t *nameString,
                           uint16_t *valueString)
 {
+  uint16_t    nameAlloc;
   uint16_t    nameAddr;
   uint16_t    nameSize;
   const char *nameSrc;
@@ -76,17 +77,19 @@ static int libexec_GetEnv(struct libexec_s *st, const uint16_t *nameString,
 
   /* Make a C string out of the pascal name string */
 
-  nameAddr = nameString[BTOISTACK(sSTRING_DATA_OFFSET)];
-  nameSize = nameString[BTOISTACK(sSTRING_SIZE_OFFSET)];
-  nameSrc  = (const char *)ATSTACK(st, nameAddr);
-  cName    = libexec_MkCString(st, nameSrc, nameSize, false);
+  nameAlloc = nameString[BTOISTACK(sSTRING_ALLOC_OFFSET)];
+  nameAddr  = nameString[BTOISTACK(sSTRING_DATA_OFFSET)];
+  nameSize  = nameString[BTOISTACK(sSTRING_SIZE_OFFSET)];
+  nameSrc   = (const char *)ATSTACK(st, nameAddr);
+  cName     = libexec_MkCString(st, nameSrc, nameSize, false);
 
   if (cName == NULL)
     {
-      errorCode = eNOMEMORY;
+      errorCode = eSTRSTKOVERFLOW;
     }
   else
     {
+      uint16_t    valueAlloc;
       uint16_t    valueAddr;
       uint16_t    valueSize;
       const char *valueSrc;
@@ -98,26 +101,27 @@ static int libexec_GetEnv(struct libexec_s *st, const uint16_t *nameString,
 
       valueSrc = (const char *)getenv((char *)cName);
 
+      /* We have consumed the name string container, check if we need to free
+       * its string buffer allocation as well.
+       */
+
+      errorCode = libexec_FreeTmpString(st, nameAddr, nameAlloc);
+
       /* Is the environment variable defined? */
 
-     valueSize = 0;
-     if (valueSrc != NULL)
+      valueSize = 0;
+      if (valueSrc != NULL)
         {
-          /* Allocate tempororary string stack */
+          /* Allocate tempororary string memory from the heap */
 
-          if (st->csp + STRING_BUFFER_SIZE >= st->spb)
+          valueAddr = libexec_AllocTmpString(st, STRING_BUFFER_SIZE,
+                                             &valueAlloc);
+          if (valueAddr == 0)
             {
-              errorCode = eSTRSTKOVERFLOW;
+              errorCode = eNOMEMORY;
             }
           else
             {
-              /* Allocate a string buffer on the string stack for the new
-               * string.
-               */
-
-              valueAddr = INT_ALIGNUP(st->csp);
-              st->csp = valueAddr + STRING_BUFFER_SIZE;
-
               /* Copy the string into the allocated string stack memory */
 
               valueSize = strlen((char *)valueSrc);
@@ -129,14 +133,13 @@ static int libexec_GetEnv(struct libexec_s *st, const uint16_t *nameString,
               valueDest = (char *)ATSTACK(st, valueAddr);
               memcpy(valueDest, valueSrc, valueSize);
 
-
               /* Convert the environment variable C string to a pascal string
                * and save it on the stack.
                */
 
               valueString[BTOISTACK(sSTRING_SIZE_OFFSET)]  = valueSize;
               valueString[BTOISTACK(sSTRING_DATA_OFFSET)]  = valueAddr;
-              valueString[BTOISTACK(sSTRING_ALLOC_OFFSET)] = STRING_BUFFER_SIZE;
+              valueString[BTOISTACK(sSTRING_ALLOC_OFFSET)] = valueAlloc;
             }
         }
     }
@@ -155,6 +158,7 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
   char       *strStringBufferSize;
   char       *strHeapSize;
   pid_t       pid;
+  uint16_t    nameAlloc;
   uint16_t    nameAddr;
   uint16_t    nameSize;
   int         status;
@@ -162,10 +166,11 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
 
   /* Make a C string out of the pascal name string */
 
-  nameAddr = pexNameString[BTOISTACK(sSTRING_DATA_OFFSET)];
-  nameSize = pexNameString[BTOISTACK(sSTRING_SIZE_OFFSET)];
-  nameSrc  = (const char *)ATSTACK(st, nameAddr);
-  cName    = libexec_MkCString(st, nameSrc, nameSize, false);
+  nameAlloc = pexNameString[BTOISTACK(sSTRING_ALLOC_OFFSET)];
+  nameAddr  = pexNameString[BTOISTACK(sSTRING_DATA_OFFSET)];
+  nameSize  = pexNameString[BTOISTACK(sSTRING_SIZE_OFFSET)];
+  nameSrc   = (const char *)ATSTACK(st, nameAddr);
+  cName     = libexec_MkCString(st, nameSrc, nameSize, false);
 
   if (cName == NULL)
     {
@@ -176,6 +181,15 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
 
   pexPath = NULL;
   asprintf(&pexPath, "%s%s", CONFIG_PASCAL_EXECDIR, cName);
+
+  /* We have consumed the name string container, check if we need to free
+   * its string buffer allocation as well.
+   */
+
+  libexec_FreeTmpString(st, nameAddr, nameAlloc);
+
+  /* Verify that asprintf was able to allocate the .pex file name */
+
   if (pexPath == NULL)
     {
       return eNOMEMORY;

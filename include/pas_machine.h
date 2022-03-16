@@ -136,6 +136,7 @@
  * variable is declared with no size.
  */
 
+#define STRING_BUFFER_MAX    0x0fff
 #define STRING_BUFFER_SIZE   INT_ALIGNUP(CONFIG_PASCAL_DEFAULT_STRALLOC)
 
 /* BOOLEAN constant values */

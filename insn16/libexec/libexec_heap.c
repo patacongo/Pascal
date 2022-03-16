@@ -45,12 +45,15 @@
 #include "pas_debug.h"
 #include "pas_errcodes.h"
 #include "pas_error.h"
+
 #include "libexec.h"
 #include "libexec_heap.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+
+/* Alignment helpers */
 
 #define HEAP_ALIGN_SHIFT  (4)
 #define HEAP_ALLOC_UNIT   (1 << HEAP_ALIGN_SHIFT)
@@ -102,6 +105,7 @@ static void libexec_AddChunkToFreeList(struct libexec_s *st,
 {
   freeChunk_t *prevChunk;
   freeChunk_t *freeChunk;
+  uint16_t heapStart = HEAP_ALIGNUP(st->hpb);
 
   /* Find the location to insert the free chunk in the ordered list */
 
@@ -120,7 +124,7 @@ static void libexec_AddChunkToFreeList(struct libexec_s *st,
         }
       else
         {
-          uint16_t nextAddr = st->hpb + freeChunk->next;
+          uint16_t nextAddr = heapStart + freeChunk->next;
           nextChunk         = (freeChunk_t *)ATSTACK(st, nextAddr);
         }
 
@@ -186,6 +190,8 @@ static void libexec_AddChunkToFreeList(struct libexec_s *st,
 static void libexec_RemoveChunkFromFreeList(struct libexec_s *st,
                                             freeChunk_t *freeChunk)
 {
+  uint16_t heapStart = HEAP_ALIGNUP(st->hpb);
+
   /* Check if this is the first chunk in the list */
 
   if (freeChunk->prev == 0)
@@ -198,15 +204,15 @@ static void libexec_RemoveChunkFromFreeList(struct libexec_s *st,
         }
       else
         {
-          uint16_t nextAddr    = st->hpb + freeChunk->next;
+          uint16_t nextAddr    = heapStart + freeChunk->next;
           st->freeChunks       = (freeChunk_t *)ATSTACK(st, nextAddr);
           st->freeChunks->prev = 0;
         }
     }
   else
     {
-      uint16_t     prevAddr  = st->hpb + freeChunk->prev;
-      uint16_t     nextAddr  = st->hpb + freeChunk->next;
+      uint16_t     prevAddr  = heapStart + freeChunk->prev;
+      uint16_t     nextAddr  = heapStart + freeChunk->next;
       freeChunk_t *prevChunk = (freeChunk_t *)ATSTACK(st, prevAddr);
       freeChunk_t *nextChunk = (freeChunk_t *)ATSTACK(st, nextAddr);
 
@@ -222,6 +228,7 @@ static void libexec_DisposeChunk(struct libexec_s *st, freeChunk_t *newChunk)
   freeChunk_t *prevChunk = NULL;
   freeChunk_t *nextChunk = NULL;
   uint16_t addr;
+  uint16_t heapStart = HEAP_ALIGNUP(st->hpb);
   bool merged = false;
 
   /* This chunk is no longer in use */
@@ -232,7 +239,7 @@ static void libexec_DisposeChunk(struct libexec_s *st, freeChunk_t *newChunk)
 
   if (newChunk->chunk.forward != 0)
     {
-      addr      = st->hpb + newChunk->chunk.address +
+      addr      = heapStart + newChunk->chunk.address +
                   newChunk->chunk.forward;
       nextChunk = (freeChunk_t *)ATSTACK(st, addr);
     }
@@ -243,7 +250,7 @@ static void libexec_DisposeChunk(struct libexec_s *st, freeChunk_t *newChunk)
     {
       /* Get the memory chunks before the newly freed one */
 
-      addr      = st->hpb + newChunk->chunk.address -
+      addr      = heapStart + newChunk->chunk.address -
                   newChunk->chunk.back;
       prevChunk = (freeChunk_t *)ATSTACK(st, addr);
 
@@ -300,7 +307,7 @@ static void libexec_DisposeChunk(struct libexec_s *st, freeChunk_t *newChunk)
 
               /* Yes, get the memory chunk after the next chunk */
 
-              addr      = st->hpb + nextChunk->chunk.address +
+              addr      = heapStart + nextChunk->chunk.address +
                           nextChunk->chunk.forward;
               afterThat = (freeChunk_t *)ATSTACK(st, addr);
 
@@ -324,49 +331,61 @@ static void libexec_DisposeChunk(struct libexec_s *st, freeChunk_t *newChunk)
     }
 }
 
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
 /****************************************************************************/
 
-void libexec_InitializeHeap(struct libexec_s *st)
+#ifdef CONFIG_PASCAL_HEAPDEBUG
+static void libexec_DumpHeap(struct libexec_s *st, const char *msg,
+                             uint16_t address)
 {
-  /* We can't use the memory manager if no heap was specified */
+  memChunk_t *chunk;
+  uint16_t heapStart = HEAP_ALIGNUP(st->hpb);
+  uint16_t heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpSize);
+  uint16_t chunkAddr = heapStart;
+  unsigned int chunkNo = 1;
 
-  if (st->hpSize > 2 * HEAP_ALLOC_UNIT)
+  printf("%s: address=%04x\n", msg, address);
+  while (chunkAddr < heapEnd)
     {
-      uint16_t     heapStart = HEAP_ALIGNUP(st->hpb);
-      uint16_t     heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpSize);
-      uint16_t     heapSize;
-      memChunk_t  *terminus;
-      freeChunk_t *initialChunk;
+      /* Print basic chunk information */
 
-      terminus                     = (memChunk_t *)
-                                     ATSTACK(st, heapEnd - HEAP_ALLOC_UNIT);
-      memset(terminus, 0, sizeof(memChunk_t));
-      terminus->forward            = 0;
-      terminus->address            = heapEnd - st->hpb - HEAP_ALLOC_UNIT;
-      terminus->inUse              = 1;
+      chunk = (memChunk_t *)ATSTACK(st, chunkAddr);
 
-      heapSize                     = heapEnd - heapStart - HEAP_ALLOC_UNIT;
-      terminus->back               = heapSize;
+      printf("%4u: address=%04x forward=%04x back=%04x inuse=%u\n",
+             chunkNo, chunk->address, chunk->forward, chunk->back, chunk->inUse);
 
-      initialChunk                 = (freeChunk_t *)ATSTACK(st, heapStart);
-      memset(initialChunk, 0, sizeof(freeChunk_t));
-      initialChunk->chunk.forward  = heapSize;
-      initialChunk->chunk.address  = heapStart - st->hpb;
-      initialChunk->next           = 0;
+      /* Free chunks have free list links as well */
 
-      st->freeChunks               = initialChunk;
+      if (chunk->inUse == 0)
+        {
+          freeChunk_t *freeChunk = (freeChunk_t *)chunk;
+
+          printf("      prev=%04x next=%04x\n",
+                 freeChunk->prev, freeChunk->next);
+        }
+
+      /* The final chunk should have forward == 0 */
+
+      if (chunk->forward == 0)
+        {
+          break;
+        }
+
+      /* Otherwise, set up for the next chunk */
+
+      chunkAddr += chunk->forward;
+      chunkNo++;
     }
 }
+#else
+#  define libexec_DumpHeap(st, msg, address)
+#endif
 
 /****************************************************************************/
 
-int libexec_New(struct libexec_s *st, uint16_t size)
+static uint16_t libexec_Alloc(struct libexec_s *st, uint16_t size)
 {
   freeChunk_t *freeChunk;
+  uint16_t heapStart = HEAP_ALIGNUP(st->hpb);
 
   /* Search the ordered free list for the smallest free chunk that is big
    * enough for this allocation.
@@ -392,7 +411,7 @@ int libexec_New(struct libexec_s *st, uint16_t size)
         }
       else
         {
-          uint16_t nextAddr = st->hpb + freeChunk->next;
+          uint16_t nextAddr = heapStart + freeChunk->next;
           nextChunk = (freeChunk_t *)ATSTACK(st, nextAddr);
         }
 
@@ -412,8 +431,8 @@ int libexec_New(struct libexec_s *st, uint16_t size)
             {
               /* Break off "sub-chunk" for the big free chunk at offset 'size' */
 
-              freeChunk_t *subChunk    =
-                (freeChunk_t *)ATSTACK(st, st->hpb + freeChunk->chunk.address + size);
+              freeChunk_t *subChunk    = (freeChunk_t *)
+                ATSTACK(st, heapStart + freeChunk->chunk.address + size);
 
               subChunk->chunk.forward  = freeChunk->chunk.forward - size;
               subChunk->chunk.inUse    = 0;
@@ -443,8 +462,10 @@ int libexec_New(struct libexec_s *st, uint16_t size)
 
           /* Return the address of the allocated memory */
 
-          PUSH(st, st->hpb + freeChunk->chunk.address + sizeof(memChunk_t));
-          return eNOERROR;
+          libexec_DumpHeap(st, "After allocation",
+            heapStart + freeChunk->chunk.address + sizeof(memChunk_t));
+
+          return heapStart + freeChunk->chunk.address + sizeof(memChunk_t);
         }
 
       /* Set up for the next time through the loop */
@@ -454,20 +475,21 @@ int libexec_New(struct libexec_s *st, uint16_t size)
 
   /* Failed to allocate */
 
-  PUSH(st, 0);
-  return eNEWFAILED;
+  libexec_DumpHeap(st, "Allocation failure", 0);
+  return 0;
 }
 
 /****************************************************************************/
 
-int libexec_Dispose(struct libexec_s *st, uint16_t address)
+static int libexec_Free(struct libexec_s *st, uint16_t address)
 {
   freeChunk_t *freeChunk;
+  uint16_t heapStart = HEAP_ALIGNUP(st->hpb);
 
   /* Verify that the address being freed lies in the heap region */
 
-  if (address < st->hpb + sizeof(memChunk_t) ||
-      address >= (st->hpb + st->hpSize - HEAP_ALLOC_UNIT))
+  if (address < heapStart + sizeof(memChunk_t) ||
+      address >= (heapStart + st->hpSize - HEAP_ALLOC_UNIT))
     {
       return eHUH;
     }
@@ -482,5 +504,111 @@ int libexec_Dispose(struct libexec_s *st, uint16_t address)
   freeChunk->prev    = 0;
 
   libexec_DisposeChunk(st, freeChunk);
+  libexec_DumpHeap(st, "After free", address);
   return eNOERROR;
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************/
+
+void libexec_InitializeHeap(struct libexec_s *st)
+{
+  /* We can't use the memory manager if no heap was specified */
+
+  if (st->hpSize > 2 * HEAP_ALLOC_UNIT)
+    {
+      uint16_t     heapStart = HEAP_ALIGNUP(st->hpb);
+      uint16_t     heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpSize);
+      uint16_t     heapSize;
+      memChunk_t  *terminus;
+      freeChunk_t *initialChunk;
+
+      terminus                     = (memChunk_t *)
+                                     ATSTACK(st, heapEnd - HEAP_ALLOC_UNIT);
+      memset(terminus, 0, sizeof(memChunk_t));
+      terminus->forward            = 0;
+      terminus->address            = heapEnd - heapStart - HEAP_ALLOC_UNIT;
+      terminus->inUse              = 1;
+
+      heapSize                     = heapEnd - heapStart - HEAP_ALLOC_UNIT;
+      terminus->back               = heapSize;
+
+      initialChunk                 = (freeChunk_t *)ATSTACK(st, heapStart);
+      memset(initialChunk, 0, sizeof(freeChunk_t));
+      initialChunk->chunk.forward  = heapSize;
+      initialChunk->chunk.address  = heapStart - heapStart;
+      initialChunk->next           = 0;
+
+      st->freeChunks               = initialChunk;
+
+      libexec_DumpHeap(st, "Initially", heapStart);
+    }
+}
+
+/****************************************************************************/
+
+int libexec_New(struct libexec_s *st, uint16_t size)
+{
+  uint16_t addr = 0;
+  int errorCode = eNEWFAILED;
+
+  if (size > 0)
+    {
+      addr = libexec_Alloc(st, size);
+      if (addr > 0)
+        {
+          errorCode = eNOERROR;
+        }
+    }
+
+  PUSH(st, addr);
+  return errorCode;
+}
+
+/****************************************************************************/
+
+int libexec_Dispose(struct libexec_s *st, uint16_t address)
+{
+  return libexec_Free(st, address);
+}
+
+/****************************************************************************/
+
+uint16_t libexec_AllocTmpString(struct libexec_s *st, uint16_t reqSize,
+                                uint16_t *allocSize)
+{
+  uint16_t addr = 0;
+
+  if (reqSize > 0 && reqSize <= STRING_BUFFER_MAX)
+    {
+      addr = libexec_Alloc(st, reqSize);
+      if (addr > 0)
+        {
+          *allocSize = reqSize | HEAP_STRING;
+        }
+    }
+
+  return addr;
+}
+
+/****************************************************************************/
+
+int libexec_FreeTmpString(struct libexec_s *st, uint16_t allocAddr,
+                          uint16_t allocSize)
+{
+  int errorCode = eNOERROR;
+
+  /* Does this string buffer allocation lie in the heap? */
+
+  if ((allocSize & HEAP_STRING) != 0)
+    {
+      /* Yes, free it */
+
+      errorCode = libexec_Free(st, allocAddr);
+    }
+
+  return errorCode;
 }

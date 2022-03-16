@@ -99,6 +99,7 @@ Kconfig:
 	$(Q) echo "	default y" >>Kconfig
 	$(Q) echo "" >>Kconfig
 	$(Q) echo "source $(PASCAL)/tools/Kconfig.main" >>Kconfig
+	$(Q) echo "source $(PASCAL)/insn16/Kconfig.insn" >>Kconfig
 	$(Q) echo "source $(PASCAL)/papps/Kconfig.papps" >>Kconfig
 	$(Q) echo "" >>Kconfig
 	$(Q) echo "endif # PASCAL" >>Kconfig

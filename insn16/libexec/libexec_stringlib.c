@@ -65,15 +65,14 @@ static int      libexec_StrInit(struct libexec_s *st, uint16_t strVarAddr,
                    uint16_t strAllocSize);
 static void     libexec_StrCpy(struct libexec_s *st, uint16_t srcBufferAddr,
                    uint16_t srcStringSize, uint16_t destVarAddr,
-                   uint16_t destBufferSize, uint16_t varOffset);
+                   uint16_t varOffset);
 static int      libexec_BStr2Str(struct libexec_s *st, uint16_t arrayAddress,
                    uint16_t arraySize);
 static int      libexec_Str2BStr(struct libexec_s *st, uint16_t arrayAddress,
                    uint16_t arraySize, uint16_t stringBufferAddress,
                    uint16_t stringSize, uint16_t offset);
-static int      libexec_StrDup(struct libexec_s *st, uint16_t strAlloc,
-                   uint16_t strAddr, uint16_t strSize,
-                   uint16_t *strClone);
+static int      libexec_StrDup(struct libexec_s *st, uint16_t strAddr,
+                   uint16_t strSize, uint16_t *strClone);
 static int      libexec_StrCat(struct libexec_s *st, uint16_t srcStringAddr,
                    uint16_t srcStringSize, uint16_t destStringAddr,
                    uint16_t *pDestStringSize, uint16_t destStrAlloc);
@@ -81,7 +80,7 @@ static int      libexec_StrCatC(struct libexec_s *st, char srcChar,
                    uint16_t destStringAddr, uint16_t *pDestStringSize,
                    uint16_t destStrAlloc);
 static int      libexec_FillChar(struct libexec_s *st, ustack_t *sptr,
-                   uint16_t count, uint8_t value, uint16_t strAlloc);
+                   uint16_t count, uint8_t value);
 
 /****************************************************************************
  * Private Functions
@@ -120,17 +119,26 @@ static int libexec_StrInit(struct libexec_s *st, uint16_t strVarAddr,
 
 static void libexec_StrCpy(struct libexec_s *st, uint16_t srcBufferAddr,
                            uint16_t srcStringSize, uint16_t destVarAddr,
-                           uint16_t destBufferSize, uint16_t varOffset)
+                           uint16_t varOffset)
 {
   /* Copy pascal string to a pascal string */
 
-  uint16_t destBufferAddr;
+  uint16_t   *strPtr;
+  uint16_t    strAlloc;
+  uint16_t    destBufferAddr;
+  uint16_t    destBufferSize;
   const char *src;
-  char *dest;
+  char       *dest;
 
   /* Offset the destination address */
 
   destVarAddr += varOffset;
+
+  /* Get the allocation size of the string destination */
+
+  strPtr         = (uint16_t *)&st->dstack.b[destVarAddr];
+  strAlloc       = strPtr[sSTRING_ALLOC_OFFSET / sINT_SIZE];
+  destBufferSize = strAlloc & HEAP_SIZE_MASK;
 
   /* Do nothing if the source and destination buffer addresses are the
    * same string buffer.  This happens normally on cases like:
@@ -173,44 +181,41 @@ static int libexec_BStr2Str(struct libexec_s *st, uint16_t arrayAddress,
   const char *src;
   char *dest;
   uint16_t bufferAddress;
+  uint16_t bufferAllocation;
   int errorCode = eNOERROR;
-  int len;
+  int stringLength;
 
   /* Get a pointer to the array in the stack */
 
-  src  = (const char *)ATSTACK(st, arrayAddress);
+  src = (const char *)ATSTACK(st, arrayAddress);
 
   /* Get the length of the string in the array.  Here we assume that the
    * string is represented as a NUL-terminated C string.
    */
 
-  len = strnlen(src, arraySize);
+  stringLength = strnlen(src, arraySize);
 
   /* Clip the string if necessary to fit into the string buffer allocation */
 
-  if (len > STRING_BUFFER_SIZE)
+  if (stringLength > STRING_BUFFER_SIZE)
    {
-     len = STRING_BUFFER_SIZE;
+     stringLength = STRING_BUFFER_SIZE;
    }
 
-  /* Check if there is space on the string stack for the new string buffer. */
+  /* Allocate the temporary string from heap */
 
-
-  if (st->csp + STRING_BUFFER_SIZE >= st->spb)
+  bufferAddress = libexec_AllocTmpString(st, STRING_BUFFER_SIZE,
+                                         &bufferAllocation);
+  if(bufferAddress == 0)
     {
-      errorCode = eSTRSTKOVERFLOW;
+      errorCode = eNOMEMORY;
     }
   else
     {
-      /* Allocate a string buffer on the string stack for the new string. */
-
-      bufferAddress = INT_ALIGNUP(st->csp);
-      st->csp       = bufferAddress + STRING_BUFFER_SIZE;
-
       /* Copy the array into the string buffer */
 
       dest = (char *)ATSTACK(st, bufferAddress);
-      memcpy(dest, src, len);
+      memcpy(dest, src, stringLength);
 
       /* Put the new string at the top of the stack.  Order:
        *
@@ -218,9 +223,9 @@ static int libexec_BStr2Str(struct libexec_s *st, uint16_t arrayAddress,
        *   TOS(n + 1) = String size
        */
 
-      PUSH(st, len);                /* String size */
-      PUSH(st, bufferAddress);      /* String buffer address */
-      PUSH(st, STRING_BUFFER_SIZE); /* String buffer allocated size */
+      PUSH(st, stringLength);     /* String length */
+      PUSH(st, bufferAddress);    /* String buffer address */
+      PUSH(st, bufferAllocation); /* String buffer allocated size */
     }
 
   return errorCode;
@@ -257,34 +262,28 @@ static int libexec_Str2BStr(struct libexec_s *st, uint16_t arrayAddress,
   return errorCode;
 }
 
-static int libexec_StrDup(struct libexec_s *st, uint16_t strAlloc,
-                   uint16_t strAddr, uint16_t strSize,
-                   uint16_t *StrClone)
+static int libexec_StrDup(struct libexec_s *st, uint16_t strAddr,
+                          uint16_t strSize, uint16_t *StrClone)
 {
   const char *copySource;
   char *copyDest;
   int errorCode = eNOERROR;
   uint16_t cloneAddr;
+  uint16_t strAlloc;
 
-  /* How big should we make the dup'ed clone string?  The same size might to
+  /* Allocated string memory from the heap for the temporary string.
+   *
+   * How big should we make the dup'ed clone string?  The same size might to
    * small so let's use the default to be safe.
    */
 
-  /* Check if there is space on the string stack for the new string */
-
-  if (st->csp + STRING_BUFFER_SIZE >= st->spb)
+  cloneAddr = libexec_AllocTmpString(st, STRING_BUFFER_SIZE, &strAlloc);
+  if (cloneAddr == 0)
     {
-      errorCode = eSTRSTKOVERFLOW;
+      errorCode = eNOMEMORY;
     }
   else
     {
-      /* Allocate space on the string stack for the new string of the same
-       * size.
-       */
-
-      cloneAddr = INT_ALIGNUP(st->csp);
-      st->csp  += STRING_BUFFER_SIZE;
-
       /* Limit the size to the maximum size of the allocated string buffer.
        * This can happen in cases where the string address lies in RO string
        * memory.
@@ -305,7 +304,7 @@ static int libexec_StrDup(struct libexec_s *st, uint16_t strAlloc,
 
       StrClone[BTOISTACK(sSTRING_SIZE_OFFSET)]  = strSize;
       StrClone[BTOISTACK(sSTRING_DATA_OFFSET)]  = cloneAddr;
-      StrClone[BTOISTACK(sSTRING_ALLOC_OFFSET)] = STRING_BUFFER_SIZE;
+      StrClone[BTOISTACK(sSTRING_ALLOC_OFFSET)] = strAlloc;
     }
 
   return errorCode;
@@ -376,8 +375,9 @@ static int libexec_StrCatC(struct libexec_s *st, char srcChar,
 /* Fill string s with character value until s is count-1 char long. */
 
 static int libexec_FillChar(struct libexec_s *st, ustack_t *sptr, uint16_t count,
-                            uint8_t value, uint16_t strAlloc)
+                            uint8_t value)
 {
+  uint16_t  strAlloc;
   uint16_t  strAddr;
   uint16_t  strSize;
   uint16_t  limit;
@@ -388,10 +388,11 @@ static int libexec_FillChar(struct libexec_s *st, ustack_t *sptr, uint16_t count
    * target string allocation.
    */
 
-  strAddr = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
-  strSize = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+  strAlloc = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)] & HEAP_SIZE_MASK;
+  strAddr  = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
+  strSize  = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
-  dest = (char *)ATSTACK(st, strAddr) + strSize;
+  dest     = (char *)ATSTACK(st, strAddr) + strSize;
 
   /* Pad until the length is count - 1 characters long or until there is no
    * available space in the allocated string memory.
@@ -429,12 +430,10 @@ static int libexec_FillChar(struct libexec_s *st, ustack_t *sptr, uint16_t count
 uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 {
   ustack_t  uparm1;
-  ustack_t  uparm2;
   ustack_t  offset;
   ustack_t  size;
   pasSize_t addr1;
   pasSize_t addr2;
-  char     *src;
   char     *dest;
   char     *name;
   int       errorCode = eNOERROR;
@@ -458,7 +457,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
       /* "Pop" in the input parameters from the stack */
 
-      DISCARD(st, 1);  /* Source string buffer allocation */
+      POP(st, uparm1); /* Source string buffer allocation */
       POP(st, addr2);  /* Address of source string buffer */
       POP(st, size);   /* Length of valid source data */
       POP(st, addr1);  /* Address of dest string variable  */
@@ -469,23 +468,21 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest string variable  */
-      DISCARD(st, 1);  /* Source string buffer allocation */
+      POP(st, uparm1); /* Source string buffer allocation */
       POP(st, addr2);  /* Address of source string buffer */
       POP(st, size);   /* Length of valid source data */
 
     strcpy_common :
       {
-        uint16_t *strPtr;
-        uint16_t  strAlloc;
-
-        /* Get the allocation size of the string destination */
-
-        strPtr = (uint16_t *)&st->dstack.b[addr1];
-        strAlloc = strPtr[sSTRING_ALLOC_OFFSET / sINT_SIZE];
-
         /* And perform the string copy */
 
-        libexec_StrCpy(st, addr2, size, addr1, strAlloc, 0);
+        libexec_StrCpy(st, addr2, size, addr1, 0);
+
+        /* A string was consumed so we may have to free the temporary
+         * heap memory allocation for its string buffer.
+         */
+
+        libexec_FreeTmpString(st, addr2, uparm1);
       }
       break;
 
@@ -508,7 +505,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
       /* "Pop" in the input parameters from the stack */
 
-      DISCARD(st, 1);  /* Source string buffer allocation */
+      POP(st, uparm1); /* Source string buffer allocation */
       POP(st, addr2);  /* Address of source string buffer */
       POP(st, size);   /* Length of valid source data */
       POP(st, offset); /* Offset from dest string address */
@@ -520,27 +517,22 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
       /* "Pop" in the input parameters from the stack */
 
       POP(st, addr1);  /* Address of dest string variable  */
-      DISCARD(st, 1);  /* Source string buffer allocation */
+      POP(st, uparm1); /* Source string buffer allocation */
       POP(st, addr2);  /* Address of source string buffer */
       POP(st, size);   /* Length of valid source data */
       POP(st, offset); /* Offset from dest string address */
 
     strcpyx_common :
       {
-        uint16_t *strPtr;
-        uint16_t  strAlloc;
-
-        /* Get the allocation size of the string destination.
-         * REVISIT:  This is wrong.  We need to apply the indexing before
-         * accing the dest string array entry.
-         */
-
-        strPtr = (uint16_t *)&st->dstack.b[addr1];
-        strAlloc = strPtr[sSTRING_ALLOC_OFFSET / sINT_SIZE];
-
         /* And perform the string copy */
 
-        libexec_StrCpy(st, addr2, size, addr1, strAlloc, offset);
+        libexec_StrCpy(st, addr2, size, addr1, offset);
+
+        /* A string was consumed so we may have to free the temporary
+         * heap memory allocation for its string buffer.
+         */
+
+        libexec_FreeTmpString(st, addr2, uparm1);
       }
       break;
 
@@ -589,19 +581,33 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
      */
 
     case lbSTR2BSTR :
+      {
+        uint16_t arrayAddr;
+        uint16_t arraySize;
+        uint16_t strAlloc;
+        uint16_t strAddr;
+        uint16_t strSize;
 
-      /* "Pop" in the input parameters from the stack */
+        /* "Pop" in the input parameters from the stack */
 
-      POP(st, addr1);  /* Address of the array */
-      POP(st, uparm1); /* Size of the array */
+        POP(st, arrayAddr); /* Address of the array */
+        POP(st, arraySize); /* Size of the array */
 
-      DISCARD(st, 1);  /* Discard the size of the allocated string buffer */
-      POP(st, addr2);  /* Address of the array */
-      POP(st, uparm2); /* Size of the array */
+        POP(st, strAlloc);  /* Size of the allocated string buffer */
+        POP(st, strAddr);  /* Address of the array */
+        POP(st, strSize); /* Size of the array */
 
-      /* And perform the copy */
+        /* And perform the copy */
 
-      errorCode = libexec_Str2BStr(st, addr1, uparm1, addr2, uparm2, 0);
+        errorCode = libexec_Str2BStr(st, arrayAddr, arraySize, strAddr,
+                                     strSize, 0);
+
+        /* We consumed a temporary string.  It may be necessary to
+         * free memory associated with it.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
+      }
       break;
 
     /* Copy a pascal string into a binary file character array.  Use when a
@@ -624,21 +630,36 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
      */
 
     case lbSTR2BSTRX :
+      {
+        uint16_t arrayAddr;
+        uint16_t arraySize;
+        uint16_t arrayOffset;
+        uint16_t strAlloc;
+        uint16_t strAddr;
+        uint16_t strSize;
 
-      /* "Pop" in the input parameters from the stack */
+        /* "Pop" in the input parameters from the stack */
 
-      POP(st, addr1);  /* Address of the array */
-      POP(st, uparm1); /* Size of the array */
+        POP(st, arrayAddr);   /* Address of the array */
+        POP(st, arraySize);   /* Size of the array */
 
-      DISCARD(st, 1);  /* Discard the size of the allocated string buffer */
-      POP(st, addr2);  /* Address of the string buffer */
-      POP(st, uparm2); /* Size of the string */
+        POP(st, strAlloc);    /* Size of the allocated string buffer */
+        POP(st, strAddr);     /* Address of the array */
+        POP(st, strSize);     /* Size of the array */
 
-      POP(st, offset); /* Array address offset */
+        POP(st, arrayOffset); /* Array address offset */
 
-      /* And perform the copy */
+        /* And perform the copy */
 
-      errorCode = libexec_Str2BStr(st, addr1, uparm1, addr2, uparm2, offset);
+        errorCode = libexec_Str2BStr(st, arrayAddr, arraySize, strAddr,
+                                     strSize, arrayOffset);
+
+        /* We consumed a temporary string.  It may be necessary to
+         * free memory associated with it.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
+      }
       break;
 
       /* Initialize a new string variable. Create a string buffer.  This
@@ -687,30 +708,25 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRTMP :
-      /* Check if there is space on the string stack for the new string
-       * buffer.
-       */
 
-      if (st->csp + STRING_BUFFER_SIZE >= st->spb)
+      /* Allocate a string buffer from the heap for the new temporary string. */
+
+      addr1 = libexec_AllocTmpString(st, STRING_BUFFER_SIZE, &uparm1);
+      if (addr1 == 0)
         {
-          errorCode = eSTRSTKOVERFLOW;
+          errorCode = eNOMEMORY;
         }
       else
         {
-          /* Allocate a string buffer on the string stack for the new string. */
-
-          addr1   = INT_ALIGNUP(st->csp);
-          st->csp = addr1 + STRING_BUFFER_SIZE;
-
           /* Create the new string.  Order:
            *
            *   TOS(n)     = 16-bit pointer to the string data.
            *   TOS(n + 1) = String size
            */
 
-          PUSH(st, 0);                  /* String size */
-          PUSH(st, addr1);              /* String buffer address */
-          PUSH(st, STRING_BUFFER_SIZE); /* String buffer address */
+          PUSH(st, 0);       /* String size */
+          PUSH(st, addr1);   /* String buffer address */
+          PUSH(st, uparm1);  /* String buffer address */
         }
       break;
 
@@ -731,19 +747,27 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
     case lbSTRDUP :
       {
-        uint16_t *sptr;
-        uint16_t alloc;
+        uint16_t *strPtr;
+        uint16_t strAlloc;
+        uint16_t strAddr;
+        uint16_t strSize;
 
         /* Get the parameters from the stack (leaving the string reference
          * in place).
          */
 
-        alloc     = TOS(st, 0);  /* Original string allocated buffer size */
-        addr1     = TOS(st, 1);  /* Original string data pointer */
-        size      = TOS(st, 2);  /* Original string size */
+        strAlloc  = TOS(st, 0);  /* Original string allocated buffer size */
+        strAddr   = TOS(st, 1);  /* Original string data pointer */
+        strSize   = TOS(st, 2);  /* Original string size */
 
-        sptr      = (uint16_t *)&TOS(st, 2);
-        errorCode = libexec_StrDup(st, alloc, addr1, size, sptr);
+        strPtr    = (uint16_t *)&TOS(st, 2);
+        errorCode = libexec_StrDup(st, strAddr, strSize, strPtr);
+
+        /* A string was consumed so we may have to free the temporary
+         * heap memory allocation for its string buffer.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
       }
       break;
 
@@ -760,33 +784,31 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        */
 
     case lbMKSTKC :
-      /* Check if there is space on the string stack for the new string */
+      {
+        uint16_t strAlloc;
+        uint16_t strAddr;
 
-      if (st->csp + STRING_BUFFER_SIZE >= st->spb)
-        {
-          errorCode = eSTRSTKOVERFLOW;
-        }
-      else
-        {
-          /* Allocate space on the string stack for the new string */
+        /* Allocate string memory for the temporary string from the stack */
 
-          addr2    = INT_ALIGNUP(st->csp);
-          st->csp += STRING_BUFFER_SIZE;             /* Allocate max size */
+        strAddr = libexec_AllocTmpString(st, STRING_BUFFER_SIZE, &strAlloc);
+        if (strAddr == 0)
+          {
+            errorCode = eNOMEMORY;
+          }
+        else
+          {
+            /* Copy the character into the string stack */
 
-          /* Save the length at the beginning of the copy */
+            dest   = (char *)ATSTACK(st, strAddr);  /* Pointer to new string */
+           *dest++ = TOS(st, 0);                    /* Save character as string */
 
-          dest     = (char *)ATSTACK(st, addr2);     /* Pointer to new string */
+            /* Update the stack content */
 
-          /* Copy the character into the string stack */
-
-          *dest++  = TOS(st, 0);                     /* Save character as string */
-
-          /* Update the stack content */
-
-          TOS(st, 0) = 1;                            /* String length */
-          PUSH(st, addr2);                           /* String buffer address */
-          PUSH(st, STRING_BUFFER_SIZE);              /* String buffer size */
-        }
+            TOS(st, 0) = 1;                         /* String length */
+            PUSH(st, strAddr);                      /* String buffer address */
+            PUSH(st, strAlloc);                     /* String buffer size */
+          }
+      }
       break;
 
       /* Concatenate a string to the end of a string.
@@ -807,19 +829,32 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCAT :
+      {
+        uint16_t srcAlloc;
+        uint16_t srcAddr;
+        uint16_t srcSize;
+        uint16_t destAlloc;
 
-      /* Get the parameters from the stack (leaving the dest string info in
-       * place).
-       */
+        /* Get the parameters from the stack (leaving the dest string info
+         * in place).
+         */
 
-      DISCARD(st, 1);      /* Discard the source string allocation size */
-      POP(st, addr1);      /* Source string stack address */
-      POP(st, uparm1);     /* Source string size */
+        POP(st, srcAlloc);  /* Source string alloation size */
+        POP(st, srcAddr);   /* Source string stack address */
+        POP(st, srcSize);   /* Source string size */
 
-      /* Concatenate the strings */
+        /* Concatenate the strings */
 
-      errorCode = libexec_StrCat(st, addr1, uparm1, TOS(st, 1), &TOS(st, 2),
-                                 TOS(st, 0));
+        destAlloc = TOS(st, 0) & HEAP_SIZE_MASK;
+        errorCode = libexec_StrCat(st, srcAddr, srcSize, TOS(st, 1),
+                                   &TOS(st, 2), destAlloc);
+
+        /* A string was consumed so we may have to free the temporary
+         * heap memory allocation for its string buffer.
+         */
+
+        libexec_FreeTmpString(st, srcAddr, srcAlloc);
+      }
       break;
 
       /* Concatenate a character to the end of a string.
@@ -838,15 +873,18 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        */
 
     case lbSTRCATC :
+      {
+        uint16_t ch;
 
-      /* Get the parameters from the stack (leaving the string reference
-       * in place).
-       */
+        /* Get the parameters from the stack (leaving the string reference
+         * in place).
+         */
 
-      POP(st, uparm1);    /* Character to concatenate */
+        POP(st, ch);    /* Character to concatenate */
 
-      errorCode = libexec_StrCatC(st, uparm1, TOS(st, 1), &TOS(st, 2),
-                                  TOS(st, 0));
+        errorCode = libexec_StrCatC(st, ch, TOS(st, 1), &TOS(st, 2),
+                                    TOS(st, 0));
+      }
       break;
 
       /* Compare two pascal strings
@@ -866,33 +904,42 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
     case lbSTRCMP :
       {
+        const char *str1Ptr;
+        const char *str2Ptr;
+        uint16_t str1Alloc;
+        uint16_t str1Addr;
+        uint16_t str1Size;
+        uint16_t str2Alloc;
+        uint16_t str2Addr;
+        uint16_t str2Size;
         int result;
 
         /* Get the parameters from the stack (leaving space for the
          * return value);
          */
 
-        DISCARD(st, 1);      /* Discard allocation size of string2 buffer */
-        POP(st, addr2);      /* Address of string2 data */
-        POP(st, uparm2);     /* Length of string2 */
+        POP(st, str2Alloc);    /* Discard allocation size of string2 buffer */
+        POP(st, str2Addr);     /* Address of string2 data */
+        POP(st, str2Size);     /* Length of string2 */
 
-        DISCARD(st, 1);      /* Discard allocation size of string1 buffer */
-        POP(st, addr1);      /* Address of string1 data */
-        uparm1 = TOS(st, 0); /* Length of string1 */
+        POP(st, str1Alloc);    /* Discard allocation size of string1 buffer */
+        POP(st, str1Addr);     /* Address of string1 data */
+        str1Size = TOS(st, 0); /* Length of string1 */
 
         /* Get full address */
 
-        dest   = (char *)ATSTACK(st, addr1);
-        src    = (char *)ATSTACK(st, addr2);
+        str1Ptr = (const char *)ATSTACK(st, str1Addr);
+        str2Ptr = (const char *)ATSTACK(st, str2Addr);
 
-        /* If name1 is shorter than name2, then we can only return
-         * -1 (less than) or +1 greater than.  If the substrings
-         * of length of name1 are equal, then we return less than.
+        /* If string1 is not the same length as string2, then we can only
+         * return -1 (string1 less than string2) or +1 (string1 greater
+         * than string2).  If the strings are the same length, then we
+         * can also return 0 (string1 equal string2).
          */
 
-        if (uparm1 < uparm2)
+        if (str1Size < str2Size)
           {
-            result = memcmp(dest, src, uparm1);
+            result = memcmp(str1Ptr, str2Ptr, str1Size);
             if (result == 0) result = -1;
           }
 
@@ -901,9 +948,9 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
          * of length of name2 are equal, then we return greater than.
          */
 
-        else if (uparm1 > uparm2)
+        else if (str1Size > str2Size)
           {
-            result = memcmp(dest, src, uparm2);
+            result = memcmp(str1Ptr, str2Ptr, str2Size);
             if (result == 0) result = 1;
           }
 
@@ -913,8 +960,17 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
         else
           {
-            result = memcmp(dest, src, uparm1);
+            result = memcmp(str1Ptr, str2Ptr, str1Size);
           }
+
+        /* We consumed two temporary strings and probably need to free
+         * temporary string heap allocations.
+         */
+
+        libexec_FreeTmpString(st, str1Addr, str1Alloc);
+        libexec_FreeTmpString(st, str2Addr, str2Alloc);
+
+        /* Return the result of the comparison */
 
         TOS(st, 0) = result;
       }
@@ -939,63 +995,68 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
     case lbCOPYSUBSTR :
       {
-        uint16_t alloc;
+        const char *strPtr;
+        char       *subStrPtr;
+        uint16_t    subStrSize;
+        uint16_t    subStrPos;
+        uint16_t    srcAlloc;
+        uint16_t    srcAddr;
+        uint16_t    srcSize;
+        uint16_t    subStrAlloc;
+        uint16_t    subStrAddr;
 
-        POP(st, size);
-        POP(st, offset);
-        alloc  = TOS(st, 0);
-        addr1  = TOS(st, 1);
-        uparm1 = TOS(st, 2);
-
-        /* Initialize a temporary string of the same size on the stack.
-         *
-         * First, check if there is space on the string stack for the new string
-         * buffer.
+        /* Get the parameters from the stack, leaving space for the
+         * return substring.
          */
 
-        if (st->csp + alloc >= st->spb)
+        POP(st, subStrSize);
+        POP(st, subStrPos);
+
+        srcAlloc = TOS(st, 0);
+        srcAddr  = TOS(st, 1);
+        srcSize  = TOS(st, 2);
+
+        /* Allocate string memory for the temporary substring from the heap */
+
+        subStrAddr = libexec_AllocTmpString(st, srcAlloc & HEAP_SIZE_MASK,
+                                            &subStrAlloc);
+        if (subStrAddr == 0)
           {
-            errorCode = eSTRSTKOVERFLOW;
+            errorCode = eNOMEMORY;
           }
         else
           {
-            /* Allocate and initialize a string buffer on the string stack for
-             * the new string.
-             */
-
-            addr2   = INT_ALIGNUP(st->csp);
-            st->csp = addr2 + alloc;
-
-            TOS(st, 1) = addr2;
+            TOS(st, 0) = subStrAlloc;
+            TOS(st, 1) = subStrAddr;
             TOS(st, 2) = 0;
 
             /* Limit the indices to fit within the string */
 
-            if (offset >= 1 && offset <= uparm1 && size > 0)
+            if (subStrPos >= 1 && subStrPos <= srcSize && subStrSize > 0)
               {
                 /* Make the character position a zero-based index */
 
-                offset--;
+                subStrPos--;
 
                 /* Limit the substring size if necesssary */
 
-                if (size > alloc)
+                if (subStrSize > srcAlloc)
                   {
-                    size = alloc;
+                    subStrSize = srcAlloc;
                   }
 
-                if (offset + size > uparm1)
+                if (subStrPos + subStrSize > srcSize)
                   {
-                    size = uparm1 - offset;
+                    subStrSize = srcSize - subStrPos;
                   }
 
                 /* And copy the substring */
 
-                src  = (char *)ATSTACK(st, addr1);
-                dest = (char *)ATSTACK(st, addr2);
-                memcpy(dest, &src[offset], size);
+                strPtr    = (char *)ATSTACK(st, srcAddr);
+                subStrPtr = (char *)ATSTACK(st, subStrAddr);
+                memcpy(subStrPtr, &strPtr[subStrPos], subStrSize);
 
-                TOS(st, 2) = size;
+                TOS(st, 2) = subStrSize;
               }
           }
       }
@@ -1028,25 +1089,31 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
         char *subStrStack;
         char *cSubStr;
         char *result;
+        uint16_t strAlloc;
+        uint16_t strAddr;
+        uint16_t strSize;
+        uint16_t subStrAlloc;
+        uint16_t subStrAddr;
+        uint16_t subStrSize;
 
         POP(st, pos);
 
-        DISCARD(st, 1);
-        POP(st, addr1);
-        POP(st, uparm1);
+        POP(st, strAlloc);
+        POP(st, strAddr);
+        POP(st, strSize);
 
-        DISCARD(st, 1);
-        POP(st, addr2);
-        POP(st, uparm2);
+        POP(st, subStrAlloc);
+        POP(st, subStrAddr);
+        POP(st, subStrSize);
 
         /* Convert strings to C strings */
 
-        saveCsp   = st->csp;
-        strStack  = (char *)ATSTACK(st, addr1);
-        cStr      = libexec_MkCString(st, strStack, uparm1, true);
+        saveCsp     = st->csp;
+        strStack    = (char *)ATSTACK(st, strAddr);
+        cStr        = libexec_MkCString(st, strStack, strSize, true);
 
-        subStrStack = (char *)ATSTACK(st, addr2);
-        cSubStr     = libexec_MkCString(st, subStrStack, uparm2, false);
+        subStrStack = (char *)ATSTACK(st, subStrAddr);
+        cSubStr     = libexec_MkCString(st, subStrStack, subStrSize, false);
         offset      = 0;
 
         if (pos < 1)
@@ -1075,6 +1142,13 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
         st->csp = saveCsp;
         PUSH(st, offset);
+
+        /* We consumed two temporary strings and probably need to free
+         * temporary string heap allocations.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
+        libexec_FreeTmpString(st, subStrAddr, subStrAlloc);
       }
       break;
 
@@ -1093,71 +1167,86 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
     case lbINSERTSTR :
       {
-        ustack_t *dptr;
-        ustack_t ulimit1;
-        ustack_t ulimit2;
-        ustack_t alloc;
-        int i;
-        int j;
+        uint16_t   *destStrPtr;
+        char       *destPtr;
+        const char *srcPtr;
+        uint16_t    ulimit1;
+        uint16_t    ulimit2;
+        uint16_t    strPos;
+        uint16_t    destStack;
+        uint16_t    destAlloc;
+        uint16_t    destAddr;
+        uint16_t    destSize;
+        uint16_t    srcAlloc;
+        uint16_t    srcAddr;
+        uint16_t    srcSize;
+        int         i;
+        int         j;
 
-        POP(st, offset);   /* One-based position of first character to delete */
-        POP(st, addr2);    /* Address of target string variable */
+        POP(st, strPos);    /* One-based position of first character to delete */
+        POP(st, destStack); /* Stack address of target string variable */
 
         /* Get the string to be modified */
 
-        dptr     = (ustack_t *)ATSTACK(st, addr2);
-        alloc    = dptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
-        addr1    = dptr[BTOISTACK(sSTRING_DATA_OFFSET)];
-        uparm1   = dptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+        destStrPtr = (uint16_t *)ATSTACK(st, destStack);
+        destAlloc  = destStrPtr[BTOISTACK(sSTRING_ALLOC_OFFSET)] & HEAP_SIZE_MASK;
+        destAddr   = destStrPtr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        destSize   = destStrPtr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
         /* Get the source string to be inserted */
 
-        DISCARD(st, 1);    /* Discard the size of the source string buffer */
-        POP(st, addr2);    /* Get the address of the source string buffer */
-        POP(st, uparm2);   /* and the length of the source string */
+        POP(st, srcAlloc); /* Size of the source string buffer allocation */
+        POP(st, srcAddr);  /* Get the address of the source string buffer */
+        POP(st, srcSize);  /* and the length of the source string */
 
         /* Make the character position a zero-based index */
 
-        if (--offset < 0)
+        if (--strPos < 0)
           {
-            offset = 0;
+            strPos = 0;
           }
 
-        /* Open up a space for the string by movi text at the end of the
+        /* Open up a space for the string by moving text at the end of the
          * string.
          */
 
-        dest = (char *)ATSTACK(st, addr1);
+        destPtr = (char *)ATSTACK(st, destAddr);
 
-        ulimit1 = uparm1 + uparm2;
-        if (ulimit1 > alloc)
+        ulimit1 = destSize + srcSize;
+        if (ulimit1 > destAlloc)
           {
-            ulimit1 = alloc;
+            ulimit1 = destAlloc;
           }
 
-        for (i = ulimit1 - uparm2 - 1, j = ulimit1 - 1; i >= offset; i--, j--)
+        for (i = ulimit1 - srcSize - 1, j = ulimit1 - 1; i >= strPos; i--, j--)
           {
-            dest[j] = dest[i];
+            destPtr[j] = destPtr[i];
           }
 
         /* Copy the source string into this space. */
 
-        src = (char *)ATSTACK(st, addr2);
+        srcPtr = (const char *)ATSTACK(st, srcAlloc);
 
-        ulimit2 = uparm2 + offset;
+        ulimit2 = srcSize + strPos;
         if (ulimit2 > ulimit1)
           {
             ulimit1 = ulimit1;
           }
 
-        for (i = 0, j = offset; j < ulimit2; i++, j++)
+        for (i = 0, j = strPos; j < ulimit2; i++, j++)
           {
-            dest[j] = src[i];
+            destPtr[j] = srcPtr[i];
           }
 
         /* Adjust the size of string */
 
-        dptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = ulimit1;
+        destPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] = ulimit1;
+
+        /* We consumed a temporary string and probably need to free
+         * the temporary string's heap allocations\.
+         */
+
+        libexec_FreeTmpString(st, srcAddr, srcAlloc);
       }
       break;
 
@@ -1174,44 +1263,49 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
     case lbDELSUBSTR :
       {
-        ustack_t *sptr;
+        uint16_t *strPtr;
+        uint16_t  numChars;
+        uint16_t  strPos;
+        uint16_t  strStack;
+        uint16_t  strAddr;
+        uint16_t  strSize;
         int i;
         int j;
 
-        POP(st, size);     /* Number of characters to delete */
-        POP(st, offset);   /* One-based position of first character to delete */
-        POP(st, addr1);    /* Address of the string to be modified */
+        POP(st, numChars);  /* Number of characters to delete */
+        POP(st, strPos);    /* One-based position of first character to delete */
+        POP(st, strStack);  /* Address of the string to be modified */
 
         /* Get the string to be modified */
 
-        sptr     = (ustack_t *)ATSTACK(st, addr1);
-        addr2    = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
-        uparm2   = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+        strPtr   = (ustack_t *)ATSTACK(st, strStack);
+        strAddr  = strPtr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        strSize  = strPtr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
         /* Make the character position a zero-based index */
 
-        if (--offset < 0)
+        if (--strPos < 0)
           {
-            offset = 0;
+            strPos = 0;
           }
 
         /* Move text at the end of the string to fill the gap. */
 
-        dest = (char *)ATSTACK(st, addr2);
+        dest = (char *)ATSTACK(st, strAddr);
 
-        for (i = offset, j = offset + size; j < uparm2; i++, j++)
+        for (i = strPos, j = strPos + numChars; j < strSize; i++, j++)
           {
             dest[i] = dest[j];
           }
 
         /* Adjust the size of string */
 
-        if (offset + size > uparm2)
+        if (strPos + numChars > strSize)
           {
-            size = uparm2 - offset;
+            numChars = strSize - strPos;
           }
 
-        sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] -= size;
+        strPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] -= numChars;
       }
       break;
 
@@ -1228,20 +1322,22 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
     case lbFILLCHAR :
       {
-        ustack_t *sptr;
+        uint16_t *strPtr;
+        uint16_t  fillChar;
+        uint16_t  fillCount;
+        uint16_t  strAddr;
 
-        POP(st, uparm2);   /* Fill character value */
-        POP(st, size);     /* Fill count value */
-        POP(st, addr1);    /* Address of the string to be filled */
+        POP(st, fillChar);   /* Fill character value */
+        POP(st, fillCount);  /* Fill count value */
+        POP(st, strAddr);    /* Address of the string to be filled */
 
         /* Get the string to be modified and its allocation size. */
 
-        sptr   = (ustack_t *)ATSTACK(st, addr1);
-        uparm1 = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
+        strPtr = (uint16_t *)ATSTACK(st, strAddr);
 
         /* Then let common logic do the actual fill */
 
-        errorCode = libexec_FillChar(st, sptr, size, uparm2, uparm1);
+        errorCode = libexec_FillChar(st, strPtr, fillCount, fillChar);
       }
       break;
 
@@ -1260,25 +1356,34 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
     case lbCHARAT :
       {
-        uint16_t pos;
+        uint16_t strPos;
+        uint16_t strAlloc;
+        uint16_t strAddr;
+        uint16_t strSize;
         uint16_t result = 0;
 
         /* Get the parameters off of the stack */
 
-        POP(st, pos);
-        DISCARD(st, 1);
-        POP(st, addr1);
-        POP(st, size);
+        POP(st, strPos);
+        POP(st, strAlloc);
+        POP(st, strAddr);
+        POP(st, strSize);
 
         /* Verify that the position is within range */
 
-        if (pos > 0 && pos <= size)
+        if (strPos > 0 && strPos <= strSize)
           {
-            const char *sptr = (const char *)ATSTACK(st, addr1);
-            result = (uint16_t)sptr[pos - 1];
+            const char *sptr = (const char *)ATSTACK(st, strAddr);
+            result = (uint16_t)sptr[strPos - 1];
           }
 
         PUSH(st, result);
+
+        /* We consumed a temporary string and probably need to free
+         * the temporary string's heap allocations\.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
       }
       break;
 
@@ -1296,14 +1401,16 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
       {
         const char *fmt;
         const char *fmtCh;
-        ustack_t   *sptr;
+        char       *destPtr;
+        uint16_t   *strPtr;
+        uint16_t    strStack;
         uint16_t    fieldWidth;
+        uint16_t    value;
         uint16_t    strAddr;
         uint16_t    strAlloc;
         uint16_t    strSize;
-        uint16_t    value;
 
-        POP(st, addr1);      /* Stack address of string */
+        POP(st, strStack);   /* Stack address of string */
         POP(st, fieldWidth); /* Field width data */
         POP(st, value);      /* Numeric value of the integer */
 
@@ -1311,8 +1418,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
          * allocation size.
          */
 
-        sptr     = (ustack_t *)ATSTACK(st, addr1);
-        strAlloc = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
+        strPtr   = (ustack_t *)ATSTACK(st, strStack);
+        strAlloc = strPtr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
 
         /* Get the appropriate format string */
 
@@ -1329,19 +1436,19 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
         /* Now we can perform the conversion */
 
-        strAddr  = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
-        strSize  = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+        strAddr  = strPtr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        strSize  = strPtr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
         if (strSize < strAlloc)
           {
-            /* Convert the string at the end of the string */
+            /* Convert the string to a numeric value */
 
-            dest     = (char *)ATSTACK(st, strAddr) + strSize;
-            strSize += snprintf(dest, strAlloc - strSize, fmt, value);
+            destPtr  = (char *)ATSTACK(st, strAddr) + strSize;
+            strSize += snprintf(destPtr, strAlloc - strSize, fmt, value);
 
             /* Save the updated size of the string */
 
-            sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
+            strPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
           }
       }
       break;
@@ -1351,8 +1458,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
       {
         const char *fmt;
         const char *fmtCh;
-        ustack_t   *sptr;
-        uint32_t    value;
+        uint16_t   *stPtr;
+        uint16_t    value;
         uint16_t    fieldWidth;
         uint16_t    strAddr;
         uint16_t    strAlloc;
@@ -1366,8 +1473,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
          * allocation size.
          */
 
-        sptr     = (ustack_t *)ATSTACK(st, addr1);
-        strAlloc = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
+        stPtr     = (uint16_t *)ATSTACK(st, addr1);
+        strAlloc  = stPtr[BTOISTACK(sSTRING_ALLOC_OFFSET)] & HEAP_SIZE_MASK;
 
         /* Get the appropriate format string */
 
@@ -1384,8 +1491,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
         /* Now we can perform the conversion */
 
-        strAddr  = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
-        strSize  = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+        strAddr = stPtr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        strSize = stPtr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
         if (strSize < strAlloc)
           {
@@ -1396,7 +1503,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
             /* Save the updated size of the string */
 
-            sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
+            stPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
           }
       }
       break;
@@ -1404,14 +1511,15 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
     case lbREALSTR :
       {
         const char *fmt;
-        ustack_t   *sptr;
+        uint16_t   *strPtr;
         fparg_t     value;
+        uint16_t    strStack;
         uint16_t    fieldWidth;
         uint16_t    strAddr;
         uint16_t    strAlloc;
         uint16_t    strSize;
 
-        POP(st, addr1);        /* Stack address of string */
+        POP(st, strStack);     /* Stack address of string */
         POP(st, fieldWidth);   /* Field width data */
         POP(st, value.hw[3]);  /* Numeric value of the real */
         POP(st, value.hw[2]);
@@ -1422,8 +1530,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
          * allocation size.
          */
 
-        sptr     = (ustack_t *)ATSTACK(st, addr1);
-        strAlloc = sptr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
+        strPtr   = (uint16_t *)ATSTACK(st, strStack);
+        strAlloc = strPtr[BTOISTACK(sSTRING_ALLOC_OFFSET)] & HEAP_SIZE_MASK;
 
         /* Get the appropriate format string */
 
@@ -1431,8 +1539,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
         /* Now we can perform the conversion */
 
-        strAddr  = sptr[BTOISTACK(sSTRING_DATA_OFFSET)];
-        strSize  = sptr[BTOISTACK(sSTRING_SIZE_OFFSET)];
+        strAddr  = strPtr[BTOISTACK(sSTRING_DATA_OFFSET)];
+        strSize  = strPtr[BTOISTACK(sSTRING_SIZE_OFFSET)];
 
         if (strSize < strAlloc)
           {
@@ -1443,7 +1551,7 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
             /* Save the updated size of the string */
 
-            sptr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
+            strPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strSize;
           }
       }
       break;
@@ -1454,8 +1562,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        * Description:
        * val() converts the value represented in the string S to a numerical
        * value, and stores this value in the variable V, which can be of type
-       * LInteger, Longinteger, ShortInteger, or Real. If the conversion isn't
-       * succesfull, then the parameter Code contains the index of the character
+       * Integer, Longinteger, ShortInteger, or Real. If the conversion isn't
+       * succesful, then the parameter Code contains the index of the character
        * in S which prevented the conversion. The string S is allowed to contain
        * spaces in the beginning.
        *
@@ -1468,8 +1576,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        *
 
        * ON INPUT
-       *   TOS(0) = address of Code
-       *   TOS(1) = address of v
+       *   TOS(0) = Address of Code
+       *   TOS(1) = Address of valu ,v
        *   TOS(2) = Source string buffer size
        *   TOS(3) = Pointer to source string buffer
        *   TOS(4) = Length of source string
@@ -1477,40 +1585,55 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
        */
 
     case lbVAL :
-      POP(st, addr1);                            /* Pointer to error code */
-      POP(st, addr2);                            /* Pointer to string value */
+      {
+        char    *strPtr;
+        uint16_t codeAddr;
+        uint16_t valueAddr;
+        uint16_t strAlloc;
+        uint16_t strAddr;
+        uint16_t strSize;
 
-      DISCARD(st, 1);                            /* Discard string buffer allocation size */
-      POP(st, size);                             /* Size of string */
-      POP(st, uparm1);                           /* Address of string buffer */
+        POP(st, codeAddr);  /* Address of error code */
+        POP(st, valueAddr); /* Address of string value */
 
-      /* Make a C string out of the pascal string */
+        POP(st, strAlloc);  /* String buffer allocation size */
+        POP(st, strAddr);   /* Address of string buffer */
+        POP(st, strSize);   /* Size of string */
 
-      src       = (char *)ATSTACK(st, uparm1);
-      src[size] = '\0';
-      name      = libexec_MkCString(st, src, size, false);
-      if (name == NULL)
-        {
-          errorCode = eNOMEMORY;
-        }
-      else
-        {
-          long longValue;
-          char *endptr;
+        /* Make a C string out of the pascal string */
 
-          /* Convert the string to an integer */
+        strPtr = (char *)ATSTACK(st, strAddr);
+        name   = libexec_MkCString(st, strPtr, strSize, false);
 
-          longValue = strtol((char *)name, &endptr, 0);
-          if (longValue < MININT || longValue > MAXINT)
-            {
-              errorCode = eINTEGEROVERFLOW;
-            }
-          else
-            {
-              PUTSTACK(st, (ustack_t)*endptr, addr1);
-              PUTSTACK(st, (ustack_t)longValue, addr2);
-            }
-        }
+        if (name == NULL)
+          {
+            errorCode = eNOMEMORY;
+          }
+        else
+          {
+            long longValue;
+            char *endptr;
+
+            /* Convert the string to an integer */
+
+            longValue = strtol((char *)name, &endptr, 0);
+            if (longValue < MININT || longValue > MAXINT)
+              {
+                errorCode = eINTEGEROVERFLOW;
+              }
+            else
+              {
+                PUTSTACK(st, (ustack_t)*endptr, codeAddr);
+                PUTSTACK(st, (ustack_t)longValue, valueAddr);
+              }
+          }
+
+        /* We consumed a temporary string and probably need to free
+         * the temporary string's heap allocations\.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
+      }
       break;
 
     default :

@@ -277,11 +277,16 @@ The back-end is modular and can be change.  However, most of the development so 
 
 ### Run-time String Memory
 
-Pascal runtime memory is divided into four regions:  String stack, RO data, the Pascal run-time stack, and a heap region.  The size of the string stack is set with the -t option to prun and 1024 is the default size used by the testone.sh script.  String allocations are large, the default size is 80 bytes (note 1), and the string stack cleanup is lazy; perhaps only when a procedure/function returns and local string variables go out of scope.  As a result, programs with functions that do a lot of string  operations may need a start larger than the 1024 default.  Most but *not* all of the test files here work OK with a string stack of 1024.
+Pascal runtime memory is divided into four regions:  String stack, RO data, the Pascal run-time stack, and a heap region.  The size of the string stack is set with the -t option to prun.  String buffer allocations are large, the default size is 80 bytes (note 1), and the string stack cleanup is lazy; string memory is only freed when a procedure/function returns and local string variables go out of scope.
 
-This problem is largely alleviated by using short strings that do not require such large string stack allocations.  But this can still be a problem; many simple programs that do string operations may require a rather large string stack for temporary strings.
+String memory usage can be reduced by using short strings that do not require such large string stack allocations.
 
-In order manage the string stack, the string pointer is retained in frame by the run-time code at entry into each higher dynamic nesting level and restored when returning to the previous level, when string variables at that level variables go out of scope.
+In order manage the string stack, the string pointer is retained in frame by the run-time code at entry into each higher dynamic nesting level and restored when returning to the previous level, when string variables at that level go out of scope.
+
+String memory is allocated in one of two ways:
+
+- When initialized for an deeper dynamic nesting level:  All string variables are initialized with memory allocated from the string stack.  When we return to a lower nesting level, all of these strings will be freed when the saved string stack pointer is restored from the frame data.
+- When temporary strings are needed for string operations, these are allocated from the heap memory (because it supports *random access* freeing operations.  These temporary strings are freed when the string container is popped off the stack by run-time logic.
 
 Note 1: The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
 

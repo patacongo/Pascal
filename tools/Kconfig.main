@@ -78,6 +78,7 @@ endmenu # Target tool options
 config PASCAL_DEFAULT_STRALLOC
 	int "Default string size"
 	default 80
+	range 1 4095
 	---help---
 		When a string variable is declared without a size, then this is the
 		default size of the string buffer allocation.  The default of 80 is

@@ -1,0 +1,10 @@
+menu "INSN16 Options"
+
+config PASCAL_HEAPDEBUG
+	bool "Enable heap debug"
+	default n
+	---help---
+		Enable run-time dumping of all chunks in the heap after each
+		allocation and free.
+
+endmenu # Pascal Applications

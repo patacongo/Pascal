@@ -91,11 +91,11 @@
  * ON INPUT:
  *   TOS(0) = Address of the array (destination)
  *   TOS(1) = Size of the array
- *   TOS(2) = Size of the alloated string buffer (source)
+ *   TOS(2) = Size of the allocated string buffer (source)
  *   TOS(3) = Address of the string buffer address
  *   TOS(4) = Size of the string
  * ON RETURN:
- *   All inputs consumbed
+ *   All inputs consumed
  */
 
 #define lbSTR2BSTR      (0x0005)

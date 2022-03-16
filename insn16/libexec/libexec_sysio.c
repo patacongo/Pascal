@@ -57,6 +57,7 @@
 #include "pas_errcodes.h"
 #include "pas_error.h"
 
+#include "libexec_heap.h"
 #include "libexec_longops.h"
 #include "libexec_stringlib.h"
 #include "libexec_sysio.h"
@@ -104,7 +105,7 @@ static int      libexec_ReadInteger(struct libexec_s *st, uint16_t fileNumber,
 static int      libexec_ReadChar(struct libexec_s *st, uint16_t fileNumber,
                   uint8_t *dest);
 static int      libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
-                  uint16_t *stringVarPtr, uint16_t readSize);
+                  uint16_t *stringVarPtr);
 static int      libexec_ReadReal(struct libexec_s *st, uint16_t fileNumber,
                   uint16_t *dest);
 
@@ -125,7 +126,8 @@ static int      libexec_WriteChar(struct libexec_s *st, uint16_t fileNumber,
 static int      libexec_WriteReal(struct libexec_s *st, uint16_t fileNumber,
                   double value, uint16_t fieldWidth);
 static int      libexec_WriteString(struct libexec_s *st, uint16_t fileNumber,
-                  const char *string, uint16_t size, uint16_t fieldWidth);
+                  uint16_t allocAddr, uint16_t strSize, uint16_t allocSize,
+                  uint16_t fieldWidth);
 static int      libexec_Flush(struct libexec_s *st, uint16_t fileNumber);
 
 static int      libexec_GetFileSize(FILE *stream, off_t *fileSize);
@@ -402,7 +404,7 @@ static int libexec_OpenFile(struct libexec_s *st, uint16_t fileNumber,
         }
 
       st->fileTable[fileNumber].stream = fopen(st->fileTable[fileNumber].fileName,
-                                             modeString);
+                                               modeString);
       if (st->fileTable[fileNumber].stream == NULL)
         {
           errorCode = eOPENFAILED;
@@ -581,21 +583,25 @@ static int libexec_ReadChar(struct libexec_s *st, uint16_t fileNumber,
 /****************************************************************************/
 
 static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
-                              uint16_t *stringVarPtr, uint16_t readSize)
+                              uint16_t *stringVarPtr)
 {
   int errorCode = libexec_CheckReadAccess(st, fileNumber);
   if (errorCode == eNOERROR)
     {
-      uint16_t stringBufferStack;
-      char    *stringBufferPtr;
+      uint16_t strData;
+      uint16_t strAlloc;
+      uint16_t strReadSize;
+      char    *strPtr;
       char    *ptr;
-      int      index;
 
-      index             = sSTRING_DATA_OFFSET / sINT_SIZE;
-      stringBufferStack = stringVarPtr[index];
-      stringBufferPtr   = (char *)&st->dstack.b[stringBufferStack];
-      ptr               = fgets(stringBufferPtr, readSize,
-                                st->fileTable[fileNumber].stream);
+      strAlloc    = stringVarPtr[BTOISTACK(sSTRING_ALLOC_OFFSET)];
+      strReadSize = strAlloc & HEAP_SIZE_MASK;
+
+      strData     = stringVarPtr[BTOISTACK(sSTRING_DATA_OFFSET)];
+      strPtr      = (char *)&st->dstack.b[strData];
+
+      ptr         = fgets(strPtr, strReadSize,
+                          st->fileTable[fileNumber].stream);
 
       if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
@@ -604,9 +610,8 @@ static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
         }
       else
         {
-          index = sSTRING_SIZE_OFFSET / sINT_SIZE;
-          libexec_CheckEoln(st, fileNumber, stringBufferPtr);
-          stringVarPtr[index] = strlen(stringBufferPtr);
+          libexec_CheckEoln(st, fileNumber, strPtr);
+          stringVarPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] = strlen(strPtr);
         }
     }
 
@@ -800,9 +805,11 @@ static int libexec_WriteReal(struct libexec_s *st, uint16_t fileNumber,
 /****************************************************************************/
 
 static int libexec_WriteString(struct libexec_s *st, uint16_t fileNumber,
-                               const char *stringDataPtr, uint16_t size,
-                               uint16_t fieldWidth)
+                               uint16_t allocAddr, uint16_t strSize,
+                               uint16_t allocSize, uint16_t fieldWidth)
+
 {
+  const char *strDataPtr = (const char *)&st->dstack.b[allocAddr];
   int errorCode = libexec_CheckWriteAccess(st, fileNumber);
   if (errorCode == eNOERROR)
     {
@@ -810,19 +817,25 @@ static int libexec_WriteString(struct libexec_s *st, uint16_t fileNumber,
 
       /* Right justify */
 
-      for (fieldWidth >>= 8; fieldWidth > size; fieldWidth--)
+      for (fieldWidth >>= 8; fieldWidth > strSize; fieldWidth--)
         {
           fputc(' ', st->fileTable[fileNumber].stream);
         }
 
       /* Then write the string */
 
-      nItems = fwrite(stringDataPtr, 1, size,
+      nItems = fwrite(strDataPtr, 1, strSize,
                       st->fileTable[fileNumber].stream);
       if (nItems < 0 && ferror(st->fileTable[fileNumber].stream))
         {
           errorCode = eWRITEFAILED;
         }
+
+      /* We have consumed the name string container, check if we need to free
+       * its string buffer allocation as well.
+       */
+
+      libexec_FreeTmpString(st, allocAddr, allocSize);
     }
 
   return errorCode;
@@ -1225,8 +1238,9 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
   fparg_t  fp;
   uint16_t fileNumber;
   uint16_t fieldWidth;
-  uint16_t size;
+  uint16_t dataSize;
   uint16_t address;
+  uint16_t allocSize;
   uint16_t uValue;
   int16_t  sValue;
   int      errorCode = eNOERROR;
@@ -1320,12 +1334,12 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     case xASSIGNFILE :
       DISCARD(st, 1);       /* Discard the strung buffer allocation size */
       POP(st, address);     /* File name string address */
-      POP(st, size);        /* File name string size */
+      POP(st, dataSize);    /* File name string size */
       POP(st, uValue);      /* Binary/text boolean from stack */
       POP(st, fileNumber);  /* File number from stack */
       errorCode = libexec_AssignFile(st, fileNumber, (uValue != 0),
                                      (const char *)&st->dstack.b[address],
-                                     size);
+                                     dataSize);
       break;
 
     /* RESET: TOS(0) = File number */
@@ -1340,10 +1354,10 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
      */
 
     case xRESETR :
-      POP(st, size);  /* File number from stack */
+      POP(st, dataSize);    /* New record size */
       POP(st, fileNumber);  /* File number from stack */
       errorCode = libexec_OpenFile(st, fileNumber, eOPEN_READ);
-      errorCode = libexec_RecordSize(st, fileNumber, size);
+      errorCode = libexec_RecordSize(st, fileNumber, dataSize);
       break;
 
     /* REWRITE: TOS(0) = File number */
@@ -1358,10 +1372,10 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
      */
 
     case xREWRITER :
-      POP(st, size);  /* File number from stack */
+      POP(st, dataSize);    /* New record size */
       POP(st, fileNumber);  /* File number from stack */
       errorCode = libexec_OpenFile(st, fileNumber, eOPEN_WRITE);
-      errorCode = libexec_RecordSize(st, fileNumber, size);
+      errorCode = libexec_RecordSize(st, fileNumber, dataSize);
       break;
 
     /* APPEND: TOS(0) = File number */
@@ -1393,12 +1407,12 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     case xREAD_BINARY :
       POP(st, address);     /* Read address */
-      POP(st, size);        /* Read size */
+      POP(st, dataSize);    /* Read size */
       POP(st, fileNumber);  /* File number from stack */
 
       errorCode = libexec_ReadBinary(st, fileNumber,
                                      (uint8_t *)&st->dstack.b[address],
-                                     size);
+                                     dataSize);
       break;
 
     /* READ_INT: TOS(0) = Read address
@@ -1433,19 +1447,12 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
     case xREAD_STRING :
       {
         uint16_t *strPtr;
-        uint16_t  strAlloc;
-        int       index;
 
         POP(st, address);     /* String variable address */
         POP(st, fileNumber);  /* File number */
 
-        /* Get the allocation size of the string */
-
-        strPtr   = (uint16_t *)&st->dstack.b[address];
-        index    = sSTRING_ALLOC_OFFSET / sINT_SIZE;
-        strAlloc = strPtr[index];
-
-        errorCode = libexec_ReadString(st, fileNumber, strPtr, strAlloc);
+        strPtr    = (uint16_t *)&st->dstack.b[address];
+        errorCode = libexec_ReadString(st, fileNumber, strPtr);
       }
       break;
 
@@ -1482,12 +1489,12 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     case xWRITE_BINARY :
       POP(st, address);     /* Write address */
-      POP(st, size);        /* Write size */
+      POP(st, dataSize);    /* Write size */
       POP(st, fileNumber);  /* File number from stack */
 
       errorCode = libexec_WriteBinary(st, fileNumber,
                                       (const uint8_t *)&st->dstack.b[address],
-                                      size);
+                                      dataSize);
       break;
 
     /* WRITE_INT: TOS(0) = Field width
@@ -1577,14 +1584,13 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
     case xWRITE_STRING :
       POP(st, fieldWidth);  /* Field width */
-      DISCARD(st, 1);       /* Discard the unused stack allocation */
+      POP(st, allocSize);   /* String allocation size */
       POP(st, address);     /* String address */
-      POP(st, size);        /* String size */
+      POP(st, dataSize);    /* String size */
       POP(st, fileNumber);  /* File number */
 
-      errorCode = libexec_WriteString(st, fileNumber,
-                                      (const char *)&st->dstack.b[address],
-                                      size, fieldWidth);
+      errorCode = libexec_WriteString(st, fileNumber, address,
+                                      dataSize, allocSize, fieldWidth);
       break;
 
     /* WRITE_CHAR: TOS(0)   = Field width/precision
@@ -1630,14 +1636,13 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       {
         char *strBuffer;
         char *dirPath;
-        uint16_t alloc;
         uint16_t result;
 
         /* Get the string argument */
 
-        POP(st, alloc);     /* Buffer allocation size */
+        POP(st, allocSize); /* Buffer allocation size */
         POP(st, address);   /* Directory name string address */
-        POP(st, size);      /* Directory name string size */
+        POP(st, dataSize);  /* Directory name string size */
 
         /* Convert to a NUL terminated C string */
 
@@ -1648,14 +1653,14 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
          * libexec_MkCString to duplicate the string with the NUL terminator.
          */
 
-        if (size < alloc)
+        if (dataSize < (allocSize & HEAP_SIZE_MASK))
           {
-            strBuffer[size] = '\0';
-            dirPath         = strBuffer;
+            strBuffer[dataSize] = '\0';
+            dirPath             = strBuffer;
           }
         else
           {
-            dirPath         = libexec_MkCString(st, strBuffer, size, false);
+            dirPath = libexec_MkCString(st, strBuffer, dataSize, false);
           }
 
         if (dirPath == NULL)
@@ -1682,6 +1687,14 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
             result = (rmdir(dirPath) != 0) ? PASCAL_FALSE : PASCAL_TRUE;
           }
 
+        /* We have consumed the name string container, check if we need to
+         * free its string buffer allocation as well.
+         */
+
+        libexec_FreeTmpString(st, address, allocSize);
+
+        /* Return the result of the directory operation */
+
         PUSH(st, result);
       }
       break;
@@ -1698,31 +1711,38 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       else
         {
           char *sptr;
+          uint16_t allocAddr;
 
           /* Convert the C-string into a Pascal string */
 
           st->ioBuffer[LINE_SIZE] = '\0';
-          size = strlen((char *)st->ioBuffer);
-          if (size > STRING_BUFFER_SIZE)
+          dataSize = strlen((char *)st->ioBuffer);
+          if (dataSize > STRING_BUFFER_SIZE)
             {
-              size = STRING_BUFFER_SIZE;
+              dataSize = STRING_BUFFER_SIZE;
             }
 
-          /* Allocate storage in the string stack */
+          /* Allocate storage for the temporary string in the string heap */
 
-          address = INT_ALIGNUP(st->csp);
-          st->csp = address + STRING_BUFFER_SIZE;
+          allocAddr = libexec_AllocTmpString(st, STRING_BUFFER_SIZE,
+                                             &allocSize);
+          if (allocAddr == 0)
+            {
+              errorCode = eNOMEMORY;
+            }
+          else
+            {
+              /* Copy the string into the allocated string buffer */
 
-          /* Copy the string into the string stack */
+              sptr    = (char *)ATSTACK(st, allocAddr);
+              memcpy(sptr, st->ioBuffer, dataSize);
 
-          sptr    = (char *)ATSTACK(st, address);
-          memcpy(sptr, st->ioBuffer, size);
+              /* And push the newly create string */
 
-          /* And push the newly create string */
-
-          PUSH(st, size);
-          PUSH(st, address);
-          PUSH(st, STRING_BUFFER_SIZE);
+              PUSH(st, dataSize);
+              PUSH(st, allocAddr);
+              PUSH(st, allocSize);
+            }
         }
       break;
 
@@ -1745,6 +1765,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         char       *dirPath;
         DIR        *dirp;
         uint16_t    dirAddr;
+        uint16_t    strAlloc;
         uint16_t    strAddr;
         uint16_t    strSize;
         uint16_t    result;
@@ -1752,7 +1773,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         /* Get the stack arguments */
 
         POP(st, dirAddr);
-        DISCARD(st, 1);
+        POP(st, strAlloc);
         POP(st, strAddr);
         POP(st, strSize);
 
@@ -1785,6 +1806,14 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
             result = PASCAL_TRUE;
           }
+
+        /* We have consumed the name string container, check if we need to
+         * free its string buffer allocation as well.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
+
+        /* And return the result of the operation on the stack */
 
         PUSH(st, result);
       }
@@ -1932,7 +1961,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
         filePathPtr = (char *)ATSTACK(st, filePathAddr);
 
-        if (filePathLength < filePathAlloc)
+        if (filePathLength < (filePathAlloc & HEAP_SIZE_MASK))
           {
             filePathPtr[filePathLength] = '\0';
           }
@@ -1977,6 +2006,14 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
 
             result = PASCAL_TRUE;
           }
+
+        /* We have consumed the name string container, check if we need to
+         * free its string buffer allocation as well.
+         */
+
+        libexec_FreeTmpString(st, filePathAddr, filePathAlloc);
+
+        /* And return the result of the operation on the stack */
 
         PUSH(st, result);
       }

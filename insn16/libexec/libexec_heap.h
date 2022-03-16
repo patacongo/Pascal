@@ -43,12 +43,31 @@
 
 #include <stdint.h>
 
+#include "config.h"
+#include "libexec.h"
+
+/***************************************************************************
+ * Pre-precessor Definitions
+ ***************************************************************************/
+
+/* The top 4 bits of the string allocation are reserved for encoding
+ * information.  The character buffer for string variables resides in a
+ * string stack, but temporary strings using the heap because it permits
+ * "random access" freeing of string buffers.
+ */
+
+#define HEAP_SIZE_MASK (uint16_t)(0x0fff)  /* Bits 0-14:  The size */
+#define HEAP_STRING    (uint16_t)(1 << 15) /* Bit 15: Temporary string */
+
 /***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 
-void libexec_InitializeHeap(struct libexec_s *st);
-int  libexec_New(struct libexec_s *st, uint16_t size);
-int  libexec_Dispose(struct libexec_s *st, uint16_t address);
-
+void     libexec_InitializeHeap (struct libexec_s *st);
+int      libexec_New            (struct libexec_s *st, uint16_t size);
+int      libexec_Dispose        (struct libexec_s *st, uint16_t address);
+uint16_t libexec_AllocTmpString (struct libexec_s *st, uint16_t reqSize,
+                                 uint16_t *allocSize);
+int      libexec_FreeTmpString  (struct libexec_s *st, uint16_t allocAddr,
+                                 uint16_t allocSize);
 #endif /* __LIBEXEC_HEAP_H */
