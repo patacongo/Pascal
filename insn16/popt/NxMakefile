@@ -45,9 +45,9 @@ include $(PASCAL)/tools/Config.mk
 INSN_INCDIR = $(INSNDIR)/include
 CFLAGS += ${shell $(INCDIR) "$(CC)" "$(INSN_INCDIR)"}
 
-CSRCS   = popt_strings.c popt_strconst.c popt_strstack.c popt_local.c
-CSRCS  += popt_constants.c popt_longconst.c popt_branch.c popt_loadstore.c
-CSRCS  += popt_reloc.c popt_finalize.c popt_peephole.c popt_util.c
+CSRCS   = popt_strings.c popt_strconst.c popt_local.c popt_constants.c
+CSRCS  += popt_longconst.c popt_branch.c popt_loadstore.c popt_reloc.c
+CSRCS  += popt_finalize.c popt_peephole.c popt_util.c
 
 # main entry point
 

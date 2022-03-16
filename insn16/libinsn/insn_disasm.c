@@ -161,8 +161,8 @@ static const struct
 /* 0x29 */ { invOp,     MKFMT(NOARG8, NOARG16) },
 /* 0x2a */ { "XCHG ",   MKFMT(NOARG8, NOARG16) },
 /* 0x2b */ { invOp,     MKFMT(NOARG8, NOARG16) },
-/* 0x2c */ { "PUSHS",   MKFMT(NOARG8, NOARG16) },
-/* 0x2d */ { "POPS",    MKFMT(NOARG8, NOARG16) },
+/* 0x2c */ { invOp,     MKFMT(NOARG8, NOARG16) },
+/* 0x2d */ { invOp,     MKFMT(NOARG8, NOARG16) },
 /* 0x2e */ { invOp,     MKFMT(NOARG8, NOARG16) },
 /* 0x2f */ { "RET  ",   MKFMT(NOARG8, NOARG16) },
 

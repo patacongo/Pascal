@@ -72,9 +72,11 @@
 
 /* Size of frame info at the beginning of each frame:
  *
- *        |  Base Address  | + 4 * BPERI
+ *        |  Base Address  | + 5 * BPERI
  *        +----------------+
- *        |  Nesting Level | + 3 * BPERI
+ *        |  Nesting Level | + 4 * BPERI
+ *        +----------------+
+ *        |   Saved CSP    | + 3 * BPERI
  *        +----------------+
  *        | Return Address | + 2 * BPERI
  *        +----------------+
@@ -89,10 +91,11 @@
 #define _FSLINK (0)
 #define _FDLINK (BPERI)
 #define _FRET   (2 * BPERI)
-#define _FLEVEL (3 * BPERI)
+#define _FCSP   (3 * BPERI)
+#define _FLEVEL (4 * BPERI)
 
-#define _FBASE  (4 * BPERI)
-#define _FSIZE  (4 * BPERI)
+#define _FBASE  (5 * BPERI)
+#define _FSIZE  (5 * BPERI)
 
 /****************************************************************************
  * Private Function Prototypes
@@ -177,9 +180,11 @@ static int libexec_ProcedureCall(struct libexec_s *st, level_t nestingLevel)
 
   /* Set up the new FRAME info.
    *
-   *        |  Base Address  | + 4 * BPERI
+   *        |  Base Address  | + 5 * BPERI
    *        +----------------+
-   *   lsp  |  Nesting Level | + 3 * BPERI
+   *   lsp  |  Nesting Level | + 4 * BPERI
+   *        +----------------+
+   *        |   Saved CSP    | + 3 * BPERI
    *        +----------------+
    *        | Return Address | + 2 * BPERI
    *        +----------------+
@@ -198,6 +203,7 @@ static int libexec_ProcedureCall(struct libexec_s *st, level_t nestingLevel)
   current[BTOISTACK(_FSLINK)]  = frameAddr;
   current[BTOISTACK(_FDLINK)]  = st->fp;
   current[BTOISTACK(_FRET)]    = st->pc + 4;
+  current[BTOISTACK(_FCSP)]    = st->csp;
   current[BTOISTACK(_FLEVEL)]  = st->lsp << 8 | nestingLevel;
 
   st->lsp                      = nestingLevel;
@@ -596,14 +602,6 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
       TOS(st, 1) = uparm1;
       break;
 
-    case oPUSHS :
-      PUSH(st, st->csp);
-      break;
-
-    case oPOPS :
-      POP(st, st->csp);
-      break;
-
       /* Store (Two stack arguments) */
 
     case oSTI  :
@@ -654,7 +652,9 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
     case oRET   :
       /*
        *        +----------------+
-       * TOS -> |  Nesting Level | + 3 * BPERI
+       * TOS -> |  Nesting Level | + 4 * BPERI
+       *        +----------------+
+       *        |   Saved CSP    | + 3 * BPERI
        *        +----------------+
        *        | Return Address | + 2 * BPERI
        *        +----------------+
@@ -668,6 +668,7 @@ static inline int pexec8(struct libexec_s *st, uint8_t opcode)
       POP(st, uparm1);        /* Restore the nesting level in the LSP */
       st->lsp = uparm1 >> 8;
 
+      POP(st, st->csp);       /* Restore the string stack pointer */
       POP(st, st->pc);        /* Set the PC to the return address */
       POP(st, st->fp);        /* Set the FP back to the dynamic link */
       DISCARD(st, 1);         /* Discard the static link */
@@ -1534,9 +1535,11 @@ void libexec_Reset(struct libexec_s *st)
 
   /* Initialize the P-Machine stack
    *
-   *         |  Base Address  | + 4 * BPERI
+   *         |  Base Address  | + 5 * BPERI
    *         +----------------+
-   *         |  Nesting Level | + 3 * BPERI
+   *         |  Nesting Level | + 4 * BPERI
+   *         +----------------+
+   *         |   Saved CSP    | + 3 * BPERI
    *         +----------------+
    *         | Return Address | + 2 * BPERI
    *         +----------------+
@@ -1550,7 +1553,8 @@ void libexec_Reset(struct libexec_s *st)
   st->dstack.i[dndx + 0] = 0;      /* FP */
   st->dstack.i[dndx + 1] = -1;     /* Return address */
   st->dstack.i[dndx + 2] = 0;      /* Return Address */
-  st->dstack.i[dndx + 3] = 0;      /* Nesting Level */
+  st->dstack.i[dndx + 3] = 0;      /* CSP */
+  st->dstack.i[dndx + 4] = 0;      /* Nesting Level */
 
   st->spb               += _FSIZE;
 

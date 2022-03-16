@@ -80,15 +80,6 @@ void popt_StringOptimization(poffHandle_t poffHandle)
 
   popt_StringLocalOptimization(poffHandle, poffProgHandle);
 
-  /* Setup for string stack optimization */
-
-  swapRelocationHandles();
-  insn_ResetOpCodeRead(poffHandle);
-
-  /* Clean up garbage left from the wasteful string stack logic */
-
-  popt_StringStackOptimize(poffHandle, poffProgHandle);
-
   /* Replace the original program data with the new program data */
 
   poffReplaceProgData(poffHandle, poffProgHandle);

@@ -2980,11 +2980,6 @@ static exprType_t pas_FunctionDesignator(void)
 
   if (typePtr->sKind == sTYPE && typePtr->sParm.t.tType == sSTRING)
     {
-      /* REVISIT:  This string container really needs to be enclosed in PUSHS
-       * and POPS.  Need to assure that in order to release string stack as
-       * soon as possible after the temporary container is released.
-       */
-
       pas_StringLibraryCall(lbSTRTMP);
     }
   else

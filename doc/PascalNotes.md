@@ -281,9 +281,7 @@ Pascal runtime memory is divided into four regions:  String stack, RO data, the 
 
 This problem is largely alleviated by using short strings that do not require such large string stack allocations.  But this can still be a problem; many simple programs that do string operations may require a rather large string stack for temporary strings.
 
-In order manage the string stack, two special instructions are supported:  `PUSHS` which pushes the string stack pointer and `POPS` that recovers the string stack pointer.  The compiler generates these on entry and exit from each dynamic nesting level, when string variables go out of scope.
-
-At one time, PUSHS and POPS enclosed each statement.  While that did eliminate most of the string memory usage problems, it introduced too much complexity and instability due to the unexpected stack state.
+In order manage the string stack, the string pointer is retained in frame by the run-time code at entry into each higher dynamic nesting level and restored when returning to the previous level, when string variables at that level variables go out of scope.
 
 Note 1: The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
 

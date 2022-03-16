@@ -217,8 +217,4 @@ void popt_StringLocalOptimization(poffHandle_t poffHandle,
     {
       error(eEXTRARELOCS);
     }
-
-  /* Replace the original program data with the new program data */
-
-  poffReplaceProgData(poffHandle, poffProgHandle);
 }

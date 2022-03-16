@@ -432,7 +432,7 @@ void popt_SwapPCodePair(int16_t swapIndex1, int16_t swapIndex2)
 }
 
 /****************************************************************************/
-/* Check if the opcode at this peephole index:  (1) pushs some data on the
+/* Check if the opcode at this peephole index:  (1) pushes some data on the
  * stack and (2) does not depend on prior stack content.
  */
 

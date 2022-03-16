@@ -516,8 +516,8 @@ void pas_Initialization(void)
 /****************************************************************************/
 /* Initialize a new string type created with new().  That happens AFTER the
  * normal initialization of pas_Initialization().  Note that no special
- * finalization is required for strings since POPS will be generated
- * automatically when string variables go out of scope.
+ * finalization is required for strings since the original string pointer
+ * will be restored when the string variables go out of scope.
  */
 
 void pas_InitializeNewString(symbol_t *typePtr)
