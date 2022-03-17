@@ -176,6 +176,7 @@
  * eBADSP               Stack reference is out-of-range
  * eSTRSTKOVERFLOW      String stack overflow
  * eNEWFAILED           new() failed to allocate memory
+ * eDOUBLEFREE          dispose() was called on memory previously freed
  * eEXIT                oEND P-Code encountered
  * eBADSYSIOFUNC        Illegal SYSIO sub-function
  * eBADSYSLIBCALL       Illegal runtime library call
@@ -345,15 +346,16 @@
 #define eBADSP           ((uint16_t) 0xa2)
 #define eSTRSTKOVERFLOW  ((uint16_t) 0xa3)
 #define eNEWFAILED       ((uint16_t) 0xa4)
-#define eEXIT            ((uint16_t) 0xa5)
-#define eBADSYSIOFUNC    ((uint16_t) 0xa6)
-#define eBADSYSLIBCALL   ((uint16_t) 0xa7)
-#define eBADFPOPCODE     ((uint16_t) 0xa8)
-#define eBADSETOPCODE    ((uint16_t) 0xa9)
-#define eINTEGEROVERFLOW ((uint16_t) 0xaa)
-#define eVALUERANGE      ((uint16_t) 0xab)
-#define eNESTINGLEVEL    ((uint16_t) 0xac)
-#define eFAILEDLIBCALL   ((uint16_t) 0xad)
+#define eDOUBLEFREE      ((uint16_t) 0xa5)
+#define eEXIT            ((uint16_t) 0xa6)
+#define eBADSYSIOFUNC    ((uint16_t) 0xa7)
+#define eBADSYSLIBCALL   ((uint16_t) 0xa8)
+#define eBADFPOPCODE     ((uint16_t) 0xa9)
+#define eBADSETOPCODE    ((uint16_t) 0xaa)
+#define eINTEGEROVERFLOW ((uint16_t) 0xab)
+#define eVALUERANGE      ((uint16_t) 0xac)
+#define eNESTINGLEVEL    ((uint16_t) 0xad)
+#define eFAILEDLIBCALL   ((uint16_t) 0xae)
 
 #define eBADFILE         ((uint16_t) 0xb0)
 #define eBADFILENAME     ((uint16_t) 0xb1)

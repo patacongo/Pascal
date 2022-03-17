@@ -3,7 +3,7 @@ PROGRAM StringOperations;
 VAR
   string1, string2, string3 : STRING;
   sstring1, sstring2 : STRING[8];
-  value, index : INTEGER;
+  value, position, code : INTEGER;
   fvalue : REAL
 
 BEGIN
@@ -18,8 +18,8 @@ BEGIN
   { VAL, STR}
 
   string2 := '12345';
-  VAL(string1, value, index);
-  WRITELN('[', string2, '] Value is ', value, ' Terminator is ', index);
+  VAL(string1, value, code);
+  WRITELN('[', string2, '] Value is ', value, ' Terminator is ', code);
 
   value   := 123;
   fvalue  := 987.654;
@@ -47,13 +47,13 @@ BEGIN
   WRITELN('[', string1, '] Length=', LENGTH(string1));
 
   DELETE(string1, 11, 2);
-  WRITELN('[', string1, '] Deleted index 11, Lengh 2');
+  WRITELN('[', string1, '] Deleted position 11, Length 2');
 
   DELETE(string1, 8, 1);
-  WRITELN('[', string1, '] Deleted index 8, Lengh 1');
+  WRITELN('[', string1, '] Deleted position 8, Length 1');
 
   DELETE(string1, 1, 1);
-  WRITELN('[', string1, '] Deleted index 1, Lengh 1');
+  WRITELN('[', string1, '] Deleted position 1, Length 1');
   WRITELN;
 
   { INSERT, DELETE }

@@ -229,8 +229,8 @@ static void pdbg_ExecCommand(struct libexec_s *st, enum command_e cmd, uint32_t 
       pdbg_PrintTraceArray(st);
       break;
 
-    case eCMD_DS:     /* Display Stack */
-      if (value > st->sp)
+    case eCMD_DS:     /* Display Stack (or heap) */
+      if (value > st->sp && (value < st->hpb || value >= st->hpb + st->hpSize))
         {
           printf("Invalid stack address\n");
           st->lastCmd = eCMD_NONE;
@@ -403,7 +403,8 @@ static pasSize_t pdbg_PrintStack(struct libexec_s *st, pasSize_t sp, int16_t nit
 {
   int32_t isp;
 
-  if ((st->sp < st->stackSize) && (sp <= st->sp))
+  if ((st->sp < st->stackSize && sp <= st->sp) ||
+      (sp >= st->hpb && sp < st->hpb + st->hpSize))
     {
       isp = BTOISTACK(sp);
       printf("SP:%04" PRIx16 "  %04" PRIx16 "\n",

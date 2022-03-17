@@ -1892,6 +1892,7 @@ static void pas_CaseStatement(void)
 
   pas_GenerateDataOperation(opLABEL, endCaseLabel);
   pas_GenerateDataOperation(opINDS, -sINT_SIZE);
+  g_stackAdjust += sINT_SIZE;
 }
 
 /***********************************************************************/

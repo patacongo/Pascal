@@ -8,7 +8,7 @@ BEGIN
 END;
 
 BEGIN
-   WRITELN(string1);
+   WRITELN;
 
    string1 := 'Now ';
    WRITELN(inquote(string1));

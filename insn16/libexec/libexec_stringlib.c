@@ -799,14 +799,14 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
           {
             /* Copy the character into the string stack */
 
-            dest   = (char *)ATSTACK(st, strAddr);  /* Pointer to new string */
-           *dest++ = TOS(st, 0);                    /* Save character as string */
+            dest = (char *)ATSTACK(st, strAddr);  /* Pointer to new string */
+           *dest = TOS(st, 0);                    /* Save character as string */
 
             /* Update the stack content */
 
-            TOS(st, 0) = 1;                         /* String length */
-            PUSH(st, strAddr);                      /* String buffer address */
-            PUSH(st, strAlloc);                     /* String buffer size */
+            TOS(st, 0) = 1;                       /* String length */
+            PUSH(st, strAddr);                    /* String buffer address */
+            PUSH(st, strAlloc);                   /* String buffer allocation */
           }
       }
       break;
@@ -1170,8 +1170,8 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
         uint16_t   *destStrPtr;
         char       *destPtr;
         const char *srcPtr;
-        uint16_t    ulimit1;
-        uint16_t    ulimit2;
+        uint16_t    newSize;
+        uint16_t    copyEnd;
         uint16_t    strPos;
         uint16_t    destStack;
         uint16_t    destAlloc;
@@ -1212,35 +1212,35 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
 
         destPtr = (char *)ATSTACK(st, destAddr);
 
-        ulimit1 = destSize + srcSize;
-        if (ulimit1 > destAlloc)
+        newSize = destSize + srcSize;
+        if (newSize > destAlloc)
           {
-            ulimit1 = destAlloc;
+            newSize = destAlloc;
           }
 
-        for (i = ulimit1 - srcSize - 1, j = ulimit1 - 1; i >= strPos; i--, j--)
+        for (i = newSize - srcSize - 1, j = newSize - 1; i >= strPos; i--, j--)
           {
             destPtr[j] = destPtr[i];
           }
 
         /* Copy the source string into this space. */
 
-        srcPtr = (const char *)ATSTACK(st, srcAlloc);
+        srcPtr = (const char *)ATSTACK(st, srcAddr);
 
-        ulimit2 = srcSize + strPos;
-        if (ulimit2 > ulimit1)
+        copyEnd = srcSize + strPos;
+        if (copyEnd > newSize)
           {
-            ulimit1 = ulimit1;
+            copyEnd = newSize;
           }
 
-        for (i = 0, j = strPos; j < ulimit2; i++, j++)
+        for (i = 0, j = strPos; j < copyEnd; i++, j++)
           {
             destPtr[j] = srcPtr[i];
           }
 
         /* Adjust the size of string */
 
-        destPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] = ulimit1;
+        destStrPtr[BTOISTACK(sSTRING_SIZE_OFFSET)] = newSize;
 
         /* We consumed a temporary string and probably need to free
          * the temporary string's heap allocations\.
