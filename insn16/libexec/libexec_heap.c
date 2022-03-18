@@ -97,15 +97,14 @@ static int libexec_Free(struct libexec_s *st, uint16_t address);
 
 struct memChunk_s
 {
-  uint16_t forward : 12; /* Offset from this chunk to the next chunk */
+  uint16_t forward : 15; /* Offset from this chunk to the next chunk */
   uint16_t inUse   : 1;  /* true:  This chunk is in-use */
-  uint16_t pad1    : 3;  /* Available for future use */
 
-  uint16_t back    : 12; /* Offset from this chunk to the previous chunk */
-  uint16_t pad2    : 4;  /* Available for future use */
+  uint16_t back    : 15; /* Offset from this chunk to the previous chunk */
+  uint16_t pad1    : 1;  /* Available for future use */
 
-  uint16_t address;     /* Heap base stack address of this chunk */
-  uint16_t pad3;         /* Available for future use */
+  uint16_t address;      /* Heap base stack address of this chunk */
+  uint16_t pad2;         /* Available for future use */
 };
 
 typedef struct memChunk_s memChunk_t;
@@ -256,7 +255,15 @@ static void libexec_MemInfo(struct libexec_s *st, const char *msg,
       freeChunk = (freeChunk_t *)ATSTACK(st, heapStart + freeChunk->next);
     }
 
-  printf("%s (size: %" PRIu16 ")\n", msg, size);
+  if (size > 0)
+    {
+      printf("%s (size: %" PRIu16 "):\n", msg, size);
+    }
+  else
+    {
+      printf("%s:\n", msg);
+    }
+
   printf("  Heap size: %" PRIu16 " Free memory: %" PRIu32 "\n",
           heapEnd - heapStart, totalFreeMemory);
   printf("  Number free chunks: %" PRIu16 " Largest free chunk: %" PRIu16 "\n",
@@ -619,12 +626,11 @@ static uint16_t libexec_Alloc(struct libexec_s *st, uint16_t allocSize)
               subChunk->chunk.forward  = freeChunk->chunk.forward -
                                          allocChunkSize;
               subChunk->chunk.inUse    = 0;
-              subChunk->chunk.pad1     = 0;
               subChunk->chunk.back     = allocChunkSize;
-              subChunk->chunk.pad2     = 0;
+              subChunk->chunk.pad1     = 0;
               subChunk->chunk.address  = freeChunk->chunk.address +
                                          allocChunkSize;
-              subChunk->chunk.pad3     = 0;
+              subChunk->chunk.pad2     = 0;
 
               /* And shrink the original to the requested chunk size */
 
@@ -727,7 +733,6 @@ void libexec_InitializeHeap(struct libexec_s *st)
       terminus                     = (memChunk_t *)
                                      ATSTACK(st, heapEnd - HEAP_ALLOC_UNIT);
       memset(terminus, 0, sizeof(memChunk_t));
-      terminus->forward            = 0;
       terminus->address            = heapEnd - heapStart - HEAP_ALLOC_UNIT;
       terminus->inUse              = 1;
 
@@ -737,12 +742,11 @@ void libexec_InitializeHeap(struct libexec_s *st)
       initialChunk                 = (freeChunk_t *)ATSTACK(st, heapStart);
       memset(initialChunk, 0, sizeof(freeChunk_t));
       initialChunk->chunk.forward  = heapSize;
-      initialChunk->chunk.address  = heapStart - heapStart;
-      initialChunk->next           = 0;
 
       st->freeChunks               = initialChunk;
 
       libexec_DumpHeap(st, "Initially", heapStart);
+      libexec_MemInfo(st, "Initially", 0);
     }
 }
 

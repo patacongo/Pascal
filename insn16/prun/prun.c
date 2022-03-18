@@ -52,6 +52,7 @@
 #define DEFAULT_STACK_SIZE   4096
 #define DEFAULT_STKSTR_SIZE     0
 #define DEFAULT_HPSTK_SIZE      0
+#define MAX_HEAP_SIZE       32768
 
 /****************************************************************************
  * Private Types
@@ -119,8 +120,8 @@ static void prun_showusage(const char *progname)
   fprintf(stderr, "  -n <heap-size>\n");
   fprintf(stderr, "  --new <heap-size>\n");
   fprintf(stderr, "    heap use for new() and temporary strings (default is\n");
-  fprintf(stderr, "    %d bytes)\n",
-          DEFAULT_HPSTK_SIZE);
+  fprintf(stderr, "    %d bytes, maximum is %d)\n",
+          DEFAULT_HPSTK_SIZE, MAX_HEAP_SIZE);
 #ifdef CONFIG_PASCAL_DEBUGGER
   fprintf(stderr, "  -d\n");
   fprintf(stderr, "  --debug\n");
@@ -172,7 +173,7 @@ static void prun_ParseArgs(int argc, char **argv, prunArgs_t *args)
             {
             case 'n' :
               size = atoi(optarg);
-              if (size < 0)
+              if (size < 0 || size >= MAX_HEAP_SIZE)
                 {
                   fprintf(stderr, "ERROR: Invalid heap size\n");
                   prun_showusage(argv[0]);
