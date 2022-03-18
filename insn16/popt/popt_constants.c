@@ -565,9 +565,9 @@ int16_t popt_UnaryOptimize(void)
 
       /* Delete multiple modifications of DSEG pointer */
 
-      else if (g_opPtr[i]->op == oINDS)
+      else if (g_opPtr[i]->op == oINDS || g_opPtr[i]->op == oINCS)
         {
-          if (g_opPtr[i + 1]->op == oINDS)
+          if (g_opPtr[i + 1]->op == g_opPtr[i]->op)
             {
               g_opPtr[i]->arg2 += g_opPtr[i + 1]->arg2;
               popt_DeletePCode(i + 1);
@@ -827,7 +827,8 @@ int16_t popt_BinaryOptimize(void)
                 g_opPtr[i + 1]->op == oLDSB  ||
                 g_opPtr[i + 1]->op == oULDSB ||
                 g_opPtr[i + 1]->op == oLAS   ||
-                g_opPtr[i + 1]->op == oLAC))
+                g_opPtr[i + 1]->op == oLAC   ||
+                g_opPtr[i + 1]->op == oLAR))
         {
           /* Turn the oPUSHB or oUPUSHB into an oPUSH op (temporarily) */
 
@@ -1040,7 +1041,7 @@ int16_t popt_BinaryOptimize(void)
            *
            *  TOS(0) - Binary operator
            *  TOS(1) - PUSH a constant value (oPUSH, oPUSHB, or oUPUSHB).
-           *  TOS(2) - Load address instruction (oLA, oLAX, oLAS, oLASX, oLAC).
+           *  TOS(2) - Load address instruction (oLA, oLAX, oLAS, oLASX, oLAC, oLAR).
            */
 
           if (popt_CheckAddressOperation(i))

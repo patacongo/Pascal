@@ -39,6 +39,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <string.h>
 #include <errno.h>
 
@@ -73,6 +74,12 @@ static void libexec_DumpHeap(struct libexec_s *st, const char *msg,
 #else
 #  define libexec_DumpFreeList(st, msg, address)
 #  define libexec_DumpHeap(st, msg, address)
+#endif
+#ifdef CONFIG_PASCAL_MEMINFO
+static void libexec_MemInfo(struct libexec_s *st, const char *msg,
+              uint16_t size);
+#else
+#  define libexec_MemInfo(st, msg, size)
 #endif
 static void libexec_AddChunkToFreeList(struct libexec_s *st,
              freeChunk_t *newChunk);
@@ -201,6 +208,59 @@ static void libexec_DumpHeap(struct libexec_s *st, const char *msg,
       chunkAddr += chunk->forward;
       chunkNo++;
     }
+}
+#endif
+
+/****************************************************************************/
+
+#ifdef CONFIG_PASCAL_MEMINFO
+static void libexec_MemInfo(struct libexec_s *st, const char *msg,
+              uint16_t size)
+{
+  freeChunk_t *freeChunk;
+  uint32_t totalFreeMemory;
+  uint16_t largestChunkSize;
+  uint16_t heapStart = HEAP_ALIGNUP(st->hpb);
+  uint16_t heapEnd   = HEAP_ALIGNDOWN(heapStart + st->hpSize);
+  unsigned int numFreeChunks;
+
+  /* Traverse the ordered free list collecting statistics. */
+
+  freeChunk        = st->freeChunks;
+  totalFreeMemory  = 0;
+  largestChunkSize = 0;
+  numFreeChunks    = 0;
+
+  while (freeChunk != NULL)
+    {
+      uint16_t chunkSize = freeChunk->chunk.forward;
+
+      /* Update statistics */
+
+      totalFreeMemory += chunkSize;
+
+      if (chunkSize > largestChunkSize)
+        {
+          largestChunkSize = chunkSize;
+        }
+
+      numFreeChunks++;
+
+      /* The final free chunk should have next == 0 */
+
+      if (freeChunk->next == 0)
+        {
+          break;
+        }
+
+      freeChunk = (freeChunk_t *)ATSTACK(st, heapStart + freeChunk->next);
+    }
+
+  printf("%s (size: %" PRIu16 ")\n", msg, size);
+  printf("  Heap size: %" PRIu16 " Free memory: %" PRIu32 "\n",
+          heapEnd - heapStart, totalFreeMemory);
+  printf("  Number free chunks: %" PRIu16 " Largest free chunk: %" PRIu16 "\n",
+          numFreeChunks, largestChunkSize);
 }
 #endif
 
@@ -575,10 +635,13 @@ static uint16_t libexec_Alloc(struct libexec_s *st, uint16_t allocSize)
               libexec_DisposeChunk(st, subChunk);
             }
 
-          /* Return the address of the allocated memory */
+          /* Generate debug output as configured */
 
           libexec_DumpHeap(st, "After allocation",
             heapStart + freeChunk->chunk.address);
+          libexec_MemInfo(st, "After allocation", allocSize);
+
+          /* Return the address of the allocated memory */
 
           return heapStart + freeChunk->chunk.address + sizeof(memChunk_t);
         }
@@ -591,6 +654,7 @@ static uint16_t libexec_Alloc(struct libexec_s *st, uint16_t allocSize)
   /* Failed to allocate */
 
   libexec_DumpHeap(st, "Allocation failure", heapStart);
+  libexec_MemInfo(st, "Allocation failure", allocSize);
   return 0;
 }
 
@@ -624,11 +688,19 @@ static int libexec_Free(struct libexec_s *st, uint16_t address)
     }
   else
     {
+#ifdef CONFIG_PASCAL_MEMINFO
+      uint16_t chunkSize = freeChunk->chunk.forward;
+#endif
+
       freeChunk->next    = 0;
       freeChunk->prev    = 0;
 
       libexec_DisposeChunk(st, freeChunk);
+
+      /* Output debug information as configured */
+
       libexec_DumpHeap(st, "After free", address);
+      libexec_MemInfo(st, "After free", chunkSize);
 
       return eNOERROR;
     }

@@ -1457,13 +1457,19 @@ static void pas_LabelStatement(void)
 static void pas_ProcStatement(void)
 {
   symbol_t *procPtr = g_tknPtr;
+  uint16_t savedFixup;
   int size = 0;
 
   /* FORM: procedure-method-statement =
-   * procedure-method-specifier [ actual-parameter-list ]
-   *
-   * Skip over the procedure-method-statement
+   *         procedure-method-specifier [ actual-parameter-list ]
    */
+
+  /* Initialize the string stack pointer fixup for this level */
+
+  savedFixup      = g_strStackFixup;
+  g_strStackFixup = 0;
+
+  /* Skip over the procedure-method-specifier */
 
   getToken();
 
@@ -1477,7 +1483,23 @@ static void pas_ProcStatement(void)
   /* Generate procedure call and stack adjustment. */
 
   pas_GenerateProcedureCall(procPtr);
-  if (size)
+
+  /* If there was persistent string storage used in function call, then
+   * free that now.
+   */
+
+  if (g_strStackFixup > 0)
+    {
+       pas_GenerateDataOperation(opINCS, -g_strStackFixup);
+    }
+
+  /* Restore the previous stack fixup */
+
+  g_strStackFixup = savedFixup;
+
+  /* Release memory used by the actual parameter list (if any). */
+
+  if (size > 0)
     {
       pas_GenerateDataOperation(opINDS, -size);
     }

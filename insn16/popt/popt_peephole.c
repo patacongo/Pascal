@@ -445,7 +445,7 @@ bool popt_CheckLoadOperation(int16_t chkIndex)
           g_opPtr[chkIndex]->op == oLDS    || g_opPtr[chkIndex]->op == oLDSB ||
           g_opPtr[chkIndex]->op == oULDSB  ||
           g_opPtr[chkIndex]->op == oLA     || g_opPtr[chkIndex]->op == oLAS   ||
-          g_opPtr[chkIndex]->op == oLAC);
+          g_opPtr[chkIndex]->op == oLAC    || g_opPtr[chkIndex]->op == oLAR);
 }
 
 /****************************************************************************/
@@ -469,7 +469,7 @@ bool popt_CheckAddressOperation(int16_t chkIndex)
 {
   return (g_opPtr[chkIndex]->op == oLA  || g_opPtr[chkIndex]->op == oLAX ||
           g_opPtr[chkIndex]->op == oLAS || g_opPtr[chkIndex]->op == oLASX  ||
-          g_opPtr[chkIndex]->op == oLAC);
+          g_opPtr[chkIndex]->op == oLAC || g_opPtr[chkIndex]->op == oLAR);
 }
 
 /****************************************************************************/

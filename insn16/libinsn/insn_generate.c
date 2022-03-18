@@ -144,8 +144,10 @@ static const uint16_t g_opCodeMap[NUM_OPCODES] =
   oSTXM,    /* opSTXM */
   oLA,      /* opLA */
   oLAC,     /* opLAC */
+  oLAR,     /* opLAR */
   oPUSH,    /* opPUSH */
   oINDS,    /* opINDS */
+  oINCS,    /* opINCS */
   oLAX,     /* opLAX */
   oSTRLIB,  /* opSTRLIB */
   oSYSIO,   /* opSYSIO */

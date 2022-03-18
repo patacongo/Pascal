@@ -107,8 +107,10 @@ STEP 1a:
     else                                       -> oPUSH  arg
 
 STEP 2:
-Delete multiple modifications of DSEG pointer
+Delete multiple modifications of the DSEG pointer
   INDS arg1 + INDS arg2                        -> INDS arg1+arg2
+Delete multiple modifications of the character stack pointer
+  INCS arg1 + INCS arg2                        -> INCS arg1+arg2
 
 pcopt.c:binaryOptimize
 STEP 1:

@@ -288,16 +288,16 @@ static void pass3(poffHandle_t poffHandle, poffProgHandle_t poffProgHandle)
    * replace label references with program section offsets.
    *
    * CASE 1: LAC
-   *   generate RODATA relocation entry
+   *   Generate RODATA relocation entry
    * CASE 2: PCAL instructions
-   *   replace label with I-space offset, OR
-   *   generate a PROGRAM relocation entry
+   *   Replace label with I-space offset, OR
+   *   Generate a PROGRAM relocation entry
    * CASE 3: J* instructions
-   *   replace label with I-space offset
+   *   Replace label with I-space offset
    * CASE 4: LDS*, STS*, and LAS* instructions
-   *   generate a STACK relocation (if imported?)
+   *   Generate a STACK relocation (if imported?)
    * ELSE:
-   *   pass through with no additional action
+   *   Pass through with no additional action
    */
 
   pc = 0;

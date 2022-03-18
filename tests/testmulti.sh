@@ -79,6 +79,7 @@ if [ ! -f ${PASDIRNAME}/${PASBASENAME}.pex ]; then
 fi
 
 PRUNOPTS="-t ${STRSTKSZ} -n ${HEAPSIZE}"
+echo "Using options:  ${PRUNOPTS}"
 
 if [ -z "${INPUT}" ]; then
     ${PRUN} ${PRUNOPTS} ${PASDIRNAME}/${PASBASENAME}.pex 2>&1

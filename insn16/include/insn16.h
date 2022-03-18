@@ -107,10 +107,10 @@
  *
  * xx11 0000  ---        FLOAT fop      LA uoffs       LAS loff,offs
  * xx11 0001  ---        SETOP sop      LAC dlbl       ---
- * xx11 0010  ---        LONGOP lop     ---            LONGOP lop,ilbl
- * xx11 0011  ---        OSOP osop      ---            ---
- * xx11 0100  ---        PUSHB n        PUSH nn        ---
- * xx11 0101  ---        UPUSHB n       INDS nn        ---
+ * xx11 0010  ---        LONGOP lop     LAR soffs      LONGOP lop,ilbl
+ * xx11 0011  ---        OSOP osop      PUSH nn        ---
+ * xx11 0100  ---        PUSHB n        INDS nn        ---
+ * xx11 0101  ---        UPUSHB n       INCS nn        ---
  * xx11 0110  ---        ---            LIB libop      ---
  * xx11 0111  UMUL       ---            SYSIO sysop    ---
  * xx11 1000  UDIV       ---            LAX uoffs      LASX loff,offs
@@ -137,6 +137,7 @@
  *   ilbl  = instruction space label
  *   dlbl  = stack data label
  *   offs  = 16-bit frame offset (signed)
+ *   soffs = 16-bit stack pointer offset (signed)
  *   uoffs = 16-bit base offset (unsigned)
  *   *     = Indicates pseudo-operations (these are removed
  *           after final fixup of the object file).
@@ -333,18 +334,16 @@
 
 #define oLA     (o16|0x30)
 
-/* Load absolute stack address:  arg16 = RODATA offset (No stack arguments) */
+/* Load absolute stack address:  arg16 = data offset (No stack arguments) */
 
 #define oLAC    (o16|0x31)
-
-/* (o16|0x32)-(o16|0x33) -- unassigned */
+#define oLAR    (o16|0x32)
 
 /* Data stack:  arg16 = 16 bit signed data (no stack arguments) */
 
-#define oPUSH   (o16|0x34)
-#define oINDS   (o16|0x35)
-
-/* (o16|0x34)-(o16|0x35) -- unassigned */
+#define oPUSH   (o16|0x33)
+#define oINDS   (o16|0x34)
+#define oINCS   (o16|0x35)
 
 /* System functions: arg16 = 16-bit string library call identifier */
 
@@ -422,7 +421,7 @@
 #define oSTSXB  (o16|o8|0x2e)    /* (Two 16-bit stack arguments) */
 #define oSTSXM  (o16|o8|0x2f)    /* (Two+n 16-bit stack arguments) */
 
-/* FOR LAS/LASX    arg8 = level; arg16 = signed frame offset
+/* LAS/LASX:      arg8 = level; arg16 = signed frame offset
  *                          (no stack arguments)
  */
 

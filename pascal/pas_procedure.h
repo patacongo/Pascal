@@ -44,6 +44,17 @@
 #include "pas_defns.h"
 
 /***************************************************************************
+ * Public Data
+ ***************************************************************************/
+
+/* Persistent string stack data may be need to hold string value parameters.
+ * That string stack must be released when the function/procedure returns.
+ * This variable holds the size of the fixup.
+ */
+
+extern uint16_t g_strStackFixup;
+
+/***************************************************************************
  * Public Function Prototypes
  ***************************************************************************/
 

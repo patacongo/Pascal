@@ -2965,11 +2965,17 @@ static exprType_t pas_FunctionDesignator(void)
   symbol_t  *funcPtr      = g_tknPtr;
   symbol_t  *typePtr      = funcPtr->sParm.p.pParent;
   exprType_t factorType;
+  uint16_t   savedFixup;
   int        size         = 0;
 
   /* FORM: function-designator =
    *       function-identifier [ actual-parameter-list ]
    */
+
+  /* Initialize the string stack pointer fixup for this level */
+
+  savedFixup      = g_strStackFixup;
+  g_strStackFixup = 0;
 
   /* Allocate stack space for a reference instance of the type returned by
    * the function.  This is an "container" that will catch the valued
@@ -3008,7 +3014,20 @@ static exprType_t pas_FunctionDesignator(void)
 
   pas_GenerateProcedureCall(funcPtr);
 
-  /* Release the actual parameter list (if any). */
+  /* If there was persistent string storage used in function call, then
+   * free that now.
+   */
+
+  if (g_strStackFixup > 0)
+    {
+       pas_GenerateDataOperation(opINCS, -g_strStackFixup);
+    }
+
+  /* Restore the previous stack fixup */
+
+  g_strStackFixup = savedFixup;
+
+  /* Release memory used by the actual parameter list (if any). */
 
   if (size)
     {

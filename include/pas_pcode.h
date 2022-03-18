@@ -147,13 +147,15 @@ enum pcode_e
 
   opLA,
 
-  /* Load absolute stack address:  arg = RODATA offset (No stack arguments) */
+  /* Load RO data address:        arg = RODATA offset (No stack arguments)
+   * Load stack relative address: arg = signed stack offset
+   */
 
-  opLAC,
+  opLAC, opLAR,
 
   /* Data stack:  arg = 16 bit signed data (no stack arguments) */
 
-  opPUSH, opINDS,
+  opPUSH, opINDS, opINCS,
 
   /* Load address relative to stack base: arg1 = unsigned offset, TOS=index */
 
@@ -191,14 +193,14 @@ enum pcode_e
 
   opSTSX, opSTSXB, opSTSXM,
 
-  /* FOR LAS/LASX    arg1 = level; arg2 = signed frame offset
+  /* LAS/LASX        arg1 = level; arg2 = signed frame offset
    *                          (no stack arguments)
    */
 
   opLAS, opLASX,
 
   /* Pseudo-operations:
-   * For LINE:         arg1 = file number; arg2 = line number
+   * LINE:             arg1 = file number; arg2 = line number
    */
 
   opLINE,

@@ -1089,6 +1089,10 @@ static inline int pexec24(struct libexec_s *st, uint8_t opcode,
       st->sp += signExtend16(imm16);
       break;
 
+    case oINCS :
+      st->csp += signExtend16(imm16);
+      break;
+
       /* System Functions:
        * For LIB:        imm16 = sub-function code
        */
@@ -1106,10 +1110,15 @@ static inline int pexec24(struct libexec_s *st, uint8_t opcode,
       ret = libexec_sysio(st, imm16);
       break;
 
-      /* Program control:  imm16 = unsigned label (no stack arguments) */
+      /* Program control:  imm16 = unsigned data offset (no stack arguments) */
 
     case oLAC :
       uparm1 = imm16 + st->rop;
+      PUSH(st, uparm1);
+      break;
+
+    case oLAR :
+      uparm1 = imm16 + st->sp;
       PUSH(st, uparm1);
       break;
 

@@ -118,8 +118,8 @@ static void prun_showusage(const char *progname)
           DEFAULT_STKSTR_SIZE);
   fprintf(stderr, "  -n <heap-size>\n");
   fprintf(stderr, "  --new <heap-size>\n");
-  fprintf(stderr, "    Memory in bytes to allocate for the pascal program\n");
-  fprintf(stderr, "    head use for new() (default is %d bytes)\n",
+  fprintf(stderr, "    heap use for new() and temporary strings (default is\n");
+  fprintf(stderr, "    %d bytes)\n",
           DEFAULT_HPSTK_SIZE);
 #ifdef CONFIG_PASCAL_DEBUGGER
   fprintf(stderr, "  -d\n");

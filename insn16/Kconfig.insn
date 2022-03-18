@@ -1,10 +1,18 @@
 menu "INSN16 Options"
 
 config PASCAL_HEAPDEBUG
-	bool "Enable heap debug"
+	bool "Heap debug"
 	default n
 	---help---
-		Enable run-time dumping of all chunks in the heap after each
-		allocation and free.
+		Enable verbose run-time dumping of all chunks in the heap after
+		each allocation and free.  This debug output is useful for
+		debugging suspected memory manage bugs.
+
+config PASCAL_MEMINFO
+	bool "Memory usage debug"
+	default n
+	---help---
+		Enable terse memory usage output on each allocation and free.
+		This debug output is useful for debugging memory leaks.
 
 endmenu # Pascal Applications

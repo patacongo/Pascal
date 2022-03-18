@@ -139,6 +139,17 @@ static void     pas_ValProc(void);                  /* VAL procedure */
 static void     pas_InitializeNewRecord(symbol_t *typePtr);
 static void     pas_InitializeNewArray(symbol_t *typePtr);
 
+/***************************************************************************
+ * Public Data
+ ***************************************************************************/
+
+/* Persistent string stack data may be need to hold string value parameters.
+ * That string stack must be released when the function/procedure returns.
+ * This variable holds the size of the fixup.
+ */
+
+uint16_t g_strStackFixup;
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -2684,8 +2695,52 @@ int pas_ActualParameterList(symbol_t *procPtr)
               break;
 
             case sSTRING :
-              pas_Expression(exprString, typePtr);
-              size += INT_ALIGNUP(sSTRING_SIZE);
+              {
+                /* Passing a string value parm is awkard, we don't want
+                 * pass temporary strings and value are may or may not
+                 * be a temporary string.  Most of this logic is making
+                 * the (possible) temporary string into t a persistent
+                 * string allocated on the string stack.
+                 *
+                 * VAR string parameters are much easier.
+                 */
+
+                symbol_t *baseTypePtr = pas_GetBaseTypePointer(typePtr);
+                if (baseTypePtr == NULL || baseTypePtr->sKind != sTYPE ||
+                    baseTypePtr->sParm.t.tType != sSTRING)
+                  {
+                    error(eINVTYPE);
+                  }
+                else
+                  {
+                    uint16_t strAlloc  = baseTypePtr->sParm.t.tMaxValue;
+                    uint16_t varOffset = sSTRING_SIZE + sINT_SIZE - sINT_SIZE;
+
+                    /* Create an empty, persistent string. */
+
+                    pas_GenerateDataOperation(opINDS, sSTRING_SIZE);
+                    pas_GenerateDataOperation(opPUSH, strAlloc);
+                    pas_GenerateDataOperation(opLAR, -varOffset);
+                    pas_StringLibraryCall(lbSTRINIT);
+
+                    /* Evaluate the string expression.  This should put
+                     * sSTRING_SIZE on the stack.
+                     */
+
+                    pas_Expression(exprString, typePtr);
+                    varOffset = sSTRING_SIZE + sSTRING_SIZE - sINT_SIZE;
+
+                    /* Copy the temporary string into the persistent string */
+
+                    pas_GenerateDataOperation(opLAR, -varOffset);
+                    pas_StringLibraryCall(lbSTRCPY);
+
+                    /* Remove that amount from the string stack on return */
+
+                    g_strStackFixup += strAlloc;
+                    size += INT_ALIGNUP(sSTRING_SIZE);
+                  }
+              }
               break;
 
             case sSUBRANGE :
