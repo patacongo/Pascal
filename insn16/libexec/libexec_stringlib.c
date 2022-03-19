@@ -976,6 +976,38 @@ uint16_t libexec_StringOperations(struct libexec_s *st, uint16_t subfunc)
       }
       break;
 
+      /* Return the length a the string (and free any temporary heap allocations)
+       *
+       *   procedure strlen(str : string)
+       *
+       * ON INPUT
+       *   TOS(0) = Size of string allocation
+       *   TOS(1) = Address of string data
+       *   TOS(2) = Length of string
+       * ON RETURN:
+       *   TOS(0) = Length of the string (same as TOS(2) on input)
+       */
+
+    case lbSTRLEN :
+      {
+        uint16_t strAlloc;
+        uint16_t strAddr;
+
+        /* Get the strink buffer parameters from the stack (leaving space
+         * for the length as the return value);
+         */
+
+        POP(st, strAlloc);    /* Discard allocation size of string1 buffer */
+        POP(st, strAddr);     /* Address of string1 data */
+
+        /* We consumed the temporary strings and probably need to free the
+         * temporary string heap allocations.
+         */
+
+        libexec_FreeTmpString(st, strAddr, strAlloc);
+      }
+      break;
+
       /* Copy a substring from a string.
        *
        *   Copy(from : string, from, howmuch: integer) : string

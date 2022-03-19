@@ -179,7 +179,6 @@
 
 #define tSTDFUNC         0xc0
 #define tSTDPROC         0xc1
-#define tBUILTIN         0xc2
 
 /***********************************************************************/
 

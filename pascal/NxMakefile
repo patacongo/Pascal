@@ -42,8 +42,8 @@ ifneq ($(CONFIG_PASCAL_TARGET_TOOLS),)
 
 CSRCS     = pas_program.c pas_unit.c pas_block.c pas_initializer.c
 CSRCS    += pas_statement.c pas_expression.c pas_constexpr.c pas_procedure.c
-CSRCS    += pas_stdfunc.c pas_constfunc.c pas_builtin.c pas_codegen.c
-CSRCS    += pas_token.c pas_symtable.c pas_error.c
+CSRCS    += pas_stdfunc.c pas_constfunc.c pas_codegen.c pas_token.c
+CSRCS    += pas_symtable.c pas_error.c
 
 # main entry point
 

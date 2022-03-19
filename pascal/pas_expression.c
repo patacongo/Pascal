@@ -1182,10 +1182,6 @@ static exprType_t pas_Factor(exprType_t findExprType)
       factorType = pas_StandardFunction();
       break;
 
-    case tBUILTIN:
-      factorType = pas_BuiltInFunction();
-      break;
-
     /* Type case? */
 
     case sTYPE :

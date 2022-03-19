@@ -116,7 +116,7 @@ static void     pas_WritelnProc(void);              /* WRITELN procedure */
 static void     pas_WriteProcCommon(bool text,      /* WRITE[LN] common logic */
                   uint16_t fileSize);
 static void     pas_WriteText(void);                /* WRITE text file */
-static uint16_t pas_WriteFieldWidth(void);          /* Get text file write field-width. */
+static void     pas_WriteFieldWidth(void);          /* Get text file write field-width. */
 static void     pas_WriteBinary(uint16_t fileSize); /* WRITE binary file */
 static void     pas_DirectoryProc(uint16_t opCode); /* Change|Create working directory */
 static void     pas_NewProc(void);                  /* Memory allocator */
@@ -1167,7 +1167,6 @@ static void pas_WriteText(void)
 
         uint32_t offset     = poffAddRoDataString(g_poffHandle, g_tokenString);
         int      size       = strlen(g_tokenString);
-        uint16_t fieldWidth = pas_WriteFieldWidth();
 
         /* Set the file number, offset and size on the stack
          *
@@ -1182,7 +1181,7 @@ static void pas_WriteText(void)
         pas_GenerateDataOperation(opPUSH, size);
         pas_GenerateDataOperation(opLAC, (uint16_t)offset);
         pas_GenerateDataOperation(opPUSH, size);
-        pas_GenerateDataOperation(opPUSH, fieldWidth);
+        pas_WriteFieldWidth();
         pas_GenerateIoOperation(xWRITE_STRING);
 
         g_stringSP = g_tokenString;
@@ -1194,7 +1193,6 @@ static void pas_WriteText(void)
       {
         uint32_t offset     = (uint16_t)g_tknPtr->sParm.s.roOffset;
         int      size       = (uint16_t)g_tknPtr->sParm.s.roSize;
-        uint16_t fieldWidth = pas_WriteFieldWidth();
 
         /* WRITE_STRING: TOS(0) = Field width
          *               TOS(1) = Fake buffer allocation size
@@ -1207,7 +1205,7 @@ static void pas_WriteText(void)
         pas_GenerateDataOperation(opPUSH, size);
         pas_GenerateDataOperation(opLAC, offset);
         pas_GenerateDataOperation(opPUSH, size);
-        pas_GenerateDataOperation(opPUSH, fieldWidth);
+        pas_WriteFieldWidth();
         pas_GenerateIoOperation(xWRITE_STRING);
 
         getToken();
@@ -1219,7 +1217,6 @@ static void pas_WriteText(void)
     case sARRAY :
       {
         symbol_t *wPtr;
-        uint16_t  fieldWidth;
 
         wPtr = g_tknPtr->sParm.v.vParent;
         if (wPtr != NULL && wPtr->sKind == sTYPE &&
@@ -1232,12 +1229,10 @@ static void pas_WriteText(void)
              *               TOS(3) = File number
              */
 
-            fieldWidth = pas_WriteFieldWidth();
-
             pas_GenerateSimple(opDUP);
             pas_GenerateDataOperation(opPUSH, wPtr->sParm.v.vSize);
             pas_GenerateStackReference(opLAS, wPtr);
-            pas_GenerateDataOperation(opPUSH, fieldWidth);
+            pas_WriteFieldWidth();
             pas_GenerateIoOperation(xWRITE_STRING);
             getToken();
             break;
@@ -1256,7 +1251,7 @@ static void pas_WriteText(void)
 
         pas_GenerateSimple(opDUP);
         writeType = pas_Expression(exprUnknown, NULL);
-        pas_GenerateDataOperation(opPUSH, pas_WriteFieldWidth());
+        pas_WriteFieldWidth();
 
         /* Then generate the operation */
 
@@ -1340,10 +1335,9 @@ static void pas_WriteText(void)
 
 /* Get text file write field-width. */
 
-static uint16_t pas_WriteFieldWidth(void)
+static void pas_WriteFieldWidth(void)
 {
-  uint8_t fieldWidth = 0;
-  uint8_t precision  = 0;
+  exprType_t exprType;
 
   /* If a field width/precision is present, then the current token will
    * be ':'
@@ -1353,20 +1347,22 @@ static uint16_t pas_WriteFieldWidth(void)
 
   if (g_token == ':')
     {
-      /* A constant, integer field-width with must follow the colon. */
+      /* An Integer field-width with must follow the colon. */
 
       getToken();
-      pas_ConstantExpression(exprInteger, NULL);
-      if (g_constantToken != tINT_CONST || g_constantInt < 0 ||
-          g_constantInt > UINT8_MAX)
+      exprType = pas_Expression(exprShortInteger, NULL);
+      if (exprType != exprShortInteger)
         {
           error(eBADFIELDWIDTH);
         }
 
-      fieldWidth = (uint8_t)g_constantInt;
+      /* Shift the field width to the upper 8 bits */
+
+      pas_GenerateDataOperation(opPUSH, 8);
+      pas_GenerateSimple(opSLL);
 
       /* Check if a precision is present after the field-width (only applies
-       * to REAL values.
+       * to REAL values).
        */
 
       if (g_token == ':')
@@ -1376,18 +1372,23 @@ static uint16_t pas_WriteFieldWidth(void)
            */
 
           getToken();
-          pas_ConstantExpression(exprInteger, NULL);
-          if (g_constantToken != tINT_CONST || g_constantInt < 0 ||
-              g_constantInt > fieldWidth)
+          exprType = pas_Expression(exprShortInteger, NULL);
+          if (exprType != exprShortInteger)
             {
               error(eBADPRECISION);
             }
 
-          precision = (uint8_t)g_constantInt;
+          /* 'OR' the precision into the lower bits */
+
+          pas_GenerateSimple(opOR);
         }
     }
+  else
+    {
+      /* No fieldwidth */
 
-  return ((uint16_t)fieldWidth << 8) | ((uint16_t)precision & 0xff);
+      pas_GenerateDataOperation(opPUSH, 0);
+    }
 }
 
 /***********************************************************************/
@@ -1773,7 +1774,6 @@ static uint16_t pas_GenVarFileNumber(symbol_t *varPtr, uint16_t *pFileSize,
 static void pas_StrProc(void)
 {
   exprType_t exprType;
-  uint16_t fieldWidth;
   uint16_t stdOpCode;
   uint16_t opCode;
 
@@ -1817,8 +1817,7 @@ static void pas_StrProc(void)
 
   /* The expression may be followed by a field width and precision */
 
-  fieldWidth = pas_WriteFieldWidth();
-  pas_GenerateDataOperation(opPUSH, fieldWidth);
+  pas_WriteFieldWidth();
 
   if (g_token != ',') error(eCOMMA);
   else getToken();

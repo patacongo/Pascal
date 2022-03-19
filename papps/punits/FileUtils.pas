@@ -284,7 +284,7 @@ IMPLEMENTATION
          and hidden files are only reported if so requested. *)
 
       FirstChar := CharAt(SearchResult.name, 1);
-      IF Success AND (Length(FirstChar) > 0) THEN
+      IF Success AND (FirstChar <> Chr(0)) THEN
       BEGIN
         { Include hidden files in the results }
 

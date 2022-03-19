@@ -49,8 +49,8 @@
 
 exprType_t pas_StandardFunction(void);
 void pas_StandardFunctionOfConstant(void);
-exprType_t pas_BuiltInFunction(void);
 
+void pas_SizeOfFunc(void);
 void pas_CheckLParen(void);
 void pas_CheckRParen(void);
 

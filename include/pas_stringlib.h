@@ -237,6 +237,20 @@
 
 #define lbSTRCMP        (0x000d)
 
+/* Return the length a the string (and free any temporary heap allocations)
+ *
+ *   procedure strlen(str : string)
+ *
+ * ON INPUT
+ *   TOS(0) = Size of string allocation
+ *   TOS(1) = Address of string data
+ *   TOS(2) = Length of string
+ * ON RETURN:
+ *   TOS(0) = Length of the string (same as TOS(2) on input)
+ */
+
+#define lbSTRLEN        (0x000e)
+
 /* Borland-style string operations ******************************************/
 
 /* Copy a substring from a string.
@@ -255,7 +269,7 @@
  *   TOS(2) = Length of the substring
  */
 
-#define lbCOPYSUBSTR    (0x000e)
+#define lbCOPYSUBSTR    (0x000f)
 
 /* Find a substring in a string.  Returns the (1-based) character position of
  * the substring or zero if the substring is not found.
@@ -274,7 +288,7 @@
  *   TOS(0) = Position of the substring (or zero if not present)
  */
 
-#define lbFINDSUBSTR    (0x000f)
+#define lbFINDSUBSTR    (0x0010)
 
 /* Insert a string into another string.
  *
@@ -289,7 +303,7 @@
  * ON RETURN:
  */
 
-#define lbINSERTSTR     (0x0010)
+#define lbINSERTSTR     (0x0011)
 
 /* Delete a substring from a string.
  *
@@ -302,7 +316,7 @@
  * ON RETURN:
  */
 
-#define lbDELSUBSTR     (0x0011)
+#define lbDELSUBSTR     (0x0012)
 
 /* Fill string s with character value until s is count-1 char long.
  *
@@ -315,7 +329,7 @@
  * ON RETURN:
  */
 
-#define lbFILLCHAR      (0x0012)
+#define lbFILLCHAR      (0x0013)
 
 /* Extract a character from a string.
  *
@@ -330,7 +344,7 @@
  *   TOS(0) = Character from 'inString' at 'charPos'
  */
 
-#define lbCHARAT        (0x0013)
+#define lbCHARAT        (0x0014)
 
 /* Convert a numeric value to a string
  *
@@ -341,11 +355,11 @@
  * ON RETURN:
  */
 
-#define lbINTSTR        (0x0014)
-#define lbWORDSTR       (0x0015)
-#define lbLONGSTR       (0x0016)
-#define lbULONGSTR      (0x0017)
-#define lbREALSTR       (0x0018)
+#define lbINTSTR        (0x0015)
+#define lbWORDSTR       (0x0016)
+#define lbLONGSTR       (0x0017)
+#define lbULONGSTR      (0x0018)
+#define lbREALSTR       (0x0019)
 
 /* Convert a string to a numeric value
  *
@@ -375,8 +389,8 @@
  * ON RETURN: actual parameters released
  */
 
-#define lbVAL           (0x0019)
+#define lbVAL           (0x001a)
 
-#define MAX_LBOP        (0x001a)
+#define MAX_LBOP        (0x001b)
 
 #endif /* __PAS_STRINGLIB_H */

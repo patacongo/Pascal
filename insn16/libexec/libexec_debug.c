@@ -69,6 +69,7 @@ static void      pdbg_ExecCommand(struct libexec_s *st,
                    enum command_e cmd, uint32_t value);
 static int32_t   pdbg_ReadDecimal(char *ptr);
 static int32_t   pdbg_ReadHex(char *ptr, int32_t defaultvalue);
+static bool      pdbg_ValidAddress(struct libexec_s *st, uint16_t addr);
 static void      pdbg_ProgramStatus(struct libexec_s *st);
 static pasSize_t pdbg_PrintPCode(struct libexec_s *st, pasSize_t pc,
                    int16_t nitems);
@@ -230,7 +231,7 @@ static void pdbg_ExecCommand(struct libexec_s *st, enum command_e cmd, uint32_t 
       break;
 
     case eCMD_DS:     /* Display Stack (or heap) */
-      if (value > st->sp && (value < st->hpb || value >= st->hpb + st->hpSize))
+      if (!pdbg_ValidAddress(st, value))
         {
           printf("Invalid stack address\n");
           st->lastCmd = eCMD_NONE;
@@ -320,6 +321,14 @@ static int32_t pdbg_ReadHex(char *ptr, int32_t defaultvalue)
 }
 
 /***************************************************************************/
+
+static bool pdbg_ValidAddress(struct libexec_s *st, uint16_t addr)
+{
+  return ((st->sp < st->stackSize && addr <= st->sp) ||
+          (addr >= st->hpb && addr < st->hpb + st->hpSize));
+}
+
+/***************************************************************************/
 /* Print the disassembled P-Code at PC */
 
 static void pdbg_ProgramStatus(struct libexec_s *st)
@@ -399,12 +408,12 @@ static pasSize_t pdbg_PrintPCode(struct libexec_s *st, pasSize_t pc, int16_t nit
 /***************************************************************************/
 /* Print the stack value at SP */
 
-static pasSize_t pdbg_PrintStack(struct libexec_s *st, pasSize_t sp, int16_t nitems)
+static pasSize_t pdbg_PrintStack(struct libexec_s *st, pasSize_t sp,
+                                 int16_t nitems)
 {
   int32_t isp;
 
-  if ((st->sp < st->stackSize && sp <= st->sp) ||
-      (sp >= st->hpb && sp < st->hpb + st->hpSize))
+  if (pdbg_ValidAddress(st, sp))
     {
       isp = BTOISTACK(sp);
       printf("SP:%04" PRIx16 "  %04" PRIx16 "\n",
@@ -446,9 +455,17 @@ static void pdbg_PrintWatchpoint(struct libexec_s *st)
 {
   if (st->nWatchPoints > 0)
     {
-      int32_t isp = BTOISTACK(st->watchPoint[0]);
-      printf("WP:%04" PRIx16 "  %04" PRIx16 "\n",
-             st->watchPoint[0], st->dstack.i[isp]);
+      uint16_t isp = BTOISTACK(st->watchPoint[0]);
+
+      if (pdbg_ValidAddress(st, isp))
+        {
+          printf("WP:%04" PRIx16 "  %04" PRIx16 "\n",
+                 st->watchPoint[0], st->dstack.i[isp]);
+        }
+      else
+        {
+          printf("WP:%04" PRIx16 "  xxxx\n", st->watchPoint[0]);
+        }
     }
 }
 

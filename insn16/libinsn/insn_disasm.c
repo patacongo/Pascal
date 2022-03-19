@@ -502,13 +502,13 @@ static const char * const osName[MAX_OSOP] =
 static const char invLbOp[] = "Invalid runtime code";
 static const char * const lbName[MAX_LBOP] =
 { /* LIB opcode mnemonics */
-/* 0x00 */ "STRCPY",    "STRCPY2",   "STRCPYX",    "STRCPYX2",
-/* 0x04 */ "BSTR2STR",  "STR2BSTR",  "STR2BSTRX",  "STRINIT",
-/* 0x08 */ "STRTMP",    "STRDUP",    "MKSTKC",     "STRCAT",
-/* 0x0c */ "STRCATC",   "STRCMP",    "COPYSUBSTR", "FINDSUBSTR",
-/* 0x10 */ "INSERTSTR", "DELSUBSTR", "FILLCHAR ",  "CHARAT",
-/* 0x14 */ "INTSTR",    "WORDSTR",   "LONGSTR",    "ULONGSTR ",
-/* 0x18 */ "REALSTR",   "VAL"
+/* 0x00 */ "STRCPY",     "STRCPY2",   "STRCPYX",    "STRCPYX2",
+/* 0x04 */ "BSTR2STR",   "STR2BSTR",  "STR2BSTRX",  "STRINIT",
+/* 0x08 */ "STRTMP",     "STRDUP",    "MKSTKC",     "STRCAT",
+/* 0x0c */ "STRCATC",    "STRCMP",    "STRLEN",     "COPYSUBSTR",
+/* 0x10 */ "FINDSUBSTR", "INSERTSTR", "DELSUBSTR",  "FILLCHAR ",
+/* 0x14 */ "CHARAT",     "INTSTR",    "WORDSTR",    "LONGSTR",
+/* 0x18 */ "ULONGSTR ",  "REALSTR",   "VAL"
 };
 
 static const char invFpOp[] = "Invalid FP Operation";

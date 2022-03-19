@@ -721,10 +721,6 @@ static void pas_ConstantFactor(exprType_t findExprType, symbol_t *typePtr)
       pas_StandardFunctionOfConstant();
       break;
 
-    case tBUILTIN:
-      (void)pas_BuiltInFunction();
-      break;
-
       /* Hmmm... Try the standard functions */
 
     default :

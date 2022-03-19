@@ -160,7 +160,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"INSERT",         tSTDPROC,        txINSERT},     /* (8) */
   {"INTERFACE",      tINTERFACE,      txNONE},       /* (1) */
   {"LABEL",          tLABEL,          txNONE},       /* (1) */
-  {"LENGTH",         tBUILTIN,        txLENGTH},     /* (8) */
+  {"LENGTH",         tSTDFUNC,        txLENGTH},     /* (2) */
   {"LN",             tSTDFUNC,        txLN},         /* (2) */
   {"MKDIR",          tSTDPROC,        txMKDIR},      /* (8) */
   {"MOD",            tMOD,            txNONE},       /* (1) */
@@ -198,7 +198,7 @@ static const reservedWord_t g_rsw[] =                /* Reserved word list */
   {"SHL",            tSHL,            txNONE},       /* (4) */
   {"SHR",            tSHR,            txNONE},       /* (4) */
   {"SIN",            tSTDFUNC,        txSIN},        /* (2) */
-  {"SIZEOF",         tBUILTIN,        txSIZEOF},     /* (7) */
+  {"SIZEOF",         tSTDFUNC,        txSIZEOF},     /* (2) */
   {"SPAWN",          tSTDFUNC,        txSPAWN},      /* (5) */
   {"SQR",            tSTDFUNC,        txSQR},        /* (2) */
   {"SQRT",           tSTDFUNC,        txSQRT},       /* (2) */

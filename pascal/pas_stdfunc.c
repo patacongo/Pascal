@@ -86,6 +86,7 @@ static void       pas_CardFunc(void);
 
 /* Borland style string operations */
 
+static void       pas_LengthFunc(void);
 static void       pas_CopyFunc(void);
 static void       pas_PosFunc(void);
 static void       pas_ConcatFunc(void);
@@ -514,6 +515,41 @@ static void pas_CardFunc(void)
   pas_GenerateSetOperation(setCARD);
 
   /* Assure that the parameter list terminates with a right parenthesis. */
+
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
+
+static void pas_LengthFunc(void)
+{
+  exprType_t exprType;
+
+  /* FORM:  length '(' string-expression ')' */
+
+  pas_CheckLParen();
+
+  /* Process the string-expression */
+
+  exprType = pas_Expression(exprString, NULL);
+  if (exprType == exprString)
+    {
+      /* The top of the stack now holds:
+       *
+       *   TOS(0) - String buffer allocation
+       *   TOS(1) - String buffer address
+       *   TOS(2) - String length
+       *
+       * We need to discard the buffer address and buffer allocation, leaving
+       * the string length on the stack.  But we also need to free any possible heap allocations used by the string.  The STRLEN string library function will have to handle that.
+       */
+
+      pas_StringLibraryCall(lbSTRLEN);
+    }
+  else
+    {
+      error(eSTRING);
+    }
 
   pas_CheckRParen();
 }
@@ -1056,7 +1092,17 @@ exprType_t pas_StandardFunction(void)
           funcType = pas_SuccFunc();
           break;
 
+        case txSIZEOF :
+          pas_SizeOfFunc();
+          funcType = exprInteger;
+          break;
+
           /* Borland-style string operations */
+
+        case txLENGTH :
+          pas_LengthFunc();
+          funcType = exprInteger;
+          break;
 
         case txCOPY :
           pas_CopyFunc();
@@ -1261,12 +1307,76 @@ exprType_t pas_StandardFunction(void)
   return funcType;
 }
 
+/****************************************************************************/
+
+void pas_SizeOfFunc(void)
+{
+  uint16_t size;
+
+  /* FORM:  sizeof '(' variable | type ')' */
+
+  pas_CheckLParen();
+  switch (g_token)
+    {
+      /* Variables */
+
+      case sFILE :
+      case sTEXTFILE :
+      case sINT :
+      case sWORD :
+      case sSHORTINT :
+      case sSHORTWORD :
+      case sLONGINT :
+      case sLONGWORD :
+      case sBOOLEAN :
+      case sCHAR :
+      case sREAL :
+      case sSTRING :
+      case sSCALAR :
+      case sSUBRANGE :
+      case sSET :
+      case sARRAY :
+      case sRECORD :
+        size = g_tknPtr->sParm.v.vSize;
+        break;
+
+      /* Pointers variables and VAR parameters are always the size of a point */
+
+      case sPOINTER :
+      case sVAR_PARM :
+        size = sPTR_SIZE;
+        break;
+
+      /* Types */
+
+      case sTYPE :
+        size = g_tknPtr->sParm.t.tAllocSize;
+        break;
+
+      default:
+        error(eINVARG);
+        size = 0;
+        break;;
+    }
+
+  /* Push the size on the stack */
+
+  pas_GenerateDataOperation(opPUSH, size);
+
+  getToken();
+  pas_CheckRParen();
+}
+
+/****************************************************************************/
+
 void pas_CheckLParen(void)
 {
    getToken();                          /* Skip over function name */
    if (g_token != '(') error(eLPAREN);  /* Check for '(' */
    else getToken();
 }
+
+/****************************************************************************/
 
 void pas_CheckRParen(void)
 {

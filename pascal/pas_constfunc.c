@@ -269,7 +269,7 @@ void pas_StandardFunctionOfConstant(void)
 
   if (g_token == tSTDFUNC)
     {
-      /* Yes, process it procedure according to the extended token type */
+      /* Yes, process it according to the extended token type */
 
       switch (g_tknSubType)
         {
@@ -289,6 +289,11 @@ void pas_StandardFunctionOfConstant(void)
 
         case txSUCC :
           pas_ConstantSuccFunc();
+          break;
+
+        case txSIZEOF :
+          pas_SizeOfFunc();
+          g_constantToken = tINT_CONST;
           break;
 
           /* Functions returning INTEGER with REAL arguments */
