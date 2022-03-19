@@ -244,7 +244,7 @@ The search attributes are the same as described above.  These can be concatenate
 
 - `PACKED ARRAY[..] OF CHAR` is not a string.  But `PACKED ARRAY[] OF CHA`R does have some legacy behavior that allow them some limited behavior like `STRINGS`
 - `SIZEOF` built-in is supported
-- Several test cases found on the internet failed because they involved the use of non-standard Pascal types(`filename`, `list`) and undefined functions, and  procedures (`fsplit`, `lowercase`, etc.).  FreePascal examples, in particular, use a object-base Pacal variant which has compatible differences with this more traditional, procedural pascal.
+- Several test cases found on the internet failed because they involved the use of non-standard Pascal types (e.g., `filename` and `list`) and undefined functions, and  procedures (e.g., `fsplit`).  *FreePascal* examples, in particular, use a object-based Pacal variant which has compatible differences with this more traditional, procedural pascal.
 
 I have seen initialization of file types like the following:
 
