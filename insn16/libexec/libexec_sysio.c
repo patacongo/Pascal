@@ -1240,7 +1240,6 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
   uint16_t fieldWidth;
   uint16_t dataSize;
   uint16_t address;
-  uint16_t allocSize;
   uint16_t uValue;
   int16_t  sValue;
   int      errorCode = eNOERROR;
@@ -1583,14 +1582,18 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
      */
 
     case xWRITE_STRING :
-      POP(st, fieldWidth);  /* Field width */
-      POP(st, allocSize);   /* String allocation size */
-      POP(st, address);     /* String address */
-      POP(st, dataSize);    /* String size */
-      POP(st, fileNumber);  /* File number */
+      {
+        uint16_t allocSize;
 
-      errorCode = libexec_WriteString(st, fileNumber, address,
-                                      dataSize, allocSize, fieldWidth);
+        POP(st, fieldWidth);  /* Field width */
+        POP(st, allocSize);   /* String allocation size */
+        POP(st, address);     /* String address */
+        POP(st, dataSize);    /* String size */
+        POP(st, fileNumber);  /* File number */
+
+        errorCode = libexec_WriteString(st, fileNumber, address,
+                                        dataSize, allocSize, fieldWidth);
+      }
       break;
 
     /* WRITE_CHAR: TOS(0)   = Field width/precision
@@ -1636,6 +1639,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
       {
         char *strBuffer;
         char *dirPath;
+        uint16_t allocSize;
         uint16_t result;
 
         /* Get the string argument */
@@ -1712,6 +1716,7 @@ int libexec_sysio(struct libexec_s *st, uint16_t subfunc)
         {
           char *sptr;
           uint16_t allocAddr;
+          uint16_t allocSize;
 
           /* Convert the C-string into a Pascal string */
 

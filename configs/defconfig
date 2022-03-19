@@ -5,6 +5,7 @@
 # You can then do "make savedefconfig" to generate a new defconfig file that includes your
 # modifications.
 #
+# CONFIG_PASCAL_HAVEHOME is not set
 CONFIG_ARCH="sim"
 CONFIG_ARCH_BOARD="sim"
 CONFIG_ARCH_BOARD_SIM=y
@@ -44,6 +45,7 @@ CONFIG_PASCAL_DEBUG=y
 CONFIG_PASCAL_DEBUGGER=y
 CONFIG_PASCAL_HELLO=y
 CONFIG_PASCAL_POINTERSIZE=8
+CONFIG_PASCAL_PSHELL=y
 CONFIG_PASCAL_STARTUP=y
 CONFIG_PASCAL_TARGET_TOOLS=y
 CONFIG_PATH_INITIAL="/bin"
