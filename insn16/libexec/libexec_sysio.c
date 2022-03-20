@@ -861,8 +861,8 @@ static int libexec_Flush(struct libexec_s *st, uint16_t fileNumber)
 static int libexec_GetFileSize(FILE *stream, off_t *fileSize)
 {
   int errorCode = eNOERROR;
-  off_t oldPos = 0;
-  off_t endPos;
+  off_t oldPos  = 0;
+  off_t endPos  = 0;
   int ret;
 
   /* Get the current file position */

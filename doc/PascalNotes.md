@@ -54,10 +54,18 @@ Currently, I am bringing the compiler into the embedded environment.  I would li
 
 ### Variables
 
-**Variable Initializers**.  Variable initializers are supported for most simple type. The compiler supports initializers of the form:
+**Variable Initializers**.  Variable initializers are supported for most simple types. The compiler supports initializers of the form:
 
     VAR
       name : type = initial-value
+
+**Passing String Variables**.  Strings, as with all other variables, may be passed to procedures or functions as values or `VAR` parameters.  Pascal `VAR` parameters are essentially pointers with syntax that hides their underlying pointer-ness.  When, passing parameters as values, a snapshot of an expression *RValue* value is copied on the stack; when passing `VAR` parameters, a pointer to the variable *LValue* is placed on the stack.
+
+Value parameters are not write-able, at least in the sense that writing to the value parameter has no effect outside for the caller of the procedure or function.  Besides using less stack, `VAR` parameters are also writable and are, in fact, a common way of returning values to the caller.
+
+This string implementation uses a 6 byte *container* to represent the string.  The 6-bytes include:  The allocation size of the variable string memory, the current size of the valid string in string memory, and a pointer to the start of the string memory.  The string memory itself lies outside of the stack in a separate memory region.
+
+When strings are passed as `VAR` parameters, a pointer to the 6-byte container is placed on the stack; when strings are passed as value parameters, that 6-byte container is copied onto the stack.  In that case, the pointer to string memory is also coped and any uncautious programming can alter the "read only" string value.
 
 ### Sets
 
@@ -320,7 +328,7 @@ Provide instrumentation to use the line number data in the object files.  In deb
 
 ### Compiler
 
-The Pascal compiler is a single pass compiler that targets a 16-bit P-Code stack machine.  It accepts a as Pascal source file as input and generates an unoptimized, P-Code object file with the extension `.o1`.  This code is not suitable for execution:  The code is non-optimal and contains unresolved label references.  It is not in a format that can be loaded for execution.  The optimizer and the linker will address these issues as described below.
+The Pascal compiler is a single pass compiler that targets a 16-bit P-Code stack machine.  It accepts as input a Pascal source file with the extension `.pas` and generates a temporary, unoptimized, P-Code object file with the extension `.o1`.  This code is not suitable for execution:  The code is non-optimal and contains unresolved label references.  It is not in a format that can be loaded for execution.  The optimizer and the linker will address these issues as described below.
 
     USAGE:
       pascal [options] <program-filename>
@@ -362,7 +370,7 @@ The lister accepts and object file -- `.o1`, `.o`, or `.pex` -- and provides and
 
 ### Run-Time
 
-The P-Code run-time virtual machine can be used execute and/or debugt the `.pex` file:
+The P-Code run-time virtual machine can be used execute and/or debug the `.pex` file:
 
     USAGE:
       prun [OPTIONS] <program-filename>

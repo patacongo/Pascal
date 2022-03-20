@@ -825,7 +825,7 @@ void libexec_DebugLoop(EXEC_HANDLE_t handle)
                 break;
 
               case 'B' :  /* Display Breakpoints */
-                pdbg_ExecCommand(st, eCMD_DB, pc);
+                pdbg_ExecCommand(st, eCMD_DB, 0);
                 break;
 
               default :
@@ -836,7 +836,7 @@ void libexec_DebugLoop(EXEC_HANDLE_t handle)
           break;
 
         case 'Q' :  /* Quit */
-          pdbg_ExecCommand(st, eCMD_QUIT, pc);
+          pdbg_ExecCommand(st, eCMD_QUIT, 0);
           break;
 
         case 'H' :  /* Help */

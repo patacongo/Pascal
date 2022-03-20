@@ -61,11 +61,28 @@ int main(int argc, char *argv[], char *envp[])
 {
   EXEC_HANDLE_t handle;
   char fileName[FNAME_SIZE + 1];  /* Object file name */
+  char *filePath;
+#ifdef CONFIG_PASCAL_AUTOMOUNT
+  int ret;
+#endif
 
 #ifdef CONFIG_PASCAL_HAVEHOME
   /* Change to the home directory */
 
   chdir(CONFIG_PASCAL_HOMEDIR);
+#endif
+
+#ifdef CONFIG_PASCAL_AUTOMOUNT
+  /* Mount the filesystem containing the pascal executables */
+
+  ret = nx_mount(CONFIG_PASCAL_MOUNTDEV, CONFIG_PASCAL_EXECDIR,
+                 CONFIG_PASCAL_FSTYPE, 0, NULL);
+  if (ret < 0)
+    {
+      fprintf(stderr,
+              "ERROR: Failed to mount %s filesystem at %s: %d\n",
+              CONFIG_PASCAL_FSTYPE, CONFIG_PASCAL_EXECDIR, errno);
+    }
 #endif
 
   /* Load the POFF files specified on the command line.
@@ -75,19 +92,28 @@ int main(int argc, char *argv[], char *envp[])
   (void)extension(CONFIG_PASCAL_STARTUP_FILENAME, "pex", fileName,
                   FNAME_SIZE + 1, 0);
 
+  filePath = NULL;
+  asprintf(&filePath, "%s%s", CONFIG_PASCAL_EXECDIR, fileName);
+  if (filePath == NULL)
+    {
+      fprintf(stderr, "ERROR: Failed to create filePath\n");
+      exit(1);
+    }
+
   /* Initialize the P-machine and load the POFF file */
 
-  handle = libexec_Load(fileName,
+  handle = libexec_Load(filePath,
                         CONFIG_PASCAL_STARTUP_STRSIZE,
                         CONFIG_PASCAL_STARTUP_STKSIZE,
                         CONFIG_PASCAL_STARTUP_HEAPSIZE);
   if (handle == NULL)
     {
-      fprintf(stderr, "ERROR: Could not load %s\n", fileName);
+      fprintf(stderr, "ERROR: Could not load %s\n", filePath);
       exit(1);
     }
 
-  printf("%s Loaded\n", fileName);
+  printf("%s Loaded\n", filePath);
+  free(filePath);
 
   /* And start program execution in the specified mode */
 

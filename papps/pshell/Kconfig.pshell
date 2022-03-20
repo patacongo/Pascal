@@ -1,6 +1,7 @@
 config PASCAL_PSHELL
 	bool "Pascal Shell"
 	default n
+	depends on PASCAL_BUILD_PAPPS
 	---help---
 		Enable building of Pascal shell.
 

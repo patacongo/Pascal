@@ -21,6 +21,7 @@ config PASCAL_HAVEHOME
 config PASCAL_HOMEDIR
 	string "Home directory path"
 	default PASTOPDIR
+	depends on PASCAL_HAVEHOME
 	---help---
 		This is Pascal application home directory.  Pascal applications like
 		Pascal shell or PStart will change to this home directory when they

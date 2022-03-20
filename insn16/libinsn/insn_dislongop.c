@@ -201,7 +201,7 @@ static const struct opCodeInfo_s g_longOpTable24[] =
 
 void insn_DisassembleLongOpCode(FILE* lfile, opType_t *pop)
 {
-  const struct opCodeInfo_s *opCodeInfo;
+  const struct opCodeInfo_s *opCodeInfo = NULL;
   uint8_t fmt16;
   int index;
 

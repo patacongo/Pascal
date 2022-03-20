@@ -1,5 +1,6 @@
 config PASCAL_HELLO
 	bool "Hello, World! Pascal Example"
 	default n
+	depends on PASCAL_BUILD_PAPPS
 	---help---
 		Enable building of the the Pascal "Hello, World!" sample application.

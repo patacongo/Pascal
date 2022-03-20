@@ -58,6 +58,8 @@ PROGRAM PShell;
   PROCEDURE PshShowUsage;
   BEGIN
     WRITELN('PShell Commands:');
+    WRITELN('  H[elp]');
+    WRITELN('    Show this text');
     WRITELN('  L[ist]');
     WRITELN('    Show Pascal Executables');
     WRITELN('  R[un] <PexFileName>');
@@ -96,13 +98,17 @@ PROGRAM PShell;
   BEGIN
      FirstCh := UpperCase(CharAt(CommandTokens[1], 1));
      CASE FirstCh OF
+       'H' : PshShowUsage;
        'L' : PshShowExecutables;
        'R' : PshRunExecutable(CommandTokens[2], StringBufferAlloc,
                               HeapAlloc, Wait, false);
        'D' : PshRunExecutable(CommandTokens[2], StringBufferAlloc,
                               HeapAlloc, Wait, true);
        'Q' : Quit := true;
-       ELSE PshShowUsage
+       ELSE
+       BEGIN
+         WRITELN('Unrecognized command: ', CommandTokens[1]);
+         PshShowUsage
      END
   END;
 

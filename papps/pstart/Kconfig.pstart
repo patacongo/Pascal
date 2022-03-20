@@ -20,24 +20,20 @@ endchoice # Pascal Start-Up Media
 
 #config PASCAL_STARTUP_FILENAME
 #	string "Pascal start-up file name"
-#	default "pshell.pex"
+#	default "Pshell.pex"
 #	depends on PASCAL_STARTUP_FILE
 
 config PASCAL_STARTUP_FILENAME
 	string
-	default "pshell.pex"
+	default "Pshell.pex"
+	---help---
+		This is the Pascal executable file name.  The full path to the
+		executable will be formed by pre-pending CONFIG_PASCAL_EXECDIR.
 
 #config PASCAL_STARTUP_INMEMORY
 #	string "Pascal start-up in-memory symbol name"
 #	default "g_pStartUpPex"
 #	depends on PASCAL_STARTUP_INMEMORY
-
-config PASCAL_STARTUP_DEBUG
-	bool "Enable P-Code debugger at startup"
-	default n
-	depends on PASCAL_DEBUGGER
-	---help---
-		The start-up Pascal program with begin in the Pascal P-code debugger.
 
 config PASCAL_STARTUP_STKSIZE
 	int "Pascal start-up stack size"
@@ -56,5 +52,38 @@ config PASCAL_STARTUP_HEAPSIZE
 	default 256
 	---help---
 		Memory set aside for usage with new and dispose.
+
+config PASCAL_AUTOMOUNT
+	bool "Mount filesystem"
+	default n
+	---help---
+		Mount file system containing Pascal executables at startup.
+		Mount point is the same as CONFIG_PASCAL_EXECDIR.
+
+if PASCAL_AUTOMOUNT
+
+config PASCAL_MOUNTDEV
+	string "Mount device"
+	default "/dev/mmcsd0"
+	---help---
+		The block or MTD device to mount at CONFIG_PASCAL_EXECDIR.  Likely
+		settings include "dev/mmcsd0" for an SD card or /dev/ram0 for
+		an in-memory file system.
+
+config PASCAL_FSTYPE
+	string "File system type"
+	default "vfat"
+	---help---
+		The type of filesystem to be mounted.  Likely settings are "vfat"
+		for an SD card or "romfs" for an in-mememory file system.
+
+endif
+
+config PASCAL_STARTUP_DEBUG
+	bool "Enable P-Code debugger at startup"
+	default n
+	depends on PASCAL_DEBUGGER
+	---help---
+		The start-up Pascal program with begin in the Pascal P-code debugger.
 
 endif # PASCAL_STARTUP
