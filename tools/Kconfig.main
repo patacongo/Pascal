@@ -75,6 +75,10 @@ config PASCAL_PRUN_STACKSIZE
 
 endmenu # Target tool options
 
+config PASCAL_BUILD_PAPPS
+	bool
+	default PASCAL_TARGET_TOOLS || !PASCAL_BUILD_NUTTX
+
 config PASCAL_DEFAULT_STRALLOC
 	int "Default string size"
 	default 80

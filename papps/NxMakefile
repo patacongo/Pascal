@@ -50,29 +50,38 @@ PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
 # ---------------------------------------------------------------------------
 # Definitions
 
-define MxMake_template
+define NxMake_template
 $(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) -f NxMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
 
 endef
+
+ifdef CONFIG_PASCAL_BUILD_PAPPS
 
 define PasMake_template
 $(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
 
 endef
+else
+
+define PasMake_template
+$(1)_$(2):
+
+endef
+endif
 
 # ---------------------------------------------------------------------------
 # Targets
 
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),all)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),archive)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),install)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),context)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),register)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),depend)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),clean)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MxMake_template,$(DIR),distclean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),archive)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),install)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),context)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),register)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),depend)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call NxMake_template,$(DIR),distclean)))
 
 $(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),all)))
 $(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),clean)))

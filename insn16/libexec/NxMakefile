@@ -48,7 +48,7 @@ CSRCS += libexec_sysio.c libexec_stringlib.c libexec_setops.c
 CSRCS += libexec_longops.c libexec_oslib.c libexec_heap.c
 
 ifeq ($(CONFIG_PASCAL_DEBUGGER),y)
-LIBEXECSRCS += libexec_debug.c
+CSRCS += libexec_debug.c
 endif
 
 include $(APPDIR)/Application.mk
