@@ -109,6 +109,7 @@ PROGRAM PShell;
        BEGIN
          WRITELN('Unrecognized command: ', CommandTokens[1]);
          PshShowUsage
+       END
      END
   END;
 

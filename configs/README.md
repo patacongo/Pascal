@@ -36,3 +36,5 @@ Usage:
     make
 
 Comments/Status:
+- Fails with a read error of some kind while loading Pshell.pex.  File is known good and verifies (with the same read logic) on the host system.
+- The Pshell program still depends on posix_spawnp().  That would also have to be fixed by change it to task_spawn() in order to get this configuration running.

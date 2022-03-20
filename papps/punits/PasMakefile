@@ -45,9 +45,9 @@ PASCAL    = $(PAPPSDIR)/..
 include $(PASCAL)/tools/Config.mk
 
 ifdef TOPDIR
-include $(TOPDIR)/.config
+-include $(TOPDIR)/.config
 else
-include $(PASCAL)/.config
+-include $(PASCAL)/.config
 endif
 
 #
