@@ -1,6 +1,5 @@
-#############################################################################
+############################################################################
 # Makefile
-# Makefile for Unix-like environment
 #
 #   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -32,36 +31,50 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-#############################################################################
-
-# ---------------------------------------------------------------------------
+############################################################################
+#
 # Directories
+#
 
-PAPPSDIR   = ${shell pwd}
-PASCAL     = $(PAPPSDIR)/..
+PROMFSDIR = ${shell pwd}
+PAPPSDIR  = $(PROMFSDIR)/..
+PASCAL    = $(PAPPSDIR)/..
+PIMAGEDIR = $(PAPPSDIR)/image
+PTOOLDIR  = $(PASCAL)/tools
 
--include $(PASCAL)/.config
 include $(PASCAL)/tools/Config.mk
 
-PIMAGEDIR   = $(PAPPSDIR)/image
-PUNITDIR    = $(PAPPSDIR)/units
+#
+# Tools
+#
 
-DELIM      ?=  $(strip /)
-BUILDDIRS  := $(dir $(wildcard *$(DELIM)Makefile))
-PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
+MKROMFS = $(PTOOLDIR)/mkromfs.sh
 
-# ---------------------------------------------------------------------------
-# Definitions
+#
+# Objects
+#
 
-define CMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) $(2)
-endef
+OBJS = romfs.o
 
-define PasMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2)
+#
+# Targets
+#
 
-endef
+all: romfs.o
+.PHONY: all clean distclean
 
-include Common.mk
+$(PIMAGEDIR):
+	$(Q) $(MKDIR) $(PIMAGEDIR)
+
+romfs.c: $(PIMAGEDIR)
+	$(Q) $(MKROMFS) $(PIMAGEDIR) $(PROMFSDIR)/romfs.c
+
+$(OBJS): %.o: %.c
+	$(Q) echo "  $@"
+	$(Q) $(CC) -c $(CFLAGS) $< -o $@
+
+clean:
+	$(Q) $(RM) -f romfs.*
+
+distclean: clean
+	$(Q) $(RM) .depend Make.dep

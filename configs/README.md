@@ -25,7 +25,7 @@ defconfig.stm32f4discovery
 
 Setup:
 - Requires the STM32-BB baseboard for its micro SD slot (and uses USART6)
-- Requires that a micro-SD car be inserted that contains Pascal executables in the root directory.  The Pshell, `Pshell.pex`, in particular, is required there.
+- Requires that a micro-SD card be inserted that contains Pascal executables in the root directory.  The Pshell, `Pshell.pex`, in particular, must be there.
 
 Usage:
 
@@ -36,5 +36,5 @@ Usage:
     make
 
 Comments/Status:
-- Fails with a read error of some kind while loading Pshell.pex.  File is known good and verifies (with the same read logic) on the host system.
+- Fails with a read error of some kind while loading Pshell.pex.  File is known good and verifies (with the same read logic) on the host system.  So I am suspecting some issue with my old STM32 F4Discovery board.
 - The Pshell program still depends on posix_spawnp().  That would also have to be fixed by change it to task_spawn() in order to get this configuration running.

@@ -35,33 +35,37 @@
 #############################################################################
 
 # ---------------------------------------------------------------------------
-# Directories
+# Targets
 
-PAPPSDIR   = ${shell pwd}
-PASCAL     = $(PAPPSDIR)/..
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),distclean)))
 
--include $(PASCAL)/.config
-include $(PASCAL)/tools/Config.mk
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),all)))
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),clean)))
+$(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),distclean)))
 
-PIMAGEDIR   = $(PAPPSDIR)/image
-PUNITDIR    = $(PAPPSDIR)/units
+$(PIMAGEDIR):
+	$(Q) $(MKDIR) $(PIMAGEDIR)
 
-DELIM      ?=  $(strip /)
-BUILDDIRS  := $(dir $(wildcard *$(DELIM)Makefile))
-PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
+all:    $(PIMAGEDIR) punits/_all \
+        $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_all)
+	$(Q) $(MAKE) -C romfs all
 
-# ---------------------------------------------------------------------------
-# Definitions
+.PHONY: $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
+        $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
+        $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_all) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)
 
-define CMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) $(2)
-endef
+clean:  $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
+        $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean)
+	$(Q) $(RM) -rf $(PIMAGEDIR)
+	$(Q) $(MAKE) -C romfs clean
 
-define PasMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2)
-
-endef
-
-include Common.mk
+distclean: clean \
+           $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
+           $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)
+	$(Q) $(MAKE) -C romfs distclean

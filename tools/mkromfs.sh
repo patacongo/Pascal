@@ -1,6 +1,6 @@
+#!/bin/sh
 #############################################################################
-# Makefile
-# Makefile for Unix-like environment
+# mkromfs.sh
 #
 #   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -34,34 +34,39 @@
 #
 #############################################################################
 
-# ---------------------------------------------------------------------------
-# Directories
+#set -x
 
-PAPPSDIR   = ${shell pwd}
-PASCAL     = $(PAPPSDIR)/..
+IMAGEDIR=${1}
+SOURCEFILE=${2}
 
--include $(PASCAL)/.config
-include $(PASCAL)/tools/Config.mk
+USAGE="USAGE: ${0} <image-directory> <output-file>"
 
-PIMAGEDIR   = $(PAPPSDIR)/image
-PUNITDIR    = $(PAPPSDIR)/units
+if [ -z "${IMAGEDIR}" ]; then
+  echo "Missing <image-directory>"
+  echo ${USAGE}
+  exit 1
+fi
 
-DELIM      ?=  $(strip /)
-BUILDDIRS  := $(dir $(wildcard *$(DELIM)Makefile))
-PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
+if [ ! -d "${IMAGEDIR}" ]; then
+  echo "Directory ${IMAGEDIR} does not exist"
+  echo ${USAGE}
+  exit 1
+fi
 
-# ---------------------------------------------------------------------------
-# Definitions
+if [ -z "${SOURCEFILE}" ]; then
+  echo "Missing <output-file>"
+  echo ${USAGE}
+  exit 1
+fi
 
-define CMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) $(2)
-endef
+genromfs -h 1>/dev/null 2>&1 || { \
+  echo "Host executable genromfs not available in PATH"; \
+  echo "You may need to download in from http://romfs.sourceforge.net/"; \
+  exit 1; \
+}
 
-define PasMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2)
-
-endef
-
-include Common.mk
+genromfs -f romfs.img -d ${IMAGEDIR} -V NuttXPcodeVol
+xxd -i romfs.img  >${SOURCEFILE}
+sed -i -e 's/^unsigned char/const unsigned char aligned_data(4)/g' ${SOURCEFILE}
+sed -i -e 's/aligned_data[(]4[)] //g' ${SOURCEFILE}
+rm -f romfs.img
