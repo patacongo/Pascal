@@ -76,7 +76,7 @@ int main(int argc, char *argv[], char *envp[])
   /* Mount the filesystem containing the pascal executables */
 
   ret = nx_mount(CONFIG_PASCAL_MOUNTDEV, CONFIG_PASCAL_EXECDIR,
-                 CONFIG_PASCAL_FSTYPE, 0, NULL);
+                 CONFIG_PASCAL_FSTYPE, 0, CONFIG_PASCAL_MOUNT_OPTIONS);
   if (ret < 0)
     {
       fprintf(stderr,

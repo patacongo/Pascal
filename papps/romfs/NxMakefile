@@ -42,6 +42,7 @@ include $(APPDIR)/Make.defs
 PASCAL    = $(APPDIR)/pascal
 PTOOLDIR  = $(PASCAL)/tools
 PAPPSDIR  = $(PASCAL)/papps
+PROMFSDIR = $(PAPPSDIR)/romfs
 PIMAGEDIR = $(PAPPSDIR)/image
 
 include $(PASCAL)/tools/Config.mk
@@ -60,7 +61,7 @@ $(PIMAGEDIR):
 	$(Q) $(MKDIR) $(PIMAGEDIR)
 
 romfs.c: $(PIMAGEDIR)
-	$(Q) $(MKROMFS) $(PIMAGEDIR) $(PROMFSDIR)/romfs.c
+	$(Q) $(MKROMFS) $(PIMAGEDIR) $(PROMFSDIR)
 romfs.c:
 
 # Common logic

@@ -41,9 +41,11 @@
 # Targets
 
 all:
-.PHONY: all install context register depend clean distclean
+.PHONY: all archive install context register depend clean distclean
 
 all:
+
+archive:
 
 install:
 

@@ -42,11 +42,23 @@ $(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) -f $(CMAKEFILE) $(2)
 endef
 
+ifdef CONFIG_PASCAL_BUILD_PAPPS
+
 define PasMake_template
 $(1)_$(2):
 	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2)
 
 endef
+else
+
+define PasMake_template
+$(1)_$(2):
+
+endef
+endif
+
+# ---------------------------------------------------------------------------
+# Build Directories
 
 DELIM      ?=  $(strip /)
 
@@ -78,7 +90,7 @@ $(PIMAGEDIR):
 all:      $(PIMAGEDIR) punits/_all \
           $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
           $(foreach DIR, $(PBUILDDIRS), $(DIR)_all)
-	$(Q) $(MAKE) -C romfs all
+	$(Q) $(MAKE) -C romfs -f $(CMAKEFILE) all
 
 .PHONY:   $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
           $(foreach DIR, $(BUILDDIRS), $(DIR)_archive) \
@@ -105,9 +117,9 @@ depend:   $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
 clean:    $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
           $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean)
 	$(Q) $(RM) -rf $(PIMAGEDIR)
-	$(Q) $(MAKE) -C romfs clean
+	$(Q) $(MAKE) -C romfs -f $(CMAKEFILE) clean
 
 distclean: clean \
            $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
            $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)
-	$(Q) $(MAKE) -C romfs distclean
+	$(Q) $(MAKE) -C romfs -f $(CMAKEFILE) distclean

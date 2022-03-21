@@ -87,3 +87,7 @@ itself.
 
 And you should have the Pascal components that you have selected in your
 board's flash image.
+
+Tips:
+
+- Select the NuttX readline() function with `CONFIG_SYSTEM_READLINE=y`. By default `fgets` is used and the NuttX `fgets` does not behave in the expected way.

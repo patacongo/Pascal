@@ -125,6 +125,7 @@ PROGRAM PShell;
       (* Read the command line *)
 
       WRITE('psh> ');
+      FLUSH;
       READLN(CommandLine);
 
       (* Parse the command line and process the command *)

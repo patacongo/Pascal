@@ -50,8 +50,12 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include "pas_debug.h"
+#if defined(CONFIG_PASCAL_BUILD_NUTTX) && defined(CONFIG_SYSTEM_READLINE)
+#include "system/readline.h"
+#endif
+
 #include "config.h"
+#include "pas_debug.h"
 #include "pas_machine.h"
 #include "pas_sysio.h"
 #include "pas_errcodes.h"
@@ -61,6 +65,16 @@
 #include "libexec_longops.h"
 #include "libexec_stringlib.h"
 #include "libexec_sysio.h"
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#if defined(CONFIG_PASCAL_BUILD_NUTTX) && defined(CONFIG_SYSTEM_READLINE)
+#  define GETS(b,s,f) ((readline(b,s,stdin,f) >= 0) ? (b) : NULL)
+#else
+#  define GETS(b,s,f) fgets(b,s,f)
+#endif
 
 /****************************************************************************
  * Private Types
@@ -264,9 +278,8 @@ static void libexec_CheckEoln(struct libexec_s *st, uint16_t fileNumber,
   bool eoln = false;
   int len;
 
-  /* fgets will always consume the terminating newline character unless the
-   * line is only that the provided read buffer.  The newline character
-   * should be the last character read.
+  /* fgets (or the NuttX readline) will always consume the terminating newline
+   * character.  The newline character should be the last character read.
    */
 
   len = strlen(buffer) - 1;
@@ -536,8 +549,8 @@ static int libexec_ReadInteger(struct libexec_s *st, uint16_t fileNumber,
   int errorCode = libexec_CheckReadAccess(st, fileNumber);
   if (errorCode == eNOERROR)
     {
-      char *ptr = fgets((char *)st->ioBuffer, LINE_SIZE,
-                         st->fileTable[fileNumber].stream);
+      char *ptr = GETS((char *)st->ioBuffer, LINE_SIZE,
+                       st->fileTable[fileNumber].stream);
 
       if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
@@ -562,8 +575,8 @@ static int libexec_ReadChar(struct libexec_s *st, uint16_t fileNumber,
   int errorCode = libexec_CheckReadAccess(st, fileNumber);
   if (errorCode == eNOERROR)
     {
-      char *ptr = fgets((char *)st->ioBuffer, LINE_SIZE,
-                        st->fileTable[fileNumber].stream);
+      char *ptr = GETS((char *)st->ioBuffer, LINE_SIZE,
+                       st->fileTable[fileNumber].stream);
 
       if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
@@ -600,8 +613,8 @@ static int libexec_ReadString(struct libexec_s *st, uint16_t fileNumber,
       strData     = stringVarPtr[BTOISTACK(sSTRING_DATA_OFFSET)];
       strPtr      = (char *)&st->dstack.b[strData];
 
-      ptr         = fgets(strPtr, strReadSize,
-                          st->fileTable[fileNumber].stream);
+      ptr         = GETS(strPtr, strReadSize,
+                         st->fileTable[fileNumber].stream);
 
       if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {
@@ -624,8 +637,8 @@ static int libexec_ReadReal(struct libexec_s *st, uint16_t fileNumber,
   int errorCode = libexec_CheckReadAccess(st, fileNumber);
   if (errorCode == eNOERROR)
     {
-      char *ptr = fgets((char*)st->ioBuffer, LINE_SIZE,
-                        st->fileTable[fileNumber].stream);
+      char *ptr = GETS((char*)st->ioBuffer, LINE_SIZE,
+                       st->fileTable[fileNumber].stream);
 
       if (ptr == NULL && ferror(st->fileTable[fileNumber].stream))
         {

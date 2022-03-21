@@ -46,6 +46,10 @@
 #include <getopt.h>
 #include <ctype.h>
 
+#if defined(CONFIG_PASCAL_BUILD_NUTTX) && defined(CONFIG_SYSTEM_READLINE)
+#include "system/readline.h"
+#endif
+
 #include "pofflib.h"
 #include "paslib.h"
 #include "execlib.h"
@@ -59,6 +63,16 @@
 
 #include "insn16.h"
 #include "libexec.h"
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#if defined(CONFIG_PASCAL_BUILD_NUTTX) && defined(CONFIG_SYSTEM_READLINE)
+#  define GETS(b,s,f) ((readline(b,s,stdin,f) >= 0) ? (b) : NULL)
+#else
+#  define GETS(b,s,f) fgets(b,s,f)
+#endif
 
 /**************************************************************************
  * Private Function Prototypes
@@ -728,7 +742,8 @@ void libexec_DebugLoop(EXEC_HANDLE_t handle)
   while (true)
     {
       printf("CMD: ");
-      (void)fgets(st->cmdLine, LINE_SIZE, stdin);
+      fflush(stdout);
+      (void)GETS(st->cmdLine, LINE_SIZE, stdin);
       switch (toupper(st->cmdLine[0]))
         {
         case 'R' :

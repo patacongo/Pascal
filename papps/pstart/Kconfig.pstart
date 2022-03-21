@@ -77,6 +77,13 @@ config PASCAL_FSTYPE
 		The type of filesystem to be mounted.  Likely settings are "vfat"
 		for an SD card or "romfs" for an in-mememory file system.
 
+config PASCAL_MOUNT_OPTIONS
+	string "Mount options"
+	default ""
+	---help---
+		Mount option data (final parameter of mount() call). Necessary for
+		certin file system types such as HostFS.
+
 endif
 
 config PASCAL_STARTUP_DEBUG
