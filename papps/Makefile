@@ -46,22 +46,6 @@ include $(PASCAL)/tools/Config.mk
 PIMAGEDIR   = $(PAPPSDIR)/image
 PUNITDIR    = $(PAPPSDIR)/units
 
-DELIM      ?=  $(strip /)
-BUILDDIRS  := $(dir $(wildcard *$(DELIM)Makefile))
-PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
-
-# ---------------------------------------------------------------------------
-# Definitions
-
-define CMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) $(2)
-endef
-
-define PasMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2)
-
-endef
+CMAKEFILE  := Makefile
 
 include Common.mk

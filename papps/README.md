@@ -45,3 +45,30 @@ The simplest way to do this is two two clones of the Pascal repository.  The fir
 If you have sufficient memory resources you can also build the entire set of tools on the target.  But you would still have to build the Pascal executables on the host.  Why?  Because in a cross-development environment, the target image will be built on a host machine and later executed on a different target machine.  In order to generate Pascal executables, you must first have usable compiler tools at the time of the build.  But that is on the wrong machine!
 
 The solution to this chicken-n-egg problem is the same as before, you still need a host Pascal configuration if only to build any initial Pascal executables that you want to included in the build.  The only benefit of this configuration is that you can then generate new Pascal executables on the fly in the target machine.
+
+## Building the ROMFS Image into Target Flash Image
+
+There are really several ways this can be done.  Here are two:
+
+### Producing a ROMFS Image object file
+
+When the `papps/romfs` makefile executes, it generates three files:
+
+- A ROMFS binary image file named `papps/romfs/romfs.img`
+- A C file that provides the same information a a C byte array called `papps/romfs/romfs.c`.  This file will contain an array, `romfs_img[]` whose size is given by `romfs_img_len`.
+- This C file is compiled and an object file called `papps/romfs/romfs.o` is generated.
+
+So one solution is simple to include `papps/romfs/romfs.o` into the link.  That won't work in certain memory configurations however because that would link into the user application address space, not into the protected OS address space.
+
+NOTE:  There is no option currently to enable this behavior.  It implement this you would probably need to add a NuttX makefile at `papps/romfs/NxMakefile`.
+
+### Linking with the Image Binary
+
+Another less intuitive solution that gets around this problem is to include the binarge blob `papps/romfs/romfs.img` directly in the OS link.  You can how this is done board specific code like `nuttx/boards/arm/stm32/stm32f4discovery/src/stm32_romfs_initialize.c`.
+
+This enabled with the setting in `nuttx/boards/arm/stm32/stm32f4discovery/Kconfig`:
+
+    config STM32_ROMFS_IMAGEFILE
+        string "ROMFS image file to include into build"
+        depends on STM32_ROMFS
+        default "../../../../../rom.img"

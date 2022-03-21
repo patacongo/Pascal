@@ -43,32 +43,6 @@ include $(PASCAL)/tools/Config.mk
 PIMAGEDIR   = $(PAPPSDIR)/image
 PUNITDIR    = $(PAPPSDIR)/units
 
-DELIM      ?=  $(strip /)
-BUILDDIRS  := $(dir $(wildcard *$(DELIM)NxMakefile))
-PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
-
-# ---------------------------------------------------------------------------
-# Definitions
-
-define CMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) -f NxMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
-
-endef
-
-ifdef CONFIG_PASCAL_BUILD_PAPPS
-
-define PasMake_template
-$(1)_$(2):
-	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2) TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)"
-
-endef
-else
-
-define PasMake_template
-$(1)_$(2):
-
-endef
-endif
+CMAKEFILE  := NxMakefile
 
 include Common.mk

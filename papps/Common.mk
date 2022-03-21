@@ -1,6 +1,6 @@
 #############################################################################
-# Makefile
-# Makefile for Unix-like environment
+# Common.mk
+# Common build logic for all environments
 #
 #   Copyright (C) 2022 Gregory Nutt. All rights reserved.
 #   Author: Gregory Nutt <gnutt@nuttx.org>
@@ -35,11 +35,38 @@
 #############################################################################
 
 # ---------------------------------------------------------------------------
+# Definitions
+
+define CMake_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) -f $(CMAKEFILE) $(2)
+endef
+
+define PasMake_template
+$(1)_$(2):
+	+$(Q) $(MAKE) -C $(1) -f PasMakefile $(2)
+
+endef
+
+DELIM      ?=  $(strip /)
+
+BUILDDIRS  := $(dir $(wildcard *$(DELIM)$(CMAKEFILE)))
+BUILDDIRS  := $(filter-out romfs/,$(BUILDDIRS))
+
+PBUILDDIRS := $(dir $(wildcard *$(DELIM)PasMakefile))
+PBUILDDIRS := $(filter-out romfs/,$(PBUILDDIRS))
+
+# ---------------------------------------------------------------------------
 # Targets
 
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),all)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),clean)))
-$(foreach DIR, $(BUILDDIRS), $(eval $(call MAKE_template,$(DIR),distclean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),all)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),archive)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),install)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),context)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),register)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),depend)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),clean)))
+$(foreach DIR, $(BUILDDIRS), $(eval $(call CMake_template,$(DIR),distclean)))
 
 $(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),all)))
 $(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),clean)))
@@ -48,20 +75,35 @@ $(foreach DIR, $(PBUILDDIRS), $(eval $(call PasMake_template,$(DIR),distclean)))
 $(PIMAGEDIR):
 	$(Q) $(MKDIR) $(PIMAGEDIR)
 
-all:    $(PIMAGEDIR) punits/_all \
-        $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
-        $(foreach DIR, $(PBUILDDIRS), $(DIR)_all)
+all:      $(PIMAGEDIR) punits/_all \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
+          $(foreach DIR, $(PBUILDDIRS), $(DIR)_all)
 	$(Q) $(MAKE) -C romfs all
 
-.PHONY: $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
-        $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
-        $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
-        $(foreach DIR, $(PBUILDDIRS), $(DIR)_all) \
-        $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean) \
-        $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)
+.PHONY:   $(foreach DIR, $(BUILDDIRS), $(DIR)_all) \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_archive) \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_install) \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_context) \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_register) \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_depend) \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
+          $(foreach DIR, $(BUILDDIRS), $(DIR)_distclean) \
+          $(foreach DIR, $(PBUILDDIRS), $(DIR)_all) \
+          $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean) \
+          $(foreach DIR, $(PBUILDDIRS), $(DIR)_distclean)
 
-clean:  $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
-        $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean)
+archive:  $(foreach DIR, $(BUILDDIRS), $(DIR)_archive)
+
+install:  $(foreach DIR, $(BUILDDIRS), $(DIR)_install)
+
+context:  $(foreach DIR, $(BUILDDIRS), $(DIR)_context)
+
+register: $(foreach DIR, $(BUILDDIRS), $(DIR)_register)
+
+depend:   $(foreach DIR, $(BUILDDIRS), $(DIR)_depend)
+
+clean:    $(foreach DIR, $(BUILDDIRS), $(DIR)_clean) \
+          $(foreach DIR, $(PBUILDDIRS), $(DIR)_clean)
 	$(Q) $(RM) -rf $(PIMAGEDIR)
 	$(Q) $(MAKE) -C romfs clean
 
