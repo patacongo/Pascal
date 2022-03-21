@@ -37,9 +37,9 @@
 #set -x
 
 IMAGEDIR=${1}
-OBJECTPATH=${2}
+OUTDIR=${2}
 
-USAGE="USAGE: ${0} <image-directory> <output-object-path>"
+USAGE="USAGE: ${0} <image-directory> <output-directory>"
 
 if [ -z "${IMAGEDIR}" ]; then
   echo "Missing <image-directory>"
@@ -53,15 +53,19 @@ if [ ! -d "${IMAGEDIR}" ]; then
   exit 1
 fi
 
-if [ -z "${OBJECTPATH}" ]; then
+if [ -z "${OUTDIR}" ]; then
   echo "Missing <output-file>"
   echo ${USAGE}
   exit 1
 fi
 
-OBJECTDIR=`dirname ${OBJECTPATH}`
-IMGFILE=${OBJECTDIR}/romfs.img
-OBJFILE=`basename ${OBJECTPATH}`
+if [ ! -d "${OUTDIR}" ]; then
+  echo "Directory ${OUTDIR} does not exist"
+  echo ${USAGE}
+  exit 1
+fi
+
+cd ${OUTDIR} || { echo "Failed to CD to ${OUTDIR}"; exit 1; }
 
 genromfs -h 1>/dev/null 2>&1 || { \
   echo "Host executable genromfs not available in PATH"; \
@@ -69,9 +73,7 @@ genromfs -h 1>/dev/null 2>&1 || { \
   exit 1; \
 }
 
-cd ${OBJECTDIR}
 genromfs -f romfs.img -d ${IMAGEDIR} -V NuttXPcodeVol
-xxd -i romfs.img  >${OBJFILE}
-sed -i -e 's/^unsigned char/const unsigned char aligned_data(4)/g' ${OBJFILE}
-sed -i -e 's/aligned_data[(]4[)] //g' ${OBJFILE}
-
+xxd -i romfs.img  >romfs.c
+sed -i -e 's/^unsigned char/const unsigned char aligned_data(4)/g' romfs.c
+sed -i -e 's/aligned_data[(]4[)] //g' romfs.c
