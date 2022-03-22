@@ -74,7 +74,7 @@
 #ifdef USE_BUILTIN
 #  define ARG1NDX 0 /* argv[0] is the first argument */
 #else
-#  define ARG1NDX 1 /* argvp[0] is the program name */
+#  define ARG1NDX 1 /* argv[0] is the program name */
 #endif
 
 /****************************************************************************
