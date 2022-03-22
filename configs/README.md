@@ -6,7 +6,15 @@ These are variable NuttX configuration files that were used for testing.
 
 ### Setup:
 
-- Retains Pascal executables in a HostFS file system that links to the pascal/papps/image directory.  The path of CONFIG_PASCAL_MOUNT_OPTIONS in the deconfig.sim-hostfs file is an absolute path and, hence, will need to be adapted for your environment.
+- Retains Pascal executables in a HostFS file system that links to the pascal/papps/image directory.  The path of CONFIG_PASCAL_MOUNT_OPTIONS in the deconfig.sim-hostfs file is an absolute path and, hence, will need to be adapted for your environment.  It will need to be the path to the Pascal host clone's `papps/image` directory where you generated the Pascal executables.
+- Normally you would want two separate clones, one set for the target configurate and linked at the `apps/pascal` and another cross withe a host configuration to develop the Pascal executables on the host.
+- When building these Pascal executables, be careful with the file `pascal/papps/punits/Machine.pas`.  That is a special, auto-generated file that provides platform-specific settings for the Pascal code.  The version of the file used probably resides in the host clone but must reflect the properties of the target environment.  You may have to hand edit `pascal/papps/punits/Machine.pas` after is it initially created.
+
+In `Machine.pas`:
+
+-`ExecPath` must reflect the correct directory location in the target environment.
+-`MachinePointerSize` must be the size of a target machine pointer.
+- The home directory could also be an issue.
 
 ### Usage:
 
@@ -143,6 +151,7 @@ These are variable NuttX configuration files that were used for testing.
 
 - Requires the STM32-BB baseboard for its micro SD slot (and uses USART6)
 - Requires that a micro-SD card be inserted that contains Pascal executables in the root directory.  The Pshell, `Pshell.pex`, in particular, must be there.
+- When building these Pascal executables for the SD card, be careful with the file `pascal/papps/punits/Machine.pas`.  That is a special, auto-generated file that provides platform-specific settings for the Pascal code.  The version of the file used probably resides in the host clone but must reflect the properties of the target environment.  You may have to hand edit `pascal/papps/punits/Machine.pas` after is it initially created.
 
 ### Usage:
 
@@ -176,6 +185,7 @@ These are variable NuttX configuration files that were used for testing.
 ### Setup:
 
 - Requires the STM32-BB baseboard *only* because it uses USART6.  Than can be re-configured.
+- When building these Pascal executablesfor the ROMFS filesystem, be careful with the file `pascal/papps/punits/Machine.pas`.  That is a special, auto-generated file that provides platform-specific settings for the Pascal code.  The version of the file used probably resides in the host clone but must reflect the properties of the target environment.  You may have to hand edit `pascal/papps/punits/Machine.pas` after is it initially created.
 
 ### Usage:
 
