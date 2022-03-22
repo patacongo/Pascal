@@ -488,7 +488,7 @@ static void plink_WirteOutputFile(poffHandle_t outHandle)
  * Public Functions
  **********************************************************************/
 
-int main(int argc, char *argv[], char *envp[])
+int main(int argc, char *argv[])
 {
   poffHandle_t outHandle;
 

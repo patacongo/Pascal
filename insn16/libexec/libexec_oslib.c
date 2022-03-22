@@ -51,6 +51,7 @@
 #include <spawn.h>
 #include <string.h>
 
+#include "pas_nuttx.h"
 #include "pas_machine.h"
 #include "pas_oslib.h"
 #include "pas_errcodes.h"
@@ -60,6 +61,21 @@
 #include "libexec_longops.h"   /* For libexec_UPop32() */
 #include "libexec_stringlib.h"
 #include "libexec_oslib.h"
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+/* One of the several differences between the Linus posix_spawnp() and the
+ * NuttX task_spawn() is that the argv[] includes the program name for
+ * posix_spawnp(), but task_spawn() does not.
+ */
+
+#ifdef USE_BUILTIN
+#  define ARG1NDX 0 /* argv[0] is the first argument */
+#else
+#  define ARG1NDX 1 /* argvp[0] is the program name */
+#endif
 
 /****************************************************************************
  * Private Functions
@@ -213,22 +229,25 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
 
   /* Build the argv list */
 
+#ifndef USE_BUILTIN
   argv[0] = "posix_spawnp";
-  argv[1] = "-t";
-  argv[2] = strStringBufferSize;
-  argv[3] = "-n";
-  argv[4] = strHeapSize;
+#endif
+
+  argv[ARG1NDX + 0] = "-t";
+  argv[ARG1NDX + 1] = strStringBufferSize;
+  argv[ARG1NDX + 2] = "-n";
+  argv[ARG1NDX + 3] = strHeapSize;
 
   if (enablePCodeDebugger)
     {
-      argv[5] = "--debug";
-      argv[6] = pexPath;
-      argv[7] = NULL;
+      argv[ARG1NDX + 4] = "--debug";
+      argv[ARG1NDX + 5] = pexPath;
+      argv[ARG1NDX + 6] = NULL;
     }
   else
     {
-      argv[5] = pexPath;
-      argv[6] = NULL;
+      argv[ARG1NDX + 4] = pexPath;
+      argv[ARG1NDX + 5] = NULL;
     }
 
   /* Spawn the prun program, providing path to the Pascal executable
@@ -239,7 +258,12 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
    * are passed.
    */
 
+#ifdef USE_BUILTIN
+  pid = task_spawn("prun", prun_main, NULL, NULL, argv, NULL);
+  ret = (pid < 0) ? -pid : 0;
+#else
   ret = posix_spawnp(&pid, "prun", NULL, NULL, argv, NULL);
+#endif
 
   free(pexPath);
   free(strStringBufferSize);

@@ -40,6 +40,8 @@ As mentioned above, this could mean just copying the executable files onto and S
 
 The simplest way to do this is two two clones of the Pascal repository.  The first is set up in host configuration and is used to generate Pascal exectables.  The Pascal binaries can then be copied into a second clone which is set up with a target, run-time only cross-build configuration.
 
+A complexity in using two clones is there is a special auto-generated file based on the configuration at `pascal/papps/punits/Machine.pas`.  The copy used would reside in the host clone but must reflect the properties of the target environment.
+
 ### Target-Only Configuration
 
 If you have sufficient memory resources you can also build the entire set of tools on the target.  But you would still have to build the Pascal executables on the host.  Why?  Because in a cross-development environment, the target image will be built on a host machine and later executed on a different target machine.  In order to generate Pascal executables, you must first have usable compiler tools at the time of the build.  But that is on the wrong machine!

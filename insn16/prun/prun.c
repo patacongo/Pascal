@@ -242,7 +242,7 @@ static void prun_ParseArgs(int argc, char **argv, prunArgs_t *args)
  * Name: main
  ****************************************************************************/
 
-int main(int argc, char *argv[], char *envp[])
+int main(int argc, char *argv[])
 {
   EXEC_HANDLE_t handle;
   char fileName[FNAME_SIZE + 1];  /* Object file name */

@@ -53,13 +53,15 @@ IMPLEMENTATION
   BEGIN
     PathTemplate := ExecPath + '*.pex';
     Success      := FindFirst(PathTemplate, 0, SearchResult);
-    WHILE Success DO
+    IF Success THEN
     BEGIN
-      WRITELN(SearchResult.name:16, ' Size: ', SearchResult.size);
-      Success := FindNext(SearchResult)
-    END;
+      REPEAT
+        WRITELN(SearchResult.name:16, ' Size: ', SearchResult.size);
+        Success := FindNext(SearchResult)
+      UNTIL NOT Success;
 
     FindClose(SearchResult)
+    END;
   END;
 
   PROCEDURE PshRunExecutable(PexFileName : STRING;
