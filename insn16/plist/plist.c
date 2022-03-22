@@ -297,7 +297,7 @@ static void plist_DumpProgramData(poffHandle_t poffHandle)
  * Public Functions
  **********************************************************************/
 
-int main (int argc, char *argv[], char *envp[])
+int main (int argc, char *argv[])
 {
   FILE   *object;                   /* Object file pointer */
   poffHandle_t poffHandle;          /* Handle for POFF object */

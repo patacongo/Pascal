@@ -114,8 +114,6 @@ These are variable NuttX configuration files that were used for testing.
     83        if (idir->fd_root)
     (gdb)
 
-- The R[un] and D[bg] commands should not work.  This is a known problem that because the run-time code will attempt to start a copy of itself using `posix_spawnp()` which will not work in this case.  `task_spawn()` must be used here.
-
 ## defconfig.stm32f4discovery-sd
 
 ### Setup:
@@ -149,7 +147,6 @@ These are variable NuttX configuration files that were used for testing.
 ### Comments/Status:
 
 - Fails with a read error of some kind while loading Pshell.pex.  The SD card and file are known good and verify (with the same read logic) on the host system.  So I am suspecting some issue with my old STM32 F4-Discovery board.
-- The Pshell program still depends on posix_spawnp().  That would also have to be fixed by change it to task_spawn() in order to get this configuration running.
 
 ## defconfig.stm32f4discovery-romfs
 

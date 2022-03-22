@@ -51,6 +51,7 @@
 #include <spawn.h>
 #include <string.h>
 
+#include "pas_nuttx.h"
 #include "pas_machine.h"
 #include "pas_oslib.h"
 #include "pas_errcodes.h"
@@ -213,7 +214,11 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
 
   /* Build the argv list */
 
+#ifdef USE_BUILTIN
+  argv[0] = "task_spawn";
+#else
   argv[0] = "posix_spawnp";
+#endif
   argv[1] = "-t";
   argv[2] = strStringBufferSize;
   argv[3] = "-n";
@@ -239,7 +244,11 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
    * are passed.
    */
 
+#ifdef USE_BUILTIN
+  pid = task_spawn("prun", prun_main, NULL, NULL, argv, NULL);
+#else
   ret = posix_spawnp(&pid, "prun", NULL, NULL, argv, NULL);
+#endif
 
   free(pexPath);
   free(strStringBufferSize);
