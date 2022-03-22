@@ -2,3 +2,5 @@
 *.err
 *.lst
 *.pex
+/image
+

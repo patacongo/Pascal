@@ -41,6 +41,7 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -80,6 +81,8 @@
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+/****************************************************************************/
 
 static int libexec_GetEnv(struct libexec_s *st, const uint16_t *nameString,
                           uint16_t *valueString)
@@ -163,10 +166,13 @@ static int libexec_GetEnv(struct libexec_s *st, const uint16_t *nameString,
   return errorCode;
 }
 
+/****************************************************************************/
+
 int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
                   uint16_t stringBufferSize, uint16_t heapSize,
                   bool waitForTask, bool enablePCodeDebugger)
 {
+  struct stat statBuf;
   char       *argv[8];
   const char *nameSrc;
   char       *cName;
@@ -210,6 +216,19 @@ int libexec_Spawn(struct libexec_s *st, uint16_t *pexNameString,
     {
       return eNOMEMORY;
     }
+
+  /* Verify that file exists and is a regular file */
+
+  if (stat(pexPath, &statBuf) < 0)
+    {
+      return eBADPEXFILE;
+    }
+  else if (!S_ISREG(statBuf.st_mode))
+    {
+      return eBADFILETYPE;
+    }
+
+  /* Stringify remaining parameters */
 
   strStringBufferSize = NULL;
   asprintf(&strStringBufferSize, "%u", stringBufferSize);

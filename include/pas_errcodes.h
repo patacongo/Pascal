@@ -199,6 +199,11 @@
  * eWRITEFAILED
  * eFSEEKFAILED         fseek() returned an error
  * eFTELLFAILED         ftell() returned an error
+ * eGETCWDFAILED        getcwd() returned an error
+ * eBADPEXFILE          .pex file does not exist
+ * eBADFILETYPE         .pex file is not a regular file
+ * eSPAWANFAILED        posix_spawnp() failed
+ * eWAITFAILED          waitpid() failed
  *
  **********************************************************************/
 
@@ -372,7 +377,9 @@
 #define eFSEEKFAILED     ((uint16_t) 0xbc)
 #define eFTELLFAILED     ((uint16_t) 0xbd)
 #define eGETCWDFAILED    ((uint16_t) 0xbe)
-#define eSPAWANFAILED    ((uint16_t) 0xbf)
-#define eWAITFAILED      ((uint16_t) 0xc0)
+#define eBADPEXFILE      ((uint16_t) 0xbf)
+#define eBADFILETYPE     ((uint16_t) 0xc0)
+#define eSPAWANFAILED    ((uint16_t) 0xc1)
+#define eWAITFAILED      ((uint16_t) 0xc2)
 
 #endif /* __PAS_ERRCODES_H */
