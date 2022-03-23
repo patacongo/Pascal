@@ -193,26 +193,31 @@ In `Machine.pas`:
 
     cd <pascal-directory>
     make memconfig -- configure to run natively on Linux
+    make
+    vim papps/punits/Machine.pas -- Verify settings; edit if necessary
+    make -C papps clean -- rebuild Pascal filesystem image if changed
+    make
 
-2. Copy the romfs image into the NuttX source tree
-
-    cp <pascal-directory>/papps/romfs/romfs.img <nuttx-directory>/boards/arm/stm32/common/.
-
-3. Make sure that the Pascal directory is clean
+2. Make sure that the Pascal directory is clean
 
     make distclean
 
-4. Link the Pascal directory into the apps directory
+3. Link the Pascal directory into the apps directory
 
     cd <nuttx-apps-directory>
     ln -s <pascal-directory> pascal
 
-5. Configure the NuttX directory
+4. Configure the NuttX directory
 
     cd <nuttx-directory>
     tools/configure.sh [OPTIONS] stm32f4discovery:netnsh
     cp <pascal-directory>/configs/defconfig.stm32f4discovery-romfs .config
     make olddefconfig
+
+5. Copy the romfs image into the NuttX source tree
+
+    make context -- Needed to create the board subdirectory
+    cp <pascal-directory>/papps/romfs/romfs.img <nuttx-directory>/arch/arm/src/board/.
 
 6. And build
 
@@ -220,5 +225,6 @@ In `Machine.pas`:
 
 ### Comments/Status:
 
+- This is a very awkard setup procedure and prone to many human errors.
 - See above discusion with regard to `defconfig.sim-hostfs` above for status; the behavior of Pascal on the STM32-F4 Discovery is same as that under the simulator.
 - This is a work in progress and not quite ready for prime time.

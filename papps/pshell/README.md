@@ -4,7 +4,7 @@ Pascal Shell
 Overview
 --------
 
-This is very much a work in progress.  There is not much here but my longer term goal is to have a modest shell written entirely in pascal.  I would like to have a small user interface that allows monitoring and use of resources in the Pascal sandbox, but also is secure and does not support access to anything outside of that sandbox.
+This is very much a work in progress.  There is not much here but my longer term goal is to have a modest shell written entirely in pascal.  I would like to have a small user interface that allows monitoring and use of resources in the Pascal *sandbox*cd , but also is secure and does not support access to anything outside of that sandbox.
 
 The primary goals of the shell are:
 
