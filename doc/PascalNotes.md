@@ -1,6 +1,19 @@
 # Pascal Notes
 
-## History
+# Table of Contents
+1. [History](#history)
+2. [General Language Information](#general-language-information)
+3. [Intrinsic Procedures and Functions](#intrinsic-procedures-and-functions)
+4. [Units](#units)
+5. [Extended Pascal Features](#extended-pascal-features)
+6. [NON-standard Pascal Extensions](#non-standard-pascal-extensions)
+7. [Runtime](#runtime)
+8. [Bugs, Issues, and Quirks](#bugs-issues-and-quirks)
+9. [Software Components](#software-components)
+10. [Native Code Translation](#native-code-translation)
+11. [Issues](#issues)
+
+# <a name="history"></a>History
 
 This compiler is the result of several years of work and is basically an homage to a Language that I loved in my youth.  Pascal was invented around 1970 by Niklaus Wirth https://en.wikipedia.org/wiki/Niklaus_Wirth it became widely popular until destroyed by Brian Kernighan https://www.cs.virginia.edu/~evans/cs655/readings/bwk-on-pascal.html.  Modern Pascal has resolved all of these issues, but it is no longer a language in wide use.  It was widely used not too long ago with Borland Turbo Pascal and Delphi.  There is a modest following for contemporary FreePascal/Lazarus and also GNU Pascal.
 
@@ -24,9 +37,9 @@ I extended the language support to include most of the features of recent and co
 
 Currently, I am bringing the compiler into the embedded environment.  I would like to see an all Pascal embedded system running on a P-Code VM with a Pascal JIT compiler.  Stay tuned.  Let's see how far I get.
 
-## General Language Information
+# <a name="general-language-information"></a>General Language Information
 
-### TYPES
+## TYPES
 
 **Basic Types**.  All basic types `INTEGER`, `BOOLEAN`, `CHAR`, `REAL`, `SCALAR`, `SUBRANGE`, `RECORD` and `SET` implemented along with some types from more contemporary Pascal types like `STRING` and short `STRING` types.
 
@@ -40,7 +53,7 @@ Currently, I am bringing the compiler into the embedded environment.  I would li
 
 **Explicit Type Cast**.  Explicit type casts are supported.  The form of the type cast is:  `type-name ‘(‘ expression ‘)’`.  Casting is limited to `REAL`/ordinal and ordinal/ordinal types and to pointer/pointer types.
 
-### File Types
+## File Types
 
 **Supported File Types**.  `FILE OF` and `TEXTFILE` (or `TEXT`)  types are supported.  The former are treated as binary files with fixed record lengths and the later as line-oriented files.
 
@@ -52,7 +65,7 @@ Currently, I am bringing the compiler into the embedded environment.  I would li
 
 **Limitations**.  No functions returning `FILE OF`.
 
-### Variables
+## Variables
 
 **Variable Initializers**.  Variable initializers are supported for most simple types. The compiler supports initializers of the form:
 
@@ -67,11 +80,11 @@ This string implementation uses a 6 byte *container* to represent the string.  T
 
 When strings are passed as `VAR` parameters, a pointer to the 6-byte container is placed on the stack; when strings are passed as value parameters, that 6-byte container is copied onto the stack.  In that case, the pointer to string memory is also coped and any uncautious programming can alter the "read only" string value.
 
-### Sets
+## Sets
 
 `SET` is limited to 64-bits adjacent elements. That is more that the traditional 59-bit limit but less than some contemporary Pascal compilers.  *FreePascal*, for example, supports small sets of up to 32 elements and large sets up to 256 elements.  *FreePascal* selects the set size, large or small, at compile time based on the declared size of the set.
 
-### Records
+## Records
 
 - In `RECORD CASE`, there is no verification that the type of the tag is consistent with a case selector; the check is only if the case selector constants are of the same type as the tag type identifier.
 Pointer Limitations.
@@ -79,13 +92,13 @@ Pointer Limitations.
 - No pointers to functions
 - Supports pointers and pointers-to-pointers, but not pointers-to-pointers-to-pointers.
 
-### Arrays
+## Arrays
 
 No `PACKED` types.  This is a bug and needs to be revisited in the future.
 
 - No range checks on array indices
 
-### Statements
+## Statements
 
 - `WITH` statements cannot be nested.
 - Cannot reference "up the chain" in `WITH` statements.  Eg. suppose `RECORD` "a" contains `RECORD` "b" which contains "c" and that `RECORD` "a" also contains "d" so that we could write a.b.c OR a.d.  Then the following should work but is not yet supported:
@@ -100,12 +113,12 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 - `GOTO` only partially implemented -- no stack corrections for GOTOs between loops, blocks, etc.  Use is *DANGEROUS*.
 - Expressions are not strongly typed across different `SCALAR` types (see exprEnum in expr.h)
 
-## Standard Procedures and Functions
+## Procedures and Functions
 
 **Caveat**. Implements some functions/procedures that may not be standard, but are in common usage.
 **Limitation**.  No `PROCEDURE` call with `PROCEDURE`s or `FUNCTION`s as parameters
 
-### System Procedures/Functions:
+# <a name="intrinsic-procedures-and-functions"></a>Intrinsic Procedures and Functions
 
 - `procedure Exit(exitCode : integer)`
 - `procedure Halt`
@@ -142,7 +155,7 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 - `Exclude`
 - `Include`
 
-#### String Operations
+## String Operations
 
 Borland style string operators:
 
@@ -156,18 +169,8 @@ Borland style string operators:
 - `procedure fillchar(VAR s : string; count : integer; value : shortword)` -  Fill string s with character value until `s` is `count`-1 characters long
 - `procedure Val(inString : string; VAR numvar : integer; VAR code : integer)` – Convert a string to a numeric value.  `strvar` is a string variable to be converted, numvar is any numeric variable either `Integer`, `Longinteger`, `ShortInteger`, or `Real`, and if the conversion isn't successful, then the parameter `code` contains the index of the character in `S` which prevented the conversion.
 
-In addition to these built-in, *intrinsic* string operations.  Additional string support is provided throught the unit `StringUtils.pas`.  This additional support includes:
+## File I/O
 
-- `function UpperCase(ch : char) : char` - Convert the input `ch` character from lower- to upper-case.  if `ch` is not a lower case character, it is returned unaltered.
-- `function LowerCase(ch : char) : char` - Convert the input `ch` character from upper- to lower-case.  if `ch` is not an upper lower case character, it is returned unaltered.
-- `function CharPos(StrInput : STRING; CheckChar : char; StartPos : integer) : integer` - Return the position of the next occurence of `CheckChar` in `StrInput` after position `CheckPos`.  Position zero is returned if there is character meeting these conditions
-- `function TokenizeString(inString, tokenDelimiters : string; VAR token : string; VAR StrPos : integer) : boolean` - Gets the next *token* from the string `inString` on each call.  A *token* is defined to be a substring of `inString` delimited by one of the characters from the string `tokenDelimiters`.  The integer `VAR` parameter `StrPos` must be provided so that `TokenizeString` can continue parsing the string `inString` from call-to-call.  `StrPos` simply holds the position in the string `inString` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
-
-Non-standard string operations.  These are used internally in the implementation of other string procedures/functions but are available to Pascal applications as well.  Use of non-standard prodecures/functions can make if more difficult to port the Pascal code to other platforms, however.
-
-- `function CharAt(inString : string; charPos : integer) : char` - Returns the character at position `charPos` in `inString`.  NUL is returned if the character position is invalid.  The only precedent that I am aware of is Delphi that uses an array like syntax to peek at specific characters.  The Delphi syntax would be `inString[charPos]`.  The name `CharAt` derives from a similar JavaScript method.
-
-#### File I/O
 - `Append` - Opens an existing file for appending data to end of file
 - `AssignFile` - Assign a name to a file (`Assign` is an alias)
 - `CloseFile` - Close opened file (`Close` is an alias)
@@ -209,6 +212,14 @@ Variants of the basic directory operations, similar to those from Borland Turbo 
 - `function RemoveDir(DirPath : string) : boolean` - Remove a new directory.  .  Returns `true` if the directory was successfully removed.
 - `procedure RmDir(DirPath : string)` - Remove a new directory.  No failure indication is returned.
 
+# <a name="units"></a>Units
+
+## General
+
+Pascal programs may be build from several files:  One program file beginning with the keyword `PROGRAM` and several unit files beginning with the keyword `UNIT`.  A unit file consists of two major sections:  (2) An `INTERFACE` section the provides the constants, types, variables, and procedure/function *prototypes* that are necessary for the program file or other unit file to use the facilities provided by the unit file, and (2) an `IMPLEMENTATION` section that is ignored by file that *includes* the unit file, but is compiled produce and object file.  The various object files are then *linked* together to generate the complete Pascal program.  A file *includes* the unit file's `INTERFACE` with the Pascal keyword `USES`.
+
+## FileUtils
+
 Other directory operations inspired by Free Pascal are provided in the unit `FileUtils.pas`.  Some primitive directory intrinics are provided in the run-time code to support this unit.  Those intrinsics are very close to the underlying functions from the standard C library, on which the Pascal run-time is built.  As a rule, these should not be used by Pascal application code for portability reasons.  These intrinsics include:
 
 - `function OpenDir(DirPath : string; VAR dir: TDir) : boolean` - Open a directory for reading.  If the directory was successfully opened, *true* is returned and TDir is valid for use with `ReadDir`.
@@ -246,9 +257,20 @@ The `pathTemplate` is full or relative path to the directory to seach. It is a *
 
 The search attributes are the same as described above.  These can be concatenated:  You may set multiple `attributes` from one or more of these by simply `ORing them together.
 
-## Units
+## StringUtils
 
-## Extended Pascal Features
+In addition to the built-in, *intrinsic* string operations listed above.  Additional string support is provided throught the unit `StringUtils.pas`.  This additional support includes:
+
+- `function UpperCase(ch : char) : char` - Convert the input `ch` character from lower- to upper-case.  if `ch` is not a lower case character, it is returned unaltered.
+- `function LowerCase(ch : char) : char` - Convert the input `ch` character from upper- to lower-case.  if `ch` is not an upper lower case character, it is returned unaltered.
+- `function CharPos(StrInput : STRING; CheckChar : char; StartPos : integer) : integer` - Return the position of the next occurence of `CheckChar` in `StrInput` after position `CheckPos`.  Position zero is returned if there is character meeting these conditions
+- `function TokenizeString(inString, tokenDelimiters : string; VAR token : string; VAR StrPos : integer) : boolean` - Gets the next *token* from the string `inString` on each call.  A *token* is defined to be a substring of `inString` delimited by one of the characters from the string `tokenDelimiters`.  The integer `VAR` parameter `StrPos` must be provided so that `TokenizeString` can continue parsing the string `inString` from call-to-call.  `StrPos` simply holds the position in the string `inString` where `TokenizeString` will resume parsing on the next call.    This function returns true if the next token pas found or false if all tokens have been parsed.
+
+Non-standard string operations.  These are used internally in the implementation of other string procedures/functions but are available to Pascal applications as well.  Use of non-standard prodecures/functions can make if more difficult to port the Pascal code to other platforms, however.
+
+- `function CharAt(inString : string; charPos : integer) : char` - Returns the character at position `charPos` in `inString`.  NUL is returned if the character position is invalid.  The only precedent that I am aware of is Delphi that uses an array like syntax to peek at specific characters.  The Delphi syntax would be `inString[charPos]`.  The name `CharAt` derives from a similar JavaScript method.
+
+# <a name="extended-pascal-features"></a>Extended Pascal Features
 
 - `PACKED ARRAY[..] OF CHAR` is not a string.  But `PACKED ARRAY[] OF CHA`R does have some legacy behavior that allow them some limited behavior like `STRINGS`
 - `SIZEOF` built-in is supported
@@ -261,29 +283,29 @@ I have seen initialization of file types like the following:
 
 There are some files that have Turbo-Pascal style constructions.  For example, use `BEGIN` rather than `INITIALIZATION` to introduce the initializers in a Unit file.  I have done a good faith effort to support Turbo-Pascal-isms wherever possible.
 
-## NON-standard Pascal extensions/differences
+# <a name="non-standard-pascal-extensions"></a>NON-standard Pascal Extensions
 
-### Types
+## Types
 
 - Hexadecimal constants like %89ab
 - INPUT and OUTPUT parameters in PROGRAM statement are pre-defined and optional.
 
-### OPERATORS
+## OPERATORS
 
 - Binary shift operators -- << and >> like in C
 - '#', "<>", and "><" are all equivalent
 
-### Expressions
+## Expressions
 
 - Assumes sizeof(pointer) == sizeof(integer)
 
-## Runtime
+# <a name="runtime"></a>Runtime
 
-### P-Machine
+## P-Machine
 
 The back-end is modular and can be change.  However, most of the development so far has been done with a P-Code virtual machine.  This is not the standard, UCSD P-code but a unique machine model  developed for this project.  It currently implements only a 16-bit stack machine with a Harvard architecture:  Separate address and data.  Addressing is 16-bit allowing 64Kb for code and 64Kb for data, 128Kb total, for each thread.
 
-### Run-time String Memory
+## Run-time String Memory
 
 Pascal runtime memory is divided into four regions:  String stack, RO data, the Pascal run-time stack, and a heap region.  The size of the string stack is set with the -t option to prun.  String buffer allocations are large, the default size is 80 bytes (note 1), and the string stack cleanup is lazy; string memory is only freed when a procedure/function returns and local string variables go out of scope.
 
@@ -298,35 +320,35 @@ String memory is allocated in one of two ways:
 
 Note 1: The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
 
-## BUGS, ISSUES, and QUIRKS
+# <a name="bugs-issues-and-quirks"></a>Bugs, Issues, and Quirks
 
-### BUGS / MISSING FUNCTIONALITY
+## BUGS / MISSING FUNCTIONALITY
 
 -See unimplemented standard procedures and functions..
 - Need forward references for procedures.  Necessary to support co-routines.
 
-### PLANNED IMPROVEMENTS
+## PLANNED IMPROVEMENTS
 
 - In tokenization, verify that the compiler string stack does not overflow when character added.
 
-### Compile-Time Options
+## Compile-Time Options
 
 - Option to turn on listing
 - Option to interleave assembly language with listing.  Source line numbers are already provided in the listing.
 - Option to select symbol table size (or let it grow dynamically)
 - List file should only be produced if option provided.
 
-### Debugger
+## Debugger
 
 Provide instrumentation to use the line number data in the object files.  In debugger, display source line.  Allow stepping from source line to source line.
 
-### Strings
+## Strings
 
 - Should check for duplicate strings in the RO string area.
 
-## Components
+# <a name="software-components"></a>Software Components
 
-### Compiler
+## Compiler
 
 The Pascal compiler is a single pass compiler that targets a 16-bit P-Code stack machine.  It accepts as input a Pascal source file with the extension `.pas` and generates a temporary, unoptimized, P-Code object file with the extension `.o1`.  This code is not suitable for execution:  The code is non-optimal and contains unresolved label references.  It is not in a format that can be loaded for execution.  The optimizer and the linker will address these issues as described below.
 
@@ -339,11 +361,11 @@ The Pascal compiler is a single pass compiler that targets a 16-bit P-Code stack
         A maximum of 8 pathes may be specified
         (default is current directory)
 
-### Optimizer
+## Optimizer
 
 The optimizer accepts the `.o1` files generated by the compiler, improves these, and generates an optimized object file with the extension`.o`.  Simple *peephole* optimization is performed.  In addition, relocation information information is generated and label references are resolved.  The optimizer accepts only the full path to the unoptimized `.o1` as its argument.
 
-### Linker
+## Linker
 
 The linker combines multiple files -- Pascal `PROGRAM` and `UNIT` files -- into a single executable file with the extension `.pex`.  The linker must be used even if the entire program resides within a single file; linking is required in order to generate the executable format.
 
@@ -352,7 +374,7 @@ The linker combines multiple files -- Pascal `PROGRAM` and `UNIT` files -- into 
 
 Up to eight input file names may be provided.
 
-### Lister
+## Lister
 
 The lister accepts and object file -- `.o1`, `.o`, or `.pex` -- and provides and pretty disassembled listing with file names and line number.  All contents of the POFF file can be shown:
 
@@ -368,7 +390,7 @@ The lister accepts and object file -- `.o1`, `.o`, or `.pex` -- and provides and
       -d --disassemble      Display disassembled text
       -H --help             Display this information
 
-### Run-Time
+## Run-Time
 
 The P-Code run-time virtual machine can be used execute and/or debug the `.pex` file:
 
@@ -398,7 +420,7 @@ The P-Code run-time virtual machine can be used execute and/or debug the `.pex` 
       --help
         Shows this message
 
-### Debugger
+## Debugger
 
 **Starting the Debugger**. The debugger is built in the Pascal run-time progrem, `prun`, and is started by simply adding the command line option `--debug`.
 
@@ -425,7 +447,7 @@ The P-Code run-time virtual machine can be used execute and/or debug the `.pex` 
 
 **Pascal Source Debugger**.  There is no source-level debugger at present, although all of the components to support such a debugger are present:  The executable format, *POFF* holds the file and line number information that can map any assembly-level instruction address to to a specific line in a specific Pascal source file.  Thetr is also library of *POFF* access helper functionis, `libpoff`, that makes access to the file and line number information very simple.  So a project to develop such a debugger is completely feasible and, in fact, not such a difficult job.
 
-### Flat Address Space Issues
+## Flat Address Space Issues
 
 In a real application, you would probably need to have multiple Pascal programs running cocurrently.  This is not a problem with desktop systems like Linux or Windows where each program execution is encapsulated within its own address space.  But there could be issues in a flat address space such as you would have with an RTOS or on some custom bare-metal platform.
 
@@ -435,14 +457,14 @@ The run-time code has protections for this case:  The run-time uses no global va
 
 The tools do use global variables, however.  So in a flat address space only one instance of the compiler, optimizer, linker, or lister can run at a time (the debugger is part of the protected run-time so there can be multiple, concurrent debug sessions).  This is not thought to be an issue in most cases but could become issue if, for example, the tools are used for JIT (Just-In-Time) compilations in a multi-threaded environment.
 
-## Register Model / Native Code Translation / 32-Machine
+# <a name="native-code-translation"></a>Native Code Translation
 
 - Translation to 32-bit register model.  Support for this model was removed by commit 94a03ca1f2d138b5189924527331fedba2248caa only because I did not  have bandwidth to support it.  That would still be a good starting point.
 - Native code translator
 
-### Pascal Object File Format (POFF)
+## Pascal Object File Format (POFF)
 
-## ISSUES
+# <a name="issues"></a>Issues
 
 **Issues with Default Files**.  There is an issue with using file types as the first argument of most standard file I/O procedures and functions.  This is a one-pass compiler and before we consume the input, we must be certain that that first argument this is going to resolve into a file type.
 
