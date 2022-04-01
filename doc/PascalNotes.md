@@ -8,10 +8,11 @@
 5. [Extended Pascal Features](#extended-pascal-features)
 6. [NON-standard Pascal Extensions](#non-standard-pascal-extensions)
 7. [Runtime](#runtime)
-8. [Bugs, Issues, and Quirks](#bugs-issues-and-quirks)
-9. [Software Components](#software-components)
-10. [Native Code Translation](#native-code-translation)
-11. [Issues](#issues)
+8. [Multiple Instances](#multiple-instances)
+9. [Bugs, Issues, and Quirks](#bugs-issues-and-quirks)
+10. [Software Components](#software-components)
+11. [Native Code Translation](#native-code-translation)
+12. [Issues](#issues)
 
 # <a name="history"></a>History
 
@@ -127,7 +128,7 @@ No `PACKED` types.  This is a bug and needs to be revisited in the future.
 - `procedure New(<pointer-variable>)`
 - `procedure Dispose(<pointer-variable>)`
 - `function GetEnv(name: string) : string`
-- `function Spawn(PexFileName : string; StringBufferAlloc, HeapAlloc : integer; Wait, Debug : boolean) : boolean`
+- `function Spawn(PexFileName : string; StringBufferAlloc, HeapAlloc : integer; Wait, Debug : boolean) : boolean` - Create another running instance of a Pascal program.
 
 - `Addr(<any-variable>`.  Returns the address of the variable.  Similar to `@` except that it is not typed.
 - `Card`
@@ -319,6 +320,28 @@ String memory is allocated in one of two ways:
 - When temporary strings are needed for string operations, these are allocated from the heap memory (because it supports *random access* freeing operations.  These temporary strings are freed when the string container is popped off the stack by run-time logic.
 
 Note 1: The actual size of the string allocations is controlled by a configuration setting when the compiler is built, but is fixed at runtime.
+
+# <a name="multiple-instances"></a>Multiple Instances
+
+## Execution Contexts
+
+The runtime logic discussed in the previous sections is highly modular.  It uses no global data and can support multiple instances of running Pascal programs in almost any context.  The following running contexts are supported (or are works in progress):
+
+1. Desktop Processes.  The desktop environment supports *processes*, that is, multi-threaded applications, each within its own protected, *address environement*.  In this case, the protection provided by the runtime logic is not essential since the OS provides the runtime modularity.
+2. Desktop *pthread*s.  Most desktop OSs support lighter weigth threads running within the process context.  So an additional implementation under such an OS would be to host all Pascal threads within one processes and create each instance on a *pthread*.  In this case, the protections provided by the runtime logic is essential to isolate each Pacal thread from the others.
+3. RTOS Context. And RTOS differs from a desktop OS in that an RTOS is designed to run *tasks* on an embedded microcontroller unit (MCU).  Such MCUs are highly resource contstrained and typically do not have resources to provided the hardware memory protections needed to support *processes* and, perhaps, not even the capability to support Pascal programs within a file system.
+
+The less-than-standard Pascal runtime function *Spawn* is used in all of the above cases.  It maps to an OS system call that is appropropriate to the OS platform:  For Linux this is the standard POSIX interfaces *posix_spawnp()* and *pthread_create()*.  RTOSs are less standard, but do also provide mechanisms to cteate tasks.  With NuttX, for example, the *task_spawn*() interface is used.
+
+In all of the OS cases, another copy of the *prun* runtime code is started which, in turn, instantiates the Pascal instance.
+
+One addition no-OS case:
+
+4. Bare metal.  Pascal is well suited for the NoOS baremetal environment.  In this environment, the threads may run *round robin* in a loop controlled by the runtime code.  This could be time sliced or interleaved, but the most usable solution would involve a *cooperative scheduler*.  That is, each Pascal thread would execute until it either waits (say for I/O) or until it calls a special interface, *Yield*.  Control would then be given to next highest priority thread waiting for execution.
+
+## Inter-instance Communications
+
+[To be provided]
 
 # <a name="bugs-issues-and-quirks"></a>Bugs, Issues, and Quirks
 
